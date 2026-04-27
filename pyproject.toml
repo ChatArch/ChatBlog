@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chatblog"
+dynamic = ["version"]
+description = "chattool for blog poster"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+dependencies = ["click>=8.0", "chatstyle"]
+authors = [{name = "rexwzh", email = "1073853456@qq.com"}]
+keywords = ["chatblog", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+chatblog = "chatblog.cli:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "chatblog.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+include-package-data = true
