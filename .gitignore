@@ -1,6 +1,8 @@
-__pycache__/
-.pytest_cache/
-.venv/
+node_modules/
+.docusaurus/
 build/
-dist/
-*.egg-info/
+playground-server.log
+playground-server.pid
+.env
+.env.*
+.DS_Store
