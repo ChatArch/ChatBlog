@@ -1,11 +1,14 @@
 // @ts-check
 
+const siteUrl = process.env.CHATBLOG_SITE_URL || 'https://arch.gh.wzhecnu.cn';
+const baseUrl = process.env.CHATBLOG_BASE_URL || '/ChatBlog/';
+
 const config = {
   title: 'ChatBlog',
   tagline: 'ChatArch 公开知识块与技术笔记。',
   favicon: 'img/favicon.svg',
-  url: 'https://chatarch.github.io',
-  baseUrl: '/ChatBlog/',
+  url: siteUrl,
+  baseUrl,
   organizationName: 'ChatArch',
   projectName: 'ChatBlog',
   trailingSlash: false,

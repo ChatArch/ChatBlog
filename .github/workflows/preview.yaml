@@ -1,0 +1,78 @@
+name: Preview Docs
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: chatblog-docs-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.head.repo.fork }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          CHATBLOG_SITE_URL: https://arch.gh.wzhecnu.cn
+          CHATBLOG_BASE_URL: /ChatBlog/dev/
+      - name: Deploy preview to gh-pages/dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          pages_dir="$(mktemp -d)"
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if ! git clone --depth=1 --branch gh-pages "$repo_url" "$pages_dir"; then
+            rm -rf "$pages_dir"
+            pages_dir="$(mktemp -d)"
+            git clone --no-checkout "$repo_url" "$pages_dir"
+            git -C "$pages_dir" checkout --orphan gh-pages
+            git -C "$pages_dir" rm -rf . || true
+          fi
+
+          rm -rf "$pages_dir/dev"
+          mkdir -p "$pages_dir/dev"
+          cp -R build/. "$pages_dir/dev/"
+          touch "$pages_dir/.nojekyll"
+
+          git -C "$pages_dir" add -A
+          if git -C "$pages_dir" diff --cached --quiet; then
+            echo "No preview docs changes to deploy."
+          else
+            git -C "$pages_dir" commit -m "Deploy ChatBlog PR #${{ github.event.pull_request.number }} preview"
+            git -C "$pages_dir" push origin gh-pages
+          fi
+
+      - name: Comment PR with preview link
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- chatblog-preview-docs -->';
+            const previewLink = 'https://arch.gh.wzhecnu.cn/ChatBlog/dev/';
+            const body = `${marker}\nPreview Docs: ${previewLink}\n\nUpdated from commit \`${context.payload.pull_request.head.sha}\`.`;
+            const {owner, repo} = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.rest.issues.listComments({owner, repo, issue_number});
+            const existing = comments.data.find((comment) => comment.body && comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({owner, repo, comment_id: existing.id, body});
+            } else {
+              await github.rest.issues.createComment({owner, repo, issue_number, body});
+            }
