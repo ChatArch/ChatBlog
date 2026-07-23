@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkchatblog=globalThis.webpackChunkchatblog||[]).push([[1903],{1912(a){a.exports=JSON.parse('{"blogBasePath":"/ChatBlog/dev/blog","blogTitle":"ChatBlog \u535a\u5ba2","authorsListPath":"/ChatBlog/dev/blog/authors"}')}}]);
