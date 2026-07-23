@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkchatblog=globalThis.webpackChunkchatblog||[]).push([[8488],{8488(c,e,a){a.d(e,{createArchitectureServices:()=>h.S});var h=a(9221);a(1400)}}]);
