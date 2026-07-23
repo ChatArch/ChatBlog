@@ -1,10 +1,21 @@
-name: Publish Site
+name: Deploy Docs
 
 on:
+  push:
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: chatblog-docs-production
+  cancel-in-progress: false
+
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,5 +25,35 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: |
-          echo "Static site built in ./build. Add deployment target when ready."
+        env:
+          CHATBLOG_SITE_URL: https://arch.gh.wzhecnu.cn
+          CHATBLOG_BASE_URL: /ChatBlog/
+      - name: Deploy to gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          pages_dir="$(mktemp -d)"
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if ! git clone --depth=1 --branch gh-pages "$repo_url" "$pages_dir"; then
+            rm -rf "$pages_dir"
+            pages_dir="$(mktemp -d)"
+            git clone --no-checkout "$repo_url" "$pages_dir"
+            git -C "$pages_dir" checkout --orphan gh-pages
+            git -C "$pages_dir" rm -rf . || true
+          fi
+
+          find "$pages_dir" -mindepth 1 -maxdepth 1 ! -name ".git" ! -name "dev" -exec rm -rf {} +
+          cp -R build/. "$pages_dir/"
+          touch "$pages_dir/.nojekyll"
+
+          git -C "$pages_dir" add -A
+          if git -C "$pages_dir" diff --cached --quiet; then
+            echo "No production docs changes to deploy."
+          else
+            git -C "$pages_dir" commit -m "Deploy ChatBlog docs from ${GITHUB_SHA}"
+            git -C "$pages_dir" push origin gh-pages
+          fi

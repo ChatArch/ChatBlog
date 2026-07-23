@@ -24,6 +24,21 @@ npm run start
 npm run build
 ```
 
+## 部署
+
+ChatBlog 使用 ChatArch 共享 GitHub Pages 域名：
+
+```text
+https://arch.gh.wzhecnu.cn/ChatBlog/
+```
+
+部署规则：
+
+- PR：`Preview Docs` 会用 `/ChatBlog/dev/` 作为 `baseUrl` 构建，并发布到 `gh-pages` 分支的 `dev/` 目录。
+- 合并到 `main` / `master`：`Deploy Docs` 会用 `/ChatBlog/` 作为 `baseUrl` 构建，并发布到 `gh-pages` 分支根目录。
+- GitHub Pages source 应保持为 `gh-pages` 分支 `/` 路径。
+- 规范 URL 使用大写仓库名路径 `/ChatBlog/`；小写 `/chatblog/` 需要由组织主页仓库提供跳转别名。
+
 ## 如何写内容
 
 长文章放在 `blog/`，可复用知识块放在 `docs/blocks/`。
