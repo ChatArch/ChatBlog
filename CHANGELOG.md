@@ -9,6 +9,7 @@
 - Added Node-based CI for building the static site.
 - Added PR preview deployment to `https://arch.gh.wzhecnu.cn/ChatBlog/dev/`.
 - Added merge deployment to the `gh-pages` branch for `https://arch.gh.wzhecnu.cn/ChatBlog/`.
+- Added a public article on Agent Discussion Community and the Discourse + Agent Router + ChatBoard discussion path.
 
 ### Changed
 
