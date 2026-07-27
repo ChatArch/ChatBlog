@@ -40,12 +40,14 @@ https://discourse.local.wzhecnu.cn/
 
 修复方式分两步。
 
-第一步，让 Discourse 的 Nginx vhost 同时接受 local/public 两个 host，并且 80/443 都 proxy 到 Discourse，而不是在本机 HTTP 层强行跳到 local：
+第一步，回到 WZHECNU local/public service-entry skill 里的正确模式：本机 Nginx 只管理 local vhost，不把 public host 写进本机 `server_name`。也就是说，Discourse 的本机 Nginx 配置是：
 
 ```text
-server_name discourse.local.wzhecnu.cn discourse.public.wzhecnu.cn;
+server_name discourse.local.wzhecnu.cn;
 proxy_pass http://127.0.0.1:3088;
 ```
+
+`discourse.public.wzhecnu.cn` 由已有 wildcard DNS 和 public-entry 层自动转回 local vhost；普通服务接入时不需要、也不应该改 DNS、FRP 或给本机 Nginx 增加 public server_name。这里真正需要修的是：local HTTP vhost 不要再 301 到 local 域名，而是直接 proxy 到 Discourse。
 
 第二步，把 Discourse 自己的 canonical hostname 改成 public。Discourse 不是一个只用相对路径的简单应用，它会根据 `DISCOURSE_HOSTNAME` 生成 RSS、OpenSearch、图片、topic、用户页等绝对链接。第一次部署时这个值是：
 
@@ -72,8 +74,8 @@ DISCOURSE_HOSTNAME=discourse.public.wzhecnu.cn
 | 社区界面 | Discourse | 作为 topic、post、category、tag 的 comment-based 社区层 |
 | 运行方式 | 官方 `discourse_docker` | 这是 Discourse 官方推荐的生产部署路径 |
 | 长期目录 | `/home/zhihong/.chatarch/discourse/` | 按 ChatArch 长期服务目录落位，不放在一次性 project 里 |
-| 反向代理 | Nginx vhost | `discourse.local.wzhecnu.cn` / `discourse.public.wzhecnu.cn` 都反代到本机 Discourse 容器端口 |
-| HTTPS | 复用已有 wildcard 证书 | 使用服务器现有 `local.wzhecnu.cn` 证书体系 |
+| 反向代理 | Nginx local vhost | 只配置 `discourse.local.wzhecnu.cn`，public 入口由既有 wildcard DNS + public-entry 自动转回 local |
+| HTTPS | 复用已有 wildcard 证书 | 使用服务器现有 WZHECNU wildcard 证书体系，覆盖 local/public 双域名 |
 | AI 插件 | bundled Discourse AI | Discourse AI 现在在主仓库 `plugins/discourse-ai` 中维护 |
 | LLM | ChatArch OpenAI-compatible profile | 已接入 `OpenAI/byted.env` 对应模型，密钥只写入 Discourse secret |
 | 社区结构 | 分类 + 标签 | 已创建 Agent 社区第一版分类和 status/route/agent 标签 |
