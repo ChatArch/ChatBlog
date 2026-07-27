@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a Hermes Multi-Agent architecture article covering Profile, `delegate_task`, Kanban, Gateway multiplex, and terminal backends.
 - Rebuilt ChatBlog as a Docusaurus public knowledge and blog site.
 - Added the first hello world blog post and knowledge block.
 - Added Node-based CI for building the static site.
