@@ -38,14 +38,30 @@ https://discourse.local.wzhecnu.cn/
 
 如果访问者不在 local/overlay 网络里，就无法访问这个 `local` 地址，所以看起来就是“切到 public 后访问不了”。
 
-修复方式是让 Discourse 的 Nginx vhost 同时接受 local/public 两个 host，并且 80/443 都 proxy 到 Discourse，而不是在本机 HTTP 层强行跳到 local：
+修复方式分两步。
+
+第一步，让 Discourse 的 Nginx vhost 同时接受 local/public 两个 host，并且 80/443 都 proxy 到 Discourse，而不是在本机 HTTP 层强行跳到 local：
 
 ```text
 server_name discourse.local.wzhecnu.cn discourse.public.wzhecnu.cn;
 proxy_pass http://127.0.0.1:3088;
 ```
 
-修复后两个入口都已验证返回 200。
+第二步，把 Discourse 自己的 canonical hostname 改成 public。Discourse 不是一个只用相对路径的简单应用，它会根据 `DISCOURSE_HOSTNAME` 生成 RSS、OpenSearch、图片、topic、用户页等绝对链接。第一次部署时这个值是：
+
+```text
+DISCOURSE_HOSTNAME=discourse.local.wzhecnu.cn
+```
+
+所以即使 public 请求已经正确路由进来，页面里仍然会出现大量 `discourse.local.wzhecnu.cn` 链接。最终改成：
+
+```text
+DISCOURSE_HOSTNAME=discourse.public.wzhecnu.cn
+```
+
+然后重新创建容器，让新的环境变量生效。持久数据仍然在 `/home/zhihong/.chatarch/discourse/shared/standalone/`，不会因为重建容器丢失。
+
+修复后两个入口都已验证返回 200，且 public 页面生成的绝对链接也已经变成 `discourse.public.wzhecnu.cn`。
 
 ## 这次实际部署了什么
 
