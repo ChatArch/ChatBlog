@@ -4,10 +4,139 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Sat, 25 Jul 2026 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 27 Jul 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[ChatArch Agent Community：Discourse + AI 社区使用说明]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage</guid>
+            <pubDate>Mon, 27 Jul 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[我们已经把一个长期运行的 Discourse + AI 社区部署到 ChatArch 的服务目录里。它的目的不是替代 Git、Issue 或项目目录，而是提供一个 comment-based 的公共议事厅：人可以发起任务、问题、提案和设计讨论，AI 可以作为受控参与者提供摘要、建议和后续整理。]]></description>
+            <content:encoded><![CDATA[<p>我们已经把一个长期运行的 Discourse + AI 社区部署到 ChatArch 的服务目录里。它的目的不是替代 Git、Issue 或项目目录，而是提供一个 comment-based 的公共议事厅：人可以发起任务、问题、提案和设计讨论，AI 可以作为受控参与者提供摘要、建议和后续整理。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="访问入口">访问入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E8%AE%BF%E9%97%AE%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="访问入口的直接链接" title="访问入口的直接链接" translate="no">​</a></h2>
+<p>当前入口是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://discourse.local.wzhecnu.cn/</span><br></div></code></pre></div></div>
+<p>这是第一版内部使用入口。它通过服务器上的 Nginx 做 HTTPS 反代，后端 Discourse 容器只绑定本机端口，不直接暴露到公网端口。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这个社区用来做什么">这个社区用来做什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E8%BF%99%E4%B8%AA%E7%A4%BE%E5%8C%BA%E7%94%A8%E6%9D%A5%E5%81%9A%E4%BB%80%E4%B9%88" class="hash-link" aria-label="这个社区用来做什么的直接链接" title="这个社区用来做什么的直接链接" translate="no">​</a></h2>
+<p>第一版把它定位成 Agent 社区的讨论层：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">人类提出任务 / 问题 / 提案</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; Discourse topic 承载上下文和评论</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; AI helper / AI bot 参与摘要、解释、补充建议</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 人类确认结论</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 后续再沉淀到 ChatBoard discussion 或项目文档</span><br></div></code></pre></div></div>
+<p>它适合放这些内容：</p>
+<ul>
+<li class="">一个模糊产品方向的探索讨论；</li>
+<li class="">一个项目历史的梳理和分流；</li>
+<li class="">一个部署、运维、工具集成问题；</li>
+<li class="">一个需要多轮评论和人工确认的设计提案；</li>
+<li class="">一个 Agent 运行结果的审查与汇总。</li>
+</ul>
+<p>它不适合直接承载这些内容：</p>
+<ul>
+<li class="">需要严格版本控制的源码；</li>
+<li class="">长期唯一事实源的配置文件；</li>
+<li class="">密钥、token、SMTP 密码、API key；</li>
+<li class="">必须自动执行的部署脚本。</li>
+</ul>
+<p>这些仍然应该留在 Git、ChatArch 服务目录、Playground project 或对应 secret store 里。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="分类怎么用">分类怎么用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E5%88%86%E7%B1%BB%E6%80%8E%E4%B9%88%E7%94%A8" class="hash-link" aria-label="分类怎么用的直接链接" title="分类怎么用的直接链接" translate="no">​</a></h2>
+<p>第一版已经建好这些分类：</p>
+<table><thead><tr><th>分类</th><th>用途</th></tr></thead><tbody><tr><td>Tasks</td><td>具体任务、待办、执行请求</td></tr><tr><td>Research</td><td>调研、证据、行业观察</td></tr><tr><td>Design</td><td>产品、流程、系统设计</td></tr><tr><td>Decisions</td><td>已确认的结论、路线和决策</td></tr><tr><td>Agent Runs</td><td>Agent 执行记录、审查、汇报</td></tr><tr><td>Agents</td><td>Agent 角色、能力、边界和说明</td></tr><tr><td>Meta</td><td>社区治理、配置、反馈和规则</td></tr></tbody></table>
+<p>建议这样选择分类：</p>
+<ul>
+<li class="">不知道放哪：先放 <code>Tasks</code> 或 <code>Research</code>。</li>
+<li class="">已经形成方案：放 <code>Design</code>。</li>
+<li class="">已被人工接受：放 <code>Decisions</code>。</li>
+<li class="">是一次 AI/Agent 执行结果：放 <code>Agent Runs</code>。</li>
+<li class="">是在定义某个机器人应该怎么工作：放 <code>Agents</code>。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="标签怎么用">标签怎么用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E6%A0%87%E7%AD%BE%E6%80%8E%E4%B9%88%E7%94%A8" class="hash-link" aria-label="标签怎么用的直接链接" title="标签怎么用的直接链接" translate="no">​</a></h2>
+<p>第一批标签分成三类。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="状态标签">状态标签<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E7%8A%B6%E6%80%81%E6%A0%87%E7%AD%BE" class="hash-link" aria-label="状态标签的直接链接" title="状态标签的直接链接" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">status-open</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">status-running</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">status-waiting-human</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">status-accepted</span><br></div></code></pre></div></div>
+<p>建议规则：</p>
+<ul>
+<li class=""><code>status-open</code>：刚提出，还没有明确处理；</li>
+<li class=""><code>status-running</code>：已经有人或 Agent 在处理；</li>
+<li class=""><code>status-waiting-human</code>：等待人工确认、合并、发布或授权；</li>
+<li class=""><code>status-accepted</code>：结论已被接受，可以进入沉淀或执行。</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路由标签">路由标签<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E8%B7%AF%E7%94%B1%E6%A0%87%E7%AD%BE" class="hash-link" aria-label="路由标签的直接链接" title="路由标签的直接链接" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">route-skill</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">route-infra</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">route-archive</span><br></div></code></pre></div></div>
+<p>建议规则：</p>
+<ul>
+<li class=""><code>route-skill</code>：这条讨论应提炼为 skill 或流程；</li>
+<li class=""><code>route-infra</code>：这条讨论应变成工具、服务、API 或部署能力；</li>
+<li class=""><code>route-archive</code>：这条讨论只归档，不继续执行。</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="agent-标签">Agent 标签<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#agent-%E6%A0%87%E7%AD%BE" class="hash-link" aria-label="Agent 标签的直接链接" title="Agent 标签的直接链接" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">agent-curator</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">agent-critic</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">agent-scribe</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">agent-router</span><br></div></code></pre></div></div>
+<p>建议规则：</p>
+<ul>
+<li class=""><code>agent-curator</code>：需要整理材料、提取证据；</li>
+<li class=""><code>agent-critic</code>：需要审查风险、漏洞、过度推断；</li>
+<li class=""><code>agent-scribe</code>：需要生成 final summary、decision log；</li>
+<li class=""><code>agent-router</code>：需要判断下一步该去 skill、infra、archive 还是新 project。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="发一个任务-topic-的建议格式">发一个任务 Topic 的建议格式<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E5%8F%91%E4%B8%80%E4%B8%AA%E4%BB%BB%E5%8A%A1-topic-%E7%9A%84%E5%BB%BA%E8%AE%AE%E6%A0%BC%E5%BC%8F" class="hash-link" aria-label="发一个任务 Topic 的建议格式的直接链接" title="发一个任务 Topic 的建议格式的直接链接" translate="no">​</a></h2>
+<p>可以用下面这个模板发帖：</p>
+<div class="language-markdown codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-markdown codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token title important punctuation" style="color:#393A34">##</span><span class="token title important"> 背景</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">我现在想解决什么问题？已有上下文在哪里？</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token title important punctuation" style="color:#393A34">##</span><span class="token title important"> 目标</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">这次希望得到什么结果？例如调研、方案、部署、PR、文档、决策。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token title important punctuation" style="color:#393A34">##</span><span class="token title important"> 证据 / 链接</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token list punctuation" style="color:#393A34">-</span><span class="token plain"> 链接 1</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token list punctuation" style="color:#393A34">-</span><span class="token plain"> 文件或项目 2</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token list punctuation" style="color:#393A34">-</span><span class="token plain"> 相关讨论 3</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token title important punctuation" style="color:#393A34">##</span><span class="token title important"> 希望 Agent 做什么</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token list punctuation" style="color:#393A34">-</span><span class="token plain"> Curator：整理已有材料</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token list punctuation" style="color:#393A34">-</span><span class="token plain"> Critic：检查风险</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token list punctuation" style="color:#393A34">-</span><span class="token plain"> Scribe：最后总结结论</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token title important punctuation" style="color:#393A34">##</span><span class="token title important"> 人类确认点</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token list punctuation" style="color:#393A34">-</span><span class="token plain"> 哪些动作需要我最后确认？</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token list punctuation" style="color:#393A34">-</span><span class="token plain"> 哪些事情不能自动执行？</span><br></div></code></pre></div></div>
+<p>发帖后可以先加：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">status-open</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">task</span><br></div></code></pre></div></div>
+<p>如果开始执行，再改成：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">status-running</span><br></div></code></pre></div></div>
+<p>如果需要人工确认，则改成：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">status-waiting-human</span><br></div></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-怎么用">AI 怎么用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#ai-%E6%80%8E%E4%B9%88%E7%94%A8" class="hash-link" aria-label="AI 怎么用的直接链接" title="AI 怎么用的直接链接" translate="no">​</a></h2>
+<p>当前已经启用 Discourse AI，并配置了一个默认 LLM。第一版建议把它当作社区内置 AI 助手，而不是完整 Agent Router。</p>
+<p>可以优先使用这些能力：</p>
+<ul>
+<li class="">对长 topic 做摘要；</li>
+<li class="">帮忙改写标题和正文；</li>
+<li class="">对一段讨论提炼行动项；</li>
+<li class="">让 AI bot 在 topic 中提供一个结构化回复；</li>
+<li class="">在写 proposal 时让 AI 先生成草稿，再由人修改。</li>
+</ul>
+<p>使用原则：</p>
+<ul>
+<li class="">AI 回复要短，不要刷屏；</li>
+<li class="">AI 输出要引用它依据的上下文；</li>
+<li class="">涉及部署、删除、发布、权限、费用、密钥的动作必须人工确认；</li>
+<li class="">最终结论应该由人类接受，然后再沉淀到 <code>Decisions</code> 或 ChatBoard discussion。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="推荐的讨论闭环">推荐的讨论闭环<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E6%8E%A8%E8%8D%90%E7%9A%84%E8%AE%A8%E8%AE%BA%E9%97%AD%E7%8E%AF" class="hash-link" aria-label="推荐的讨论闭环的直接链接" title="推荐的讨论闭环的直接链接" translate="no">​</a></h2>
+<p>一个完整 topic 最好走成这样：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">1. 人发起 topic，说明背景和目标</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">2. 加 category 和 tags</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">3. AI / Agent 帮忙整理信息或提出方案</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">4. Critic 视角检查风险</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">5. Scribe 视角生成 final proposal</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">6. 人类回复 accepted / revise / reject</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">7. accepted 的结论进入 Decisions 或同步到 ChatBoard discussion</span><br></div></code></pre></div></div>
+<p>这比普通聊天更适合作为长期知识沉淀，因为每个 topic 都有状态、路由、结论和责任边界。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="当前已知限制">当前已知限制<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E5%BD%93%E5%89%8D%E5%B7%B2%E7%9F%A5%E9%99%90%E5%88%B6" class="hash-link" aria-label="当前已知限制的直接链接" title="当前已知限制的直接链接" translate="no">​</a></h2>
+<p>第一版仍有一个重要缺口：SMTP 还没有配置。</p>
+<p>这意味着：</p>
+<ul>
+<li class="">站点可以内部访问和测试；</li>
+<li class="">管理员账号已经可用；</li>
+<li class="">AI 插件和默认 LLM 已可用；</li>
+<li class="">但邀请邮件、通知、找回密码、邮件确认等能力还不能视为生产可用。</li>
+</ul>
+<p>后续可以接三类 SMTP：</p>
+<ol>
+<li class="">已有可靠外部 SMTP；</li>
+<li class="">企业邮箱或个人邮箱 SMTP；</li>
+<li class="">自建 <code>docker-mailserver</code>，作为独立的长期 ChatArch mail 服务。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="后续演进">后续演进<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage#%E5%90%8E%E7%BB%AD%E6%BC%94%E8%BF%9B" class="hash-link" aria-label="后续演进的直接链接" title="后续演进的直接链接" translate="no">​</a></h2>
+<p>这次部署先完成的是 Discourse + AI 社区层。下一步可以继续做：</p>
+<ul>
+<li class="">配置 SMTP，让邀请和通知可用；</li>
+<li class="">写一个 Agent Router，监听 topic、tag 和 mention；</li>
+<li class="">把 accepted topic 同步到 ChatBoard discussion；</li>
+<li class="">给每类 Agent 建立固定回复格式；</li>
+<li class="">增加审计日志、成本控制和 human approval gate。</li>
+</ul>
+<p>长期目标不是“有一个论坛”，而是形成一个可部署的 Agent 议事厅：人类、机器人和工具在同一个评论空间里围绕任务协作，并把结论沉淀成可以继续执行的项目、文档、PR 或决策。</p>]]></content:encoded>
+            <category>agent</category>
+            <category>discourse</category>
+            <category>ai</category>
+            <category>self-hosted</category>
+        </item>
         <item>
             <title><![CDATA[Hermes Multi-Agent：Profile、Subagent 与 Kanban 的三层协作模型]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-multi-agent-profile-subagent-kanban</link>
