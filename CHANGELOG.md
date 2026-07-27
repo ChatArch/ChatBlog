@@ -9,7 +9,7 @@
 - Added Node-based CI for building the static site.
 - Added PR preview deployment to `https://arch.gh.wzhecnu.cn/ChatBlog/dev/`.
 - Added merge deployment to the `gh-pages` branch for `https://arch.gh.wzhecnu.cn/ChatBlog/`.
-- Added a usage guide for the self-hosted ChatArch Discourse + AI community.
+- Added a screenshot-rich usage and deployment guide for the self-hosted ChatArch Discourse + AI community.
 
 ### Changed
 

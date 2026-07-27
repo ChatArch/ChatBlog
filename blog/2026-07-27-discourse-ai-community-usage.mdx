@@ -19,6 +19,101 @@ https://discourse.local.wzhecnu.cn/
 
 这是第一版内部使用入口。它通过服务器上的 Nginx 做 HTTPS 反代，后端 Discourse 容器只绑定本机端口，不直接暴露到公网端口。
 
+![ChatArch Agent Community 首页](/img/discourse-ai-community/home.png)
+
+## 这次实际部署了什么
+
+这次不是只写了一个方案文档，而是在 `zhihong.oray` 上完成了一套可运行的 Discourse + AI staging 服务。
+
+| 层 | 已部署内容 | 说明 |
+| --- | --- | --- |
+| 社区界面 | Discourse | 作为 topic、post、category、tag 的 comment-based 社区层 |
+| 运行方式 | 官方 `discourse_docker` | 这是 Discourse 官方推荐的生产部署路径 |
+| 长期目录 | `/home/zhihong/.chatarch/discourse/` | 按 ChatArch 长期服务目录落位，不放在一次性 project 里 |
+| 反向代理 | Nginx vhost | `discourse.local.wzhecnu.cn` 反代到本机 Discourse 容器端口 |
+| HTTPS | 复用已有 wildcard 证书 | 使用服务器现有 `local.wzhecnu.cn` 证书体系 |
+| AI 插件 | bundled Discourse AI | Discourse AI 现在在主仓库 `plugins/discourse-ai` 中维护 |
+| LLM | ChatArch OpenAI-compatible profile | 已接入 `OpenAI/byted.env` 对应模型，密钥只写入 Discourse secret |
+| 社区结构 | 分类 + 标签 | 已创建 Agent 社区第一版分类和 status/route/agent 标签 |
+| 系统调优 | `vm.overcommit_memory = 1` | 按 Redis/Discourse 长期运行建议持久化 |
+
+没有部署的部分也要明确：这次**没有部署 Mail Server**。Discourse 目前用 `DISCOURSE_SKIP_EMAIL_SETUP=1` 完成初始化，所以页面、管理员账号和 AI 能力可用，但邀请邮件、通知、找回密码、邮件确认还不能算生产可用。
+
+## 文件写到了哪里
+
+这次分成两类目录：长期服务目录和部署记录目录。
+
+### 长期服务目录
+
+长期服务都放在 ChatArch 的默认目录下：
+
+```text
+/home/zhihong/.chatarch/discourse/
+```
+
+里面的关键路径是：
+
+```text
+/home/zhihong/.chatarch/discourse/docker/
+/home/zhihong/.chatarch/discourse/docker/containers/app.yml
+/home/zhihong/.chatarch/discourse/shared/standalone/
+/home/zhihong/.chatarch/discourse/secrets/
+/home/zhihong/.chatarch/discourse/backups/
+/home/zhihong/.chatarch/discourse/logs/
+```
+
+其中 `secrets/` 只放服务器本地 secret，比如管理员密码和后续可能接入的服务凭据。文章里只记录路径，不记录任何值。
+
+### Nginx 和系统配置
+
+Nginx 配置写在：
+
+```text
+/etc/nginx/sites-available/discourse-local.conf
+/etc/nginx/sites-enabled/discourse-local.conf
+```
+
+Redis/Discourse 推荐的内核参数写在：
+
+```text
+/etc/sysctl.d/99-chatarch-discourse.conf
+```
+
+### 部署记录目录
+
+部署过程、验证日志、报告和博客 PR 记录放在 Playground project 里：
+
+```text
+/home/zhihong/Playground/projects/agent-community/07-27-discourse-ai-service/
+```
+
+这个目录不是服务运行目录，只用于记录过程。主要文件包括：
+
+```text
+PRD.md
+progress.md
+links.md
+reports/server-inventory.md
+reports/install-plan.md
+reports/deployment-log.md
+reports/verification-report.md
+playground/discourse-verify-*.log
+```
+
+## 页面截图
+
+首页已经能看到站点标题和 Discourse 基础导航。
+
+![Discourse 首页](/img/discourse-ai-community/home.png)
+
+分类页展示了第一版 Agent 社区的七个空间。
+
+![Discourse 分类页](/img/discourse-ai-community/categories.png)
+
+标签页用于承载 status、route、agent 等状态和路由信息。
+
+![Discourse 标签页](/img/discourse-ai-community/tags.png)
+
 ## 这个社区用来做什么
 
 第一版把它定位成 Agent 社区的讨论层：
@@ -47,6 +142,10 @@ https://discourse.local.wzhecnu.cn/
 - 必须自动执行的部署脚本。
 
 这些仍然应该留在 Git、ChatArch 服务目录、Playground project 或对应 secret store 里。
+
+## 已初始化的社区结构
+
+第一版不是空站点，已经初始化了分类和标签。分类负责把讨论分区，标签负责表达状态、路由和 Agent 角色。
 
 ## 分类怎么用
 
@@ -170,9 +269,22 @@ status-running
 status-waiting-human
 ```
 
-## AI 怎么用
+## AI 部署到了什么程度
 
 当前已经启用 Discourse AI，并配置了一个默认 LLM。第一版建议把它当作社区内置 AI 助手，而不是完整 Agent Router。
+
+当前 AI 状态是：
+
+```text
+Discourse AI plugin: enabled
+AI helper: enabled
+AI bot: enabled
+Default LLM: configured
+Container-to-LLM test: HTTP 200
+Companion bot user: ark-code-latest1
+```
+
+这里的 API key 没有写进博客、project 文档或命令输出，而是写进 Discourse 自己的 `AiSecret`。也就是说，文章可以说明“接了哪个 profile 和哪个模型”，但不能公开 secret 值。
 
 可以优先使用这些能力：
 
@@ -205,9 +317,9 @@ status-waiting-human
 
 这比普通聊天更适合作为长期知识沉淀，因为每个 topic 都有状态、路由、结论和责任边界。
 
-## 当前已知限制
+## Mail Server / SMTP 状态
 
-第一版仍有一个重要缺口：SMTP 还没有配置。
+第一版仍有一个重要缺口：SMTP 还没有配置，而且这次没有部署 Mail Server。
 
 这意味着：
 
@@ -216,11 +328,53 @@ status-waiting-human
 - AI 插件和默认 LLM 已可用；
 - 但邀请邮件、通知、找回密码、邮件确认等能力还不能视为生产可用。
 
-后续可以接三类 SMTP：
+为什么可以先不部署 Mail Server？因为这次目标是先验证 Discourse + AI 讨论社区本体。Discourse 可以用 `DISCOURSE_SKIP_EMAIL_SETUP=1` 完成 staging 初始化，再通过 Rails 任务创建管理员账号。这样能先把页面、分类、标签、AI 插件和 LLM 走通。
 
-1. 已有可靠外部 SMTP；
-2. 企业邮箱或个人邮箱 SMTP；
-3. 自建 `docker-mailserver`，作为独立的长期 ChatArch mail 服务。
+生产化之前需要补 SMTP。最少需要这些信息：
+
+| 项 | 说明 |
+| --- | --- |
+| SMTP host | 例如 `smtp.example.com` 或 `mail.example.com` |
+| SMTP port | 通常是 `587` STARTTLS，或 `465` implicit TLS |
+| TLS 模式 | STARTTLS / implicit TLS / provider-specific |
+| SMTP username | 发信账号 |
+| SMTP password | 密码或 app password，只能进 secret，不能写文档 |
+| notification email | Discourse 系统通知发件人 |
+| reply-to 策略 | 是否允许邮件回复进入 Discourse |
+
+如果要自建 `docker-mailserver`，还需要更多 DNS 和投递配置：
+
+| 项 | 说明 |
+| --- | --- |
+| Mail 域名 | 例如 `mail.example.com` |
+| A / MX 记录 | 让外部能找到 mail host |
+| PTR / rDNS | 影响投递信誉，通常需要云厂商或网络提供方支持 |
+| SPF | 声明允许哪些服务器代表域名发信 |
+| DKIM | 邮件签名，DMS 需要生成并发布 DNS 记录 |
+| DMARC | 指定 SPF/DKIM 失败时的策略 |
+| 端口策略 | 25/465/587 是否开放、是否被云厂商限制 |
+| 证书 | `mail.example.com` 的 TLS 证书 |
+
+所以 Mail Server 不是完全不需要，而是**不应该作为第一步阻塞 Discourse + AI 社区验证**。更稳妥的顺序是：
+
+```text
+1. 先跑通 Discourse + AI + 分类/标签
+2. 再接一个可靠 SMTP，让邀请和通知可用
+3. 如果确定要 full self-host mail，再单独部署 DMS
+```
+
+## 还需要确认什么
+
+SMTP 之外，还需要几个产品和运维决策：
+
+| 决策 | 为什么需要 |
+| --- | --- |
+| 访问范围 | 只内网、VPN、local 域名，还是后续公开域名 |
+| 注册策略 | 邀请制、管理员创建账号，还是开放注册 |
+| 备份策略 | Discourse 备份保存在哪里、保留多久、是否异地备份 |
+| AI 预算 | LLM 每日/每月成本上限、哪些用户可用 AI |
+| Agent Router | 是否要让外部 Agent 监听 topic/tag 并自动回复 |
+| 审批边界 | 哪些回复可以自动发，哪些必须人类确认 |
 
 ## 后续演进
 
@@ -232,4 +386,4 @@ status-waiting-human
 - 给每类 Agent 建立固定回复格式；
 - 增加审计日志、成本控制和 human approval gate。
 
-长期目标不是“有一个论坛”，而是形成一个可部署的 Agent 议事厅：人类、机器人和工具在同一个评论空间里围绕任务协作，并把结论沉淀成可以继续执行的项目、文档、PR 或决策。 
+长期目标不是“有一个论坛”，而是形成一个可部署的 Agent 议事厅：人类、机器人和工具在同一个评论空间里围绕任务协作，并把结论沉淀成可以继续执行的项目、文档、PR 或决策。
