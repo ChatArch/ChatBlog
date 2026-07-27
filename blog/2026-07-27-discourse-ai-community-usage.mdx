@@ -11,15 +11,41 @@ tags: [agent, discourse, ai, self-hosted]
 
 ## 访问入口
 
-当前入口是：
+当前有两个入口：
+
+```text
+https://discourse.local.wzhecnu.cn/
+https://discourse.public.wzhecnu.cn/
+```
+
+`local` 域名用于本机、内网或 overlay 网络访问。`public` 域名用于走现有 public ingress：外部 DNS 解析到公共入口，再通过 FRP/Nginx 转回这台机器。
+
+![ChatArch Agent Community 首页](/img/discourse-ai-community/home.png)
+
+## 双域名为什么一开始 public 访问不了
+
+这次部署第一次只配置了 `discourse.local.wzhecnu.cn`，并且本机 Nginx 的 80 端口写成了：
+
+```text
+return 301 https://$host$request_uri;
+```
+
+在我们的双域名规则里，`discourse.public.wzhecnu.cn` 会先进入 public 入口，再通过 FRP/Nginx 回到本机。这个链路打到本机 HTTP vhost 时，被本机 Nginx 重定向到了：
 
 ```text
 https://discourse.local.wzhecnu.cn/
 ```
 
-这是第一版内部使用入口。它通过服务器上的 Nginx 做 HTTPS 反代，后端 Discourse 容器只绑定本机端口，不直接暴露到公网端口。
+如果访问者不在 local/overlay 网络里，就无法访问这个 `local` 地址，所以看起来就是“切到 public 后访问不了”。
 
-![ChatArch Agent Community 首页](/img/discourse-ai-community/home.png)
+修复方式是让 Discourse 的 Nginx vhost 同时接受 local/public 两个 host，并且 80/443 都 proxy 到 Discourse，而不是在本机 HTTP 层强行跳到 local：
+
+```text
+server_name discourse.local.wzhecnu.cn discourse.public.wzhecnu.cn;
+proxy_pass http://127.0.0.1:3088;
+```
+
+修复后两个入口都已验证返回 200。
 
 ## 这次实际部署了什么
 
@@ -30,7 +56,7 @@ https://discourse.local.wzhecnu.cn/
 | 社区界面 | Discourse | 作为 topic、post、category、tag 的 comment-based 社区层 |
 | 运行方式 | 官方 `discourse_docker` | 这是 Discourse 官方推荐的生产部署路径 |
 | 长期目录 | `/home/zhihong/.chatarch/discourse/` | 按 ChatArch 长期服务目录落位，不放在一次性 project 里 |
-| 反向代理 | Nginx vhost | `discourse.local.wzhecnu.cn` 反代到本机 Discourse 容器端口 |
+| 反向代理 | Nginx vhost | `discourse.local.wzhecnu.cn` / `discourse.public.wzhecnu.cn` 都反代到本机 Discourse 容器端口 |
 | HTTPS | 复用已有 wildcard 证书 | 使用服务器现有 `local.wzhecnu.cn` 证书体系 |
 | AI 插件 | bundled Discourse AI | Discourse AI 现在在主仓库 `plugins/discourse-ai` 中维护 |
 | LLM | ChatArch OpenAI-compatible profile | 已接入 `OpenAI/byted.env` 对应模型，密钥只写入 Discourse secret |
