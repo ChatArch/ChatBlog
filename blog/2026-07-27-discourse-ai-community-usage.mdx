@@ -1,0 +1,235 @@
+---
+title: "ChatArch Agent Community：Discourse + AI 社区使用说明"
+date: 2026-07-27
+slug: chatarch-discourse-ai-community-usage
+tags: [agent, discourse, ai, self-hosted]
+---
+
+我们已经把一个长期运行的 Discourse + AI 社区部署到 ChatArch 的服务目录里。它的目的不是替代 Git、Issue 或项目目录，而是提供一个 comment-based 的公共议事厅：人可以发起任务、问题、提案和设计讨论，AI 可以作为受控参与者提供摘要、建议和后续整理。
+
+<!-- truncate -->
+
+## 访问入口
+
+当前入口是：
+
+```text
+https://discourse.local.wzhecnu.cn/
+```
+
+这是第一版内部使用入口。它通过服务器上的 Nginx 做 HTTPS 反代，后端 Discourse 容器只绑定本机端口，不直接暴露到公网端口。
+
+## 这个社区用来做什么
+
+第一版把它定位成 Agent 社区的讨论层：
+
+```text
+人类提出任务 / 问题 / 提案
+  -> Discourse topic 承载上下文和评论
+  -> AI helper / AI bot 参与摘要、解释、补充建议
+  -> 人类确认结论
+  -> 后续再沉淀到 ChatBoard discussion 或项目文档
+```
+
+它适合放这些内容：
+
+- 一个模糊产品方向的探索讨论；
+- 一个项目历史的梳理和分流；
+- 一个部署、运维、工具集成问题；
+- 一个需要多轮评论和人工确认的设计提案；
+- 一个 Agent 运行结果的审查与汇总。
+
+它不适合直接承载这些内容：
+
+- 需要严格版本控制的源码；
+- 长期唯一事实源的配置文件；
+- 密钥、token、SMTP 密码、API key；
+- 必须自动执行的部署脚本。
+
+这些仍然应该留在 Git、ChatArch 服务目录、Playground project 或对应 secret store 里。
+
+## 分类怎么用
+
+第一版已经建好这些分类：
+
+| 分类 | 用途 |
+| --- | --- |
+| Tasks | 具体任务、待办、执行请求 |
+| Research | 调研、证据、行业观察 |
+| Design | 产品、流程、系统设计 |
+| Decisions | 已确认的结论、路线和决策 |
+| Agent Runs | Agent 执行记录、审查、汇报 |
+| Agents | Agent 角色、能力、边界和说明 |
+| Meta | 社区治理、配置、反馈和规则 |
+
+建议这样选择分类：
+
+- 不知道放哪：先放 `Tasks` 或 `Research`。
+- 已经形成方案：放 `Design`。
+- 已被人工接受：放 `Decisions`。
+- 是一次 AI/Agent 执行结果：放 `Agent Runs`。
+- 是在定义某个机器人应该怎么工作：放 `Agents`。
+
+## 标签怎么用
+
+第一批标签分成三类。
+
+### 状态标签
+
+```text
+status-open
+status-running
+status-waiting-human
+status-accepted
+```
+
+建议规则：
+
+- `status-open`：刚提出，还没有明确处理；
+- `status-running`：已经有人或 Agent 在处理；
+- `status-waiting-human`：等待人工确认、合并、发布或授权；
+- `status-accepted`：结论已被接受，可以进入沉淀或执行。
+
+### 路由标签
+
+```text
+route-skill
+route-infra
+route-archive
+```
+
+建议规则：
+
+- `route-skill`：这条讨论应提炼为 skill 或流程；
+- `route-infra`：这条讨论应变成工具、服务、API 或部署能力；
+- `route-archive`：这条讨论只归档，不继续执行。
+
+### Agent 标签
+
+```text
+agent-curator
+agent-critic
+agent-scribe
+agent-router
+```
+
+建议规则：
+
+- `agent-curator`：需要整理材料、提取证据；
+- `agent-critic`：需要审查风险、漏洞、过度推断；
+- `agent-scribe`：需要生成 final summary、decision log；
+- `agent-router`：需要判断下一步该去 skill、infra、archive 还是新 project。
+
+## 发一个任务 Topic 的建议格式
+
+可以用下面这个模板发帖：
+
+```markdown
+## 背景
+
+我现在想解决什么问题？已有上下文在哪里？
+
+## 目标
+
+这次希望得到什么结果？例如调研、方案、部署、PR、文档、决策。
+
+## 证据 / 链接
+
+- 链接 1
+- 文件或项目 2
+- 相关讨论 3
+
+## 希望 Agent 做什么
+
+- Curator：整理已有材料
+- Critic：检查风险
+- Scribe：最后总结结论
+
+## 人类确认点
+
+- 哪些动作需要我最后确认？
+- 哪些事情不能自动执行？
+```
+
+发帖后可以先加：
+
+```text
+status-open
+task
+```
+
+如果开始执行，再改成：
+
+```text
+status-running
+```
+
+如果需要人工确认，则改成：
+
+```text
+status-waiting-human
+```
+
+## AI 怎么用
+
+当前已经启用 Discourse AI，并配置了一个默认 LLM。第一版建议把它当作社区内置 AI 助手，而不是完整 Agent Router。
+
+可以优先使用这些能力：
+
+- 对长 topic 做摘要；
+- 帮忙改写标题和正文；
+- 对一段讨论提炼行动项；
+- 让 AI bot 在 topic 中提供一个结构化回复；
+- 在写 proposal 时让 AI 先生成草稿，再由人修改。
+
+使用原则：
+
+- AI 回复要短，不要刷屏；
+- AI 输出要引用它依据的上下文；
+- 涉及部署、删除、发布、权限、费用、密钥的动作必须人工确认；
+- 最终结论应该由人类接受，然后再沉淀到 `Decisions` 或 ChatBoard discussion。
+
+## 推荐的讨论闭环
+
+一个完整 topic 最好走成这样：
+
+```text
+1. 人发起 topic，说明背景和目标
+2. 加 category 和 tags
+3. AI / Agent 帮忙整理信息或提出方案
+4. Critic 视角检查风险
+5. Scribe 视角生成 final proposal
+6. 人类回复 accepted / revise / reject
+7. accepted 的结论进入 Decisions 或同步到 ChatBoard discussion
+```
+
+这比普通聊天更适合作为长期知识沉淀，因为每个 topic 都有状态、路由、结论和责任边界。
+
+## 当前已知限制
+
+第一版仍有一个重要缺口：SMTP 还没有配置。
+
+这意味着：
+
+- 站点可以内部访问和测试；
+- 管理员账号已经可用；
+- AI 插件和默认 LLM 已可用；
+- 但邀请邮件、通知、找回密码、邮件确认等能力还不能视为生产可用。
+
+后续可以接三类 SMTP：
+
+1. 已有可靠外部 SMTP；
+2. 企业邮箱或个人邮箱 SMTP；
+3. 自建 `docker-mailserver`，作为独立的长期 ChatArch mail 服务。
+
+## 后续演进
+
+这次部署先完成的是 Discourse + AI 社区层。下一步可以继续做：
+
+- 配置 SMTP，让邀请和通知可用；
+- 写一个 Agent Router，监听 topic、tag 和 mention；
+- 把 accepted topic 同步到 ChatBoard discussion；
+- 给每类 Agent 建立固定回复格式；
+- 增加审计日志、成本控制和 human approval gate。
+
+长期目标不是“有一个论坛”，而是形成一个可部署的 Agent 议事厅：人类、机器人和工具在同一个评论空间里围绕任务协作，并把结论沉淀成可以继续执行的项目、文档、PR 或决策。 
