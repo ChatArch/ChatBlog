@@ -11,6 +11,8 @@
 - Added PR preview deployment to `https://arch.gh.wzhecnu.cn/ChatBlog/dev/`.
 - Added merge deployment to the `gh-pages` branch for `https://arch.gh.wzhecnu.cn/ChatBlog/`.
 - Added a screenshot-rich usage and deployment guide for the self-hosted ChatArch Discourse + AI community.
+- Added a ChatVideo self-build pipeline article for video URL understanding with subtitles, ASR, keyframes, VLM notes, and structured summaries.
+- Added a screenshot-rich survey of deployable open-source video summarization and video knowledge-base projects.
 
 ### Changed
 
