@@ -13,6 +13,7 @@
 - Added a screenshot-rich usage and deployment guide for the self-hosted ChatArch Discourse + AI community.
 - Added a ChatVideo self-build pipeline article for video URL understanding with subtitles, ASR, keyframes, VLM notes, and structured summaries.
 - Added a screenshot-rich survey of deployable open-source video summarization and video knowledge-base projects.
+- Added an illustrated Discord vs self-hosted Revolt/Stoat explainer with demo deployment notes and account/invite caveats.
 
 ### Changed
 
