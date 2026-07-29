@@ -1,0 +1,354 @@
+---
+title: "自托管 Dashboard 选型：Homepage、Homarr、Dashy、Homer、Glance"
+date: 2026-07-29
+slug: selfhosted-dashboard-homepage-homarr-dashy-homer-glance
+tags: [self-hosted, dashboard, docker, homelab, open-source]
+description: 从 awesome-selfhosted 的 Personal Dashboards 分类出发，整理五个适合 homelab 的自托管首页与信息面板项目：Homepage、Homarr、Dashy、Homer 和 Glance。
+---
+
+# 自托管 Dashboard 选型：Homepage、Homarr、Dashy、Homer、Glance
+
+当自托管服务从两三个变成十几个以后，最先失控的通常不是 Docker，而是入口：服务 URL 记不住、端口散落在书签里、手机上找不到常用页面、某个容器挂了也没有直观提醒。这类问题不一定需要上 Grafana，很多时候一个 startpage / homepage / dashboard 就够了。
+
+这篇从 `awesome-selfhosted` 的 `Personal Dashboards` 分类里挑了五个最值得优先看的项目：`Homepage by gethomepage`、`Homarr`、`Dashy`、`Homer` 和 `Glance`。它们都能自托管，但解决的问题不完全一样。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+如果你已经在 Docker 里跑一堆服务，先试 **Homepage by gethomepage**；想要 Web UI 拖拽配置，试 **Homarr**；想要功能最全、主题和权限都能折腾，试 **Dashy**；只想要一个几乎不用维护的静态入口页，试 **Homer**；如果你想把 RSS、天气、GitHub、市场和服务器状态变成信息流，试 **Glance**。
+:::
+
+## 先把 Dashboard 分成两类
+
+自托管圈里说 dashboard，容易混在一起。这里讨论的不是 Grafana、Netdata 那种监控大盘，而是“每天打开浏览器第一眼看到的入口页”。它大概有两类：
+
+- **服务入口型**：把 Jellyfin、Vaultwarden、Gitea、Immich、Sonarr、Radarr 这些服务整理成卡片、分组和搜索入口。
+- **信息聚合型**：把 RSS、天气、日历、GitHub releases、Docker 容器状态、服务器指标等聚合到一个页面。
+
+五个项目的位置大概是这样：
+
+| 项目 | 更像什么 | 配置方式 | 部署方式 | 最适合谁 |
+| --- | --- | --- | --- | --- |
+| [Homepage](https://github.com/gethomepage/homepage) | Docker 服务门户 + 状态小组件 | YAML + Docker labels | Docker / source | Docker homelab 主入口 |
+| [Homarr](https://github.com/homarr-labs/homarr) | 可视化拖拽 dashboard | Web UI | Docker / Compose | 不想写 YAML 的用户 |
+| [Dashy](https://github.com/Lissy93/dashy) | 高度可定制 startpage | YAML + UI editor | Docker / bare metal / cloud | 想要权限、主题、多页面、状态检查的人 |
+| [Homer](https://github.com/bastienwirtz/homer) | 极简静态 homepage | 单个 YAML | Docker / 静态文件 | 想要轻、稳、少维护的人 |
+| [Glance](https://github.com/glanceapp/glance) | 信息流和小组件聚合页 | YAML | Docker / 单二进制 | 想把 dashboard 当每日信息台的人 |
+
+截图来自项目 README、官方文档或官方 demo，用来帮助快速判断产品形态。
+
+## Homepage：Docker homelab 的默认首页候选
+
+Repo: [gethomepage/homepage](https://github.com/gethomepage/homepage)
+
+Homepage 的定位很明确：一个现代、静态、快速、可高度定制的 application dashboard。它最大的特点是和 Docker / 自托管服务生态贴得很近：支持 Docker label 自动发现服务，也有大量服务 widgets，可以读取容器状态、服务状态和应用 API 信息。
+
+![Homepage dashboard screenshot](/img/selfhosted-dashboard-roundup/homepage.png)
+
+### 它解决了什么
+
+Homepage 更像“homelab 总入口”：
+
+- 服务卡片：把应用按组展示成入口。
+- Docker 集成：读取容器状态和统计信息，也可以通过 labels 自动发现服务。
+- 服务 widgets：支持常见 self-hosted apps，例如 `*arr` 系列、Plex、Jellyfin、qBittorrent、Transmission、Tautulli 等。
+- 信息 widgets：天气、时间、搜索、Glances 等信息可以放到顶部或页面里。
+- 安全取向：后端 API 请求由 Homepage 代理，避免直接把 API key 暴露到浏览器端。
+
+它适合已经有一套 Docker 服务的人。你不是在这里“管理 Docker”，而是在这里获得一个统一入口：哪些服务在哪、是否在线、一些关键数字是什么。
+
+### 怎么部署
+
+Docker Compose 最小形态大概是这样：
+
+```yaml
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: dashboard.example.com
+      PUID: 1000
+      PGID: 1000
+    ports:
+      - 3000:3000
+    volumes:
+      - /path/to/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+```
+
+`/var/run/docker.sock` 只在你需要 Docker 集成时挂载。它很方便，但也意味着容器能读取 Docker 信息，生产环境要认真评估权限边界。
+
+### 适合和不适合
+
+| 维度 | 判断 |
+| --- | --- |
+| 适合 | Docker 服务多、希望自动发现、希望 dashboard 显示服务状态 |
+| 不适合 | 不想写 YAML、希望完全 Web UI 配置 |
+| 注意 | Homepage 本身不计划内置完整认证；如果暴露到不可信网络，应放在带认证的反代、VPN 或访问控制后面 |
+
+我的判断：**如果只选一个给 Docker homelab 做默认首页，Homepage 是第一优先级**。
+
+## Homarr：给不想写 YAML 的人
+
+Repo: [homarr-labs/homarr](https://github.com/homarr-labs/homarr)
+
+Homarr 的核心卖点是“好看、现代、拖拽、Web 配置”。它把 dashboard 做得更像一个应用，而不是一个静态配置文件：可以在 UI 里添加应用、调整布局、管理图标、配置集成和权限。官方首页也强调 No YAML / JSON configurations。
+
+![Homarr homepage screenshot](/img/selfhosted-dashboard-roundup/homarr.png)
+
+### 它解决了什么
+
+Homarr 更适合这种情况：你想给家庭服务器或小团队做一个漂亮入口，但不想每次改卡片都去 SSH 里编辑 YAML。
+
+它的重点能力包括：
+
+- 拖拽式布局：移动、缩放 dashboard 元素。
+- 图标和应用管理：内置大量 icon source，适合快速搭服务入口。
+- 集成能力：面向媒体服务、下载器、Docker、Kubernetes、网络服务等常见自托管组件。
+- 权限和认证：支持 credentials auth、OIDC、LDAP，并有用户/权限管理。
+- 多平台部署：Docker 是推荐路径，也有 Unraid、TrueNAS、Portainer、Helm 等文档。
+
+这和 Homepage 的气质不同。Homepage 是“配置驱动的 homelab 首页”，Homarr 更像“有管理后台的 dashboard 产品”。
+
+### 怎么部署
+
+官方推荐 Docker Compose。单容器 `docker run` 的最小形态如下：
+
+```bash
+docker run \
+  --name homarr \
+  --restart unless-stopped \
+  -p 7575:7575 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /srv/homarr/appdata:/appdata \
+  -e SECRET_ENCRYPTION_KEY='replace_with_64_character_hex_string' \
+  -d ghcr.io/homarr-labs/homarr:latest
+```
+
+真实部署时，`SECRET_ENCRYPTION_KEY` 不要写进 Git 或公开文档。可以用类似 `openssl rand -hex 32` 生成，然后放进 `.env` 或 secret manager。
+
+### 适合和不适合
+
+| 维度 | 判断 |
+| --- | --- |
+| 适合 | 想要漂亮 UI、拖拽配置、多用户和内置认证 |
+| 不适合 | 只想要一个纯静态页面，或者希望所有配置都 GitOps 化 |
+| 注意 | 功能越应用化，升级、数据库/数据目录、权限配置就越要纳入备份和维护计划 |
+
+我的判断：**Homarr 是“给人用”的 dashboard，特别适合不想让家里其他人接触 YAML 的场景**。
+
+## Dashy：功能最全，也最容易折腾
+
+Repo: [Lissy93/dashy](https://github.com/Lissy93/dashy)
+
+Dashy 自己的定位是“the most customizable dashboard for self-hosters”。这句话基本准确：多页面、状态检查、widgets、主题、图标、认证、SSO、配置编辑器、云备份、多语言、PWA，它都想覆盖。
+
+![Dashy dashboard screenshot](/img/selfhosted-dashboard-roundup/dashy.png)
+
+### 它解决了什么
+
+Dashy 适合把 homepage 当成一个“可配置产品”来做：
+
+- 多页面：可以把家庭、工作、网络、媒体、开发等拆成不同页。
+- 状态检查：对服务 URL 或 host 做 up/down 检查。
+- Widgets：显示动态内容和服务信息。
+- 主题和 CSS：内置多主题，也可以自定义样式。
+- 图标系统：Font Awesome、homelab icons、favicon、emoji、图片都能用。
+- 认证：支持多用户权限和 SSO。
+- 配置：核心是 `user-data/conf.yml`，也可以在 UI 里编辑保存。
+
+它比 Homer 重很多，也比 Homepage 更“万金油”。如果你喜欢把入口页打磨成个人 cockpit，Dashy 会很有吸引力。
+
+### 怎么部署
+
+最小 Docker 运行：
+
+```bash
+docker run -d \
+  -p 4000:8080 \
+  -v /srv/dashy/user-data:/app/user-data \
+  --name dashy \
+  --restart=always \
+  lissy93/dashy:latest
+```
+
+挂载的 `/app/user-data` 至少需要 `conf.yml`。它还可以放自定义图标、字体、CSS 或拆分配置。
+
+### 适合和不适合
+
+| 维度 | 判断 |
+| --- | --- |
+| 适合 | 想要多页面、状态检查、主题、认证、UI 配置编辑器 |
+| 不适合 | 只想要最轻的静态链接页，或者不想维护较多配置项 |
+| 注意 | 功能很多，第一版不要一次性全开；先做服务入口，再逐步加 widgets 和认证 |
+
+我的判断：**Dashy 适合“愿意花时间装修 dashboard”的人；如果只想快速稳定，可能会觉得它太丰富**。
+
+## Homer：越简单越可靠
+
+Repo: [bastienwirtz/homer](https://github.com/bastienwirtz/homer)
+
+Homer 是最克制的一个。它是一个完整静态 HTML/JS dashboard，用一个 YAML 配置文件维护服务入口。官方介绍里那句 dead simple 很贴切：轻、快、低维护、PWA、smart cards。
+
+![Homer demo screenshot](/img/selfhosted-dashboard-roundup/homer.png)
+
+### 它解决了什么
+
+Homer 不是要做所有事情。它更像一个稳定、干净、不会频繁变复杂的 startpage：
+
+- 单个 YAML 配置：`assets/config.yml`。
+- 静态页面：可以用 Docker 跑，也可以放在任何 HTTP server 后面。
+- 快速入口：分组、图标、链接、描述。
+- Smart cards：可展示少量动态状态或动作。
+- PWA：可以作为手机/桌面入口使用。
+
+它的价值是“不会成为另一个需要管理的大系统”。如果你的需求只是打开浏览器看到一组服务链接，Homer 反而是最合适的。
+
+### 怎么部署
+
+Docker Compose 形态很简单：
+
+```yaml
+services:
+  homer:
+    image: b4bz/homer
+    container_name: homer
+    volumes:
+      - /srv/homer/assets:/www/assets
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+```
+
+它会从挂载目录读取配置和资源。Homer 不能直接用 `file://` 打开，需要由 HTTP server 提供页面。
+
+### 适合和不适合
+
+| 维度 | 判断 |
+| --- | --- |
+| 适合 | 只要链接入口、轻量、静态、低维护 |
+| 不适合 | 需要大量集成、复杂认证、多用户管理、复杂 widgets |
+| 注意 | 暴露到公网前仍然需要反代认证或内网/VPN 控制，不要因为它是静态页就忽略入口安全 |
+
+我的判断：**Homer 是“够用就好”的最佳答案，尤其适合小机器或长期稳定入口页**。
+
+## Glance：把首页变成每日信息台
+
+Repo: [glanceapp/glance](https://github.com/glanceapp/glance)
+
+Glance 和前面四个不太一样。它不是主要围绕“服务入口”设计，而是围绕“信息流”设计：RSS、Reddit、Hacker News、天气、YouTube、Twitch、市场价格、Docker 容器状态、服务器指标、custom widgets，都可以组合成一个轻量 dashboard。
+
+![Glance dashboard screenshot](/img/selfhosted-dashboard-roundup/glance.png)
+
+### 它解决了什么
+
+如果你希望浏览器首页不只是“点服务”，而是每天扫一眼就知道最近发生了什么，Glance 会更合适：
+
+- RSS feeds：可以聚合博客、selfh.st、技术站点、个人订阅。
+- 社区信息：Reddit、Hacker News、Lobsters 等。
+- 影音和直播：YouTube channel uploads、Twitch channels。
+- 实用信息：天气、市场价格、日历、搜索。
+- 运维信息：Docker containers status、server stats、monitor widgets。
+- 轻量实现：低内存、少依赖、minimal vanilla JS、单个小二进制或 Docker 容器。
+
+Homepage 也可以放信息 widgets，但 Glance 的核心就是“信息编排”。它更像一张个人 morning dashboard。
+
+### 怎么部署
+
+官方推荐用 Docker Compose 模板：
+
+```bash
+mkdir glance
+cd glance
+# 获取官方 compose/config 模板后，编辑 config/home.yml 和 config/glance.yml
+docker compose up -d
+```
+
+手动 Compose 也可以，核心是把配置目录挂进去：
+
+```yaml
+services:
+  glance:
+    image: glanceapp/glance
+    volumes:
+      - ./config:/app/config
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+```
+
+也可以直接用 release binary，例如通过 `--config /etc/glance.yml` 指向配置文件。
+
+### 适合和不适合
+
+| 维度 | 判断 |
+| --- | --- |
+| 适合 | RSS 重度用户、想看 daily briefing、希望一个页面聚合资讯和轻量运维状态 |
+| 不适合 | 只想做应用图标入口，或者希望拖拽 UI 管理 |
+| 注意 | 信息源越多，页面越依赖外部网络质量；要给 RSS/API 失败留心理预期 |
+
+我的判断：**Glance 不只是 dashboard，更像自托管版的个人信息中枢**。
+
+## 怎么选
+
+如果只按用户画像选，我会这样排：
+
+| 你的情况 | 先试 |
+| --- | --- |
+| Docker 服务已经很多，需要统一入口和状态 | Homepage |
+| 想要漂亮 UI、拖拽配置、内置认证 | Homarr |
+| 想做复杂 startpage，多页面、主题、权限都要 | Dashy |
+| 想要最少维护的静态服务入口 | Homer |
+| 想要 RSS / 天气 / GitHub / Docker 状态的信息流 | Glance |
+
+如果按实际落地顺序，我建议这样：
+
+1. 先用 `Homer` 或 `Homepage` 建最小入口，不要一开始就把 dashboard 做成大工程。
+2. 如果服务逐渐增多，再引入 `Homepage` 的 Docker labels 或 `Homarr` 的 Web 管理。
+3. 如果你把首页当作每日工作台，再加 `Glance`。
+4. 如果你明确需要多页面、主题、权限、状态检查、UI 编辑器，再上 `Dashy`。
+
+## 一个现实的 homelab 组合
+
+我不会强行让一个工具做所有事情。更自然的组合是：
+
+```text
+Caddy / Nginx Proxy Manager
+  -> 负责 HTTPS、域名、认证或访问控制
+
+Homepage 或 Homarr
+  -> 负责服务入口、Docker 状态、常用 app widgets
+
+Glance
+  -> 负责 RSS、天气、GitHub releases、server stats、daily briefing
+
+Vaultwarden / Immich / Jellyfin / Gitea / Nextcloud ...
+  -> 具体业务服务
+```
+
+也就是说，dashboard 最好是“入口层”，不是“安全边界”。真正的认证、TLS、暴露策略仍然应该放在反向代理、VPN、SSO 或内网访问控制里。
+
+## 部署前检查清单
+
+在把 dashboard 暴露给自己或家人使用前，建议检查：
+
+- 域名和 TLS：是否走统一反代，证书是否自动续期。
+- 认证：公网可访问时，是否有 Basic Auth、OIDC、Authelia、Pomerium、Tailscale/VPN 等保护。
+- Secrets：API key 是否只在服务端或配置文件里，不能出现在公开仓库和截图里。
+- Docker socket：如果挂载 `/var/run/docker.sock`，是否真的需要，是否只读，是否知道风险。
+- 备份：配置目录、数据库目录、上传的图标和自定义 CSS 是否纳入备份。
+- 升级：是否 pin 版本，是否有回滚方式。
+
+## 最后结论
+
+我的优先级是：
+
+- **首选 Homepage**：Docker homelab 的综合入口最均衡。
+- **首选 Homarr**：如果你想要 Web UI、拖拽和内置认证。
+- **保留 Homer**：当你只想要一个长期稳定的静态入口页。
+- **搭配 Glance**：当你想把首页变成信息流。
+- **再考虑 Dashy**：当你明确需要它那一整套可定制能力。
+
+这五个项目没有绝对胜负，它们的区别主要是“你想让 dashboard 承担多少职责”。越靠近入口页，越应该简单；越靠近日常工作台，越可以丰富。但无论选哪一个，第一步都应该是：先把入口跑起来，再慢慢加状态、widgets 和权限。
