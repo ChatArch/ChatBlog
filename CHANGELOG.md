@@ -16,6 +16,7 @@
 - Added a screenshot-rich survey of deployable open-source video summarization and video knowledge-base projects.
 - Added an illustrated Discord vs self-hosted Revolt/Stoat explainer with demo deployment notes and account/invite caveats.
 - Added a research-style self-hosted dashboard roundup covering Homepage, Homarr, Dashy, Homer, and Glance with screenshots and deployment notes.
+- Added a practical Glance configuration guide covering service widgets, RSS/Atom feeds, the full widget catalog, dependency boundaries, and a recommended first dashboard.
 
 ### Changed
 
