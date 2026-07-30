@@ -1,0 +1,567 @@
+---
+title: "Glance 配置指南：怎么添加服务、RSS，以及它到底能放什么"
+date: 2026-07-29
+slug: glance-dashboard-widgets-rss-services-guide
+tags: [glance, self-hosted, dashboard, rss, homelab]
+description: 从 page、column、widget 的 YAML 结构出发，说明 Glance 如何添加服务入口、健康状态、服务器指标、RSS 订阅，以及 27 类当前可用 widgets。
+---
+
+# Glance 配置指南：怎么添加服务、RSS，以及它到底能放什么
+
+在上一篇 [自托管 Dashboard 选型](/ChatBlog/blog/selfhosted-dashboard-homepage-homarr-dashy-homer-glance) 里，我们把 Glance 归类为“信息聚合型 dashboard”：它既能放服务入口，也能看服务状态、服务器资源、RSS、天气、GitHub release、视频和社区信息。
+
+但选中 Glance 之后，真正的问题才开始：**它到底怎么加东西？一个服务应该用哪个 widget？RSS 能不能订阅多个来源？除了官方示例里的天气和 Hacker News，它还能放什么？**
+
+这篇就从实际配置出发回答这些问题。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+Glance 不是拖拽式 dashboard。它把页面写成 YAML：先定义 `page`，再划分 `columns`，最后往每一列的 `widgets` 里添加内容。服务入口用 `bookmarks`，可用性检查用 `monitor`，主机资源用 `server-stats`，RSS/Atom 用 `rss`，特殊服务数据用 `custom-api`。
+:::
+
+## 我们实际部署出来的样子
+
+下面是 ChatArch 当前部署的 Glance。它已经组合了日历、服务器资源、服务状态、搜索、Hacker News / Lobsters、RSS、天气、书签、GitHub repository 和 releases。
+
+![ChatArch Glance dashboard](/img/glance-dashboard-guide/chatarch-glance.png)
+
+公开页面可以直接查看：[glance.public.wzhecnu.cn](https://glance.public.wzhecnu.cn/)。
+
+这张页面没有专门的“后台管理系统”。它基本都来自一个 YAML 配置文件。
+
+## 先理解三层结构：page → columns → widgets
+
+Glance 的核心结构并不复杂：
+
+```yaml
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: calendar
+
+      - size: full
+        widgets:
+          - type: rss
+            feeds:
+              - url: https://selfh.st/rss/
+
+      - size: small
+        widgets:
+          - type: weather
+            location: Shanghai, China
+```
+
+可以把它理解成：
+
+```text
+一个 Glance 实例
+  └── 一个或多个 page
+        └── 每个 page 有一列或多列 columns
+              └── 每一列按顺序放多个 widgets
+```
+
+几个关键点：
+
+- `pages` 可以有多页，例如 Home、Services、News、Work。
+- `columns` 常用 `small` 和 `full` 两种宽度。
+- `widgets` 按 YAML 里的顺序从上到下显示。
+- 每个 widget 都必须有 `type`，其余配置由类型决定。
+- `group` 可以把多个 widget 变成 tabs。
+- `split-column` 可以让 full column 里的 widgets 横向并排，窄屏时会自动折回单列。
+
+因此，“添加东西”本质上就是：在目标 column 的 `widgets:` 下增加一个 `- type: ...` 配置块。
+
+## 添加一个 widget 的标准流程
+
+### 1. 找到目标 column
+
+先决定它应该放在哪一页、哪一列。一般可以这样分：
+
+- 左侧 small：日历、服务器状态、服务健康检查。
+- 中间 full：RSS、视频、社区信息、custom API。
+- 右侧 small：天气、书签、releases、repository。
+
+### 2. 增加 type 和数据源
+
+例如增加上海天气：
+
+```yaml
+- type: weather
+  location: Shanghai, China
+  units: metric
+  hour-format: 24h
+```
+
+增加之后保存文件。Glance 支持配置文件自动重载，通常不需要重启服务。
+
+### 3. 修改前先验证
+
+单二进制部署可以运行：
+
+```bash
+glance -config /path/to/glance.yml config:validate
+```
+
+如果服务已经以合法配置启动，后面某次修改写错了，Glance 会在日志里报告错误，并继续使用上一份合法配置。修正并再次保存后，它会继续加载新配置。
+
+### 4. 给外部数据设置 cache
+
+RSS、GitHub、Reddit、API 等远程数据不适合每次刷新页面都重新拉取：
+
+```yaml
+- type: rss
+  cache: 30m
+  feeds:
+    - url: https://selfh.st/rss/
+```
+
+常用单位是 `s`、`m`、`h`、`d`，例如 `30s`、`5m`、`2h`、`1d`。
+
+:::caution 不要频繁保存测试
+Glance 重载配置时会清理内存 cache。连续频繁修改可能让 RSS 或 GitHub API 被短时间重复请求，从而触发限流。
+:::
+
+## 服务类：一个“服务”其实可以添加成很多种东西
+
+用户最容易困惑的是：Jellyfin、Gitea、Vaultwarden、Immich 这种服务，到底应该怎么放进 Glance？
+
+答案不是只有一种。你想看到什么，决定了应该选哪个 widget。
+
+| 你想看到什么 | 使用的 widget | 是否需要凭据或额外权限 |
+| --- | --- | --- |
+| 服务名称、图标、链接 | `bookmarks` | 不需要 |
+| 服务是否能访问、响应耗时 | `monitor` | 通常不需要；受保护端点可能需要 Basic Auth |
+| 本机 CPU、内存、磁盘 | `server-stats` | 本机不需要；远程主机需要 Glance Agent |
+| Docker 容器运行状态 | `docker-containers` | 需要 Docker socket |
+| 应用有没有新版本 | `releases` | 可匿名；大量 GitHub 请求建议 token |
+| GitHub repo、PR、issue、commit | `repository` | 可匿名；高频请求建议 token |
+| AdGuard / Pi-hole / Technitium 统计 | `dns-stats` | 需要相应账号、密码或 token |
+| changedetection.io watches | `change-detection` | 通常需要 API token |
+| 任意服务自己的 JSON API | `custom-api` | 取决于 API，通常需要 token 和模板 |
+| 第三方开发的 Glance widget | `extension` | 取决于扩展；必须信任扩展来源 |
+
+### 最小服务入口：bookmarks
+
+如果只想把服务当链接入口，`bookmarks` 最简单：
+
+```yaml
+- type: bookmarks
+  groups:
+    - title: Services
+      same-tab: true
+      links:
+        - title: Gitea
+          url: https://gitea.example.com/
+          description: Git service
+          icon: si:gitea
+
+        - title: Immich
+          url: https://photos.example.com/
+          description: Photos and videos
+          icon: si:immich
+
+        - title: Vaultwarden
+          url: https://vault.example.com/
+          description: Password manager
+          icon: si:bitwarden
+```
+
+图标可以来自多个图标库：
+
+- `si:`：Simple Icons。
+- `sh:`：selfh.st icons。
+- `di:`：Dashboard Icons。
+- `mdi:`：Material Design Icons。
+- 也可以直接填写图片 URL，或通过 `assets-path` 自托管图标。
+
+### 看服务是否在线：monitor
+
+如果希望服务旁边显示 online / error 和延迟，用 `monitor`：
+
+```yaml
+- type: monitor
+  title: Service health
+  cache: 1m
+  sites:
+    - title: Gitea
+      url: https://gitea.example.com/
+      icon: si:gitea
+      same-tab: true
+
+    - title: Immich
+      url: https://photos.example.com/
+      icon: si:immich
+      timeout: 5s
+
+    - title: Protected service
+      url: https://service.example.com/
+      basic-auth:
+        username: ${MONITOR_USER}
+        password: ${MONITOR_PASSWORD}
+```
+
+`monitor` 会由 Glance 服务端发出 GET 请求。响应为 HTTP 200 时认为正常，并显示请求耗时。
+
+常用补充配置：
+
+- `check-url`：点击跳转到主页面，但用另一个 health URL 做检查。
+- `alt-status-codes`：把 204、302、403 等指定状态也视为正常。
+- `timeout`：设置检查超时。
+- `allow-insecure`：允许自签证书；除非明确理解风险，否则不要开。
+- `show-failing-only`：只显示失败服务。
+
+一个现实问题是：有些登录页会返回 302，有些接口会返回 401/403，这不一定代表服务挂了。这时应优先找真正的 `/health`、`/api/version` 等端点，或者显式配置 `alt-status-codes`。
+
+### 看机器资源：server-stats
+
+Glance 能展示自身所在主机的 CPU、内存和磁盘：
+
+```yaml
+- type: server-stats
+  servers:
+    - type: local
+      name: Homelab
+      hide-swap: true
+      mountpoints:
+        "/":
+          name: Root
+        "/srv":
+          name: Data
+```
+
+如果要看另一台机器，需要在远端运行仍处于开发阶段的 Glance Agent，再把 server 类型设为 `remote`。所以第一版建议先看 Glance 所在主机，不要一上来就把它当完整监控系统。
+
+### 看 Docker 容器：docker-containers
+
+```yaml
+- type: docker-containers
+  title: Containers
+  running-only: false
+  format-container-names: true
+```
+
+这个 widget 需要访问 Docker socket，默认路径是 `/var/run/docker.sock`。它可以通过 container labels 设置名称、图标、URL、描述、分类和父子关系。
+
+但它不是 Glance 的前提：**Glance 本身完全可以用单二进制运行，不装 Docker；只有你想读取 Docker 容器状态时才需要 Docker socket。**
+
+如果你的目标是 user-level、非 Docker 部署，完全可以跳过这个 widget，用 `monitor` 和 `server-stats` 覆盖大部分日常需要。
+
+### 跟踪版本：releases
+
+```yaml
+- type: releases
+  title: Service releases
+  cache: 6h
+  show-source-icon: true
+  repositories:
+    - glanceapp/glance
+    - gethomepage/homepage
+    - gitlab:inkscape/inkscape
+    - codeberg:redict/redict
+    - dockerhub:nginx:stable-alpine
+```
+
+它支持 GitHub、GitLab、Codeberg 和 Docker Hub。GitHub 匿名 API 限额较低，如果 repo 多或 cache 太短，可以使用只读 token：
+
+```yaml
+- type: releases
+  token: ${GITHUB_TOKEN}
+  repositories:
+    - glanceapp/glance
+```
+
+不要把 token 明文提交到公开仓库。Glance 支持在配置里引用 `${ENV_VAR}`。
+
+### 看项目动态：repository
+
+```yaml
+- type: repository
+  repository: glanceapp/glance
+  pull-requests-limit: 5
+  issues-limit: 3
+  commits-limit: 3
+```
+
+这会把 repo 基本信息、近期 PR、issue 和 commit 放到 dashboard。它适合跟踪你维护的项目，但同样受 GitHub 匿名 API 限流影响。
+
+### 没有原生集成怎么办：custom-api
+
+只要服务能返回 JSON，就可以用 `custom-api` 抽取字段并通过 Go template 渲染：
+
+```yaml
+- type: custom-api
+  title: Service summary
+  cache: 5m
+  url: https://service.example.com/api/status
+  headers:
+    Authorization: Bearer ${SERVICE_TOKEN}
+  template: |
+    <div class="flex justify-between">
+      <span>Status</span>
+      <strong>{{ .JSON.String "status" }}</strong>
+    </div>
+```
+
+这是 Glance 扩展性最强的能力，但也最需要技术基础：你需要理解服务 API、JSON 路径、HTML/CSS 和 Go template。
+
+## RSS：支持，而且是 Glance 最成熟的核心能力之一
+
+Glance 的 `rss` widget 同时支持 RSS 和 Atom，可以把多个 feed 合并到一个组件里：
+
+```yaml
+- type: rss
+  title: Self-hosted / Engineering
+  style: detailed-list
+  cache: 30m
+  limit: 12
+  collapse-after: 6
+  feeds:
+    - url: https://selfh.st/rss/
+      title: selfh.st
+      limit: 6
+
+    - url: https://www.jeffgeerling.com/blog.xml
+      title: Jeff Geerling
+      limit: 3
+
+    - url: https://ciechanow.ski/atom.xml
+      title: Ciechanow
+      limit: 3
+```
+
+### RSS 可以调什么
+
+| 配置 | 作用 |
+| --- | --- |
+| `style` | 选择显示样式 |
+| `limit` | 整个 widget 最多显示多少篇 |
+| feed 内的 `limit` | 限制某一个来源占多少篇 |
+| `collapse-after` | 超过多少篇后折叠到 Show more |
+| `preserve-order` | 保留 feed 自己的顺序，而不是重新混排 |
+| `single-line-titles` | 单行截断标题 |
+| `hide-categories` | detailed-list 下隐藏分类 |
+| `hide-description` | detailed-list 下隐藏摘要 |
+| `headers` | 为需要特殊 User-Agent 或认证的 feed 添加请求头 |
+| `item-link-prefix` | 为返回相对链接的 feed 手动补域名 |
+
+当前 RSS 展示样式包括：
+
+- `vertical-list`：紧凑列表，small / full column 都适用。
+- `detailed-list`：有摘要和更多上下文，适合 full column。
+- `horizontal-cards`：横向卡片，适合 full column。
+- `horizontal-cards-2`：另一种大卡片布局，适合 full column。
+
+如果一个高频 feed 总是把其他来源挤下去，给每个 feed 单独设置 `limit`，通常比只设置总 `limit` 更有效。
+
+### 私有 RSS 怎么办
+
+如果 RSS 服务支持请求头认证，可以这样写：
+
+```yaml
+- type: rss
+  feeds:
+    - url: https://rss.example.com/private.xml
+      headers:
+        Authorization: Bearer ${RSS_TOKEN}
+        User-Agent: Glance
+```
+
+Glance 是在服务端抓取 feed，不是浏览器直接请求。因此这个 feed 必须能从运行 Glance 的机器访问；同时要保护环境变量和配置文件权限。
+
+## Glance 目前到底能添加哪些东西
+
+按 Glance v0.8.5 文档，当前有 27 类常用 widget / 布局组件，另有一个已废弃的 legacy calendar。按用途整理如下。
+
+### 资讯和内容流
+
+| Widget | 能显示什么 |
+| --- | --- |
+| `rss` | 多个 RSS / Atom feed |
+| `videos` | YouTube channel 或 playlist 的最新视频 |
+| `hacker-news` | Hacker News 帖子 |
+| `lobsters` | Lobsters 帖子，可按 tags 筛选 |
+| `reddit` | subreddit 内容和缩略图 |
+| `twitch-channels` | 指定 Twitch channel 的直播状态 |
+| `twitch-top-games` | Twitch 热门游戏 |
+
+### 服务与运维
+
+| Widget | 能显示什么 |
+| --- | --- |
+| `bookmarks` | 分组服务链接、图标和描述 |
+| `monitor` | 服务可用性和响应耗时 |
+| `server-stats` | 本地或远程主机 CPU、内存、磁盘 |
+| `docker-containers` | Docker 容器状态、层级和分类 |
+| `releases` | GitHub / GitLab / Codeberg / Docker Hub 新版本 |
+| `repository` | GitHub repo、PR、issue、commit |
+| `dns-stats` | AdGuard Home、Pi-hole、Technitium DNS 统计 |
+| `change-detection` | changedetection.io watches |
+
+### 日常工作台
+
+| Widget | 能显示什么 |
+| --- | --- |
+| `search` | 搜索框、自定义搜索引擎和 bangs |
+| `weather` | Open-Meteo 天气和趋势 |
+| `to-do` | 浏览器 localStorage 中的待办列表 |
+| `calendar` | 月历 |
+| `clock` | 当前时间和多个时区 |
+| `markets` | Yahoo Finance 市场价格和 21 日小图 |
+
+`calendar-legacy` 仍在文档里，但已标为 deprecated，不建议新配置继续使用。
+
+### 编排和自定义能力
+
+| Widget | 能做什么 |
+| --- | --- |
+| `group` | 把多个 widgets 放进 tabs |
+| `split-column` | 把 full column 拆成并排子列 |
+| `custom-api` | 请求 JSON API，再用 Go template 渲染 |
+| `extension` | 加载第三方 Glance extension |
+| `iframe` | 嵌入允许被 iframe 展示的外部页面 |
+| `html` | 嵌入自定义 HTML |
+
+这里需要特别注意：
+
+- `iframe` 会受目标网站的 `X-Frame-Options` / CSP 限制，不是所有页面都能嵌入。
+- `html` 适合少量自定义内容，不等于完整前端框架。
+- `extension` 的危险 HTML 选项只应对完全可信的扩展开启。
+- `custom-api` 的 token 应来自环境变量，不应写进公开 YAML。
+
+## 推荐的第一版配置
+
+如果你的重点是“服务 + RSS”，不要一次把 27 种 widget 全开。第一版建议只放六类：
+
+```yaml
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: server-stats
+          - type: monitor
+            title: Services
+            sites:
+              - title: Gitea
+                url: https://gitea.example.com/
+                icon: si:gitea
+              - title: Immich
+                url: https://photos.example.com/
+                icon: si:immich
+
+      - size: full
+        widgets:
+          - type: search
+          - type: rss
+            title: Daily reading
+            style: detailed-list
+            cache: 30m
+            limit: 15
+            collapse-after: 7
+            feeds:
+              - url: https://selfh.st/rss/
+                limit: 8
+              - url: https://www.jeffgeerling.com/blog.xml
+                limit: 4
+
+      - size: small
+        widgets:
+          - type: weather
+            location: Shanghai, China
+            units: metric
+            hour-format: 24h
+
+          - type: bookmarks
+            groups:
+              - title: Quick links
+                links:
+                  - title: Gitea
+                    url: https://gitea.example.com/
+                    icon: si:gitea
+
+          - type: releases
+            cache: 6h
+            repositories:
+              - glanceapp/glance
+              - gethomepage/homepage
+```
+
+这个配置已经覆盖了：
+
+- 服务入口。
+- 服务健康状态。
+- 本机资源。
+- RSS 阅读。
+- 搜索。
+- 天气。
+- 版本更新。
+
+等它稳定使用一段时间，再根据真实需求加 GitHub repository、DNS stats、Docker containers 或 custom API。
+
+## 哪些能力需要额外依赖
+
+| 能力 | 额外条件 |
+| --- | --- |
+| 普通 bookmarks | 无 |
+| monitor 公共 URL | 无 |
+| monitor 私有 URL | Basic Auth、内网可达或合适的 health endpoint |
+| RSS / HN / Reddit / YouTube | Glance 服务器能访问外网来源 |
+| GitHub repository / releases | 少量可匿名；高频或大量 repo 建议只读 token |
+| Docker containers | Docker socket 或受控的 socket proxy |
+| Remote server stats | 远端 Glance Agent |
+| DNS stats | AdGuard / Pi-hole / Technitium 凭据 |
+| ChangeDetection.io | 实例地址和 API token |
+| Custom API | 可访问的 JSON API、模板，以及可能的 token |
+| iframe | 目标页面允许被嵌入 |
+
+所以 Glance “能放很多东西”，不代表第一版就该接很多权限。先用不需要 secrets 的 widgets，把页面结构跑顺，再逐个引入受保护的数据源。
+
+## 反向代理和公网入口要注意什么
+
+如果 Glance 放在 Nginx 等反向代理后面，配置里应开启：
+
+```yaml
+server:
+  host: 127.0.0.1
+  port: 8080
+  proxied: true
+```
+
+`proxied: true` 会让 Glance 使用 `X-Forwarded-*` 获取原始请求信息。Nginx 也要正确传递 `X-Forwarded-For`、`X-Forwarded-Proto` 和 `Host`。
+
+如果页面暴露到公网，还应该考虑：
+
+- Glance 自带 username/password authentication，密码可以保存为 hash。
+- 也可以在反代层接 SSO、Basic Auth、VPN 或访问控制。
+- RSS URL、API endpoint、monitor 地址本身可能泄露内部服务结构。
+- 不要把 token、密码、Docker socket 或内部 API 当成无风险配置。
+
+## 最后结论
+
+Glance 的强项不是“用鼠标创建卡片”，而是把一张首页写成可读、可版本控制、能自动重载的配置。
+
+如果你最关心服务类，优先理解这条路径：
+
+```text
+bookmarks
+  -> 服务入口
+
+monitor
+  -> 服务是否在线
+
+server-stats / docker-containers
+  -> 机器和运行状态
+
+releases / repository
+  -> 版本和项目动态
+
+custom-api
+  -> 原生 widget 没覆盖的数据
+```
+
+如果你最关心 RSS，Glance 不只是“支持 RSS”，而是把多 feed 聚合、来源限额、cache、折叠和四种布局都做成了核心能力。
+
+最实际的搭建顺序是：**先放服务入口和 monitor，再加 RSS、搜索、天气和 releases；只有当这些不够时，才进入 Docker socket、remote agent、DNS API 和 custom-api。**
