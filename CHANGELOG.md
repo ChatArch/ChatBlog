@@ -29,5 +29,6 @@
 
 - Replaced the placeholder Python package scaffold with a static site source tree.
 - Updated the Docusaurus canonical site URL to the ChatArch shared Pages domain.
+- Clarified the CCF deadline guide's counting units, source hierarchy, and submission terminology.
 
 ### Fixed
