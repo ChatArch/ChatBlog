@@ -4,10 +4,245 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Fri, 31 Jul 2026 08:30:00 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 31 Jul 2026 09:10:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[Tau Ceti：人类写 roadmap，AI 真的能维护一座数学库吗？]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system</guid>
+            <pubDate>Fri, 31 Jul 2026 09:10:00 GMT</pubDate>
+            <description><![CDATA[本地拉取 Tau Ceti 的五个核心仓库与运行链条，拆解 human roadmap、AI author/review、sandboxed CI、公开 review archive 和 17 万行 Lean 背后的真实能力与风险。]]></description>
+            <content:encoded><![CDATA[<p>2026 年 6 月，Tau Ceti 还是一个新仓库。到 7 月 31 日的固定快照，它已经有 <strong>932 个 Lean 源文件、171,565 行代码和 1,336 个已合并 PR</strong>。在最忙的一天，100 个 PR 进入 <code>main</code>。</p>
+<p>如果只看这些数字，Tau Ceti 很容易被概括成“AI 正在复制 Mathlib”。但我把它的五个组织仓库、Worker、review archive 和依赖更新链条全部拉到本地后，发现真正值得研究的并不是 AI 写 Lean 有多快，而是它怎样重组了一座数学库的生产关系：</p>
+<blockquote>
+<p><strong>人类写 roadmap 和 rubric，AI 写代码、修代码、审代码；Lean kernel 与 trusted CI 负责机械裁决；每一次 review 都成为公开数据。</strong></p>
+</blockquote>
+<p>这不是一个更大的 theorem-proving benchmark，而是一套正在运行的 formal-library operating system。</p>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>关于快照</div><div class="admonitionContent_BuS1"><p>本文的代码与 build 结论固定在 <a href="https://github.com/TauCetiProject/TauCeti/commit/a3913fd9111b851af857f720b4ce6721e6634183" target="_blank" rel="noopener noreferrer" class=""><code>TauCeti@a3913fd</code></a>，GitHub PR 数据抓取于 2026-07-31 稍晚时间。项目更新极快，因此线上计数会继续增长。所有百分比和规模都描述这个快照，而不是永久状态。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先纠正ai-mathlib这个叫法">先纠正“AI Mathlib”这个叫法<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%85%88%E7%BA%A0%E6%AD%A3ai-mathlib%E8%BF%99%E4%B8%AA%E5%8F%AB%E6%B3%95" class="hash-link" aria-label="先纠正“AI Mathlib”这个叫法的直接链接" title="先纠正“AI Mathlib”这个叫法的直接链接" translate="no">​</a></h2>
+<p>Tau Ceti 的 <a href="https://github.com/TauCetiProject/TauCeti/blob/a3913fd9111b851af857f720b4ce6721e6634183/README.md" target="_blank" rel="noopener noreferrer" class="">README</a> 说得很清楚：它要 formalize 尽可能多的数学，但<strong>不打算取代 Mathlib 的 human curation、clarity 与 understanding</strong>。</p>
+<p>它依赖 Mathlib，跟随 Mathlib 的命名和设计决策，也不会自动把自己的产出反向推回 Mathlib。Mathlib 贡献者可以挑选、修改、消化其中的内容，再决定是否 upstream。</p>
+<p>所以四种说法里，只有两种准确：</p>
+<table><thead><tr><th>说法</th><th>判断</th></tr></thead><tbody><tr><td>“AI 在写一座大型 Lean 数学库”</td><td>是，按项目贡献政策，<code>TauCeti/</code> 由 AI author agents 维护</td></tr><tr><td>“人类已经退出 formalization”</td><td>否，人类控制 roadmap、rubric、CI policy、GitHub 权限与异常处理</td></tr><tr><td>“Tau Ceti 是 Mathlib 的替代品”</td><td>否，它是 Mathlib downstream，并把 Mathlib 当作设计权威</td></tr><tr><td>“Tau Ceti 在实验 AI 能否运营一座数学库”</td><td>是，这才是项目的核心问题</td></tr></tbody></table>
+<p>一个更准确的结构是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Mathlib             提供经过人类长期打磨的共同语言与设计方向</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Tau Ceti            用 AI 高速扩展可复用的 downstream substrate</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">frontier projects   从两者取用材料，继续走向研究前沿</span><br></div></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="五个仓库不是拆包而是-trust-architecture">五个仓库不是拆包，而是 trust architecture<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E4%BA%94%E4%B8%AA%E4%BB%93%E5%BA%93%E4%B8%8D%E6%98%AF%E6%8B%86%E5%8C%85%E8%80%8C%E6%98%AF-trust-architecture" class="hash-link" aria-label="五个仓库不是拆包，而是 trust architecture的直接链接" title="五个仓库不是拆包，而是 trust architecture的直接链接" translate="no">​</a></h2>
+<p>Tau Ceti 根 README 仍写着 “three repositories”，但实时 organization 已经有五个：</p>
+<ol>
+<li class=""><a href="https://github.com/TauCetiProject/TauCeti" target="_blank" rel="noopener noreferrer" class=""><code>TauCeti</code></a>：AI-authored Lean mathematics 与 trusted CI 外壳；</li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiRoadmap" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiRoadmap</code></a>：human-controlled mathematical specifications；</li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiReview" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiReview</code></a>：human-written rubrics、review engine 与 merge policy；</li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiData" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiData</code></a>：每次 AI review 的 durable archive 与 evaluation corpus；</li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiProgress" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiProgress</code></a>：从 git、PR 与 doc-gen 事实生成 roadmap status/progress。</li>
+</ol>
+<p>此外，<a href="https://github.com/kim-em/TauCetiWorker" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiWorker</code></a> 是实际驱动 author、fix、review 和 Mathlib bump 的 operator-side worker。</p>
+<!-- -->
+<p>关键点不是“microservices 比 monorepo 好”，而是<strong>生成代码不能同时定义自己的任务、修改自己的评分标准、选择自己的证据和批准自己的 merge</strong>。</p>
+<p>仓库分离把这些权力拆开了。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="roadmap人类不再逐行写-proof而是写可执行规格">Roadmap：人类不再逐行写 proof，而是写可执行规格<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#roadmap%E4%BA%BA%E7%B1%BB%E4%B8%8D%E5%86%8D%E9%80%90%E8%A1%8C%E5%86%99-proof%E8%80%8C%E6%98%AF%E5%86%99%E5%8F%AF%E6%89%A7%E8%A1%8C%E8%A7%84%E6%A0%BC" class="hash-link" aria-label="Roadmap：人类不再逐行写 proof，而是写可执行规格的直接链接" title="Roadmap：人类不再逐行写 proof，而是写可执行规格的直接链接" translate="no">​</a></h2>
+<p>Tau Ceti 的 roadmap 不是一句“请形式化 genus theory”。一个合格 roadmap 要交代：</p>
+<ul>
+<li class="">Mathlib 已经有什么；</li>
+<li class="">缺失的对象和 theorem 是什么；</li>
+<li class="">依赖顺序如何；</li>
+<li class="">应采用什么 generality 与 convention；</li>
+<li class="">哪些已有代码可以迁移，license/provenance 是什么；</li>
+<li class="">哪些 concrete examples 能发现 vacuous definition；</li>
+<li class="">推荐的 Lean signature 长什么样。</li>
+</ul>
+<p>以 <a href="https://github.com/TauCetiProject/TauCetiRoadmap/blob/5e1441112a2bf60b9bb19bd0df3800d95d98977f/TauCetiRoadmap/Multiquadratic/README.md" target="_blank" rel="noopener noreferrer" class=""><code>Multiquadratic</code></a> 为例，它把工作拆成：</p>
+<ol>
+<li class="">multiquadratic field 的 degree 与 Galois group；</li>
+<li class="">prime-splitting law；</li>
+<li class=""><code>Cl/Cl²</code> 这个 elementary-2 quotient；</li>
+<li class="">genus field 与 2-rank theorem。</li>
+</ol>
+<p>它还特别警告：</p>
+<ul>
+<li class="">characteristic 2 会让整个叙事失效；</li>
+<li class="">ramification at 2 需要 prime discriminants，而不只是 squarefree radicands；</li>
+<li class=""><code>Cl/Cl²</code> 不是 <code>Cl[2]</code>；</li>
+<li class="">实二次域的公式需要 narrow class group。</li>
+</ul>
+<p>配套的 <a href="https://github.com/TauCetiProject/TauCetiRoadmap/blob/5e1441112a2bf60b9bb19bd0df3800d95d98977f/TauCetiRoadmap/Multiquadratic/Suggested.lean" target="_blank" rel="noopener noreferrer" class=""><code>Suggested.lean</code></a> 用 <code>sorry</code> 写出 target signatures，但文件开头明确说：Markdown 才是 specification，Lean signatures 只是让 author 与 reviewer 对目标形状收敛。</p>
+<p>这揭示了新的人工瓶颈：<strong>当 proof 变便宜，最难的工作变成把数学领域压缩成不会把 AI 引向错误 abstraction 的 roadmap。</strong></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="worker不是一个超级-agent而是一支可并发的流水线">Worker：不是一个超级 agent，而是一支可并发的流水线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#worker%E4%B8%8D%E6%98%AF%E4%B8%80%E4%B8%AA%E8%B6%85%E7%BA%A7-agent%E8%80%8C%E6%98%AF%E4%B8%80%E6%94%AF%E5%8F%AF%E5%B9%B6%E5%8F%91%E7%9A%84%E6%B5%81%E6%B0%B4%E7%BA%BF" class="hash-link" aria-label="Worker：不是一个超级 agent，而是一支可并发的流水线的直接链接" title="Worker：不是一个超级 agent，而是一支可并发的流水线的直接链接" translate="no">​</a></h2>
+<p>TauCetiWorker 采用 “bring your own agent”。任何人都可以用自己的 GitHub account、fork、模型订阅和机器运行 worker。</p>
+<p>一轮只做一个 work unit，并按固定优先级选择：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">rebase conflict</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; fix red CI</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; address or contest review findings</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; review a green PR</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; repair a Mathlib bump</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; author a new roadmap target</span><br></div></code></pre></div></div>
+<p>这个顺序很重要。它把“先把已有工作收尾”写进 queue policy，避免 generator 不断开新 PR、review 和 maintenance 永远追不上。</p>
+<p>多个 worker 没有中央调度器。它们通过 GitHub-visible state 协作：</p>
+<ul>
+<li class="">roadmap issue 上有带 TTL 的 intention/claim；</li>
+<li class=""><code>refs/tauceti-claims/*</code> 提供短期 lease；</li>
+<li class="">push 使用 <code>--force-with-lease</code> compare-and-swap；</li>
+<li class="">PR body 有 machine-readable target marker；</li>
+<li class="">current scoreboard/ledger 告诉其他 worker 哪个 head 已经 review。</li>
+</ul>
+<p><a href="https://github.com/TauCetiProject/TauCeti/blob/a3913fd9111b851af857f720b4ce6721e6634183/COORDINATION.md" target="_blank" rel="noopener noreferrer" class=""><code>COORDINATION.md</code></a> 把规则分成两类：</p>
+<ul>
+<li class=""><code>[COOP]</code> 只减少重复 compute；</li>
+<li class=""><code>[HARD]</code> 防止覆盖 branch、无理由关闭 PR、绕过 review merge。</li>
+</ul>
+<p>即使所有人忽略 cooperative claim，合规 worker 的最坏结果也应该是<strong>重复做功，而不是丢失别人的工作</strong>。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="一个不能略过的安全细节">一个不能略过的安全细节<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E4%B8%80%E4%B8%AA%E4%B8%8D%E8%83%BD%E7%95%A5%E8%BF%87%E7%9A%84%E5%AE%89%E5%85%A8%E7%BB%86%E8%8A%82" class="hash-link" aria-label="一个不能略过的安全细节的直接链接" title="一个不能略过的安全细节的直接链接" translate="no">​</a></h3>
+<p>Worker 当前默认在 host 上执行 agent；Codex authoring 使用 <code>danger-full-access</code>。更安全的 <a href="https://github.com/kim-em/bubble" target="_blank" rel="noopener noreferrer" class=""><code>bubble</code></a> 模式需要显式 <code>--bubble</code>：它用 Incus container、repo-scoped GitHub proxy、单一 provider credential 和网络 allowlist 隔离工作。</p>
+<p>这意味着 Tau Ceti 的 CI 是 secure-by-default，但 operator-side autonomous authoring 目前仍是 secure-by-option。后文会回到这个风险。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="cilean-code-不只是文本它在-build-时能执行代码">CI：Lean code 不只是文本，它在 build 时能执行代码<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#cilean-code-%E4%B8%8D%E5%8F%AA%E6%98%AF%E6%96%87%E6%9C%AC%E5%AE%83%E5%9C%A8-build-%E6%97%B6%E8%83%BD%E6%89%A7%E8%A1%8C%E4%BB%A3%E7%A0%81" class="hash-link" aria-label="CI：Lean code 不只是文本，它在 build 时能执行代码的直接链接" title="CI：Lean code 不只是文本，它在 build 时能执行代码的直接链接" translate="no">​</a></h2>
+<p>Lean elaboration、macro、<code>initialize</code>、<code>#eval</code> 和 Lake config 都可能执行任意代码。让 PR 修改自己的 workflow，再在带 secrets 的 runner 上直接 <code>lake build</code>，不是安全模型。</p>
+<p>Tau Ceti 的 <a href="https://github.com/TauCetiProject/TauCeti/blob/a3913fd9111b851af857f720b4ce6721e6634183/.github/workflows/pr-build.yml" target="_blank" rel="noopener noreferrer" class=""><code>pr-build.yml</code></a> 因此使用 base-defined <code>pull_request_target</code>：</p>
+<ol>
+<li class="">checkout trusted base；</li>
+<li class="">无 credential checkout untrusted PR；</li>
+<li class="">只 overlay <code>TauCeti/</code>、空 root module 与经过验证的 pin；</li>
+<li class="">拒绝 symlink、<code>set_option</code>、跨入 Roadmap/Review 的 import；</li>
+<li class="">限制 diff 与新文件大小；</li>
+<li class="">在 checksum-pinned <code>landrun</code> 下离线 build；</li>
+<li class="">分别发布 <code>build</code>、<code>scope</code>、<code>bump-guard</code> 状态。</li>
+</ol>
+<p>sandbox 中运行四层检查：</p>
+<ul>
+<li class=""><code>lake build --iofail</code>；</li>
+<li class="">compiled axiom audit；</li>
+<li class="">module-system audit；</li>
+<li class="">Mathlib environment linter + docstring/baseline audit。</li>
+</ul>
+<p>我在本地固定快照上实际运行了同一机械核心：</p>
+<table><thead><tr><th>本地验证</th><th style="text-align:right">结果</th></tr></thead><tbody><tr><td>Lake build jobs</td><td style="text-align:right">5,945，全部成功</td></tr><tr><td>compiled Tau Ceti declarations</td><td style="text-align:right">16,947</td></tr><tr><td>允许 axioms</td><td style="text-align:right"><code>propext</code>、<code>Classical.choice</code>、<code>Quot.sound</code></td></tr><tr><td>module-system audit</td><td style="text-align:right">933/933 modules 通过</td></tr></tbody></table>
+<p>这证明的是：代码在该 toolchain/Mathlib pin 下能够通过标准 Lean kernel 与项目 policy。</p>
+<p>它<strong>不证明</strong> definition 表达了正确对象，也不证明 theorem statement 对应 roadmap 的数学含义。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-review专门填-kernel-留下的-semantic-gap">AI review：专门填 kernel 留下的 semantic gap<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#ai-review%E4%B8%93%E9%97%A8%E5%A1%AB-kernel-%E7%95%99%E4%B8%8B%E7%9A%84-semantic-gap" class="hash-link" aria-label="AI review：专门填 kernel 留下的 semantic gap的直接链接" title="AI review：专门填 kernel 留下的 semantic gap的直接链接" translate="no">​</a></h2>
+<p>TauCetiReview 把 review 分成十个角度：</p>
+<table><thead><tr><th>Rubric</th><th>问题</th><th style="text-align:right">可否 <code>block</code></th></tr></thead><tbody><tr><td>correctness</td><td>statement/definition 是否真的表达目标数学</td><td style="text-align:right">是</td></tr><tr><td>reuse</td><td>是否重复 Mathlib/Tau Ceti 现有 API</td><td style="text-align:right">直接重复时是</td></tr><tr><td>scope</td><td>是否推进一个 human roadmap target，且 PR 单一主题</td><td style="text-align:right">是</td></tr><tr><td>attribution</td><td>是否缺失明确来源/credit</td><td style="text-align:right">明确缺失时是</td></tr><tr><td>API design</td><td>public surface 与 characteristic API 是否合适</td><td style="text-align:right">否</td></tr><tr><td>generality</td><td>assumptions 是否最弱、层次是否自然</td><td style="text-align:right">否</td></tr><tr><td>placement</td><td>文件位置与 imports 是否正确</td><td style="text-align:right">否</td></tr><tr><td>naming</td><td>名称与 notation 是否符合结论和惯例</td><td style="text-align:right">否</td></tr><tr><td>documentation</td><td>docstring 是否准确</td><td style="text-align:right">否</td></tr><tr><td>proof quality</td><td>proof 是否稳健、可维护</td><td style="text-align:right">否</td></tr></tbody></table>
+<p><a href="https://github.com/TauCetiProject/TauCetiReview/blob/f0cf746096a8637b7a1703911a0c02a5ec93283c/rubrics/correctness.md" target="_blank" rel="noopener noreferrer" class=""><code>correctness.md</code></a> 的第一句就是：</p>
+<blockquote>
+<p>green proofs can still state the wrong theorem</p>
+</blockquote>
+<p>它要求 reviewer 主动找 quantifier 错位、vacuity、把困难塞进 hypotheses、<code>True</code> placeholder、没有 consumer 的 predicate 和过强 typeclass assumptions。</p>
+<p>而 <a href="https://github.com/TauCetiProject/TauCetiReview/blob/f0cf746096a8637b7a1703911a0c02a5ec93283c/rubrics/_common.md" target="_blank" rel="noopener noreferrer" class=""><code>_common.md</code></a> 把 PR diff、comments、docstrings、commit messages 全部视为 attacker-controlled data。Reviewer 只有 read tools，没有 merge 权；真正 verdict 必须出现在 runner 生成的一次性 marker 之后，PR 里伪造的 <code>{"verdict":"approve"}</code> 无法进入解析通道。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="十个独立-agent不等于十种独立认知">“十个独立 agent”不等于“十种独立认知”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%8D%81%E4%B8%AA%E7%8B%AC%E7%AB%8B-agent%E4%B8%8D%E7%AD%89%E4%BA%8E%E5%8D%81%E7%A7%8D%E7%8B%AC%E7%AB%8B%E8%AE%A4%E7%9F%A5" class="hash-link" aria-label="“十个独立 agent”不等于“十种独立认知”的直接链接" title="“十个独立 agent”不等于“十种独立认知”的直接链接" translate="no">​</a></h3>
+<p>每个 rubric 是独立 execution 与独立 attention angle，但未必是不同 model。当前 archive 中，大多数 production review 来自 Codex 或 Claude；一个 PR 的十个角度完全可能由同一模型执行。</p>
+<p>这能减少一个大 prompt 里的 attention conflict，却不能消除 shared blind spot。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一条完整证据链pr-1434">一条完整证据链：PR #1434<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E4%B8%80%E6%9D%A1%E5%AE%8C%E6%95%B4%E8%AF%81%E6%8D%AE%E9%93%BEpr-1434" class="hash-link" aria-label="一条完整证据链：PR #1434的直接链接" title="一条完整证据链：PR #1434的直接链接" translate="no">​</a></h2>
+<p><a href="https://github.com/TauCetiProject/TauCeti/pull/1434" target="_blank" rel="noopener noreferrer" class=""><code>TauCeti#1434</code></a> 实现 multiquadratic field 的 relative Galois group，最后成为本文固定的 main commit。</p>
+<p>它不是一次 review 绿灯：</p>
+<table><thead><tr><th>Round</th><th>Head 上发生了什么</th></tr></thead><tbody><tr><td>1</td><td>correctness 通过；reuse 发现三个 public declarations 重复 Mathlib instance API，直接 <code>block</code></td></tr><tr><td>2</td><td>scope/attribution/placement/naming/docs/proof 通过；reuse、API design、generality 要求修改</td></tr><tr><td>3</td><td>三个未解决角度重跑，仍要求修改</td></tr><tr><td>4</td><td>reuse/API/generality 清除；documentation 抓到一个过度声称的 docstring</td></tr><tr><td>5</td><td>十个角度全部在 final head 通过</td></tr></tbody></table>
+<p>总计：</p>
+<ul>
+<li class="">5 个 heads / 5 rounds；</li>
+<li class="">34 次 rubric execution；</li>
+<li class="">26 approve、7 request changes、1 block；</li>
+<li class="">约 17.5 分钟 aggregate model runtime；</li>
+<li class="">约 7.32 美元 API-equivalent review cost。</li>
+</ul>
+<p>最终源码明确改为组合 Mathlib 的 <code>IntermediateField.fixingSubgroupEquiv</code>，而不是手工重证 bijection。这与 reuse review 的要求一致。</p>
+<p>这个案例证明 AI review 能改变代码，不只是给 build 贴章。</p>
+<p>它仍然不能证明最终数学经过 domain expert 审核；而且这 34 次 review 全部由同一个 <code>gpt-5.6-sol</code> 模型执行。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="taucetidatareview-本身也要被-review">TauCetiData：review 本身也要被 review<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#taucetidatareview-%E6%9C%AC%E8%BA%AB%E4%B9%9F%E8%A6%81%E8%A2%AB-review" class="hash-link" aria-label="TauCetiData：review 本身也要被 review的直接链接" title="TauCetiData：review 本身也要被 review的直接链接" translate="no">​</a></h2>
+<p>GitHub scoreboard 会在新 round 中原地更新，不适合作为历史记录。TauCetiData 因此把每次执行写成 immutable record：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">(PR, head SHA, rubric, model)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + exact diff hash</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + rubric/engine SHA</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + prompt policy</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + verdict/findings</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + token/runtime/cost</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + content-addressed transcript blob</span><br></div></code></pre></div></div>
+<p>本地扫描 <a href="https://github.com/TauCetiProject/TauCetiData/tree/08187cf484f2190e39ffc842d595171856963577" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiData@08187cf</code></a> 得到：</p>
+<table><thead><tr><th>Archive item</th><th style="text-align:right">Count</th></tr></thead><tbody><tr><td>review runs</td><td style="text-align:right">50,361</td></tr><tr><td>distinct reviewed PR numbers</td><td style="text-align:right">1,223</td></tr><tr><td>distinct PR-head pairs</td><td style="text-align:right">4,876</td></tr><tr><td>round records</td><td style="text-align:right">6,641</td></tr><tr><td>compressed diff/transcript blobs</td><td style="text-align:right">45,440</td></tr><tr><td>A/B pairs</td><td style="text-align:right">398</td></tr><tr><td>AI pairwise judgments</td><td style="text-align:right">2,102</td></tr><tr><td>human meta-review decisions</td><td style="text-align:right">35</td></tr></tbody></table>
+<p>全历史 execution error 占 23.5%，但这个数字被早期 provider/infra failures 主导：</p>
+<ul>
+<li class="">7 月以来约 3.0%；</li>
+<li class="">最近一周约 1.1%；</li>
+<li class="">7 月 29 日以后约 0.06%。</li>
+</ul>
+<p>这说明 runner 已经稳定很多。它不说明 review 更正确——<strong>能够稳定输出错误 approval，也会得到漂亮的 reliability 曲线。</strong></p>
+<p>Archive 中约 11,602 美元是按 token 和当日 price table 复算的 API-equivalent cost；快照里的 exact runs 都标记为 subscription auth，不应把它直接写成项目现金支出。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="meta-review-还很早">Meta-review 还很早<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#meta-review-%E8%BF%98%E5%BE%88%E6%97%A9" class="hash-link" aria-label="Meta-review 还很早的直接链接" title="Meta-review 还很早的直接链接" translate="no">​</a></h3>
+<p>TauCetiData 已经能让两个 reviews 在相同 <code>(PR, head, rubric)</code> 上 A/B：judge 会看到实际 checkout，交换两种 presentation order，并尝试用 cross-family panel 降低 self-preference。</p>
+<p>但当前只有 35 个 human decisions，而且 design doc 明确说 resolver/resolution pipeline 尚未完成。</p>
+<p>50,361 次 AI review 是规模；35 个人工标签才是校准。两者不能混为一谈。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="17-万行到底意味着什么">17 万行到底意味着什么？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#17-%E4%B8%87%E8%A1%8C%E5%88%B0%E5%BA%95%E6%84%8F%E5%91%B3%E7%9D%80%E4%BB%80%E4%B9%88" class="hash-link" aria-label="17 万行到底意味着什么？的直接链接" title="17 万行到底意味着什么？的直接链接" translate="no">​</a></h2>
+<p>固定快照的增长很惊人：</p>
+<table><thead><tr><th>指标</th><th style="text-align:right">数值</th></tr></thead><tbody><tr><td>仓库年龄</td><td style="text-align:right">约 60 天</td></tr><tr><td><code>TauCeti/</code> Lean LOC</td><td style="text-align:right">171,565</td></tr><tr><td>merged PRs</td><td style="text-align:right">1,336</td></tr><tr><td>PR merge latency 中位数</td><td style="text-align:right">1.86 小时</td></tr><tr><td>24 小时内 merge</td><td style="text-align:right">94.3%</td></tr><tr><td>单日最高 merge</td><td style="text-align:right">100 PRs</td></tr><tr><td>最近七个抓取日</td><td style="text-align:right">358 merged PRs</td></tr><tr><td>source additions / deletions</td><td style="text-align:right">196,223 / 24,658</td></tr></tbody></table>
+<p>但 LOC 不是 theorem，也不是 roadmap completion。</p>
+<p>新上线的 TauCetiProgress 对 ReductiveGroups 做了第一份细读报告：100 个 PR 中，55 个没有新增 declaration，而是在拆目录、改 imports、rename 和 consolidate。其余很多是让 comodule API 可用的 <code>_apply</code>、<code>_comp</code>、<code>_toLinearMap</code> plumbing。</p>
+<p>这些工作未必浪费。Mathlib 自己也靠大量 plumbing 才能复用。问题是：</p>
+<blockquote>
+<p><strong>PR 数量衡量流水线吞吐，roadmap summit 才衡量数学完成。</strong></p>
+</blockquote>
+<p>目前 14 个 active roadmap 中，只有 ReductiveGroups 有生成的 <code>STATUS.md</code> / <code>PROGRESS.md</code>；它仍把 scheme-side equivalence、Lie theory、unipotence、reductivity 与 classification 标成 untouched。</p>
+<p>Tau Ceti 已经解决“能不能高速生产 Lean”，还没有解决“这些 Lean 在半年后有多少仍被使用”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="它怎样追着-mathlib-跑">它怎样追着 Mathlib 跑<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%AE%83%E6%80%8E%E6%A0%B7%E8%BF%BD%E7%9D%80-mathlib-%E8%B7%91" class="hash-link" aria-label="它怎样追着 Mathlib 跑的直接链接" title="它怎样追着 Mathlib 跑的直接链接" translate="no">​</a></h2>
+<p>Tau Ceti 不是固定 Mathlib release 上的静态项目，而是尝试跟随 master。</p>
+<p><a href="https://github.com/TauCetiProject/TauCeti/blob/a3913fd9111b851af857f720b4ce6721e6634183/.github/workflows/update.yml" target="_blank" rel="noopener noreferrer" class=""><code>update.yml</code></a> 每天调用 SHA-pinned <a href="https://github.com/leanprover-community/downstream-reports" target="_blank" rel="noopener noreferrer" class=""><code>downstream-reports</code></a>：</p>
+<ul>
+<li class="">compatible：打开/更新 last-known-good forward bump；</li>
+<li class="">incompatible：记录 first-known-bad commit，开 issue 与 repair PR；</li>
+<li class="">Worker 的 <code>bump</code> phase 修复代码；</li>
+<li class="">bump guard 只允许严格的 forward pin/toolchain transition。</li>
+</ul>
+<p>不到两个月的 main history 里至少有 26 个 dependency/pin-related commits。抓取时又有新的 Mathlib incompatibility issue 与 bot repair PR 在进行。</p>
+<p>这也回应了上一篇 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability">“我们真的被 Lean 锁定了吗？”</a>：Tau Ceti 不是在缓解 Lean lock-in，而是在极大增强 Lean/Mathlib ecosystem 的生产速度。未来跨 prover 的 roadmap/spec translation 或许会降低迁移成本，但今天它仍是一台 Lean accelerator。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="六个不能被规模掩盖的问题">六个不能被规模掩盖的问题<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%85%AD%E4%B8%AA%E4%B8%8D%E8%83%BD%E8%A2%AB%E8%A7%84%E6%A8%A1%E6%8E%A9%E7%9B%96%E7%9A%84%E9%97%AE%E9%A2%98" class="hash-link" aria-label="六个不能被规模掩盖的问题的直接链接" title="六个不能被规模掩盖的问题的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-same-model-review-monoculture">1. Same-model review monoculture<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#1-same-model-review-monoculture" class="hash-link" aria-label="1. Same-model review monoculture的直接链接" title="1. Same-model review monoculture的直接链接" translate="no">​</a></h3>
+<p>十个 angle 不等于十个独立 verifier。需要按风险抽样引入第二 provider 与 domain expert。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-worker-host-mode-默认过宽">2. Worker host mode 默认过宽<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#2-worker-host-mode-%E9%BB%98%E8%AE%A4%E8%BF%87%E5%AE%BD" class="hash-link" aria-label="2. Worker host mode 默认过宽的直接链接" title="2. Worker host mode 默认过宽的直接链接" translate="no">​</a></h3>
+<p>CI sandbox 很强，但 persistent worker 的安全模式是 opt-in。对 unattended agent，Bubble 应更接近默认而不是高级选项。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-rubric-freshness-还有已知缺口">3. Rubric freshness 还有已知缺口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#3-rubric-freshness-%E8%BF%98%E6%9C%89%E5%B7%B2%E7%9F%A5%E7%BC%BA%E5%8F%A3" class="hash-link" aria-label="3. Rubric freshness 还有已知缺口的直接链接" title="3. Rubric freshness 还有已知缺口的直接链接" translate="no">​</a></h3>
+<p>Review 会记录 rubric fingerprint，但当前源码注释明确说：rubric 修改还不会让 carried-forward approvals 自动 stale，相关 issue 仍在跟踪。Head freshness 已解决，policy freshness 尚未完全解决。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-human-calibration-与-ai-review-不成比例">4. Human calibration 与 AI review 不成比例<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#4-human-calibration-%E4%B8%8E-ai-review-%E4%B8%8D%E6%88%90%E6%AF%94%E4%BE%8B" class="hash-link" aria-label="4. Human calibration 与 AI review 不成比例的直接链接" title="4. Human calibration 与 AI review 不成比例的直接链接" translate="no">​</a></h3>
+<p>50k reviews 对 35 human decisions。项目已经有正确的 evaluation 架构，但还没有足够 ground truth 支撑“AI review 准确率很高”的结论。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-长期维护没有经过时间检验">5. 长期维护没有经过时间检验<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#5-%E9%95%BF%E6%9C%9F%E7%BB%B4%E6%8A%A4%E6%B2%A1%E6%9C%89%E7%BB%8F%E8%BF%87%E6%97%B6%E9%97%B4%E6%A3%80%E9%AA%8C" class="hash-link" aria-label="5. 长期维护没有经过时间检验的直接链接" title="5. 长期维护没有经过时间检验的直接链接" translate="no">​</a></h3>
+<p>两个月无法证明 API 经得起多次 Mathlib migration、consolidation、downstream use 和 model/maintainer turnover。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-data-与-governance-都有-scalebus-factor-风险">6. Data 与 governance 都有 scale/bus-factor 风险<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#6-data-%E4%B8%8E-governance-%E9%83%BD%E6%9C%89-scalebus-factor-%E9%A3%8E%E9%99%A9" class="hash-link" aria-label="6. Data 与 governance 都有 scale/bus-factor 风险的直接链接" title="6. Data 与 governance 都有 scale/bus-factor 风险的直接链接" translate="no">​</a></h3>
+<p>TauCetiData 已有 115,555 个 tracked files、8,603 commits；继续按当前速度需要 sharding/packing。Worker、Review 和 GitHub App 的运行知识也高度集中在少数维护者身上。</p>
+<p>还有一项值得补充：Tau Ceti 自己目前依赖标准 Lean kernel，没有把 nanoda、Lean4Lean 或另一套 external kernel 加进项目 workflow。独立 checker 可以增加 implementation diversity，但仍不能判断 statement 是否忠实。关于这个边界，可以参见<a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda">此前的 Lean soundness 分析</a>。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最值得迁移的不是代码而是方法">最值得迁移的不是代码，而是方法<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E6%9C%80%E5%80%BC%E5%BE%97%E8%BF%81%E7%A7%BB%E7%9A%84%E4%B8%8D%E6%98%AF%E4%BB%A3%E7%A0%81%E8%80%8C%E6%98%AF%E6%96%B9%E6%B3%95" class="hash-link" aria-label="最值得迁移的不是代码，而是方法的直接链接" title="最值得迁移的不是代码，而是方法的直接链接" translate="no">​</a></h2>
+<p>即使 Tau Ceti 最后没有成为长期数学基础设施，它已经提供了几条可复用的工程原则：</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="policy-与-generated-code-分仓">Policy 与 generated code 分仓<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#policy-%E4%B8%8E-generated-code-%E5%88%86%E4%BB%93" class="hash-link" aria-label="Policy 与 generated code 分仓的直接链接" title="Policy 与 generated code 分仓的直接链接" translate="no">​</a></h3>
+<p>生成器不能修改自己的 roadmap、rubric 和 trusted CI。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="deterministic-controlgenerative-prose">Deterministic control，generative prose<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#deterministic-controlgenerative-prose" class="hash-link" aria-label="Deterministic control，generative prose的直接链接" title="Deterministic control，generative prose的直接链接" translate="no">​</a></h3>
+<p>能用 Python 决定的 window、cursor、PR set、declaration list，不交给模型。模型只写 status prose，并明确标注未验证。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="review-是-data-product">Review 是 data product<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#review-%E6%98%AF-data-product" class="hash-link" aria-label="Review 是 data product的直接链接" title="Review 是 data product的直接链接" translate="no">​</a></h3>
+<p>保存 exact diff、rubric SHA、model、verdict 与 transcript，才能比较模型、复盘 incident、做 human calibration。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="当前-head-才有-approval">当前 head 才有 approval<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%BD%93%E5%89%8D-head-%E6%89%8D%E6%9C%89-approval" class="hash-link" aria-label="当前 head 才有 approval的直接链接" title="当前 head 才有 approval的直接链接" translate="no">​</a></h3>
+<p>一旦 push，新 head 必须重新 review；merge 读 ledger，不信 rendered comment。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="生成必须有-backpressure">生成必须有 backpressure<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E7%94%9F%E6%88%90%E5%BF%85%E9%A1%BB%E6%9C%89-backpressure" class="hash-link" aria-label="生成必须有 backpressure的直接链接" title="生成必须有 backpressure的直接链接" translate="no">​</a></h3>
+<p>先 rebase/fix/review，再 author；否则 AI 只会把 bottleneck 从写 proof 转成无限积压。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cooperative-coordination-与-hard-safety-分开">Cooperative coordination 与 hard safety 分开<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#cooperative-coordination-%E4%B8%8E-hard-safety-%E5%88%86%E5%BC%80" class="hash-link" aria-label="Cooperative coordination 与 hard safety 分开的直接链接" title="Cooperative coordination 与 hard safety 分开的直接链接" translate="no">​</a></h3>
+<p>Claim 可以 fail-open，branch overwrite 必须 fail-closed。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最终判断">最终判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E6%9C%80%E7%BB%88%E5%88%A4%E6%96%AD" class="hash-link" aria-label="最终判断的直接链接" title="最终判断的直接链接" translate="no">​</a></h2>
+<p>Tau Ceti 已经证明了三件事：</p>
+<ol>
+<li class="">AI 可以在很短时间内生成一座大型、可 build、通过 axiom audit 的 Lean downstream library；</li>
+<li class="">AI review 可以被做成 iterative、multi-angle、可留证据的工程流程；</li>
+<li class="">去中心化 workers 可以在 Mathlib 持续变化时维持极高吞吐。</li>
+</ol>
+<p>它还没有证明：</p>
+<ul>
+<li class="">semantic accuracy 能达到同样规模；</li>
+<li class="">API 会长期保持 coherent；</li>
+<li class="">独立 downstream 会广泛复用这些 declarations；</li>
+<li class="">这种成本和治理模式能持续多年。</li>
+</ul>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>更准确的定义</div><div class="admonitionContent_BuS1"><p><strong>Tau Ceti 是一次公开实验：把 formal-library engineering 从“人类写 proof”迁移到“人类写 specification、policy 与 audit”。</strong></p><p>这比“AI Mathlib”更精确，也更值得关注。</p></div></div>
+<p>下一阶段最有价值的数字，不是第 20 万行，而是：domain-expert overturn rate、90/180 天 API survival、独立 downstream consumers、每次 Mathlib bump 的 repair cost，以及 roadmap acceptance criteria 真正完成了多少。</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要资料">主要资料<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system#%E4%B8%BB%E8%A6%81%E8%B5%84%E6%96%99" class="hash-link" aria-label="主要资料的直接链接" title="主要资料的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://github.com/TauCetiProject/TauCeti" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCeti</a></li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiRoadmap" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCetiRoadmap</a></li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiReview" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCetiReview</a></li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiData" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCetiData</a></li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiProgress" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCetiProgress</a></li>
+<li class=""><a href="https://github.com/kim-em/TauCetiWorker" target="_blank" rel="noopener noreferrer" class="">kim-em/TauCetiWorker</a></li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiReview/blob/f0cf746096a8637b7a1703911a0c02a5ec93283c/SECURITY.md" target="_blank" rel="noopener noreferrer" class="">Tau Ceti review security model</a></li>
+<li class=""><a href="https://github.com/TauCetiProject/TauCetiData/blob/08187cf484f2190e39ffc842d595171856963577/docs/eval-design.md" target="_blank" rel="noopener noreferrer" class="">Tau Ceti review evaluation design</a></li>
+<li class=""><a href="https://github.com/leanprover-community/intentions" target="_blank" rel="noopener noreferrer" class="">leanprover-community/intentions</a></li>
+<li class=""><a href="https://github.com/leanprover-community/downstream-reports" target="_blank" rel="noopener noreferrer" class="">leanprover-community/downstream-reports</a></li>
+</ul>]]></content:encoded>
+            <category>lean</category>
+            <category>ai-math</category>
+            <category>formal-verification</category>
+            <category>mathlib</category>
+            <category>multi-agent</category>
+        </item>
         <item>
             <title><![CDATA[把知乎发布做成服务器任务：哪种 CLI 方案最稳？]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-cli-publishing-server-control-plane</link>
