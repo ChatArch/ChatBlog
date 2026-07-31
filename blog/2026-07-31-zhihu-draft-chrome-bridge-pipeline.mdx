@@ -403,7 +403,7 @@ stateDiagram-v2
 
 ## 现在的实现与下一步
 
-我们把需要持续维护的改动放进了 [ChatArch/Wechatsync Fork](https://github.com/ChatArch/Wechatsync)：
+我们在 [ChatArch/Wechatsync Fork](https://github.com/ChatArch/Wechatsync) 建立了长期 `dev` 集成分支。功能改动从 feature branch 发起 [Fork 内部 PR #1](https://github.com/ChatArch/Wechatsync/pull/1)，经过测试和 Review 后再进入 `dev`，而不是直接改上游同步分支：
 
 - bridge 的显式 bind host；
 - MV3 多连接稳定性修复；
@@ -437,6 +437,8 @@ stateDiagram-v2
 ### 相关源码与延伸阅读
 
 - [ChatArch/Wechatsync Fork](https://github.com/ChatArch/Wechatsync)
+- [ChatArch/Wechatsync `dev` 维护分支](https://github.com/ChatArch/Wechatsync/tree/dev)
+- [安全更新与 bridge 修复 PR #1](https://github.com/ChatArch/Wechatsync/pull/1)
 - [wechatsync/Wechatsync](https://github.com/wechatsync/Wechatsync)
 - [Wechatsync 知乎 adapter 基线实现](https://github.com/wechatsync/Wechatsync/blob/a98e42865387285afcc027c61836488748f3b30f/packages/core/src/adapters/platforms/zhihu.ts)
 - [Wechatsync WebSocket bridge 基线实现](https://github.com/wechatsync/Wechatsync/blob/a98e42865387285afcc027c61836488748f3b30f/packages/mcp-server/src/ws-bridge.ts)
