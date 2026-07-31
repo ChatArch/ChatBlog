@@ -18,8 +18,20 @@
 
 .mobile-scroll-hint {
   color: var(--ifm-color-emphasis-600);
+  display: none;
   font-size: 0.875rem;
   margin-top: -0.5rem;
+}
+
+.mobile-mermaid-scroll:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+.fit-table table th:first-child,
+.fit-table table td:first-child {
+  min-width: 4.75rem;
+  white-space: nowrap;
 }
 
 @media (max-width: 600px) {
@@ -30,5 +42,9 @@
 
   .mobile-mermaid-scroll .docusaurus-mermaid-container {
     min-width: 680px;
+  }
+
+  .mobile-scroll-hint {
+    display: block;
   }
 }

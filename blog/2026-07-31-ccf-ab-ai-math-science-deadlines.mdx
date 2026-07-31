@@ -45,7 +45,7 @@ CCFDDL 很适合发现候选，但它是社区维护的 deadline 数据库，不
 | HPCA 2027 | 全文北京时间 8 月 1 日 | mandatory abstract 已于 7 月 25 日截止，不能算新投稿仍开放 |
 | INFOCOM 2027 | 全文北京时间 8 月 1 日 | 同样因为摘要已过而排除当前轮次 |
 | VLDB 2027 早期轮次 | 全文北京时间 8 月 2 日 | 7 月 26 日的 mandatory abstract 已过，但后续月度轮次仍开放 |
-| UbiComp/ISWC 8 月轮次 | 全文北京时间 8 月 2 日 | 官网数据标注为仅限 major-revision resubmission；11 月轮次才是另一个入口 |
+| UbiComp/ISWC 8 月轮次 | 全文北京时间 8 月 2 日 | CCFDDL 条目标注为仅限 major-revision resubmission；11 月轮次才是另一个入口 |
 | AAAI 2027 | 旧报告仍可能写“短线冲刺” | 全文已于北京时间 7 月 29 日截止 |
 | KDD 2027 AI for Sciences | 方向非常匹配 | Cycle 1 已于北京时间 7 月 27 日截止；官网确认一年两轮，但 Cycle 2 日期尚未公布 |
 
@@ -55,7 +55,13 @@ CCFDDL 很适合发现候选，但它是社区维护的 deadline 数据库，不
 
 `AI for Math`、`AI for Science` 和 `STEM AI` 不是单一学科。两篇都使用 LLM 解数学问题的论文，可能分别属于机器学习方法、agent 协作、信息检索、软件工程或人机交互。
 
-<div className="mobile-mermaid-scroll">
+<div
+  className="mobile-mermaid-scroll"
+  role="region"
+  aria-label="会议选择流程图"
+  aria-describedby="mobile-mermaid-hint"
+  tabIndex={0}
+>
 
 ```mermaid
 flowchart TD
@@ -72,37 +78,51 @@ flowchart TD
 
 </div>
 
-<p className="mobile-scroll-hint">手机端可横向滑动查看完整流程图。</p>
+<p id="mobile-mermaid-hint" className="mobile-scroll-hint">手机端可横向滑动查看完整流程图。</p>
 
-为了先广后窄，可以把关联度分成四档。这里的字母只表示**对 AI for Math / AI for Science 的投稿自然度**，不是会议质量排名：
+为了先广后窄，可以把论文适配度分成四档。这里特意加上 `Fit-` 前缀，避免与会议自身的 CCF-A / CCF-B 等级混淆：
 
-- **S：优先候选。** 常见论文形态可以自然对齐，不必改成另一个研究问题。
-- **A：强条件匹配。** 做一次清晰且合理的叙事选择后很合适，例如 proof engineering 或 HCI。
-- **B：明确赛道匹配。** 可以投，但必须提供数据库、系统、HPC、可视化或机器人等会议本位贡献。
-- **C：需要明显领域转向。** 通常要让安全、网络、密码、芯片或编码本身成为核心问题。
+- **Fit-S：优先候选。** 常见论文形态可以自然对齐，不必改成另一个研究问题。
+- **Fit-A：强条件匹配。** 做一次清晰且合理的叙事选择后很合适，例如 proof engineering 或 HCI。
+- **Fit-B：明确赛道匹配。** 可以投，但必须提供数据库、系统、HPC、可视化或机器人等会议本位贡献。
+- **Fit-C：需要明显领域转向。** 通常要让安全、网络、密码、芯片或编码本身成为核心问题。
 
 ## 官网核验后的高相关时间线
 
-下面是截至 2026-07-31 已用一手官网确认的 S/A 级窗口。日期全部为北京时间。
+下面先给出截至 2026-07-31 已用一手官网确认的 Fit-S / Fit-A 日期索引；它回答“什么时候交”，下一节再按核心贡献回答“为什么投”。日期全部为北京时间。
+
+<div className="fit-table">
 
 | 关联度 | 会议 / Track | 摘要或注册 | 全文 | 适合什么 |
 |---|---|---:|---:|---|
-| A | [IUI 2027 Main Paper](https://iui.acm.org/2027/call-for-papers/)（CCF-B） | 8 月 14 日 19:59 | 8 月 21 日 19:59 | 数学/科学助手、AI tutor、人机协作；需要交互系统、用户研究或相称的计算证据 |
-| S | [WSDM 2027 Full Paper](https://wsdm-conference.org/2027/cffp.html)（CCF-B） | 8 月 18 日 19:59 | 8 月 25 日 19:59 | RAG、proof retrieval、科学知识发现、foundation model 与 agent |
-| A | [CHI 2027 Papers](https://chi2027.acm.org/authors/papers/)（CCF-A） | 无摘要 deadline | 9 月 11 日 19:59 | STEM 教育、human-AI collaboration、科学工作流；需要扎实 HCI 研究设计 |
-| S | [ICLR 2027 Main Paper](https://www.iclr.cc/Conferences/2027/Dates)（CCF-A） | 9 月 19 日 19:59 | 9 月 26 日 19:59 | 通用数学/科学推理、训练方法、搜索、verifier 与表示学习 |
-| A | [SANER 2027 Research Track](https://conf.researchr.org/track/saner-2027/saner-2027-papers)（CCF-B） | 9 月 22 日 19:59 | 9 月 26 日 19:59 | proof-library maintenance、proof repair、科学软件演化与 repository mining |
-| S | [AAMAS 2027 Main Track](https://warwick.ac.uk/fac/sci/dcs/aamas2027/calls/)（CCF-B） | 10 月 2 日 19:59 | 10 月 9 日 19:59 | planner–prover–critic、多 agent 协作、工具调用与 agent verification |
-| A | [FSE 2027 Research Papers](https://conf.researchr.org/track/fse-2027/fse-2027-research-papers)（CCF-A） | 无摘要 deadline | 10 月 3 日 19:59 | Lean/Coq/Isabelle proof engineering、proof repair、验证工作流与开发者工具 |
-| S | [The Web Conference 2027](https://acmweb2027.org/important-dates/)（CCF-A） | 10 月 12 日 19:59 | 10 月 19 日 19:59 | 知识系统、RAG、科学信息基础设施以及真实平台或用户数据 |
-| S | [NAACL 2027](https://2027.naacl.org/)（CCF-B） | — | ARR：10 月 13 日 19:59 | 数学语言推理、autoformalization、证明生成和科学文本；conference commitment 日期仍待公布 |
-| A | [SANER Agentic AI4SE Track](https://conf.researchr.org/track/saner-2027/saner-2027-agentic-ai4se-track)（CCF-B） | 10 月 20 日 19:59 | 10 月 24 日 19:59 | 会规划、维护状态、调用工具并处理真实软件或证明工程任务的 Agent |
-| S | [WSDM 2027 Short Paper](https://wsdm-conference.org/2027/cfsp.html)（CCF-B） | 无摘要 deadline | 11 月 18 日 19:59 | 4 页、范围较窄但已有扎实实证的工作 |
-| A | [CAV 2027 Main Paper](https://conferences.i-cav.org/2027/)（CCF-A） | 无摘要 deadline | 2027 年 1 月 21 日 19:59 | verification tools、ML verification、autonomous systems 与形式推理 |
+| Fit-A | [IUI 2027 Main Paper](https://iui.acm.org/2027/call-for-papers/)（CCF-B） | 8 月 14 日 19:59 | 8 月 21 日 19:59 | 数学/科学助手、AI tutor、人机协作；需要交互系统、用户研究或相称的计算证据 |
+| Fit-S | [WSDM 2027 Full Paper](https://wsdm-conference.org/2027/cffp.html)（CCF-B） | 8 月 18 日 19:59 | 8 月 25 日 19:59 | RAG、proof retrieval、科学知识发现、foundation model 与 agent |
+| Fit-A | [CHI 2027 Papers](https://chi2027.acm.org/authors/papers/)（CCF-A） | 无摘要 deadline | 9 月 11 日 19:59 | STEM 教育、human-AI collaboration、科学工作流；需要扎实 HCI 研究设计 |
+| Fit-S | [ICLR 2027 Main Paper](https://www.iclr.cc/Conferences/2027/Dates)（CCF-A） | 9 月 19 日 19:59 | 9 月 26 日 19:59 | 通用数学/科学推理、训练方法、搜索、verifier 与表示学习 |
+| Fit-A | [SANER 2027 Research Track](https://conf.researchr.org/track/saner-2027/saner-2027-papers)（CCF-B） | 9 月 22 日 19:59 | 9 月 26 日 19:59 | proof-library maintenance、proof repair、科学软件演化与 repository mining |
+| Fit-S | [AAMAS 2027 Main Track](https://warwick.ac.uk/fac/sci/dcs/aamas2027/calls/)（CCF-B） | 10 月 2 日 19:59 | 10 月 9 日 19:59 | planner–prover–critic、多 agent 协作、工具调用与 agent verification |
+| Fit-A | [FSE 2027 Research Papers](https://conf.researchr.org/track/fse-2027/fse-2027-research-papers)（CCF-A） | 无摘要 deadline | 10 月 3 日 19:59 | Lean/Coq/Isabelle proof engineering、proof repair、验证工作流与开发者工具 |
+| Fit-S | [The Web Conference 2027](https://acmweb2027.org/important-dates/)（CCF-A） | 10 月 12 日 19:59 | 10 月 19 日 19:59 | 知识系统、RAG、科学信息基础设施以及真实平台或用户数据 |
+| Fit-S | [NAACL 2027](https://2027.naacl.org/)（CCF-B） | — | ARR：10 月 13 日 19:59 | 数学语言推理、autoformalization、证明生成和科学文本；conference commitment 日期仍待公布 |
+| Fit-A | [SANER Agentic AI4SE Track](https://conf.researchr.org/track/saner-2027/saner-2027-agentic-ai4se-track)（CCF-B） | 10 月 20 日 19:59 | 10 月 24 日 19:59 | 会规划、维护状态、调用工具并处理真实软件或证明工程任务的 Agent |
+| Fit-S | [WSDM 2027 Short Paper](https://wsdm-conference.org/2027/cfsp.html)（CCF-B） | 无摘要 deadline | 11 月 18 日 19:59 | 4 页、范围较窄但已有扎实实证的工作 |
+| Fit-A | [CAV 2027 Main Paper](https://conferences.i-cav.org/2027/)（CCF-A） | 无摘要 deadline | 2027 年 1 月 21 日 19:59 | verification tools、ML verification、autonomous systems 与形式推理 |
+
+</div>
 
 这张表不是“推荐所有团队都同时冲”。它展示的是不同论文形态对应的自然入口。
 
-## 为什么 WSDM 是这次最容易被漏掉的候选
+## 按核心贡献收窄：七条投稿路径
+
+日期索引只能完成第一道筛选。第二道筛选要从论文的主张出发：如果删掉数学 benchmark，方法贡献是否仍然成立；如果删掉 Lean、知识库或交互界面，论文还剩下什么不可替代的创新？
+
+### 通用方法与语言推理：ICLR、NAACL
+
+ICLR 适合把数学或科学任务作为通用学习问题来研究，例如训练方法、搜索、verifier、表示学习和推理机制。关键证据不是“在一个数学榜单上更高”，而是方法为什么有效、能否跨任务或难度泛化，以及 ablation 和误差分析是否支持机制主张。
+
+NAACL 更适合语言贡献：数学语言推理、autoformalization、证明生成、科学文本理解与可控生成。它通过 ARR 接稿，而 2027 年的 conference commitment 在快照日仍未公布；有一个 ARR deadline 不等于已经拥有完整的 NAACL 投稿时间表。
+
+### 检索与知识系统：WSDM、WWW
 
 WSDM 名字是 Web Search and Data Mining，看起来不像数学或科学会议。但 2027 年的 [Full Paper CFP](https://wsdm-conference.org/2027/cffp.html) 与 [Short Paper CFP](https://wsdm-conference.org/2027/cfsp.html) 都明确列出：
 
@@ -117,7 +137,9 @@ WSDM 名字是 Web Search and Data Mining，看起来不像数学或科学会议
 
 Full Paper 适合完整方法和系统；Short Paper 接受贡献范围更窄、但经过实证验证的工作。短文 track 的 submission site 在快照日仍写作 TBD，因此日期虽然已公布，投稿入口仍应持续检查。
 
-## Agent 工作：AAMAS 与 SANER Agentic 是两种不同叙事
+WWW 同样能接住知识系统、RAG 和科学信息基础设施，但更期待 Web 语境：web-scale 数据、知识图谱、在线平台、真实用户或社会技术影响。如果核心是检索与 ranking 而没有明显 Web 对象，WSDM 通常更自然；如果贡献依赖开放 Web、平台行为或真实用户生态，WWW 更有说服力。
+
+### Agent 工作：AAMAS 与 SANER Agentic 是两种不同叙事
 
 如果系统由 planner、retriever、prover、critic、verifier 等角色组成，AAMAS 是自然候选。但论文不能只把一次 LLM 调用拆成多个角色名称，还需要回答：
 
@@ -136,27 +158,27 @@ SANER 的 [Agentic AI4SE Track](https://conf.researchr.org/track/saner-2027/sane
 
 两者都接受 Agent，但 AAMAS 关心 agent/multi-agent 方法本身，SANER 关心 Agent 是否解决真实软件维护问题。
 
-## Proof engineering：FSE、SANER 与 CAV 不能混成一个方向
+### Proof engineering：FSE、SANER 与 CAV 不能混成一个方向
 
 三者都可能接住 theorem proving 工作，但评价问题不同。
 
-### FSE：证明系统是一种软件工程工具
+#### FSE：证明系统是一种软件工程工具
 
 FSE 适合研究 proof repair、specification/invariant generation、formal verification workflow、proof CI 与开发者工具。核心证据通常包括真实项目、工具 artifact、项目级成功率、人类时间节省、失败分析和可复现实验。
 
 如果论文只是在 MATH、AIME 或 miniF2F 上提升一个分数，没有软件工程对象，FSE 并不是自然归宿。
 
-### SANER：证明库如何演化和维护
+#### SANER：证明库如何演化和维护
 
 SANER Research Track 对 AI/ML 稿件写得很明确：必须解决软件系统整体、软件演化/维护 artifact，或 AI-intensive software 的维护问题。proof library migration、repair、repository mining 与维护经验可以对齐；纯模型能力论文容易被认为 scope 不足。
 
-### CAV：验证理论、算法与工具本身
+#### CAV：验证理论、算法与工具本身
 
 CCFDDL 快照尚未收录 CAV 2027，但 [CAV 官网](https://conferences.i-cav.org/2027/)已经确认 2027-01-20 AoE 截止，即北京时间 1 月 21 日 19:59。官网将 machine learning、quantum verification、autonomous systems 与 computer security 列为扩展方向。
 
 对 theorem proving 团队，CAV 更关注验证方法、算法、工具和严谨性；它不是“有 Lean 就能投”，而是 formal verification 本身要构成研究贡献。
 
-## STEM 助手：IUI 与 CHI 要求的不只是一个界面
+### STEM 助手：IUI 与 CHI 要求的不只是一个界面
 
 数学 tutor、科学助手、交互式证明工具看起来适合 IUI 或 CHI，但两个 venue 都不会因为有聊天界面就自动接受。
 
@@ -164,9 +186,9 @@ CCFDDL 快照尚未收录 CAV 2027，但 [CAV 官网](https://conferences.i-cav.
 
 CHI 的范围更广，也更强调 HCI 理论、方法和严谨研究设计。若主张“系统提高了数学学习效果”，就需要学习实验、对照、伦理与统计设计；只报告模型正确率通常不够。
 
-## B 级不是备胎：它要求真正的领域贡献
+### Fit-B 不是备胎：它要求真正的领域贡献
 
-第一轮广筛没有把数据、系统和计算会议删掉。40 个 CCFDDL 会议届次中，B 级条件候选共有 20 个：
+第一轮广筛没有把数据、系统和计算会议删掉。40 个 CCFDDL 会议届次中，Fit-B 条件候选共有 20 个：
 
 | 贡献簇 | 保留会议 | 进入条件 |
 |---|---|---|
@@ -179,9 +201,9 @@ CHI 的范围更广，也更强调 HCI 理论、方法和严谨研究设计。�
 
 但“我们建立了一个数学数据集”本身仍不够。要投 VLDB/SIGMOD/ICDE，需要数据库研究问题；要投 ASPLOS/OSDI，需要系统创新和强实证；要投 ICRA，需要机器人或具身实验。
 
-## C 级仍保留，但通常不该作为第一选择
+### Fit-C 仍保留，但通常不该作为第一选择
 
-C 级共有 11 个：USENIX Security、NDSS、MobiCom、NSDI、DATE、EUROCRYPT、DCC、ISCAS、CHES、IEEE S&P、SECON。
+Fit-C 共有 11 个：USENIX Security、NDSS、MobiCom、NSDI、DATE、EUROCRYPT、DCC、ISCAS、CHES、IEEE S&P、SECON。
 
 它们并非“不支持 AI for Science”，而是需要明显领域转向：
 
@@ -197,15 +219,21 @@ C 级共有 11 个：USENIX Security、NDSS、MobiCom、NSDI、DATE、EUROCRYPT�
 
 如果 2026 年内没有合适窗口，延长到 2027 年 1 月会多出七个可执行入口：
 
+其中 CAV 与 FSE Industry 是官网补充项；其余五项来自 CCFDDL 广筛数据。临近投稿时仍应回到官方页面确认时区、registration/abstract 性质与 track 规则。
+
+<div className="fit-table">
+
 | 关联度 | 会议 / Track | 北京时间 | 关键限定 |
 |---|---|---|---|
-| B | [SIGMETRICS 2027 Winter](https://www.sigmetrics.org/sigmetrics2027/) | 摘要 1 月 5 日；全文 1 月 12 日 | 性能建模、测量、调度、成本或排队分析 |
-| C | [CHES 2027 Volume 2027/3](https://ches.iacr.org/2027/) | 全文 1 月 16 日 | 密码硬件、实现安全或侧信道 |
-| C | [USENIX Security 2027 Cycle 2](https://www.usenix.org/conference/usenixsecurity27) | 摘要 1 月 20 日；全文 1 月 27 日 | 安全必须是核心贡献 |
-| A | [CAV 2027 Main Paper](https://conferences.i-cav.org/2027/) | 全文 1 月 21 日 19:59 | 形式验证、算法与工具 |
-| B | [FSE 2027 Industry Papers](https://conf.researchr.org/track/fse-2027/fse-2027-industry-papers) | 全文 1 月 24 日 19:59 | 真实工业应用；进入 companion proceedings，不等同主 Research Track |
-| B | [VLDB 2027 月度轮次](https://www.vldb.org/2027/submission-guidelines.html) | 摘要 1 月 26 日；全文 2 月 2 日 | 1 月进入投稿流程，数据库贡献必须成立 |
-| B | [CSF 2027 Winter](https://www.ieee-security.org/TC/CSF2027/) | 全文 1 月 29 日 | 形式化推理必须落到 security foundations |
+| Fit-B | [SIGMETRICS 2027 Winter](https://www.sigmetrics.org/sigmetrics2027/) | 摘要 1 月 5 日；全文 1 月 12 日 | 性能建模、测量、调度、成本或排队分析 |
+| Fit-C | [CHES 2027 Volume 2027/3](https://ches.iacr.org/2027/) | 全文 1 月 16 日 | 密码硬件、实现安全或侧信道 |
+| Fit-C | [USENIX Security 2027 Cycle 2](https://www.usenix.org/conference/usenixsecurity27) | mandatory registration 1 月 20 日；全文 1 月 27 日 | 安全必须是核心贡献 |
+| Fit-A | [CAV 2027 Main Paper](https://conferences.i-cav.org/2027/) | 全文 1 月 21 日 19:59 | 形式验证、算法与工具 |
+| Fit-B | [FSE 2027 Industry Papers](https://conf.researchr.org/track/fse-2027/fse-2027-industry-papers) | 全文 1 月 24 日 19:59 | 真实工业应用；进入 companion proceedings，不等同主 Research Track |
+| Fit-B | [VLDB 2027 月度轮次](https://www.vldb.org/2027/submission-guidelines.html) | 摘要 1 月 26 日；全文 2 月 2 日 | 1 月进入投稿流程，数据库贡献必须成立 |
+| Fit-B | [CSF 2027 Winter](https://www.ieee-security.org/TC/CSF2027/) | 全文 1 月 29 日 | 形式化推理必须落到 security foundations |
+
+</div>
 
 这七项里，对一般 AI for Math 最值得关注的是 CAV；对科学计算系统可看 SIGMETRICS；对知识基础设施可看 VLDB；已有真实工业部署时，FSE Industry 才有意义。
 
@@ -259,7 +287,7 @@ AI for Math / AI for Science 的投稿面并不窄。真正窄的是：一篇论
 更稳妥的方法是长期维护两张表：
 
 - 一张是**经过 gate 校验的开放窗口表**；
-- 一张是**按论文贡献分层的 S/A/B/C 目标地图**。
+- 一张是**按论文贡献分层的 Fit-S / Fit-A / Fit-B / Fit-C 目标地图**。
 
 前者回答“还能不能投”，后者回答“为什么应该投”。只有两张表同时成立，deadline 才会变成投稿计划，而不是焦虑倒计时。
 
