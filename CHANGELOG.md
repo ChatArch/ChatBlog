@@ -22,6 +22,7 @@
 - Added an AutoResearch engineering analysis covering action-space growth, validation debt, adaptive overfitting, independent confirmation, evidence lineage, and practical project selection.
 - Added an exploration of MathOverflow's `Are we stuck with Lean?` discussion, separating kernel, foundation, Mathlib, tooling, community, and funding lock-in while mapping realistic proof-portability strategies.
 - Added a practical Zhihu publishing architecture guide comparing CLI, browser-extension, internal-API, and headless approaches, with a server control plane, trusted browser runner, article-ID mapping, draft-first updates, and compliance boundaries.
+- Added an end-to-end Zhihu draft pipeline practice covering persistent Chrome profiles, MV3 extension wake-up, loopback bridge security, local image upload, rich-content fidelity, fail-closed updates, and the resulting Infra state machine.
 - Added a Tau Ceti systems analysis covering human roadmaps, AI author/review workers, sandboxed Lean CI, five-repository trust boundaries, the public 50k-run review archive, measured throughput, and unresolved calibration/maintenance risks.
 - Added a broad-first CCF A/B deadline guide for AI for Math and AI for Science, covering open-round validation, contribution-based venue matching, remaining 2026 deadlines, January 2027 fallbacks, and official-source caveats.
 
