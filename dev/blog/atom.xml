@@ -26,7 +26,7 @@
 <li class="">标题、多级标题、图片、公式、表格、代码块、引用、链接和列表能在编辑页回读；</li>
 <li class="">任务清单和删除线出现了可重复的降级行为；</li>
 <li class="">返回的是草稿编辑入口，最终“发布”按钮没有被自动点击；</li>
-<li class="">每次成功结果都会写入文章状态台账，而不是只留在终端输出里。</li>
+<li class="">本轮成功结果都由外层记录脚本写入文章状态台账，而不是只留在终端输出里。</li>
 </ul>
 <p>这条链路的最小形态如下：</p>
 <!-- -->
@@ -69,17 +69,17 @@
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一篇文章怎样穿过这条链路">一篇文章怎样穿过这条链路<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0%E6%80%8E%E6%A0%B7%E7%A9%BF%E8%BF%87%E8%BF%99%E6%9D%A1%E9%93%BE%E8%B7%AF" class="hash-link" aria-label="一篇文章怎样穿过这条链路的直接链接" title="一篇文章怎样穿过这条链路的直接链接" translate="no">​</a></h2>
 <p>下面是实际 create-draft 的请求序列：</p>
 <!-- -->
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cli-负责确定性工作">CLI 负责确定性工作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#cli-%E8%B4%9F%E8%B4%A3%E7%A1%AE%E5%AE%9A%E6%80%A7%E5%B7%A5%E4%BD%9C" class="hash-link" aria-label="CLI 负责确定性工作的直接链接" title="CLI 负责确定性工作的直接链接" translate="no">​</a></h3>
-<p>CLI 做这些事：</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cli-与-wrapper-负责确定性工作">CLI 与 wrapper 负责确定性工作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#cli-%E4%B8%8E-wrapper-%E8%B4%9F%E8%B4%A3%E7%A1%AE%E5%AE%9A%E6%80%A7%E5%B7%A5%E4%BD%9C" class="hash-link" aria-label="CLI 与 wrapper 负责确定性工作的直接链接" title="CLI 与 wrapper 负责确定性工作的直接链接" translate="no">​</a></h3>
+<p>Wechatsync CLI 做这些事：</p>
 <ul>
 <li class="">读取 Markdown/HTML；</li>
 <li class="">提取标题、封面和本地图片；</li>
 <li class="">执行 dry-run；</li>
 <li class="">启动 bridge 并等待正确扩展；</li>
 <li class="">发送结构化任务；</li>
-<li class="">输出平台结果；</li>
-<li class="">记录 source hash 和 receipt。</li>
+<li class="">输出平台结果。</li>
 </ul>
+<p>我们在它外层增加一个很薄的 wrapper：先计算 source hash，调用 CLI，拿到成功 receipt 后再写入文章台账。上游 CLI 当前没有内置这层持久状态，不能把终端中的成功链接误当成已经具备幂等控制。</p>
 <p>上游现有命令已经足够完成 create-first MVP：</p>
 <div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain"># 本地检查，不写远端</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">wechatsync sync article.md -p zhihu --dry-run</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"># 通过扩展检查登录</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">wechatsync auth zhihu --refresh</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"># 创建一篇知乎草稿</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">wechatsync sync article.md -p zhihu</span><br></div></code></pre></div></div>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="扩展负责平台相关工作">扩展负责平台相关工作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E6%89%A9%E5%B1%95%E8%B4%9F%E8%B4%A3%E5%B9%B3%E5%8F%B0%E7%9B%B8%E5%85%B3%E5%B7%A5%E4%BD%9C" class="hash-link" aria-label="扩展负责平台相关工作的直接链接" title="扩展负责平台相关工作的直接链接" translate="no">​</a></h3>
