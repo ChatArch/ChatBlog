@@ -44,38 +44,6 @@ AutoResearch 的能力边界不取决于它自动化了多少科研步骤，而�
 | **探究循环** | 竞争假设与已有证据 | 设计实验 → 数据、效应、反例 | 预先声明的规则与研究者 |
 | **问责循环** | claim-evidence graph | audit / replicate → review 与证据缺口 | 独立 reviewer / human gate |
 
-```mermaid
-flowchart TB
-  Q[Research question]
-
-  subgraph EXEC[执行循环]
-    direction LR
-    C[Code / config state] --> P[Patch or run]
-    P --> M[Metric / error / cost]
-    M --> C
-  end
-
-  subgraph INQ[探究循环]
-    direction LR
-    H[Competing hypotheses] --> D[Experiment design]
-    D --> O[Observation / counterexample]
-    O --> H
-  end
-
-  subgraph ACC[问责循环]
-    direction LR
-    G[Claim-evidence graph] --> V[Audit / replication / review]
-    V --> R[Revise claim or request evidence]
-    R --> G
-  end
-
-  Q --> H
-  H --> C
-  M --> O
-  O --> G
-  R --> D
-```
-
 这三层不是按分钟、小时、天机械划分。一次湿实验可能比论文 review 更慢。它们的区别在于**更新什么状态、依据什么反馈做决定**。
 
 执行循环可以优化一个固定目标；探究循环必须在竞争解释之间更新认知；问责循环只有在审计或复现意见真正返回主张与实验设计时才闭合。单纯生成 citation、PDF 或 reviewer 文本仍然只是 pipeline。
@@ -171,31 +139,20 @@ Human gate 也不能只是一个“Approve”按钮。它需要明确：谁审�
 下面的控制面不要求先安装某个 AI Scientist。它可以接 autoresearch、AIDE、RD-Agent，也可以接团队已有的 GPU 调度、Git 与论文工具。
 
 ```mermaid
+%%{init: {'themeVariables': {'fontSize': '20px'}}}%%
 flowchart TB
   H[Human research brief] --> P[Proposer]
-
-  subgraph EXP[Exploration zone]
-    direction LR
-    W[Isolated worktree] --> X[Runner / GPU queue]
-    X --> E1[Exploration evaluator]
-    E1 --> L[Experiment ledger]
-    L --> P
-  end
-
-  L --> S[Frozen shortlist]
-
-  subgraph CONF[Confirmation zone]
-    direction LR
-    C[Locked evaluator] --> F[Fresh data / multiple seeds]
-    F --> V[Pre-registered decision rule]
-  end
-
-  S --> C
-  V --> A[Evidence store]
+  P --> X[Isolated worktree and runner]
+  X --> E[Exploration evaluator and ledger]
+  E -->|iterate within query budget| P
+  E --> S[Frozen shortlist]
+  S --> C[Locked confirmation]
+  C --> F[Fresh data, seeds, decision rule]
+  F --> A[Evidence store]
   A --> R[Independent reviewer]
   R --> G{Human release gate}
   G -->|revise or reject| H
-  G -->|accept| O[Report / paper]
+  G -->|accept| O[Report or paper]
 ```
 
 关键权限边界是：
