@@ -21,6 +21,7 @@
 - Added a 2025–2026 AI mathematics landscape covering ICM 2026, research datasets, formal-proof benchmarks, open-source systems, and an evidence audit of claimed open-problem results.
 - Added an AutoResearch engineering analysis covering action-space growth, validation debt, adaptive overfitting, independent confirmation, evidence lineage, and practical project selection.
 - Added an exploration of MathOverflow's `Are we stuck with Lean?` discussion, separating kernel, foundation, Mathlib, tooling, community, and funding lock-in while mapping realistic proof-portability strategies.
+- Added a practical Zhihu publishing architecture guide comparing CLI, browser-extension, internal-API, and headless approaches, with a server control plane, trusted browser runner, article-ID mapping, draft-first updates, and compliance boundaries.
 
 ### Changed
 
