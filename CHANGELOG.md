@@ -23,6 +23,7 @@
 - Added an exploration of MathOverflow's `Are we stuck with Lean?` discussion, separating kernel, foundation, Mathlib, tooling, community, and funding lock-in while mapping realistic proof-portability strategies.
 - Added a practical Zhihu publishing architecture guide comparing CLI, browser-extension, internal-API, and headless approaches, with a server control plane, trusted browser runner, article-ID mapping, draft-first updates, and compliance boundaries.
 - Added a Tau Ceti systems analysis covering human roadmaps, AI author/review workers, sandboxed Lean CI, five-repository trust boundaries, the public 50k-run review archive, measured throughput, and unresolved calibration/maintenance risks.
+- Added a broad-first CCF A/B deadline guide for AI for Math and AI for Science, covering open-round validation, contribution-based venue matching, remaining 2026 deadlines, January 2027 fallbacks, and official-source caveats.
 
 ### Changed
 
