@@ -17,6 +17,7 @@
 - Added an illustrated Discord vs self-hosted Revolt/Stoat explainer with demo deployment notes and account/invite caveats.
 - Added a research-style self-hosted dashboard roundup covering Homepage, Homarr, Dashy, Homer, and Glance with screenshots and deployment notes.
 - Added a practical Glance configuration guide covering service widgets, RSS/Atom feeds, the full widget catalog, dependency boundaries, and a recommended first dashboard.
+- Added a three-part Lean soundness series centered on the `Counterexample to the Lean Conjecture` discussion, with focused companion guides to Comparator and the nanoda external kernel.
 
 ### Changed
 
