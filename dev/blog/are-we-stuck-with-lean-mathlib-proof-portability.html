@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-Hans" dir="ltr" class="blog-wrapper blog-post-page plugin-blog plugin-id-default" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">我们真的被 Lean 锁定了吗？Mathlib、soundness 与证明可移植性 | ChatBlog</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/social-card.svg"><meta data-rh="true" name="twitter:image" content="https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/social-card.svg"><meta data-rh="true" property="og:url" content="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability"><meta data-rh="true" property="og:locale" content="zh_Hans"><meta data-rh="true" name="docusaurus_locale" content="zh-Hans"><meta data-rh="true" name="docusaurus_tag" content="default"><meta data-rh="true" name="docsearch:language" content="zh-Hans"><meta data-rh="true" name="docsearch:docusaurus_tag" content="default"><meta data-rh="true" property="og:title" content="我们真的被 Lean 锁定了吗？Mathlib、soundness 与证明可移植性 | ChatBlog"><meta data-rh="true" name="description" content="从 MathOverflow 的 Are we stuck with Lean 讨论出发，拆解 kernel、foundation、Mathlib、tooling、community 与 funding 六层锁定，并探索独立 checker、跨系统复核和替代生态的现实路线。"><meta data-rh="true" property="og:description" content="从 MathOverflow 的 Are we stuck with Lean 讨论出发，拆解 kernel、foundation、Mathlib、tooling、community 与 funding 六层锁定，并探索独立 checker、跨系统复核和替代生态的现实路线。"><meta data-rh="true" property="og:type" content="article"><meta data-rh="true" property="article:published_time" content="2026-07-31T05:40:00.000Z"><meta data-rh="true" property="article:tag" content="lean,proof-assistants,formal-verification,mathlib,ai"><link data-rh="true" rel="icon" href="/ChatBlog/dev/img/favicon.svg"><link data-rh="true" rel="canonical" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability"><link data-rh="true" rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability" hreflang="zh-Hans"><link data-rh="true" rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","@id":"https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability","mainEntityOfPage":"https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability","url":"https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability","headline":"我们真的被 Lean 锁定了吗？Mathlib、soundness 与证明可移植性","name":"我们真的被 Lean 锁定了吗？Mathlib、soundness 与证明可移植性","description":"从 MathOverflow 的 Are we stuck with Lean 讨论出发，拆解 kernel、foundation、Mathlib、tooling、community 与 funding 六层锁定，并探索独立 checker、跨系统复核和替代生态的现实路线。","datePublished":"2026-07-31T05:40:00.000Z","author":[],"keywords":[],"isPartOf":{"@type":"Blog","@id":"https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog","name":"ChatBlog 博客"}}</script><link rel="alternate" type="application/rss+xml" href="/ChatBlog/dev/blog/rss.xml" title="ChatBlog RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/ChatBlog/dev/blog/atom.xml" title="ChatBlog Atom Feed"><link rel="stylesheet" href="/ChatBlog/dev/assets/css/styles.44dc54dc.css">
+<script src="/ChatBlog/dev/assets/js/runtime~main.a74e4852.js" defer="defer"></script>
+<script src="/ChatBlog/dev/assets/js/main.ee2e92ea.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ChatBlog/dev/img/logo.svg"><div role="region" aria-label="跳到主要内容"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">跳到主要内容</a></div><nav aria-label="主导航" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="切换导航栏" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ChatBlog/dev/"><div class="navbar__logo"><img src="/ChatBlog/dev/img/logo.svg" alt="ChatBlog logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ChatBlog/dev/img/logo.svg" alt="ChatBlog logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">ChatBlog</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ChatBlog/dev/blog">博客</a><a class="navbar__item navbar__link" href="/ChatBlog/dev/docs/blocks/hello-world">知识块</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/ChatArch/ChatBlog" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="切换浅色/暗黑模式（当前为system mode）"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="container margin-vert--lg"><div class="row"><aside class="col col--3"><nav class="sidebar_re4s thin-scrollbar" aria-label="最近博文导航"><div class="sidebarItemTitle_pO2u margin-bottom--md">Recent posts</div><div role="group"><h3 class="yearGroupHeading_rMGB">2026</h3><ul class="sidebarItemList_Yudw clean-list"><li class="sidebarItem__DBe"><a aria-current="page" class="sidebarItemLink_mo7H sidebarItemLinkActive_I1ZP" href="/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability">我们真的被 Lean 锁定了吗？Mathlib、soundness 与证明可移植性</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/dev/blog/autoresearch-open-source-landscape">AutoResearch 怎么落地：验证债务与可信闭环</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026">AI 数学进入开放问题时代了吗：ICM 2026 后的数据集、系统与真实进展</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/dev/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda">一份‘反证 Collatz 猜想’的 Lean 代码，为什么同时通过了两个 checker</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/dev/blog/lean-comparator-trust-boundary-guide">Comparator 到底在检查什么：从 Challenge/Solution 到 external kernel</a></li></ul></div></nav></aside><main class="col col--7"><article class=""><header><h1 class="title_f1Hy">我们真的被 Lean 锁定了吗？Mathlib、soundness 与证明可移植性</h1><div class="container_mt6G margin-vert--md"><time datetime="2026-07-31T05:40:00.000Z">2026年7月31日</time> · <!-- -->阅读需 20 分钟</div></header><div id="__blog-post-container" class="markdown"><p>2026 年 7 月 30 日，Timothy Chow 在 MathOverflow 发了一个标题很直接的问题：<a href="https://mathoverflow.net/questions/513742/are-we-stuck-with-lean" target="_blank" rel="noopener noreferrer" class=""><em>Are we stuck with Lean?</em></a></p>
+<p>截至本文抓取页面时，这个刚出现一天的问题已有 39 票、超过 1.6 万次浏览、6 个回答。它紧跟在 Lean 的 Collatz-themed soundness 事件之后：一份 AI 参与生成的 artifact 同时穿过了当时的 Lean kernel 与旧版 nanoda。于是一个工程事故很快被推到更大的问题上：</p>
+<blockquote>
+<p>Are there any prospects for any organization to seriously support an alternative to Lean?</p>
+</blockquote>
+<p>如果只按标题回答，讨论很容易变成两种口号：Lean 已经赢了，接受现实；或者 Lean 有过 soundness bug，应该换成 Metamath。六个回答和几十条评论真正说明的是：<strong>“被 Lean 锁定”不是一个 yes/no 问题，因为这里至少有六种不同的锁。</strong></p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>先给结论</div><div class="admonitionContent_BuS1"><p>短期内，数学形式化确实在 Mathlib、工具链和共同体层面形成了很高的 switching cost；但这不等于 Lean 的 kernel、逻辑基础或今天的实现会永远不可替代。比“全部迁移”更现实的目标，是降低不可逆性：让重要证明能被独立 checker 复核、能跨系统重建，让替代生态得到长期工程投入。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>关于来源</div><div class="admonitionContent_BuS1"><p>MathOverflow 讨论仍在变化。本文中的票数、浏览量和回答数是 2026 年 7 月 31 日的快照；观点均按作者归属，不代表 MathOverflow、Lean 社区或本文的共同结论。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="原问题并不是要不要抛弃-lean">原问题并不是“要不要抛弃 Lean”<a href="#原问题并不是要不要抛弃-lean" class="hash-link" aria-label="原问题并不是“要不要抛弃 Lean”的直接链接" title="原问题并不是“要不要抛弃 Lean”的直接链接" translate="no">​</a></h2>
+<p>Chow 回忆，三年前他曾把那一刻称作一个 “<a href="https://en.wikipedia.org/wiki/Arnold_Dumey" target="_blank" rel="noopener noreferrer" class="">Dumey microsecond</a>”：数学界或许还来得及把资源投向自己选择的 proof assistant。当时 Mathlib 刚完成 Lean 3 到 Lean 4 的迁移，Lean FRO 刚成立，Terry Tao 也还没有自学 Lean。今天，Lean 看起来远比当时不可避免。</p>
+<p>他提出 Metamath 作为具体候选，理由有两类：</p>
+<ol>
+<li class=""><a href="https://arxiv.org/abs/1910.10703" target="_blank" rel="noopener noreferrer" class="">Metamath Zero</a> 提供了一条不同的高 assurance 路线；</li>
+<li class="">Metamath 可以使用 set-theoretic foundation，为 propositions-as-types 之外保留一条路线。</li>
+</ol>
+<p>但他也明确说自己不是 Metamath 的利益相关者，更没有主张“ditch Lean”。他的实际诉求是：数学界是否会从一个<strong>可用、持续维护、基础不同的第二生态</strong>中受益，以及谁愿意为此提供 institutional support。</p>
+<p>这句话里混着四个本该分开的问题：</p>
+<ul>
+<li class=""><strong>Assurance</strong>：怎样相信 AI 或其他 adversarial source 生成的 proof artifact？</li>
+<li class=""><strong>Foundation</strong>：dependent type theory、HOL、set theory 各自适合承担什么？</li>
+<li class=""><strong>Ecosystem</strong>：谁能提供 Mathlib、editor、package manager、教程与 review？</li>
+<li class=""><strong>Institution</strong>：谁能连续多年支付开发、维护和基础设施成本？</li>
+</ul>
+<p>如果不拆开，kernel bug 会被误写成 foundational inconsistency，缺少 VS Code 插件会被误写成逻辑不够好，社区网络效应又会被误写成几位名人的偶然选择。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="六个回答其实在回答六种锁定">六个回答，其实在回答六种“锁定”<a href="#六个回答其实在回答六种锁定" class="hash-link" aria-label="六个回答，其实在回答六种“锁定”的直接链接" title="六个回答，其实在回答六种“锁定”的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>回答</th><th>主要视角</th><th>对问题的贡献</th></tr></thead><tbody><tr><td><a href="https://mathoverflow.net/a/513746" target="_blank" rel="noopener noreferrer" class="">Jacques Carette</a></td><td>社会学</td><td>工具选择有趋势、声望与协调效应，主导地位不是自然定律</td></tr><tr><td><a href="https://mathoverflow.net/a/513774" target="_blank" rel="noopener noreferrer" class="">James E Hanson</a></td><td>资金与 UX</td><td>好用的 proof assistant 需要全职团队、服务、教程和 library design，不只需要好 kernel</td></tr><tr><td><a href="https://mathoverflow.net/a/513761" target="_blank" rel="noopener noreferrer" class="">Lawrence Paulson</a></td><td>逻辑与工程</td><td>真正的替代路线也许是 Isabelle/HOL，而不是另一套 dependent type theory 或直接使用 set theory</td></tr><tr><td><a href="https://mathoverflow.net/a/513745" target="_blank" rel="noopener noreferrer" class="">Ricky</a></td><td>实用主义</td><td>Lean 目前是高 confidence、可理解性与可用性的折中；多元化值得，但成本很高</td></tr><tr><td><a href="https://mathoverflow.net/a/513762" target="_blank" rel="noopener noreferrer" class="">Jason Rute</a></td><td>AI 与转换</td><td>AI 可能先让跨系统翻译和重要证明的多重复核变得可行</td></tr><tr><td><a href="https://mathoverflow.net/a/513743" target="_blank" rel="noopener noreferrer" class="">Stanley Yao Xiao</a></td><td>经济史</td><td>领先产品可能被后来者取代，但市场类比低估了 formal library 的不可移植性</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="工具是社会现象但-proof-assistant-不是浏览器">“工具是社会现象”，但 proof assistant 不是浏览器<a href="#工具是社会现象但-proof-assistant-不是浏览器" class="hash-link" aria-label="“工具是社会现象”，但 proof assistant 不是浏览器的直接链接" title="“工具是社会现象”，但 proof assistant 不是浏览器的直接链接" translate="no">​</a></h3>
+<p>Carette 的回答只有几段，最重要的一句是：</p>
+<blockquote>
+<p>The tools we use are a <em>sociological</em> phenomenon.</p>
+</blockquote>
+<p>这提醒我们，Lean 的位置不是纯粹跑分结果。Buzzard、Scholze、Tao、Hales 的可见度，Mathlib contributor 的响应速度，课程、Zulip 与合作项目都会制造正反馈。</p>
+<p>Chow 后来在<a href="https://mathoverflow.net/questions/513742/are-we-stuck-with-lean#comment1341125_513742" target="_blank" rel="noopener noreferrer" class="">评论</a>中转述 Kevin Buzzard 的解释：他选择 Lean 的一个重要原因，是 Lean community 当时是唯一愿意支持“形式化全部本科数学”这个项目的社区。这个细节比“名人带动 herd”更有解释力——社区对一个具体 contributor 说 yes，本身就是产品能力。</p>
+<p>但评论很快指出 Internet Explorer 类比的边界。换浏览器不会让你失去过去写过的网页；换 foundation 却可能让 definitions、theorem statements 与整个 library graph 都无法直接复用。Emil Jeřábek 的评论把它说得很具体：你不能把“Ford proof assistant”换成“Toyota proof assistant”，同时保留此前形式化的所有证明。</p>
+<p>更接近的类比或许是 HTML、JavaScript 或 LaTeX：实现和工具可以更换，但共享 artifact、接口与社会惯例会长期留下。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="真正昂贵的是持续的工程组织">真正昂贵的是持续的工程组织<a href="#真正昂贵的是持续的工程组织" class="hash-link" aria-label="真正昂贵的是持续的工程组织的直接链接" title="真正昂贵的是持续的工程组织的直接链接" translate="no">​</a></h3>
+<p>Hanson 的回答把标题改写成一个更可操作的问题：这里的 “seriously” 是指有组织愿意做，还是指能吸引足够多数学家形成 viable alternative？</p>
+<p>前者已经存在。Rocq、Isabelle、Mizar、Metamath 都不是业余玩具。后者要求的东西要多得多：</p>
+<ul>
+<li class="">安装和升级不要折磨用户；</li>
+<li class="">editor response、autocomplete 与 diagnostics 足够好；</li>
+<li class="">有教程、文档和 onboarding；</li>
+<li class="">library 的 definitions 与 APIs 适合实际数学；</li>
+<li class="">CI、package hosting、web editor 和 review queue 有人维护；</li>
+<li class="">破坏性 migration 时有能力带着生态一起走。</li>
+</ul>
+<p>Hanson 因此认为，一个有竞争力的新项目更像 <a href="https://lean-lang.org/fro/about/" target="_blank" rel="noopener noreferrer" class="">Lean FRO</a>、CoCalc 或 Overleaf，而不是给几位 academic researchers 发几笔短期 grant。</p>
+<p>他还提出了一个很重要的架构分离：数学家使用的 frontend 可以从数学 UX “top down” 设计，最终再编译到一个极小、Metamath-like 的 checking backend。用户看到什么，与 root of trust 用什么逻辑，不必是同一个决策。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="替代-dependent-types不等于默认选择-set-theory">替代 dependent types，不等于默认选择 set theory<a href="#替代-dependent-types不等于默认选择-set-theory" class="hash-link" aria-label="替代 dependent types，不等于默认选择 set theory的直接链接" title="替代 dependent types，不等于默认选择 set theory的直接链接" translate="no">​</a></h3>
+<p>Paulson 直接把问题推广成：“Are we stuck with dependent types?” 他批评 proof objects、kernel complexity 和 dependent equality 带来的成本，并建议读者看看 Isabelle/HOL 与 <a href="https://www.cl.cam.ac.uk/~lp15/Grants/Alexandria/" target="_blank" rel="noopener noreferrer" class="">Alexandria project</a>。</p>
+<p>但这条讨论里最值得保留的材料来自他在问题下的评论。作为 Isabelle/ZF 的作者，Paulson 明确说自己<strong>不建议</strong>把 set theory 当作日常形式化数学的默认环境：types 能简化 notation、排除荒谬项；很多数学用 Isabelle/HOL 的 simple type theory 已经足够，只有数学本身涉及 ordinals 等对象时才加载 ZFC library。</p>
+<p>与此同时，Jean Abou Samra 也反对“dependent types 必然需要大 kernel”的定论：toy MLTT 可以很小，proof-irrelevant proposition 与 weak type theory 仍有未充分探索的设计空间。</p>
+<p>因此，这里的合理结论不是 “DTT bad, ZFC good”，而是：<strong>proof assistant 的 design space 远未收敛，而今天主流实现的复杂度不等于逻辑路线的理论下界。</strong></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="lean-的-practical-compromise">Lean 的 practical compromise<a href="#lean-的-practical-compromise" class="hash-link" aria-label="Lean 的 practical compromise的直接链接" title="Lean 的 practical compromise的直接链接" translate="no">​</a></h3>
+<p>Mathlib maintainer Ricky 的回答最接近日常使用者的判断：Lean 不是唯一实践选择，也绝不完美；但对很多人，它目前确实更好用，benefit 超过 drawback。</p>
+<p>他还把 AI proof verification 分成两个目标：只需要一个 oracle，还是想理解 proof？Lean 的价值之一，是当 proof 没有偏离 Mathlib idiom 太远时，人仍有机会理解它，同时获得很高但非绝对的 confidence。</p>
+<p>这个回答也纠正了“没有组织认真支持 alternatives”的说法。Rocq 已获得 Inria 的长期支持。缺失的不是 seriousness 本身，而是 Lean 目前在 pure-math mind share、library coordination 与 contributor growth 上形成的组合优势。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-最可能先改变翻译而不是重造一切">AI 最可能先改变翻译，而不是重造一切<a href="#ai-最可能先改变翻译而不是重造一切" class="hash-link" aria-label="AI 最可能先改变翻译，而不是重造一切的直接链接" title="AI 最可能先改变翻译，而不是重造一切的直接链接" translate="no">​</a></h3>
+<p>Rute 给出了一条不要求选出唯一赢家的路线：为特别重要的证明，在 Lean、HOL 和 Metamath 等不同 foundations 中保留可复核版本。</p>
+<p>他认为，AI 可能很快擅长把 formal mathematics 从一种系统翻译到另一种系统。即使 symbolic conversion 生成的代码难看，它仍可能适合 machine checking；如果追求可维护性，再让模型做 target-idiomatic reconstruction。</p>
+<p>这比“从空白开始在第二个系统重证全部 Mathlib”现实得多。它把投资单位从整套生态改成：</p>
+<ul>
+<li class="">基础 definitions 的对应关系；</li>
+<li class="">高价值 theorem 的 statement mapping；</li>
+<li class="">landmark proof 的独立重建；</li>
+<li class="">能持续运行的 cross-check pipeline。</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="市场会带来后来者吗">市场会带来后来者吗？<a href="#市场会带来后来者吗" class="hash-link" aria-label="市场会带来后来者吗？的直接链接" title="市场会带来后来者吗？的直接链接" translate="no">​</a></h3>
+<p>Xiao 用汽车、搜索引擎和电动车说明先发者常被取代。评论指出一个事实错误：Lean 根本不是 proof assistant 的 first mover；它相对较晚出现，强调 usability 与 setup 正是后来居上的原因之一。</p>
+<p>这个回答仍触及一个真实问题：谁为“更好但免费”的数学基础设施付费？传统 consumer-software 市场未必会自动产生答案。潜在资金可能来自 research infrastructure、philanthropy、government strategy 或需要可靠 formal reasoning 的 AI/technology companies。</p>
+<p>市场可能带来竞争者，但 formal mathematics 的 switching cost 使“产品更好自然获胜”远不像浏览器或汽车那么简单。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我们到底被什么锁住了">我们到底被什么锁住了<a href="#我们到底被什么锁住了" class="hash-link" aria-label="我们到底被什么锁住了的直接链接" title="我们到底被什么锁住了的直接链接" translate="no">​</a></h2>
+<p>Julia M. Himmel 在<a href="https://mathoverflow.net/questions/513742/are-we-stuck-with-lean#comment1341000_513742" target="_blank" rel="noopener noreferrer" class="">评论</a>里提醒：proof assistant 不只是 kernel 和 mathematical library，还包括 incremental elaborator、tactics、typeclasses、linting、language server、package manager、documentation 与 compiler。</p>
+<p>把这条提醒和六组观点放在一起，可以得到一个六层模型：</p>
+<!-- -->
+<table><thead><tr><th>层与切换成本</th><th>被固定的东西</th><th>可行的减锁方式</th></tr></thead><tbody><tr><td>Kernel implementation（低—中）</td><td>checker 行为、bugs、binary 与版本</td><td>independent kernels、conformance tests、version pin</td></tr><tr><td>Logical foundation（高）</td><td>universes、inductives、equality、axioms</td><td>formal specification、受限片段翻译、跨 foundation replay</td></tr><tr><td>Library ontology（很高）</td><td>definitions、statement shapes、instances、APIs</td><td>aligned core libraries、schema 与 statement mapping</td></tr><tr><td>Proof engineering（中—高）</td><td>tactics、automation、idioms、proof terms</td><td>AI translation、target-side reconstruction、proof exchange</td></tr><tr><td>Tooling（高）</td><td>editor、package manager、docs、build、CI</td><td>全职工程、开放协议、可复现环境</td></tr><tr><td>Community/institution（很高）</td><td>maintainers、review、课程、协作、资金</td><td>长期组织、plural funding、共享 benchmarks</td></tr></tbody></table>
+<p>这个表解释了两件看似矛盾的事：</p>
+<ol>
+<li class=""><strong>更换 Lean kernel 并没有想象中困难。</strong> 同一份 export 可以交给独立 checker；nanoda 就是例子。</li>
+<li class=""><strong>更换 Lean/Mathlib 生态比更换 kernel 困难得多。</strong> 最贵的是大家已经共同接受的 definitions、APIs、review norms 与协作网络。</li>
+</ol>
+<p>所以“Lean lock-in”不是一块石头。kernel 层可以今天就多元化；foundation 和 library 层需要多年映射；community 层不能靠 transpiler 搬运。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最近的-soundness-bug-改变了什么">最近的 soundness bug 改变了什么<a href="#最近的-soundness-bug-改变了什么" class="hash-link" aria-label="最近的 soundness bug 改变了什么的直接链接" title="最近的 soundness bug 改变了什么的直接链接" translate="no">​</a></h2>
+<p>本轮 MathOverflow 讨论的直接导火索，是我们此前详细复盘的 <a class="" href="/ChatBlog/dev/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda">Lean Conjecture soundness 事件</a>。那份 Collatz 外衣下的 artifact 同时组合了 Lean nested-inductive 漏检与旧版 nanoda 的另一处 projection bug。</p>
+<p>事件真正改变的是 threat model：</p>
+<ul>
+<li class="">AI-authored proof 必须按 adversarial artifact 处理；</li>
+<li class="">checker、toolchain、config 和 artifact 都必须 versioned；</li>
+<li class="">一套实现是一个 single failure point；</li>
+<li class="">绿色 build 不是脱离版本和信任链的永久证书。</li>
+</ul>
+<p>但它没有证明：</p>
+<ul>
+<li class="">Lean 的 idealized type theory 本身不一致；</li>
+<li class="">set-theoretic checker 不会有 implementation bug；</li>
+<li class="">dependent type theory 必然需要 Lean 当前这套 kernel architecture；</li>
+<li class="">换掉整个 ecosystem 比增加 independent verification 更便宜；</li>
+<li class="">LLM 已被证实自主发现并主动利用了公开漏洞。</li>
+</ul>
+<p>社区的实际响应也不是迁移：Lean 修复 kernel，nanoda 修复自身漏洞，<a class="" href="/ChatBlog/dev/blog/lean-comparator-trust-boundary-guide">Comparator</a> 开启 external checking，LeanEval 强制 standard kernel 与 <a class="" href="/ChatBlog/dev/blog/nanoda-lean-external-kernel-guide">nanoda</a> 同时接受。</p>
+<p>这覆盖的是 kernel-implementation layer。它不能替代长期 foundation pluralism，却说明<strong>提升 assurance 并不要求先复制 Mathlib</strong>。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="metamath-与-mm0-为什么仍然重要">Metamath 与 MM0 为什么仍然重要<a href="#metamath-与-mm0-为什么仍然重要" class="hash-link" aria-label="Metamath 与 MM0 为什么仍然重要的直接链接" title="Metamath 与 MM0 为什么仍然重要的直接链接" translate="no">​</a></h2>
+<p><a href="https://us.metamath.org/" target="_blank" rel="noopener noreferrer" class="">Metamath</a> 的官方说明强调几件与 Lean 很不同的事：</p>
+<ul>
+<li class="">language specification 很小，axioms 由各 database 定义；</li>
+<li class="">proof 写出每一步，而不是在验证时重新运行 <code>simp</code> 或 <code>auto</code>；</li>
+<li class="">有多种语言的独立 verifier；</li>
+<li class="">discovery 与 verification 分离，目标之一是长期归档。</li>
+</ul>
+<p>这使它很适合作为“一个 proof 到底依赖哪些 primitive steps”的极简参照系。</p>
+<p><a href="https://arxiv.org/abs/1910.10703" target="_blank" rel="noopener noreferrer" class="">Metamath Zero</a> 又向前走了一步。Mario Carneiro 将其描述为追求 logic 与 implementation simplicity、支持其他 proof language 的双向 translation，并希望最终把 verifier 自身一路验证到 executable binary 的 root of trust。</p>
+<p>这是很强的 assurance story。但它没有自动回答另一组问题：数学家愿不愿意在它的 frontend 里工作？category theory 是否好写？editor feedback、search、package management、documentation 和 review workflow 谁来维护？</p>
+<p>换句话说，MM0 可以成为一条优秀的 checking backend，而不必要求每位数学家把它当作日常 authoring environment。Hanson 的 top-down 设想与 MM0 并不冲突：<strong>丰富、typeful、符合数学习惯的 frontend，完全可以向更小、甚至不同 foundation 的 proof format 编译。</strong></p>
+<p>这也是为什么“foundation 之争”和“UX 之争”不应该绑定销售。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-已经存在缺少的是可比较">Alternatives 已经存在，缺少的是“可比较”<a href="#alternatives-已经存在缺少的是可比较" class="hash-link" aria-label="Alternatives 已经存在，缺少的是“可比较”的直接链接" title="Alternatives 已经存在，缺少的是“可比较”的直接链接" translate="no">​</a></h2>
+<p>把问题理解成“Lean 之外有没有 serious proof assistant”，答案显然是有。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="rocq">Rocq<a href="#rocq" class="hash-link" aria-label="Rocq的直接链接" title="Rocq的直接链接" translate="no">​</a></h3>
+<p><a href="https://rocq-prover.org/about" target="_blank" rel="noopener noreferrer" class="">Rocq</a> 已有四十多年历史，提供 Gallina、interactive proof、相对小的 certification kernel、program extraction、package ecosystem 与长期 research lineage。<a href="https://rocq-prover.org/consortium" target="_blank" rel="noopener noreferrer" class="">Rocq Consortium</a> 由 Inria 托管，以 membership、donation 与 support subscription 为维护和工程资源提供制度入口。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="isabelle">Isabelle<a href="#isabelle" class="hash-link" aria-label="Isabelle的直接链接" title="Isabelle的直接链接" translate="no">​</a></h3>
+<p><a href="https://isabelle.in.tum.de/" target="_blank" rel="noopener noreferrer" class="">Isabelle</a> 是 generic proof assistant，Isabelle/HOL 拥有独立的 formalization tradition、PIDE、jEdit/VSCode 环境和 <a href="https://www.isa-afp.org/" target="_blank" rel="noopener noreferrer" class="">Archive of Formal Proofs</a>。它不是“没人维护的理论备选”，而是另一套成熟实践。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="mizar">Mizar<a href="#mizar" class="hash-link" aria-label="Mizar的直接链接" title="Mizar的直接链接" translate="no">​</a></h3>
+<p><a href="https://mizar.uwb.edu.pl/" target="_blank" rel="noopener noreferrer" class="">Mizar</a> 有五十年左右的历史、持续发布的 Mizar system 和 Mizar Mathematical Library。它证明了接近数学 prose 的 authoring tradition 可以长期存在，但其 tooling、贡献流程与当下 Lean 社区的协作方式不同。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="metamath">Metamath<a href="#metamath" class="hash-link" aria-label="Metamath的直接链接" title="Metamath的直接链接" translate="no">​</a></h3>
+<p>Metamath Proof Explorer 从 ZFC axioms 开始，官方页面列出四万余 proof，并有十余种 verifier。它的 verification surface 极简，但交互式 authoring、automation 与现代 pure-math API 不是 Mathlib 的等价替身。</p>
+<p>因此，真正的问题不是 alternative 是否存在，甚至也不是有没有机构支持。问题是能否同时具备：</p>
+<ul>
+<li class="">pure mathematics 所需 library coverage；</li>
+<li class="">足够顺滑的 daily UX；</li>
+<li class="">持续 review 与 migration 能力；</li>
+<li class="">能让协作者聚到同一处的 mind share。</li>
+</ul>
+<p>“认真存在”和“可与 Lean 当前协调点比较”之间，还有很长一段工程与社会距离。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-能复制代码行不能直接复制-library">AI 能复制代码行，不能直接复制 library<a href="#ai-能复制代码行不能直接复制-library" class="hash-link" aria-label="AI 能复制代码行，不能直接复制 library的直接链接" title="AI 能复制代码行，不能直接复制 library的直接链接" translate="no">​</a></h2>
+<p>Rute 的回答提到，一个 AI-authored Lean project 已达到 120 万行，而 Mathlib 大约 250 万行。这个数量级很有启发，但 line count 不是 library quality 的代理。</p>
+<p><a href="https://leanprover-community.github.io/mathlib_stats.html" target="_blank" rel="noopener noreferrer" class="">Mathlib statistics</a> 在本文写作时列出：</p>
+<ul>
+<li class="">134,859 个 definitions；</li>
+<li class="">283,710 个 theorems；</li>
+<li class="">772 名 contributors。</li>
+</ul>
+<p>更关键的证据来自 <a href="https://mathlib-initiative.org/about/" target="_blank" rel="noopener noreferrer" class="">Mathlib Initiative</a> 对自身任务的描述：PR 会等待 review，new contributors 遇到 documentation gap，ecosystem updates 需要协调。它提供 professional editorial support、infrastructure development 与 ecosystem coordination，正是因为 volunteer code generation 不足以维持当前规模。</p>
+<p>AI 很可能降低这些成本：</p>
+<ul>
+<li class="">routine declaration 和局部 proof obligation；</li>
+<li class="">对应 lemma 搜索；</li>
+<li class="">naming/API adapter；</li>
+<li class="">跨系统的初稿翻译；</li>
+<li class="">在第二个 checker 中重建 proof。</li>
+</ul>
+<p>但它不会自动消除这些成本：</p>
+<ul>
+<li class="">什么 definitions 应当 canonical；</li>
+<li class="">两个 statement 是否表达同一数学命题；</li>
+<li class="">如何避免重复、冲突和 API fragmentation；</li>
+<li class="">provenance、license 与 review accountability；</li>
+<li class="">source/target library 更新后的持续 migration；</li>
+<li class="">documentation、teaching 与 governance。</li>
+</ul>
+<p>生成 100 万行代码是 throughput。Mathlib 的 moat 是长期形成的 ontology、reviewed interfaces、discoverability 与一群能够协商 breaking change 的人。</p>
+<p>因此，AI 可能先让<strong>核心库和 landmark theorems 的跨系统 mirror</strong>变得经济，再让完整第二个 Mathlib 变得经济。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="proof-portability其实有五个等级">“Proof portability”其实有五个等级<a href="#proof-portability其实有五个等级" class="hash-link" aria-label="“Proof portability”其实有五个等级的直接链接" title="“Proof portability”其实有五个等级的直接链接" translate="no">​</a></h2>
+<p>人们说“把 Lean proof 翻译到另一系统”时，可能在说完全不同的事情。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-翻译-surface-syntax-与-tactics">1. 翻译 surface syntax 与 tactics<a href="#1-翻译-surface-syntax-与-tactics" class="hash-link" aria-label="1. 翻译 surface syntax 与 tactics的直接链接" title="1. 翻译 surface syntax 与 tactics的直接链接" translate="no">​</a></h3>
+<p>这是最像 programming-language transpilation 的一层。AI 可以把 <code>simp</code> 风格重写成目标系统的 automation，但成功编译只说明目标系统接受某个结果，不保证 formal statement 与原 statement 语义相同。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-同-foundation-家族内交换-theory-packages">2. 同 foundation 家族内交换 theory packages<a href="#2-同-foundation-家族内交换-theory-packages" class="hash-link" aria-label="2. 同 foundation 家族内交换 theory packages的直接链接" title="2. 同 foundation 家族内交换 theory packages的直接链接" translate="no">​</a></h3>
+<p><a href="https://www.gilith.com/opentheory/" target="_blank" rel="noopener noreferrer" class="">OpenTheory</a> 的目标，是在 HOL Light、HOL4、ProofPower 等 higher-order logic prover 之间共享 specifications 与 proofs；Isabelle 也有 read interface。共同 foundation 和相近 primitive concepts 大幅降低了 mapping 成本。</p>
+<p>这同时说明：可移植性不是幻想，但越接近共同逻辑 core，越容易做。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-编译到-common-logical-framework">3. 编译到 common logical framework<a href="#3-编译到-common-logical-framework" class="hash-link" aria-label="3. 编译到 common logical framework的直接链接" title="3. 编译到 common logical framework的直接链接" translate="no">​</a></h3>
+<p><a href="https://github.com/Deducteam/Dedukti" target="_blank" rel="noopener noreferrer" class="">Dedukti</a> 是 λΠ-calculus modulo rewriting 的 type checker。不同逻辑可以通过 encoding 进入同一 framework，再由一个小 checker 验证。</p>
+<p>这里的 trust 从原系统转移到 encoding、translation 与 Dedukti checker。它是桥，不是“任何两边天然语义相同”的魔法。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-导出到-root-of-trust-format">4. 导出到 root-of-trust format<a href="#4-导出到-root-of-trust-format" class="hash-link" aria-label="4. 导出到 root-of-trust format的直接链接" title="4. 导出到 root-of-trust format的直接链接" translate="no">​</a></h3>
+<p>MM0 的设计明确包含与其他 proof languages 的 translation。这样的格式可以把复杂 authoring system 的最终 artifact 交给更小 verifier，但仍要说明 source logic 如何映射到目标 primitive rules。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-跨-foundation-独立重建">5. 跨 foundation 独立重建<a href="#5-跨-foundation-独立重建" class="hash-link" aria-label="5. 跨 foundation 独立重建的直接链接" title="5. 跨 foundation 独立重建的直接链接" translate="no">​</a></h3>
+<p>最强的多样性，是让同一 informal theorem 在 Lean、HOL、Metamath 或 Rocq 中分别形成 statement 和 proof。它最能降低 common-mode failure，也最昂贵，因为 statement equivalence 本身需要审查。</p>
+<p>这五层不应混称为 “export”。把同一 byte stream 交给两个 checker，解决 implementation diversity；在不同 foundations 中重建同一数学结论，解决 specification diversity。两者都重要，但不是同一种保证。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="认真支持-alternative需要资助什么">认真支持 alternative，需要资助什么<a href="#认真支持-alternative需要资助什么" class="hash-link" aria-label="认真支持 alternative，需要资助什么的直接链接" title="认真支持 alternative，需要资助什么的直接链接" translate="no">​</a></h2>
+<p>现有组织已经给出很清楚的成本清单。</p>
+<p><a href="https://lean-lang.org/fro/about/" target="_blank" rel="noopener noreferrer" class="">Lean FRO</a> 是一个 nonprofit focused research organization，有明确的五年 mission 和 researcher/engineer team，目标包括 scalability、usability、documentation 与 proof automation。</p>
+<p><a href="https://mathlib-initiative.org/about/" target="_blank" rel="noopener noreferrer" class="">Mathlib Initiative</a> 则把资源放在 editorial support、infrastructure 和 ecosystem coordination，避免 proof projects 被 review bottleneck 卡住。</p>
+<p><a href="https://rocq-prover.org/consortium" target="_blank" rel="noopener noreferrer" class="">Rocq Consortium</a> 由 Inria 托管，让 stakeholder 通过 donation、membership 和 support subscription 参与维护，并影响一部分 engineering resource 的配置。</p>
+<p>这些案例说明，一个 serious alternative 需要的不是只有：</p>
+<ul>
+<li class="">一篇新的 foundation paper；</li>
+<li class="">一个漂亮的 kernel prototype；</li>
+<li class="">一次把现有 library 批量翻译过去的 grant。</li>
+</ul>
+<p>它还需要多年运营：release engineering、editor integration、package hosting、docs、reviewers、migration、community support 与稳定治理。</p>
+<p>更好的 institutional question 也许不是“谁来选出 Lean 的对手”，而是：</p>
+<blockquote>
+<p>谁愿意长期资助形式化数学的可移植性、独立复核和第二生态，使未来的选择不必从零开始？</p>
+</blockquote>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="不要发迁移令做一个组合投资">不要发迁移令，做一个组合投资<a href="#不要发迁移令做一个组合投资" class="hash-link" aria-label="不要发迁移令，做一个组合投资的直接链接" title="不要发迁移令，做一个组合投资的直接链接" translate="no">​</a></h2>
+<p>如果目标是避免单一生态成为永久的 trust 和 coordination bottleneck，可以同时做五件事。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-保留今天最好用的-frontend">1. 保留今天最好用的 frontend<a href="#1-保留今天最好用的-frontend" class="hash-link" aria-label="1. 保留今天最好用的 frontend的直接链接" title="1. 保留今天最好用的 frontend的直接链接" translate="no">​</a></h3>
+<p>在 Lean/Mathlib 最有效的地方继续使用它。Pluralism 不需要先让当前用户承担一次大迁移。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-多元化-trusted-backend">2. 多元化 trusted backend<a href="#2-多元化-trusted-backend" class="hash-link" aria-label="2. 多元化 trusted backend的直接链接" title="2. 多元化 trusted backend的直接链接" translate="no">​</a></h3>
+<p>资助 nanoda、Lean4Lean、small checkers、formal kernel specifications 和 Lean Kernel Arena 一类 adversarial conformance tests。让一个 kernel bug 不再等于所有 verification 都失效。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-为高价值结果维护跨-foundation-版本">3. 为高价值结果维护跨 foundation 版本<a href="#3-为高价值结果维护跨-foundation-版本" class="hash-link" aria-label="3. 为高价值结果维护跨 foundation 版本的直接链接" title="3. 为高价值结果维护跨 foundation 版本的直接链接" translate="no">​</a></h3>
+<p>不必镜像全部 Mathlib。先选 foundational libraries、著名定理和 AI-generated high-stakes proofs，在 HOL、Metamath/MM0、Rocq 或另一 genuinely independent system 中重建。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-把替代系统的-ux-当基础设施">4. 把替代系统的 UX 当基础设施<a href="#4-把替代系统的-ux-当基础设施" class="hash-link" aria-label="4. 把替代系统的 UX 当基础设施的直接链接" title="4. 把替代系统的 UX 当基础设施的直接链接" translate="no">​</a></h3>
+<p>长期资助 editor、package manager、documentation、web environment、CI、search 和 maintainer time。没有这些，kernel 再优雅也无法形成数学共同体。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-建立可移植性的公共层">5. 建立可移植性的公共层<a href="#5-建立可移植性的公共层" class="hash-link" aria-label="5. 建立可移植性的公共层的直接链接" title="5. 建立可移植性的公共层的直接链接" translate="no">​</a></h3>
+<p>维护 statement manifests、definition mappings、proof provenance、shared benchmarks 和 export specifications。即使未来没有发生迁移，这些资产也能改进 audit、reproducibility 和 cross-checking。</p>
+<!-- -->
+<p>这不是要求所有 proof 同时走五条路径。它是一种分级策略：普通开发保持低成本；重要程度、对抗性和长期保存价值越高，独立路径越多。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="那么我们被-lean-锁定了吗">那么，我们被 Lean 锁定了吗？<a href="#那么我们被-lean-锁定了吗" class="hash-link" aria-label="那么，我们被 Lean 锁定了吗？的直接链接" title="那么，我们被 Lean 锁定了吗？的直接链接" translate="no">​</a></h2>
+<p><strong>短期、在生态层面：是。</strong> Mathlib 的 definitions、APIs、automation、review culture 与 contributor network 形成了真实 switching cost。不能靠一段 transpiler 或一笔短 grant 重建。</p>
+<p><strong>长期、在技术和社会层面：不是。</strong> Rocq、Isabelle、Mizar、Metamath 已证明其他传统可以长期存在；OpenTheory、Dedukti、MM0 和 independent kernels 说明 proof artifact 也并非注定只能活在一个 implementation 里。</p>
+<p><strong>但“找到赢家替换 Lean”是错的问题。</strong> 更有价值的目标，是降低不可逆性：如果 kernel 改写、foundation 改变、社区迁移或技术风潮反转，重要数学仍能被理解、复核和带走。</p>
+<p>Lean 不必输，proof-assistant pluralism 才能赢。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="#主要来源" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://mathoverflow.net/questions/513742/are-we-stuck-with-lean" target="_blank" rel="noopener noreferrer" class="">Timothy Chow, <em>Are we stuck with Lean?</em></a></li>
+<li class=""><a href="https://mathoverflow.net/questions/513540/should-we-trust-ai-generated-formal-proofs-in-lean-4" target="_blank" rel="noopener noreferrer" class="">MathOverflow: <em>Should we trust AI-generated formal proofs in Lean 4?</em></a></li>
+<li class=""><a href="https://us.metamath.org/" target="_blank" rel="noopener noreferrer" class="">Metamath 官方介绍</a></li>
+<li class=""><a href="https://arxiv.org/abs/1910.10703" target="_blank" rel="noopener noreferrer" class="">Metamath Zero paper</a></li>
+<li class=""><a href="https://lean-lang.org/fro/about/" target="_blank" rel="noopener noreferrer" class="">Lean FRO</a></li>
+<li class=""><a href="https://mathlib-initiative.org/about/" target="_blank" rel="noopener noreferrer" class="">Mathlib Initiative</a></li>
+<li class=""><a href="https://rocq-prover.org/about" target="_blank" rel="noopener noreferrer" class="">Rocq overview</a> 与 <a href="https://rocq-prover.org/consortium" target="_blank" rel="noopener noreferrer" class="">Rocq Consortium</a></li>
+<li class=""><a href="https://isabelle.in.tum.de/" target="_blank" rel="noopener noreferrer" class="">Isabelle</a> 与 <a href="https://www.isa-afp.org/" target="_blank" rel="noopener noreferrer" class="">Archive of Formal Proofs</a></li>
+<li class=""><a href="https://mizar.uwb.edu.pl/" target="_blank" rel="noopener noreferrer" class="">Mizar</a></li>
+<li class=""><a href="https://www.gilith.com/opentheory/" target="_blank" rel="noopener noreferrer" class="">OpenTheory</a></li>
+<li class=""><a href="https://github.com/Deducteam/Dedukti" target="_blank" rel="noopener noreferrer" class="">Dedukti</a></li>
+<li class=""><a href="https://leanprover-community.github.io/mathlib_stats.html" target="_blank" rel="noopener noreferrer" class="">Mathlib statistics</a></li>
+</ul></div><footer class="docusaurus-mt-lg"><div class="row margin-top--sm theme-blog-footer-edit-meta-row"><div class="col"><b>标签：</b><ul class="tags_jXut padding--none margin-left--sm"><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/lean">lean</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/proof-assistants">proof-assistants</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/formal-verification">formal-verification</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/mathlib">mathlib</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/ai">ai</a></li></ul></div></div><div class="row margin-top--sm theme-blog-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/ChatArch/ChatBlog/tree/main/blog/2026-07-31-are-we-stuck-with-lean.mdx" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>编辑此页</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="博文分页导航"><a class="pagination-nav__link pagination-nav__link--next" href="/ChatBlog/dev/blog/autoresearch-open-source-landscape"><div class="pagination-nav__sublabel">较旧一篇</div><div class="pagination-nav__label">AutoResearch 怎么落地：验证债务与可信闭环</div></a></nav></main><div class="col col--2"><div class="tableOfContents_bqdL thin-scrollbar"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#原问题并不是要不要抛弃-lean" class="table-of-contents__link toc-highlight">原问题并不是“要不要抛弃 Lean”</a></li><li><a href="#六个回答其实在回答六种锁定" class="table-of-contents__link toc-highlight">六个回答，其实在回答六种“锁定”</a><ul><li><a href="#工具是社会现象但-proof-assistant-不是浏览器" class="table-of-contents__link toc-highlight">“工具是社会现象”，但 proof assistant 不是浏览器</a></li><li><a href="#真正昂贵的是持续的工程组织" class="table-of-contents__link toc-highlight">真正昂贵的是持续的工程组织</a></li><li><a href="#替代-dependent-types不等于默认选择-set-theory" class="table-of-contents__link toc-highlight">替代 dependent types，不等于默认选择 set theory</a></li><li><a href="#lean-的-practical-compromise" class="table-of-contents__link toc-highlight">Lean 的 practical compromise</a></li><li><a href="#ai-最可能先改变翻译而不是重造一切" class="table-of-contents__link toc-highlight">AI 最可能先改变翻译，而不是重造一切</a></li><li><a href="#市场会带来后来者吗" class="table-of-contents__link toc-highlight">市场会带来后来者吗？</a></li></ul></li><li><a href="#我们到底被什么锁住了" class="table-of-contents__link toc-highlight">我们到底被什么锁住了</a></li><li><a href="#最近的-soundness-bug-改变了什么" class="table-of-contents__link toc-highlight">最近的 soundness bug 改变了什么</a></li><li><a href="#metamath-与-mm0-为什么仍然重要" class="table-of-contents__link toc-highlight">Metamath 与 MM0 为什么仍然重要</a></li><li><a href="#alternatives-已经存在缺少的是可比较" class="table-of-contents__link toc-highlight">Alternatives 已经存在，缺少的是“可比较”</a><ul><li><a href="#rocq" class="table-of-contents__link toc-highlight">Rocq</a></li><li><a href="#isabelle" class="table-of-contents__link toc-highlight">Isabelle</a></li><li><a href="#mizar" class="table-of-contents__link toc-highlight">Mizar</a></li><li><a href="#metamath" class="table-of-contents__link toc-highlight">Metamath</a></li></ul></li><li><a href="#ai-能复制代码行不能直接复制-library" class="table-of-contents__link toc-highlight">AI 能复制代码行，不能直接复制 library</a></li><li><a href="#proof-portability其实有五个等级" class="table-of-contents__link toc-highlight">“Proof portability”其实有五个等级</a><ul><li><a href="#1-翻译-surface-syntax-与-tactics" class="table-of-contents__link toc-highlight">1. 翻译 surface syntax 与 tactics</a></li><li><a href="#2-同-foundation-家族内交换-theory-packages" class="table-of-contents__link toc-highlight">2. 同 foundation 家族内交换 theory packages</a></li><li><a href="#3-编译到-common-logical-framework" class="table-of-contents__link toc-highlight">3. 编译到 common logical framework</a></li><li><a href="#4-导出到-root-of-trust-format" class="table-of-contents__link toc-highlight">4. 导出到 root-of-trust format</a></li><li><a href="#5-跨-foundation-独立重建" class="table-of-contents__link toc-highlight">5. 跨 foundation 独立重建</a></li></ul></li><li><a href="#认真支持-alternative需要资助什么" class="table-of-contents__link toc-highlight">认真支持 alternative，需要资助什么</a></li><li><a href="#不要发迁移令做一个组合投资" class="table-of-contents__link toc-highlight">不要发迁移令，做一个组合投资</a><ul><li><a href="#1-保留今天最好用的-frontend" class="table-of-contents__link toc-highlight">1. 保留今天最好用的 frontend</a></li><li><a href="#2-多元化-trusted-backend" class="table-of-contents__link toc-highlight">2. 多元化 trusted backend</a></li><li><a href="#3-为高价值结果维护跨-foundation-版本" class="table-of-contents__link toc-highlight">3. 为高价值结果维护跨 foundation 版本</a></li><li><a href="#4-把替代系统的-ux-当基础设施" class="table-of-contents__link toc-highlight">4. 把替代系统的 UX 当基础设施</a></li><li><a href="#5-建立可移植性的公共层" class="table-of-contents__link toc-highlight">5. 建立可移植性的公共层</a></li></ul></li><li><a href="#那么我们被-lean-锁定了吗" class="table-of-contents__link toc-highlight">那么，我们被 Lean 锁定了吗？</a></li><li><a href="#主要来源" class="table-of-contents__link toc-highlight">主要来源</a></li></ul></div></div></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">内容</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/dev/blog">博客</a></li><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/dev/docs/blocks/hello-world">知识块</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">源码</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/ChatArch/ChatBlog" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 ChatArch. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
