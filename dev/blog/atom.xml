@@ -29,7 +29,6 @@
 </ol>
 <p>按这四个问题，当前系统可以拆成三个不同但可嵌套的循环：</p>
 <table><thead><tr><th>循环</th><th>状态</th><th>动作与观测</th><th>决策</th></tr></thead><tbody><tr><td><strong>执行循环</strong></td><td>代码、配置、环境</td><td>patch / run → metric、错误、成本</td><td>固定 evaluator 与 guardrail</td></tr><tr><td><strong>探究循环</strong></td><td>竞争假设与已有证据</td><td>设计实验 → 数据、效应、反例</td><td>预先声明的规则与研究者</td></tr><tr><td><strong>问责循环</strong></td><td>claim-evidence graph</td><td>audit / replicate → review 与证据缺口</td><td>独立 reviewer / human gate</td></tr></tbody></table>
-<!-- -->
 <p>这三层不是按分钟、小时、天机械划分。一次湿实验可能比论文 review 更慢。它们的区别在于<strong>更新什么状态、依据什么反馈做决定</strong>。</p>
 <p>执行循环可以优化一个固定目标；探究循环必须在竞争解释之间更新认知；问责循环只有在审计或复现意见真正返回主张与实验设计时才闭合。单纯生成 citation、PDF 或 reviewer 文本仍然只是 pipeline。</p>
 <p>Sandbox、Git worktree、GPU queue、budget、artifact store 和权限系统也不是“第四种科研能力”。它们是横跨三层的控制面：限制 Agent 能做什么，并保留别人检查它做过什么的证据。</p>
