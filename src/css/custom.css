@@ -15,3 +15,20 @@
   --ifm-background-color: #0f172a;
   --ifm-card-background-color: #111827;
 }
+
+.mobile-scroll-hint {
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.875rem;
+  margin-top: -0.5rem;
+}
+
+@media (max-width: 600px) {
+  .mobile-mermaid-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .mobile-mermaid-scroll .docusaurus-mermaid-container {
+    min-width: 680px;
+  }
+}
