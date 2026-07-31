@@ -2,11 +2,181 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog</id>
     <title>ChatBlog Blog</title>
-    <updated>2026-07-31T09:10:00.000Z</updated>
+    <updated>2026-07-31T09:40:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog"/>
     <subtitle>ChatBlog Blog</subtitle>
     <icon>https://arch.gh.wzhecnu.cn/ChatBlog/img/favicon.svg</icon>
+    <entry>
+        <title type="html"><![CDATA[别只搜 AI for Math：2026 下半年 CCF A/B 会议怎么选]]></title>
+        <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026</id>
+        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026"/>
+        <updated>2026-07-31T09:40:00.000Z</updated>
+        <summary type="html"><![CDATA[从最新 CCFDDL 数据出发，先判断投稿入口是否真的开放，再按通用方法、Agent、检索、proof engineering、HCI 与系统贡献筛选 2026 下半年及 2027 年 1 月的 CCF A/B 会议。]]></summary>
+        <content type="html"><![CDATA[<p>到 2026 年 7 月底，再问“今年还有哪些会能投”，最容易得到两种错误答案。</p>
+<p>一种只按全文截止日期排序，于是把 mandatory abstract 已经过期的会议也算成“仍开放”；另一种只搜索 CFP 里有没有 <code>AI for Math</code>，于是错过 WSDM、FSE、CAV、IUI 这类名字不直接写数学、却可能非常适合的 venue。</p>
+<p>更麻烦的是，这里说的“2026 下半年可投”，大多是<strong>投稿截止发生在 2026 年、会议在 2027 年举行</strong>，而不是只找会期在 2026 年的会议。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>会议选择应该经过两道筛选：<strong>先验证这一轮是否仍对新稿开放，再按论文的核心贡献匹配会议的评价逻辑。</strong> 对 AI for Math / AI for Science，最值得优先核验的是 ICLR、AAMAS、WSDM、WWW、NAACL；如果工作偏 proof engineering、交互或形式验证，则进一步看 FSE、SANER、IUI、CHI 与 CAV。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>数据口径</div><div class="admonitionContent_BuS1"><p>本文数据快照为 <strong>2026-07-31</strong>。基础数据来自 <a href="https://github.com/ccfddl/ccf-deadlines" target="_blank" rel="noopener noreferrer" class="">ccfddl/ccf-deadlines</a> 的 commit <a href="https://github.com/ccfddl/ccf-deadlines/commit/4217803444d8099856cb794c273ef549a4e2c5a3" target="_blank" rel="noopener noreferrer" class=""><code>4217803</code></a>，只保留该项目标记为 CCF A/B 的会议。主窗口为 2026-07-31 至 2026-12-31，补充窗口延长至 2027-01-31。高相关候选另用会议官网复核；所有可执行时间均换算为北京时间。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="不要先排会议先判断这一轮是否真的开放">不要先排会议：先判断“这一轮”是否真的开放<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E4%B8%8D%E8%A6%81%E5%85%88%E6%8E%92%E4%BC%9A%E8%AE%AE%E5%85%88%E5%88%A4%E6%96%AD%E8%BF%99%E4%B8%80%E8%BD%AE%E6%98%AF%E5%90%A6%E7%9C%9F%E7%9A%84%E5%BC%80%E6%94%BE" class="hash-link" aria-label="不要先排会议：先判断“这一轮”是否真的开放的直接链接" title="不要先排会议：先判断“这一轮”是否真的开放的直接链接" translate="no">​</a></h2>
+<p>CCFDDL 很适合发现候选，但它是社区维护的 deadline 数据库，不是会议官方 CFP。一个页面显示倒计时，不代表新作者此刻还能开始投稿。</p>
+<p>先检查四件事：</p>
+<ol>
+<li class=""><strong>是否有 mandatory abstract 或 paper registration。</strong> 摘要过期以后，全文按钮还开着也不代表能新建投稿。</li>
+<li class=""><strong>当前节点属于新稿、revision 还是 resubmission。</strong> “only for major revisions” 不能算普通投稿机会。</li>
+<li class=""><strong>这是 main research、short、industry、findings 还是 companion track。</strong> 它们的篇幅、评价标准和出版位置可能不同。</li>
+<li class=""><strong>时区到底是什么。</strong> AoE / UTC-12 的 <code>23:59</code>，在北京时间通常是次日 <code>19:59</code>。</li>
+</ol>
+<p>按这个规则，CCFDDL 快照在剩余 2026 年有 <strong>46 个开放 timeline/round</strong>；延长到 2027 年 1 月后有 <strong>51 个</strong>，对应 <strong>40 个会议届次</strong>。官网复核又补出 CCFDDL 没有单列的 SANER Agentic AI4SE track、CAV 2027 和 FSE Industry Papers，最终广筛地图包含 <strong>54 个开放 track/round、41 个会议届次</strong>。</p>
+<p>下面几项说明为什么不能只看“全文日期还没到”：</p>
+<table><thead><tr><th>条目</th><th>表面上看到的节点</th><th>实际判断</th></tr></thead><tbody><tr><td>HPCA 2027</td><td>全文北京时间 8 月 1 日</td><td>mandatory abstract 已于 7 月 25 日截止，不能算新投稿仍开放</td></tr><tr><td>INFOCOM 2027</td><td>全文北京时间 8 月 1 日</td><td>同样因为摘要已过而排除当前轮次</td></tr><tr><td>VLDB 2027 早期轮次</td><td>全文北京时间 8 月 2 日</td><td>7 月 26 日的 mandatory abstract 已过，但后续月度轮次仍开放</td></tr><tr><td>UbiComp/ISWC 8 月轮次</td><td>全文北京时间 8 月 2 日</td><td>CCFDDL 条目标注为仅限 major-revision resubmission；11 月轮次才是另一个入口</td></tr><tr><td>AAAI 2027</td><td>旧报告仍可能写“短线冲刺”</td><td>全文已于北京时间 7 月 29 日截止</td></tr><tr><td>KDD 2027 AI for Sciences</td><td>方向非常匹配</td><td>Cycle 1 已于北京时间 7 月 27 日截止；官网确认一年两轮，但 Cycle 2 日期尚未公布</td></tr></tbody></table>
+<p>这一步过滤掉的不是会议，而是<strong>已经失效或不适用于新稿的轮次</strong>。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第二道筛选论文贡献比会议标签更重要">第二道筛选：论文贡献比会议标签更重要<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E7%AC%AC%E4%BA%8C%E9%81%93%E7%AD%9B%E9%80%89%E8%AE%BA%E6%96%87%E8%B4%A1%E7%8C%AE%E6%AF%94%E4%BC%9A%E8%AE%AE%E6%A0%87%E7%AD%BE%E6%9B%B4%E9%87%8D%E8%A6%81" class="hash-link" aria-label="第二道筛选：论文贡献比会议标签更重要的直接链接" title="第二道筛选：论文贡献比会议标签更重要的直接链接" translate="no">​</a></h2>
+<p><code>AI for Math</code>、<code>AI for Science</code> 和 <code>STEM AI</code> 不是单一学科。两篇都使用 LLM 解数学问题的论文，可能分别属于机器学习方法、agent 协作、信息检索、软件工程或人机交互。</p>
+<div class="mobile-mermaid-scroll" role="region" aria-label="会议选择流程图" aria-describedby="mobile-mermaid-hint" tabindex="0"></div>
+<p id="mobile-mermaid-hint" class="mobile-scroll-hint">手机端可横向滑动查看完整流程图。</p>
+<p>为了先广后窄，可以把论文适配度分成四档。这里特意加上 <code>Fit-</code> 前缀，避免与会议自身的 CCF-A / CCF-B 等级混淆：</p>
+<ul>
+<li class=""><strong>Fit-S：优先候选。</strong> 常见论文形态可以自然对齐，不必改成另一个研究问题。</li>
+<li class=""><strong>Fit-A：强条件匹配。</strong> 做一次清晰且合理的叙事选择后很合适，例如 proof engineering 或 HCI。</li>
+<li class=""><strong>Fit-B：明确赛道匹配。</strong> 可以投，但必须提供数据库、系统、HPC、可视化或机器人等会议本位贡献。</li>
+<li class=""><strong>Fit-C：需要明显领域转向。</strong> 通常要让安全、网络、密码、芯片或编码本身成为核心问题。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="官网核验后的高相关时间线">官网核验后的高相关时间线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E5%AE%98%E7%BD%91%E6%A0%B8%E9%AA%8C%E5%90%8E%E7%9A%84%E9%AB%98%E7%9B%B8%E5%85%B3%E6%97%B6%E9%97%B4%E7%BA%BF" class="hash-link" aria-label="官网核验后的高相关时间线的直接链接" title="官网核验后的高相关时间线的直接链接" translate="no">​</a></h2>
+<p>下面先给出截至 2026-07-31 已用一手官网确认的 Fit-S / Fit-A 日期索引；它回答“什么时候交”，下一节再按核心贡献回答“为什么投”。日期全部为北京时间。</p>
+<div class="fit-table"><table><thead><tr><th>关联度</th><th>会议 / Track</th><th style="text-align:right">摘要或注册</th><th style="text-align:right">全文</th><th>适合什么</th></tr></thead><tbody><tr><td>Fit-A</td><td><a href="https://iui.acm.org/2027/call-for-papers/" target="_blank" rel="noopener noreferrer" class="">IUI 2027 Main Paper</a>（CCF-B）</td><td style="text-align:right">8 月 14 日 19:59</td><td style="text-align:right">8 月 21 日 19:59</td><td>数学/科学助手、AI tutor、人机协作；需要交互系统、用户研究或相称的计算证据</td></tr><tr><td>Fit-S</td><td><a href="https://wsdm-conference.org/2027/cffp.html" target="_blank" rel="noopener noreferrer" class="">WSDM 2027 Full Paper</a>（CCF-B）</td><td style="text-align:right">8 月 18 日 19:59</td><td style="text-align:right">8 月 25 日 19:59</td><td>RAG、proof retrieval、科学知识发现、foundation model 与 agent</td></tr><tr><td>Fit-A</td><td><a href="https://chi2027.acm.org/authors/papers/" target="_blank" rel="noopener noreferrer" class="">CHI 2027 Papers</a>（CCF-A）</td><td style="text-align:right">无摘要 deadline</td><td style="text-align:right">9 月 11 日 19:59</td><td>STEM 教育、human-AI collaboration、科学工作流；需要扎实 HCI 研究设计</td></tr><tr><td>Fit-S</td><td><a href="https://www.iclr.cc/Conferences/2027/Dates" target="_blank" rel="noopener noreferrer" class="">ICLR 2027 Main Paper</a>（CCF-A）</td><td style="text-align:right">9 月 19 日 19:59</td><td style="text-align:right">9 月 26 日 19:59</td><td>通用数学/科学推理、训练方法、搜索、verifier 与表示学习</td></tr><tr><td>Fit-A</td><td><a href="https://conf.researchr.org/track/saner-2027/saner-2027-papers" target="_blank" rel="noopener noreferrer" class="">SANER 2027 Research Track</a>（CCF-B）</td><td style="text-align:right">9 月 22 日 19:59</td><td style="text-align:right">9 月 26 日 19:59</td><td>proof-library maintenance、proof repair、科学软件演化与 repository mining</td></tr><tr><td>Fit-S</td><td><a href="https://warwick.ac.uk/fac/sci/dcs/aamas2027/calls/" target="_blank" rel="noopener noreferrer" class="">AAMAS 2027 Main Track</a>（CCF-B）</td><td style="text-align:right">10 月 2 日 19:59</td><td style="text-align:right">10 月 9 日 19:59</td><td>planner–prover–critic、多 agent 协作、工具调用与 agent verification</td></tr><tr><td>Fit-A</td><td><a href="https://conf.researchr.org/track/fse-2027/fse-2027-research-papers" target="_blank" rel="noopener noreferrer" class="">FSE 2027 Research Papers</a>（CCF-A）</td><td style="text-align:right">无摘要 deadline</td><td style="text-align:right">10 月 3 日 19:59</td><td>Lean/Coq/Isabelle proof engineering、proof repair、验证工作流与开发者工具</td></tr><tr><td>Fit-S</td><td><a href="https://acmweb2027.org/important-dates/" target="_blank" rel="noopener noreferrer" class="">The Web Conference 2027</a>（CCF-A）</td><td style="text-align:right">10 月 12 日 19:59</td><td style="text-align:right">10 月 19 日 19:59</td><td>知识系统、RAG、科学信息基础设施以及真实平台或用户数据</td></tr><tr><td>Fit-S</td><td><a href="https://2027.naacl.org/" target="_blank" rel="noopener noreferrer" class="">NAACL 2027</a>（CCF-B）</td><td style="text-align:right">—</td><td style="text-align:right">ARR：10 月 13 日 19:59</td><td>数学语言推理、autoformalization、证明生成和科学文本；conference commitment 日期仍待公布</td></tr><tr><td>Fit-A</td><td><a href="https://conf.researchr.org/track/saner-2027/saner-2027-agentic-ai4se-track" target="_blank" rel="noopener noreferrer" class="">SANER Agentic AI4SE Track</a>（CCF-B）</td><td style="text-align:right">10 月 20 日 19:59</td><td style="text-align:right">10 月 24 日 19:59</td><td>会规划、维护状态、调用工具并处理真实软件或证明工程任务的 Agent</td></tr><tr><td>Fit-S</td><td><a href="https://wsdm-conference.org/2027/cfsp.html" target="_blank" rel="noopener noreferrer" class="">WSDM 2027 Short Paper</a>（CCF-B）</td><td style="text-align:right">无摘要 deadline</td><td style="text-align:right">11 月 18 日 19:59</td><td>4 页、范围较窄但已有扎实实证的工作</td></tr><tr><td>Fit-A</td><td><a href="https://conferences.i-cav.org/2027/" target="_blank" rel="noopener noreferrer" class="">CAV 2027 Main Paper</a>（CCF-A）</td><td style="text-align:right">无摘要 deadline</td><td style="text-align:right">2027 年 1 月 21 日 19:59</td><td>verification tools、ML verification、autonomous systems 与形式推理</td></tr></tbody></table></div>
+<p>这张表不是“推荐所有团队都同时冲”。它展示的是不同论文形态对应的自然入口。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="按核心贡献收窄七条投稿路径">按核心贡献收窄：七条投稿路径<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E6%8C%89%E6%A0%B8%E5%BF%83%E8%B4%A1%E7%8C%AE%E6%94%B6%E7%AA%84%E4%B8%83%E6%9D%A1%E6%8A%95%E7%A8%BF%E8%B7%AF%E5%BE%84" class="hash-link" aria-label="按核心贡献收窄：七条投稿路径的直接链接" title="按核心贡献收窄：七条投稿路径的直接链接" translate="no">​</a></h2>
+<p>日期索引只能完成第一道筛选。第二道筛选要从论文的主张出发：如果删掉数学 benchmark，方法贡献是否仍然成立；如果删掉 Lean、知识库或交互界面，论文还剩下什么不可替代的创新？</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="通用方法与语言推理iclrnaacl">通用方法与语言推理：ICLR、NAACL<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E9%80%9A%E7%94%A8%E6%96%B9%E6%B3%95%E4%B8%8E%E8%AF%AD%E8%A8%80%E6%8E%A8%E7%90%86iclrnaacl" class="hash-link" aria-label="通用方法与语言推理：ICLR、NAACL的直接链接" title="通用方法与语言推理：ICLR、NAACL的直接链接" translate="no">​</a></h3>
+<p>ICLR 适合把数学或科学任务作为通用学习问题来研究，例如训练方法、搜索、verifier、表示学习和推理机制。关键证据不是“在一个数学榜单上更高”，而是方法为什么有效、能否跨任务或难度泛化，以及 ablation 和误差分析是否支持机制主张。</p>
+<p>NAACL 更适合语言贡献：数学语言推理、autoformalization、证明生成、科学文本理解与可控生成。它通过 ARR 接稿，而 2027 年的 conference commitment 在快照日仍未公布；有一个 ARR deadline 不等于已经拥有完整的 NAACL 投稿时间表。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="检索与知识系统wsdmwww">检索与知识系统：WSDM、WWW<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E6%A3%80%E7%B4%A2%E4%B8%8E%E7%9F%A5%E8%AF%86%E7%B3%BB%E7%BB%9Fwsdmwww" class="hash-link" aria-label="检索与知识系统：WSDM、WWW的直接链接" title="检索与知识系统：WSDM、WWW的直接链接" translate="no">​</a></h3>
+<p>WSDM 名字是 Web Search and Data Mining，看起来不像数学或科学会议。但 2027 年的 <a href="https://wsdm-conference.org/2027/cffp.html" target="_blank" rel="noopener noreferrer" class="">Full Paper CFP</a> 与 <a href="https://wsdm-conference.org/2027/cfsp.html" target="_blank" rel="noopener noreferrer" class="">Short Paper CFP</a> 都明确列出：</p>
+<ul>
+<li class="">foundation models and agentic systems；</li>
+<li class="">generative question answering and reasoning；</li>
+<li class="">retrieval、indexing、ranking 与 RAG；</li>
+<li class="">web agents 与 multi-agent systems；</li>
+<li class=""><code>AI for Data-rich Science</code>；</li>
+<li class=""><code>Scientific Foundation Models</code>。</li>
+</ul>
+<p>这意味着只要论文的核心是科学知识检索、定理/证明检索、RAG、scientific foundation model 或 agentic search，它不是“硬蹭 WSDM”，而是在官方 scope 内。</p>
+<p>Full Paper 适合完整方法和系统；Short Paper 接受贡献范围更窄、但经过实证验证的工作。短文 track 的 submission site 在快照日仍写作 TBD，因此日期虽然已公布，投稿入口仍应持续检查。</p>
+<p>WWW 同样能接住知识系统、RAG 和科学信息基础设施，但更期待 Web 语境：web-scale 数据、知识图谱、在线平台、真实用户或社会技术影响。如果核心是检索与 ranking 而没有明显 Web 对象，WSDM 通常更自然；如果贡献依赖开放 Web、平台行为或真实用户生态，WWW 更有说服力。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="agent-工作aamas-与-saner-agentic-是两种不同叙事">Agent 工作：AAMAS 与 SANER Agentic 是两种不同叙事<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#agent-%E5%B7%A5%E4%BD%9Caamas-%E4%B8%8E-saner-agentic-%E6%98%AF%E4%B8%A4%E7%A7%8D%E4%B8%8D%E5%90%8C%E5%8F%99%E4%BA%8B" class="hash-link" aria-label="Agent 工作：AAMAS 与 SANER Agentic 是两种不同叙事的直接链接" title="Agent 工作：AAMAS 与 SANER Agentic 是两种不同叙事的直接链接" translate="no">​</a></h3>
+<p>如果系统由 planner、retriever、prover、critic、verifier 等角色组成，AAMAS 是自然候选。但论文不能只把一次 LLM 调用拆成多个角色名称，还需要回答：</p>
+<ul>
+<li class="">多 agent 机制相对单 agent 的收益来自哪里；</li>
+<li class="">协调、通信、记忆与冲突解决如何设计；</li>
+<li class="">工具调用失败或 verifier 拒绝以后如何恢复；</li>
+<li class="">成本、延迟和错误传播是否被测量；</li>
+<li class="">机制能否泛化到新的问题或工具。</li>
+</ul>
+<p>SANER 的 <a href="https://conf.researchr.org/track/saner-2027/saner-2027-agentic-ai4se-track" target="_blank" rel="noopener noreferrer" class="">Agentic AI4SE Track</a>则要求 Agent 真正服务于软件分析、演化、维护或重构。对形式化数学，这可以是：</p>
+<ul>
+<li class="">大型 Lean/Coq 库升级后的 proof repair；</li>
+<li class="">proof CI failure 的定位和恢复；</li>
+<li class="">agent 在真实仓库中维护状态、调用 compiler 和检索工具；</li>
+<li class="">定理库迁移、依赖修复与长期维护。</li>
+</ul>
+<p>两者都接受 Agent，但 AAMAS 关心 agent/multi-agent 方法本身，SANER 关心 Agent 是否解决真实软件维护问题。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="proof-engineeringfsesaner-与-cav-不能混成一个方向">Proof engineering：FSE、SANER 与 CAV 不能混成一个方向<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#proof-engineeringfsesaner-%E4%B8%8E-cav-%E4%B8%8D%E8%83%BD%E6%B7%B7%E6%88%90%E4%B8%80%E4%B8%AA%E6%96%B9%E5%90%91" class="hash-link" aria-label="Proof engineering：FSE、SANER 与 CAV 不能混成一个方向的直接链接" title="Proof engineering：FSE、SANER 与 CAV 不能混成一个方向的直接链接" translate="no">​</a></h3>
+<p>三者都可能接住 theorem proving 工作，但评价问题不同。</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="fse证明系统是一种软件工程工具">FSE：证明系统是一种软件工程工具<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#fse%E8%AF%81%E6%98%8E%E7%B3%BB%E7%BB%9F%E6%98%AF%E4%B8%80%E7%A7%8D%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B%E5%B7%A5%E5%85%B7" class="hash-link" aria-label="FSE：证明系统是一种软件工程工具的直接链接" title="FSE：证明系统是一种软件工程工具的直接链接" translate="no">​</a></h4>
+<p>FSE 适合研究 proof repair、specification/invariant generation、formal verification workflow、proof CI 与开发者工具。核心证据通常包括真实项目、工具 artifact、项目级成功率、人类时间节省、失败分析和可复现实验。</p>
+<p>如果论文只是在 MATH、AIME 或 miniF2F 上提升一个分数，没有软件工程对象，FSE 并不是自然归宿。</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="saner证明库如何演化和维护">SANER：证明库如何演化和维护<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#saner%E8%AF%81%E6%98%8E%E5%BA%93%E5%A6%82%E4%BD%95%E6%BC%94%E5%8C%96%E5%92%8C%E7%BB%B4%E6%8A%A4" class="hash-link" aria-label="SANER：证明库如何演化和维护的直接链接" title="SANER：证明库如何演化和维护的直接链接" translate="no">​</a></h4>
+<p>SANER Research Track 对 AI/ML 稿件写得很明确：必须解决软件系统整体、软件演化/维护 artifact，或 AI-intensive software 的维护问题。proof library migration、repair、repository mining 与维护经验可以对齐；纯模型能力论文容易被认为 scope 不足。</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="cav验证理论算法与工具本身">CAV：验证理论、算法与工具本身<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#cav%E9%AA%8C%E8%AF%81%E7%90%86%E8%AE%BA%E7%AE%97%E6%B3%95%E4%B8%8E%E5%B7%A5%E5%85%B7%E6%9C%AC%E8%BA%AB" class="hash-link" aria-label="CAV：验证理论、算法与工具本身的直接链接" title="CAV：验证理论、算法与工具本身的直接链接" translate="no">​</a></h4>
+<p>CCFDDL 快照尚未收录 CAV 2027，但 <a href="https://conferences.i-cav.org/2027/" target="_blank" rel="noopener noreferrer" class="">CAV 官网</a>已经确认 2027-01-20 AoE 截止，即北京时间 1 月 21 日 19:59。官网将 machine learning、quantum verification、autonomous systems 与 computer security 列为扩展方向。</p>
+<p>对 theorem proving 团队，CAV 更关注验证方法、算法、工具和严谨性；它不是“有 Lean 就能投”，而是 formal verification 本身要构成研究贡献。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="stem-助手iui-与-chi-要求的不只是一个界面">STEM 助手：IUI 与 CHI 要求的不只是一个界面<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#stem-%E5%8A%A9%E6%89%8Biui-%E4%B8%8E-chi-%E8%A6%81%E6%B1%82%E7%9A%84%E4%B8%8D%E5%8F%AA%E6%98%AF%E4%B8%80%E4%B8%AA%E7%95%8C%E9%9D%A2" class="hash-link" aria-label="STEM 助手：IUI 与 CHI 要求的不只是一个界面的直接链接" title="STEM 助手：IUI 与 CHI 要求的不只是一个界面的直接链接" translate="no">​</a></h3>
+<p>数学 tutor、科学助手、交互式证明工具看起来适合 IUI 或 CHI，但两个 venue 都不会因为有聊天界面就自动接受。</p>
+<p><a href="https://iui.acm.org/2027/call-for-papers/" target="_blank" rel="noopener noreferrer" class="">IUI CFP</a>明确要求同时讨论 computational 与 human-centric aspects，并用与主张相称的证据支持。可以是用户研究，也可以是系统评价和计算分析，但必须解释用户如何进入智能系统的闭环。</p>
+<p>CHI 的范围更广，也更强调 HCI 理论、方法和严谨研究设计。若主张“系统提高了数学学习效果”，就需要学习实验、对照、伦理与统计设计；只报告模型正确率通常不够。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="fit-b-不是备胎它要求真正的领域贡献">Fit-B 不是备胎：它要求真正的领域贡献<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#fit-b-%E4%B8%8D%E6%98%AF%E5%A4%87%E8%83%8E%E5%AE%83%E8%A6%81%E6%B1%82%E7%9C%9F%E6%AD%A3%E7%9A%84%E9%A2%86%E5%9F%9F%E8%B4%A1%E7%8C%AE" class="hash-link" aria-label="Fit-B 不是备胎：它要求真正的领域贡献的直接链接" title="Fit-B 不是备胎：它要求真正的领域贡献的直接链接" translate="no">​</a></h3>
+<p>第一轮广筛没有把数据、系统和计算会议删掉。40 个 CCFDDL 会议届次中，Fit-B 条件候选共有 20 个：</p>
+<table><thead><tr><th>贡献簇</th><th>保留会议</th><th>进入条件</th></tr></thead><tbody><tr><td>科学/数学数据系统</td><td>CIDR、VLDB、ICDT、EDBT、SIGMOD、ICDE</td><td>theorem/scientific knowledge base、query、provenance、数据管理或数据库理论成为核心贡献</td></tr><tr><td>AI for Science 系统与 HPC</td><td>PPoPP、ASPLOS、CGO、FAST、EuroSys、IPDPS、SIGMETRICS、OSDI</td><td>并行算法、编译、架构、存储、调度、性能或分布式系统创新</td></tr><tr><td>STEM 交互与科学模态</td><td>IEEE VR、ICRA、ICASSP、UbiComp/ISWC</td><td>VR/3D、机器人科学家、科学信号、多模态文档或真实情境部署</td></tr><tr><td>可靠性与形式化安全</td><td>CSF、DSN</td><td>security foundations、dependability、容错或可信基础设施贡献</td></tr></tbody></table>
+<p>例如，<a href="https://www.vldb.org/2027/submission-guidelines.html" target="_blank" rel="noopener noreferrer" class="">PVLDB 2027</a>采用月度滚动截稿：每月 25 日先交 mandatory abstract，次月 1 日 <code>17:00 Pacific Time</code> 交全文。它还明确包含 Data Management for ML/AI、ML/AI for Data Management、Provenance and Workflows、Specialized and Domain-Specific Data Management 等主题。</p>
+<p>但“我们建立了一个数学数据集”本身仍不够。要投 VLDB/SIGMOD/ICDE，需要数据库研究问题；要投 ASPLOS/OSDI，需要系统创新和强实证；要投 ICRA，需要机器人或具身实验。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="fit-c-仍保留但通常不该作为第一选择">Fit-C 仍保留，但通常不该作为第一选择<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#fit-c-%E4%BB%8D%E4%BF%9D%E7%95%99%E4%BD%86%E9%80%9A%E5%B8%B8%E4%B8%8D%E8%AF%A5%E4%BD%9C%E4%B8%BA%E7%AC%AC%E4%B8%80%E9%80%89%E6%8B%A9" class="hash-link" aria-label="Fit-C 仍保留，但通常不该作为第一选择的直接链接" title="Fit-C 仍保留，但通常不该作为第一选择的直接链接" translate="no">​</a></h3>
+<p>Fit-C 共有 11 个：USENIX Security、NDSS、MobiCom、NSDI、DATE、EUROCRYPT、DCC、ISCAS、CHES、IEEE S&amp;P、SECON。</p>
+<p>它们并非“不支持 AI for Science”，而是需要明显领域转向：</p>
+<ul>
+<li class="">AI for security、Agent 安全或形式化安全验证，才考虑 USENIX Security、NDSS、S&amp;P；</li>
+<li class="">密码协议、密码理论或侧信道，才考虑 EUROCRYPT、CHES；</li>
+<li class="">网络化科学系统、无线感知或边缘 AI，才考虑 MobiCom、NSDI、SECON；</li>
+<li class="">EDA、芯片、电路或硬件实现，才考虑 DATE、ISCAS；</li>
+<li class="">科学数据、模型或证明对象的压缩/编码成为贡献，才考虑 DCC。</li>
+</ul>
+<p>先保留这些候选，是为了避免早筛掉跨学科工作；真正收窄时，如果对应领域贡献不存在，就应果断移除。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2027-年-1-月多一个月能换来哪些选择">2027 年 1 月：多一个月能换来哪些选择<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#2027-%E5%B9%B4-1-%E6%9C%88%E5%A4%9A%E4%B8%80%E4%B8%AA%E6%9C%88%E8%83%BD%E6%8D%A2%E6%9D%A5%E5%93%AA%E4%BA%9B%E9%80%89%E6%8B%A9" class="hash-link" aria-label="2027 年 1 月：多一个月能换来哪些选择的直接链接" title="2027 年 1 月：多一个月能换来哪些选择的直接链接" translate="no">​</a></h2>
+<p>如果 2026 年内没有合适窗口，延长到 2027 年 1 月会多出七个可执行入口：</p>
+<p>其中 CAV 与 FSE Industry 是官网补充项；其余五项来自 CCFDDL 广筛数据。临近投稿时仍应回到官方页面确认时区、registration/abstract 性质与 track 规则。</p>
+<div class="fit-table"><table><thead><tr><th>关联度</th><th>会议 / Track</th><th>北京时间</th><th>关键限定</th></tr></thead><tbody><tr><td>Fit-B</td><td><a href="https://www.sigmetrics.org/sigmetrics2027/" target="_blank" rel="noopener noreferrer" class="">SIGMETRICS 2027 Winter</a></td><td>摘要 1 月 5 日；全文 1 月 12 日</td><td>性能建模、测量、调度、成本或排队分析</td></tr><tr><td>Fit-C</td><td><a href="https://ches.iacr.org/2027/" target="_blank" rel="noopener noreferrer" class="">CHES 2027 Volume 2027/3</a></td><td>全文 1 月 16 日</td><td>密码硬件、实现安全或侧信道</td></tr><tr><td>Fit-C</td><td><a href="https://www.usenix.org/conference/usenixsecurity27" target="_blank" rel="noopener noreferrer" class="">USENIX Security 2027 Cycle 2</a></td><td>mandatory registration 1 月 20 日；全文 1 月 27 日</td><td>安全必须是核心贡献</td></tr><tr><td>Fit-A</td><td><a href="https://conferences.i-cav.org/2027/" target="_blank" rel="noopener noreferrer" class="">CAV 2027 Main Paper</a></td><td>全文 1 月 21 日 19:59</td><td>形式验证、算法与工具</td></tr><tr><td>Fit-B</td><td><a href="https://conf.researchr.org/track/fse-2027/fse-2027-industry-papers" target="_blank" rel="noopener noreferrer" class="">FSE 2027 Industry Papers</a></td><td>全文 1 月 24 日 19:59</td><td>真实工业应用；进入 companion proceedings，不等同主 Research Track</td></tr><tr><td>Fit-B</td><td><a href="https://www.vldb.org/2027/submission-guidelines.html" target="_blank" rel="noopener noreferrer" class="">VLDB 2027 月度轮次</a></td><td>摘要 1 月 26 日；全文 2 月 2 日</td><td>1 月进入投稿流程，数据库贡献必须成立</td></tr><tr><td>Fit-B</td><td><a href="https://www.ieee-security.org/TC/CSF2027/" target="_blank" rel="noopener noreferrer" class="">CSF 2027 Winter</a></td><td>全文 1 月 29 日</td><td>形式化推理必须落到 security foundations</td></tr></tbody></table></div>
+<p>这七项里，对一般 AI for Math 最值得关注的是 CAV；对科学计算系统可看 SIGMETRICS；对知识基础设施可看 VLDB；已有真实工业部署时，FSE Industry 才有意义。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="根据手稿成熟度倒排而不是只看关联度">根据手稿成熟度倒排，而不是只看关联度<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E6%A0%B9%E6%8D%AE%E6%89%8B%E7%A8%BF%E6%88%90%E7%86%9F%E5%BA%A6%E5%80%92%E6%8E%92%E8%80%8C%E4%B8%8D%E6%98%AF%E5%8F%AA%E7%9C%8B%E5%85%B3%E8%81%94%E5%BA%A6" class="hash-link" aria-label="根据手稿成熟度倒排，而不是只看关联度的直接链接" title="根据手稿成熟度倒排，而不是只看关联度的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="现在已经接近成稿">现在已经接近成稿<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E7%8E%B0%E5%9C%A8%E5%B7%B2%E7%BB%8F%E6%8E%A5%E8%BF%91%E6%88%90%E7%A8%BF" class="hash-link" aria-label="现在已经接近成稿的直接链接" title="现在已经接近成稿的直接链接" translate="no">​</a></h3>
+<p>IUI 与 WSDM Full 的窗口最早。到 7 月 31 日，它们只剩两到三周，适合已有方法、主实验和论文骨架的团队，不适合从零开始换题。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="8-月可以完成主实验">8 月可以完成主实验<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#8-%E6%9C%88%E5%8F%AF%E4%BB%A5%E5%AE%8C%E6%88%90%E4%B8%BB%E5%AE%9E%E9%AA%8C" class="hash-link" aria-label="8 月可以完成主实验的直接链接" title="8 月可以完成主实验的直接链接" translate="no">​</a></h3>
+<p>CHI、ICLR 和 SANER Research 集中在 9 月。通用方法优先 ICLR；有人机实验看 CHI；有真实 proof/software maintenance artifact 再看 SANER。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="需要两个月完善系统与叙事">需要两个月完善系统与叙事<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E9%9C%80%E8%A6%81%E4%B8%A4%E4%B8%AA%E6%9C%88%E5%AE%8C%E5%96%84%E7%B3%BB%E7%BB%9F%E4%B8%8E%E5%8F%99%E4%BA%8B" class="hash-link" aria-label="需要两个月完善系统与叙事的直接链接" title="需要两个月完善系统与叙事的直接链接" translate="no">​</a></h3>
+<p>AAMAS、FSE、WWW、NAACL 和 SANER Agentic 集中在 10 月。这个窗口最适合仍需补 ablation、系统实验、用户/仓库 case study 和错误分析的项目。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="结果范围较窄或主会窗口来不及">结果范围较窄，或主会窗口来不及<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E7%BB%93%E6%9E%9C%E8%8C%83%E5%9B%B4%E8%BE%83%E7%AA%84%E6%88%96%E4%B8%BB%E4%BC%9A%E7%AA%97%E5%8F%A3%E6%9D%A5%E4%B8%8D%E5%8F%8A" class="hash-link" aria-label="结果范围较窄，或主会窗口来不及的直接链接" title="结果范围较窄，或主会窗口来不及的直接链接" translate="no">​</a></h3>
+<p>WSDM Short 在 11 月，篇幅更短，但不是“弱稿收容所”：它要求清晰、经过实证支持的研究贡献。形式化验证方向还可以继续准备 CAV 2027。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="还有哪些会只能观察不能写进确定时间表">还有哪些会只能观察，不能写进确定时间表<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E8%BF%98%E6%9C%89%E5%93%AA%E4%BA%9B%E4%BC%9A%E5%8F%AA%E8%83%BD%E8%A7%82%E5%AF%9F%E4%B8%8D%E8%83%BD%E5%86%99%E8%BF%9B%E7%A1%AE%E5%AE%9A%E6%97%B6%E9%97%B4%E8%A1%A8" class="hash-link" aria-label="还有哪些会只能观察，不能写进确定时间表的直接链接" title="还有哪些会只能观察，不能写进确定时间表的直接链接" translate="no">​</a></h2>
+<p>截至快照日：</p>
+<ul>
+<li class=""><a href="https://2027.aclweb.org/" target="_blank" rel="noopener noreferrer" class="">ACL 2027</a> 的 ARR submission 与 commitment 仍为 TBA；</li>
+<li class=""><a href="https://2027.coling-iccl.org/" target="_blank" rel="noopener noreferrer" class="">COLING 2027</a> 的 Important Dates 仍为 TBD；</li>
+<li class=""><a href="https://kdd2027.kdd.org/ai4sciences-track-call-for-papers/" target="_blank" rel="noopener noreferrer" class="">KDD 2027 AI for Sciences</a>确认一年两轮，但只公布了已经关闭的 Cycle 1；</li>
+<li class="">ICML、IJCAI、COLT、LICS、ISSTA 2027 尚未找到可由一手官网确认、且落在 2027-01-31 前的正式主会 deadline。</li>
+</ul>
+<p>观察项应该进入 watchlist，而不是用往年日期推算后写成“预计截止”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一张可复用的投稿检查表">一张可复用的投稿检查表<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E4%B8%80%E5%BC%A0%E5%8F%AF%E5%A4%8D%E7%94%A8%E7%9A%84%E6%8A%95%E7%A8%BF%E6%A3%80%E6%9F%A5%E8%A1%A8" class="hash-link" aria-label="一张可复用的投稿检查表的直接链接" title="一张可复用的投稿检查表的直接链接" translate="no">​</a></h2>
+<p>对任何候选会议，都按下面顺序核验：</p>
+<ol>
+<li class=""><strong>入口</strong>：mandatory abstract、registration 和 full deadline 是否都还没过？</li>
+<li class=""><strong>Track</strong>：main、short、industry、findings、journal-first、revision 还是 companion？</li>
+<li class=""><strong>贡献</strong>：论文最不可替代的贡献究竟是模型、Agent、检索、软件工程、HCI、数据还是系统？</li>
+<li class=""><strong>评价逻辑</strong>：该会议会用什么证据判断贡献成立？只跑通 benchmark 是否远远不够？</li>
+<li class=""><strong>材料</strong>：页数、匿名、artifact、OpenReview profile、用户伦理和开放获取要求是否来得及满足？</li>
+<li class=""><strong>官方证据</strong>：日期和 scope 是否已经回到会议官网，而不是只看 deadline 聚合站？</li>
+<li class=""><strong>备选路径</strong>：如果主会不匹配，是否有 short、industry、下一轮或 1 月窗口，而不是强行换叙事？</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最终判断">最终判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E6%9C%80%E7%BB%88%E5%88%A4%E6%96%AD" class="hash-link" aria-label="最终判断的直接链接" title="最终判断的直接链接" translate="no">​</a></h2>
+<p>AI for Math / AI for Science 的投稿面并不窄。真正窄的是：一篇论文只有一种核心贡献，而每个会议只奖励特定类型的贡献证据。</p>
+<p>只按会议名字筛，会漏掉 WSDM 的 AI for Data-rich Science、SANER 的 Agentic AI4SE、FSE 的 proof engineering 和 CAV 的 ML verification；只按日期筛，又会把摘要已过、仅限 revision 或 track 性质完全不同的入口混在一起。</p>
+<p>更稳妥的方法是长期维护两张表：</p>
+<ul>
+<li class="">一张是<strong>经过 gate 校验的开放窗口表</strong>；</li>
+<li class="">一张是<strong>按论文贡献分层的 Fit-S / Fit-A / Fit-B / Fit-C 目标地图</strong>。</li>
+</ul>
+<p>前者回答“还能不能投”，后者回答“为什么应该投”。只有两张表同时成立，deadline 才会变成投稿计划，而不是焦虑倒计时。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="核心一手来源">核心一手来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/ccf-ab-ai-math-science-deadlines-2026#%E6%A0%B8%E5%BF%83%E4%B8%80%E6%89%8B%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="核心一手来源的直接链接" title="核心一手来源的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://github.com/ccfddl/ccf-deadlines" target="_blank" rel="noopener noreferrer" class="">CCFDDL GitHub 数据仓库</a>与<a href="https://github.com/ccfddl/ccf-deadlines#conference-entry-file" target="_blank" rel="noopener noreferrer" class="">数据字段说明</a></li>
+<li class=""><a href="https://www.iclr.cc/Conferences/2027/Dates" target="_blank" rel="noopener noreferrer" class="">ICLR 2027 Dates and Deadlines</a></li>
+<li class=""><a href="https://warwick.ac.uk/fac/sci/dcs/aamas2027/calls/" target="_blank" rel="noopener noreferrer" class="">AAMAS 2027 Call for Papers</a></li>
+<li class=""><a href="https://wsdm-conference.org/2027/cffp.html" target="_blank" rel="noopener noreferrer" class="">WSDM 2027 Full Paper CFP</a>与<a href="https://wsdm-conference.org/2027/cfsp.html" target="_blank" rel="noopener noreferrer" class="">Short Paper CFP</a></li>
+<li class=""><a href="https://acmweb2027.org/important-dates/" target="_blank" rel="noopener noreferrer" class="">The Web Conference 2027 Important Dates</a></li>
+<li class=""><a href="https://2027.naacl.org/" target="_blank" rel="noopener noreferrer" class="">NAACL 2027</a></li>
+<li class=""><a href="https://iui.acm.org/2027/call-for-papers/" target="_blank" rel="noopener noreferrer" class="">IUI 2027 Call for Papers</a></li>
+<li class=""><a href="https://chi2027.acm.org/authors/papers/" target="_blank" rel="noopener noreferrer" class="">CHI 2027 Papers</a></li>
+<li class=""><a href="https://conf.researchr.org/track/fse-2027/fse-2027-research-papers" target="_blank" rel="noopener noreferrer" class="">FSE 2027 Research Papers</a>与<a href="https://conf.researchr.org/track/fse-2027/fse-2027-industry-papers" target="_blank" rel="noopener noreferrer" class="">Industry Papers</a></li>
+<li class=""><a href="https://conf.researchr.org/track/saner-2027/saner-2027-papers" target="_blank" rel="noopener noreferrer" class="">SANER 2027 Research Track</a>与<a href="https://conf.researchr.org/track/saner-2027/saner-2027-agentic-ai4se-track" target="_blank" rel="noopener noreferrer" class="">Agentic AI4SE Track</a></li>
+<li class=""><a href="https://conferences.i-cav.org/2027/" target="_blank" rel="noopener noreferrer" class="">CAV 2027</a></li>
+<li class=""><a href="https://kdd2027.kdd.org/ai4sciences-track-call-for-papers/" target="_blank" rel="noopener noreferrer" class="">KDD 2027 AI for Sciences Track</a></li>
+<li class=""><a href="https://www.vldb.org/2027/submission-guidelines.html" target="_blank" rel="noopener noreferrer" class="">PVLDB 2027 Submission Guidelines</a></li>
+</ul>]]></content>
+        <category label="ccf" term="ccf"/>
+        <category label="deadlines" term="deadlines"/>
+        <category label="ai-math" term="ai-math"/>
+        <category label="ai-for-science" term="ai-for-science"/>
+        <category label="research" term="research"/>
+        <category label="publishing" term="publishing"/>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Tau Ceti：人类写 roadmap，AI 真的能维护一座数学库吗？]]></title>
         <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system</id>
