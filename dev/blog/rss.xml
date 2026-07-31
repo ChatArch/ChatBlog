@@ -4,10 +4,232 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Fri, 31 Jul 2026 09:40:00 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 31 Jul 2026 15:55:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[从 Chrome 登录态到知乎草稿：我们如何打通一条可控的写入链路]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline</guid>
+            <pubDate>Fri, 31 Jul 2026 15:55:00 GMT</pubDate>
+            <description><![CDATA[复盘一条真实跑通的 Markdown 到知乎草稿链路：CLI 如何通过 loopback bridge 控制带登录态的 Chrome 扩展，上传本地图片、写入富文本，并将发布停在人工 Review。]]></description>
+            <content:encoded><![CDATA[<p><a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zhihu-cli-publishing-server-control-plane" target="_blank" rel="noopener noreferrer" class="">上一篇文章</a>回答了“哪种知乎 CLI 自动化架构更稳”：内容和任务放在控制面，平台登录态留在可信浏览器，默认只写草稿，最后由人确认发布。</p>
+<p>这一次不再停留在架构图。我们真的启动了一个隔离 Chrome Profile，完成知乎登录，让 Wechatsync 扩展连接本机 CLI，把 Markdown、本地图片、公式、表格和代码写进知乎草稿，并从编辑页回读验证结果。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>先给结论</div><div class="admonitionContent_BuS1"><p>真正打通链路的关键不是“拿到知乎 Token”，而是把四件事分开：<strong>Chrome 二进制负责运行，Profile 负责保留知乎会话，扩展负责平台写入，bridge Token 只负责 CLI 与扩展之间的鉴权。</strong></p><p>CLI 从头到尾不需要读取或导出知乎 Cookie。它只把内容任务发给扩展；扩展在已经登录的浏览器环境里执行写入，并把草稿链接和结果回传。最终发布仍留给人。</p></div></div>
+<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>使用边界</div><div class="admonitionContent_BuS1"><p>这是一条自有测试账号、低频草稿和人工 Review 的工程验证，不代表知乎向普通开发者开放了文章写 API，也不构成对无人值守发布的授权。正式业务仍应遵守最新平台协议、取得必要许可，不绕过验证码、风险控制或人工确认。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最终跑通了什么">最终跑通了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E6%9C%80%E7%BB%88%E8%B7%91%E9%80%9A%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="最终跑通了什么的直接链接" title="最终跑通了什么的直接链接" translate="no">​</a></h2>
+<p>这次闭环不是“浏览器里看起来动了一下”，而是有明确输入、回执和回读证据：</p>
+<ul>
+<li class="">CLI 能确认扩展连接并读取知乎登录状态；</li>
+<li class="">Markdown 标题和正文能创建为一篇新草稿；</li>
+<li class="">本地 PNG 能直接上传到知乎，不需要临时图床；</li>
+<li class="">标题、多级标题、图片、公式、表格、代码块、引用、链接和列表能在编辑页回读；</li>
+<li class="">任务清单和删除线出现了可重复的降级行为；</li>
+<li class="">返回的是草稿编辑入口，最终“发布”按钮没有被自动点击；</li>
+<li class="">每次成功结果都会写入文章状态台账，而不是只留在终端输出里。</li>
+</ul>
+<p>这条链路的最小形态如下：</p>
+<!-- -->
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="四个对象四种完全不同的职责">四个对象，四种完全不同的职责<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E5%9B%9B%E4%B8%AA%E5%AF%B9%E8%B1%A1%E5%9B%9B%E7%A7%8D%E5%AE%8C%E5%85%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E8%81%8C%E8%B4%A3" class="hash-link" aria-label="四个对象，四种完全不同的职责的直接链接" title="四个对象，四种完全不同的职责的直接链接" translate="no">​</a></h2>
+<p>实际调试中，最容易混淆的是 Chrome、Profile、扩展 Token 和知乎登录态。它们不是同一种凭据。</p>
+<table><thead><tr><th>对象</th><th>保存什么</th><th style="text-align:right">能否单独登录知乎</th><th>应怎样持久化</th></tr></thead><tbody><tr><td>Chrome / Chromium 二进制</td><td>浏览器程序和渲染能力</td><td style="text-align:right">否</td><td>固定、可复现的版本</td></tr><tr><td>独立 Chrome Profile</td><td>Cookie、Local Storage、站点状态、扩展存储</td><td style="text-align:right"><strong>是，真正的会话在这里</strong></td><td>仅保留在可信执行节点</td></tr><tr><td>Wechatsync 扩展</td><td>平台 adapter、图片上传、请求执行</td><td style="text-align:right">否</td><td>版本化构建产物</td></tr><tr><td>bridge Token</td><td>CLI 与扩展之间的调用鉴权</td><td style="text-align:right">否</td><td>权限严格的 secret / <code>.env</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="chrome-二进制不等于登录态">Chrome 二进制不等于登录态<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#chrome-%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%8D%E7%AD%89%E4%BA%8E%E7%99%BB%E5%BD%95%E6%80%81" class="hash-link" aria-label="Chrome 二进制不等于登录态的直接链接" title="Chrome 二进制不等于登录态的直接链接" translate="no">​</a></h3>
+<p>换一份 Chrome 二进制，只要继续指定同一个兼容 Profile，知乎通常仍保持登录；反过来，即使浏览器版本完全相同，换一个空 Profile 也需要重新扫码或短信验证。</p>
+<p>因此运行契约不是“保存一份 Chrome”，而是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">固定 browser binary</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 独立 user-data-dir</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 固定 extension build</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 可轮换 bridge Token</span><br></div></code></pre></div></div>
+<p>Profile 是高价值身份容器。它不应进入 Git、容器镜像、普通备份、日志或服务器配置，更不应该为了“纯 CLI”而导出 Cookie。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="bridge-token-不是知乎-token">bridge Token 不是知乎 Token<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#bridge-token-%E4%B8%8D%E6%98%AF%E7%9F%A5%E4%B9%8E-token" class="hash-link" aria-label="bridge Token 不是知乎 Token的直接链接" title="bridge Token 不是知乎 Token的直接链接" translate="no">​</a></h3>
+<p>bridge Token 只回答一个问题：当前 CLI 是否有权向当前扩展发任务。</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">CLI -- bridge Token --&gt; Chrome 扩展</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Chrome 扩展 -- Profile 会话 --&gt; 知乎</span><br></div></code></pre></div></div>
+<p>即使 bridge Token 泄漏，它本身也不能登录知乎；但如果 bridge 端口同时暴露，攻击者可能借已登录扩展执行操作。因此 Token、loopback 监听和网络隔离必须一起使用。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="登录人完成一次系统复用会话">登录：人完成一次，系统复用会话<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E7%99%BB%E5%BD%95%E4%BA%BA%E5%AE%8C%E6%88%90%E4%B8%80%E6%AC%A1%E7%B3%BB%E7%BB%9F%E5%A4%8D%E7%94%A8%E4%BC%9A%E8%AF%9D" class="hash-link" aria-label="登录：人完成一次，系统复用会话的直接链接" title="登录：人完成一次，系统复用会话的直接链接" translate="no">​</a></h2>
+<p>我们没有尝试自动破解登录。流程是：</p>
+<ol>
+<li class="">启动一个不复用日常浏览器数据的独立 Profile；</li>
+<li class="">加载可审计的 Wechatsync unpacked extension；</li>
+<li class="">打开知乎登录页；</li>
+<li class="">由账号所有者扫码，或在平台要求时完成短信/CAPTCHA；</li>
+<li class="">登录成功后只检查首页和 <code>/api/v4/me</code> 的认证状态；</li>
+<li class="">后续任务继续使用同一个 Profile。</li>
+</ol>
+<p>二维码调试提供了一个很实际的教训：<strong>网页中的二维码可以自动刷新，但发到聊天里的截图是静态的。</strong> 源页面仍然打开，不代表几分钟前发送的图片仍有效。</p>
+<p>正确协议应该是：生成新二维码、立即发送、保持源浏览器和 tab 不变，然后停止所有操作等待用户确认。二维码过期后再显式刷新，不能把旧截图当作实时视图。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="连接cli-先监听扩展再被唤醒">连接：CLI 先监听，扩展再被唤醒<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E8%BF%9E%E6%8E%A5cli-%E5%85%88%E7%9B%91%E5%90%AC%E6%89%A9%E5%B1%95%E5%86%8D%E8%A2%AB%E5%94%A4%E9%86%92" class="hash-link" aria-label="连接：CLI 先监听，扩展再被唤醒的直接链接" title="连接：CLI 先监听，扩展再被唤醒的直接链接" translate="no">​</a></h2>
+<p>Wechatsync 的 CLI 会启动一个 WebSocket bridge，扩展主动连接它。我们把 WebSocket 和 companion HTTP API 都限制在 <code>127.0.0.1</code>：</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">export SYNC_BIND_HOST=127.0.0.1</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">export SYNC_WS_PORT=9527</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">export WECHATSYNC_TOKEN='[REDACTED]'</span><br></div></code></pre></div></div>
+<p>这里有两个比“端口能连通”更重要的细节。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="必须证明是正确的扩展">必须证明是正确的扩展<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E5%BF%85%E9%A1%BB%E8%AF%81%E6%98%8E%E6%98%AF%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%89%A9%E5%B1%95" class="hash-link" aria-label="必须证明是正确的扩展的直接链接" title="必须证明是正确的扩展的直接链接" translate="no">​</a></h3>
+<p>Chrome 本身可能运行多个内置扩展和 service worker。只看到一个 <code>chrome-extension://...</code> target，并不能证明 Wechatsync 已加载。</p>
+<p>最终探针直接读取 <code>chrome://extensions</code>，按扩展名称和 unpacked 路径确认真实 ID，再要求对应 popup 和 service worker 出现。否则一个内置语音扩展也可能制造“扩展已加载”的假阳性。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="mv3-service-worker-会休眠">MV3 service worker 会休眠<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#mv3-service-worker-%E4%BC%9A%E4%BC%91%E7%9C%A0" class="hash-link" aria-label="MV3 service worker 会休眠的直接链接" title="MV3 service worker 会休眠的直接链接" translate="no">​</a></h3>
+<p>扩展连接曾在 auth 验证时成功，几分钟后真正创建草稿却连接失败。原因不是 Token 丢了，而是 Manifest V3 service worker 空闲后休眠。</p>
+<p>最终命令顺序改成：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">CLI server 先监听 loopback</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 打开目标扩展 popup</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 唤醒 MV3 worker</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; worker 使用已有 Token 建立 WebSocket</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; bridge 确认连接稳定</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 才发送 auth / create / update 请求</span><br></div></code></pre></div></div>
+<p>如果先唤醒扩展、后启动 server，worker 可能在 server 出现前重新进入冷却；把连接超时从 30 秒改成 3 分钟并不能解决时序错误。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一篇文章怎样穿过这条链路">一篇文章怎样穿过这条链路<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0%E6%80%8E%E6%A0%B7%E7%A9%BF%E8%BF%87%E8%BF%99%E6%9D%A1%E9%93%BE%E8%B7%AF" class="hash-link" aria-label="一篇文章怎样穿过这条链路的直接链接" title="一篇文章怎样穿过这条链路的直接链接" translate="no">​</a></h2>
+<p>下面是实际 create-draft 的请求序列：</p>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cli-负责确定性工作">CLI 负责确定性工作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#cli-%E8%B4%9F%E8%B4%A3%E7%A1%AE%E5%AE%9A%E6%80%A7%E5%B7%A5%E4%BD%9C" class="hash-link" aria-label="CLI 负责确定性工作的直接链接" title="CLI 负责确定性工作的直接链接" translate="no">​</a></h3>
+<p>CLI 做这些事：</p>
+<ul>
+<li class="">读取 Markdown/HTML；</li>
+<li class="">提取标题、封面和本地图片；</li>
+<li class="">执行 dry-run；</li>
+<li class="">启动 bridge 并等待正确扩展；</li>
+<li class="">发送结构化任务；</li>
+<li class="">输出平台结果；</li>
+<li class="">记录 source hash 和 receipt。</li>
+</ul>
+<p>上游现有命令已经足够完成 create-first MVP：</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain"># 本地检查，不写远端</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">wechatsync sync article.md -p zhihu --dry-run</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"># 通过扩展检查登录</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">wechatsync auth zhihu --refresh</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"># 创建一篇知乎草稿</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">wechatsync sync article.md -p zhihu</span><br></div></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="扩展负责平台相关工作">扩展负责平台相关工作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E6%89%A9%E5%B1%95%E8%B4%9F%E8%B4%A3%E5%B9%B3%E5%8F%B0%E7%9B%B8%E5%85%B3%E5%B7%A5%E4%BD%9C" class="hash-link" aria-label="扩展负责平台相关工作的直接链接" title="扩展负责平台相关工作的直接链接" translate="no">​</a></h3>
+<p>扩展使用浏览器 runtime 发请求，并设置平台所需的同源 Header。知乎 adapter 当前的 create 流程是：</p>
+<ol>
+<li class="">创建一篇空草稿；</li>
+<li class="">获取草稿 ID；</li>
+<li class="">上传或转存图片；</li>
+<li class="">把 Markdown 生成的 HTML 转成知乎 Draft.js 可接受的结构；</li>
+<li class="">写入刚创建的草稿；</li>
+<li class="">返回编辑入口。</li>
+</ol>
+<p>这里的“PATCH 草稿”仍然属于本次 create 流程，不等于更新以前创建的文章。这也是为什么 article identity 必须单独设计。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么本地图片不需要图床">为什么本地图片不需要图床<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%AC%E5%9C%B0%E5%9B%BE%E7%89%87%E4%B8%8D%E9%9C%80%E8%A6%81%E5%9B%BE%E5%BA%8A" class="hash-link" aria-label="为什么本地图片不需要图床的直接链接" title="为什么本地图片不需要图床的直接链接" translate="no">​</a></h2>
+<p>我们的 Markdown 直接使用相对路径：</p>
+<div class="language-markdown codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-markdown codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token url operator" style="color:#393A34">!</span><span class="token url" style="color:#36acaa">[</span><span class="token url content" style="color:#36acaa">文章结构图</span><span class="token url" style="color:#36acaa">](</span><span class="token url" style="color:#36acaa">./assets/article-structure.png</span><span class="token url" style="color:#36acaa">)</span><br></div></code></pre></div></div>
+<p>CLI 在执行前找到文件、读取二进制，再通过扩展调用知乎图片上传能力，最后把正文里的相对路径替换为知乎图片地址：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Local PNG</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; CLI base64 / chunk</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; extension uploadImage</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; Zhihu image storage</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; replace Markdown URL</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; write draft body</span><br></div></code></pre></div></div>
+<p>因此 local 同机链路不需要先把图片放到公网，也不需要搭临时图床。图床只在控制面和浏览器执行面分离、浏览器节点无法读取源文件时才可能有价值；即便如此，更适合使用带权限和生命周期的对象存储，而不是开放一个临时目录。</p>
+<p>本轮还发现一个边界：图片扫描器会把 fenced code block 里的 Markdown 示例误当成真实资产。修复方式是在扫描前对代码围栏做保长度 mask，让代码示例继续出现在正文里，但不进入上传清单。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="知乎编辑器实际保留了多少格式">知乎编辑器实际保留了多少格式<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E7%9F%A5%E4%B9%8E%E7%BC%96%E8%BE%91%E5%99%A8%E5%AE%9E%E9%99%85%E4%BF%9D%E7%95%99%E4%BA%86%E5%A4%9A%E5%B0%91%E6%A0%BC%E5%BC%8F" class="hash-link" aria-label="知乎编辑器实际保留了多少格式的直接链接" title="知乎编辑器实际保留了多少格式的直接链接" translate="no">​</a></h2>
+<p>我们用一篇专门的写作指南测试常用元素，然后从知乎编辑页读取最终 DOM，而不是只相信 CLI 的“同步成功”。</p>
+<table><thead><tr><th>元素</th><th>实测结果</th><th>说明</th></tr></thead><tbody><tr><td>标题、H2、H3</td><td>完整</td><td>标题和层级均可回读</td></tr><tr><td>本地图片</td><td>完整</td><td>两张 PNG 直接上传知乎</td></tr><tr><td>行内公式</td><td>完整</td><td>转成知乎 <code>data-eeimg="1"</code> 公式结构</td></tr><tr><td>块级公式</td><td>完整</td><td>转成 <code>data-eeimg="2"</code></td></tr><tr><td>GFM 表格</td><td>完整</td><td>表头、行列和单元格保留</td></tr><tr><td>fenced code block</td><td>完整</td><td>两个代码块内容与换行保留</td></tr><tr><td>行内代码</td><td>视觉保留</td><td>编辑器转成等宽字体样式</td></tr><tr><td>引用、链接、普通列表</td><td>完整</td><td>DOM 中均存在</td></tr><tr><td>任务清单</td><td>降级</td><td>checkbox 丢失，变成普通列表</td></tr><tr><td>删除线</td><td>降级</td><td>文本保留，删除线样式丢失</td></tr></tbody></table>
+<p>公式并不是把 LaTeX 截成普通图片。参考 <a href="https://github.com/zimya/zhihu_obsidian" target="_blank" rel="noopener noreferrer" class="">Zhihu on Obsidian</a> 的实现，我们把 <code>$...$</code> 和 <code>$$...$$</code> 转成知乎认识的 equation 节点；编辑器加载后会归一化为带 <code>data-tex</code> 和 <code>math/tex</code> 的公式结构。</p>
+<p>这个矩阵也说明：发布系统不能用“HTTP 200”代表内容保真。每个 adapter 都需要一组真实编辑器 fixture 和回读检查。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最值得记录的几个故障">最值得记录的几个故障<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E6%9C%80%E5%80%BC%E5%BE%97%E8%AE%B0%E5%BD%95%E7%9A%84%E5%87%A0%E4%B8%AA%E6%95%85%E9%9A%9C" class="hash-link" aria-label="最值得记录的几个故障的直接链接" title="最值得记录的几个故障的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-过早迁移到远端-runner">1. 过早迁移到远端 runner<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#1-%E8%BF%87%E6%97%A9%E8%BF%81%E7%A7%BB%E5%88%B0%E8%BF%9C%E7%AB%AF-runner" class="hash-link" aria-label="1. 过早迁移到远端 runner的直接链接" title="1. 过早迁移到远端 runner的直接链接" translate="no">​</a></h3>
+<p>我们一度把 Chrome、扩展和 Profile 搬到长期在线服务器。服务器资源足够，但同时引入了浏览器版本、显示环境、二维码传输、Profile 生命周期和跨机 bridge 五个新变量。</p>
+<p>最终回到 local-first：先在账号所有者控制的机器上完成“空 Profile -&gt; 登录 -&gt; auth -&gt; 一篇标记草稿”。只有为了 uptime 或集中运维，才把浏览器执行面迁到远端。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-系统-chrome-与-chrome-for-testing-行为不同">2. 系统 Chrome 与 Chrome for Testing 行为不同<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#2-%E7%B3%BB%E7%BB%9F-chrome-%E4%B8%8E-chrome-for-testing-%E8%A1%8C%E4%B8%BA%E4%B8%8D%E5%90%8C" class="hash-link" aria-label="2. 系统 Chrome 与 Chrome for Testing 行为不同的直接链接" title="2. 系统 Chrome 与 Chrome for Testing 行为不同的直接链接" translate="no">​</a></h3>
+<p>不是所有 Chromium 都会按相同方式加载命令行指定的 unpacked extension。最终固定 Chrome for Testing 版本，并从 <code>chrome://extensions</code> 读取真实状态，不根据命令行参数猜测“应该已经加载”。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-多条-websocket-的关闭事件会互相踩踏">3. 多条 WebSocket 的关闭事件会互相踩踏<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#3-%E5%A4%9A%E6%9D%A1-websocket-%E7%9A%84%E5%85%B3%E9%97%AD%E4%BA%8B%E4%BB%B6%E4%BC%9A%E4%BA%92%E7%9B%B8%E8%B8%A9%E8%B8%8F" class="hash-link" aria-label="3. 多条 WebSocket 的关闭事件会互相踩踏的直接链接" title="3. 多条 WebSocket 的关闭事件会互相踩踏的直接链接" translate="no">​</a></h3>
+<p>唤醒 MV3 worker 时可能短暂产生连接替换。原 bridge 在新连接建立后，如果旧 socket 随后关闭，会无条件把当前 <code>client</code> 清空。于是 CLI 刚显示“Extension 已连接”，下一条 RPC 就可能发不到任何地方。</p>
+<p>修复原则是：</p>
+<ul>
+<li class="">只有关闭的是当前 socket，才能清空 <code>client</code>；</li>
+<li class="">新连接稳定一个短窗口后，才释放等待中的命令；</li>
+<li class="">独立回归测试要模拟“连接 B 替换 A，然后 A 关闭”。</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-update-不能是一个可选提示">4. update 不能是一个可选提示<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#4-update-%E4%B8%8D%E8%83%BD%E6%98%AF%E4%B8%80%E4%B8%AA%E5%8F%AF%E9%80%89%E6%8F%90%E7%A4%BA" class="hash-link" aria-label="4. update 不能是一个可选提示的直接链接" title="4. update 不能是一个可选提示的直接链接" translate="no">​</a></h3>
+<p>最严重的一次失败来自“把目标 ID 当作 <code>syncArticle</code> 的可选字段”。某层没有执行 update 后，系统自动落回默认 <code>publish()</code>，结果不是报错，而是又创建了一篇草稿。</p>
+<p>这改变了我们的接口设计：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">错误设计：syncArticle + optional postId</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">正确设计：createArticle / updateArticle 两条独立 RPC</span><br></div></code></pre></div></div>
+<p><code>updateArticle</code> 必须 fail-closed：</p>
+<ul>
+<li class="">没有目标 ID：失败；</li>
+<li class="">adapter 没有 <code>update()</code>：失败；</li>
+<li class="">扩展版本不认识方法：失败；</li>
+<li class="">任何中间层丢失 update 语义：失败；</li>
+<li class=""><strong>绝不能回退到 create。</strong></li>
+</ul>
+<p>这类问题不是普通异常处理，而是幂等和数据完整性边界。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="把实践抽象成-infra">把实践抽象成 Infra<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E6%8A%8A%E5%AE%9E%E8%B7%B5%E6%8A%BD%E8%B1%A1%E6%88%90-infra" class="hash-link" aria-label="把实践抽象成 Infra的直接链接" title="把实践抽象成 Infra的直接链接" translate="no">​</a></h2>
+<p>跑通一次之后，真正需要长期维护的是五个平面。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-content-plane">1. Content plane<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#1-content-plane" class="hash-link" aria-label="1. Content plane的直接链接" title="1. Content plane的直接链接" translate="no">​</a></h3>
+<p>内容真源放在 Git：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">articles/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  how-to-write-zhihu.md</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">assets/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  article-structure.png</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">publication.yaml</span><br></div></code></pre></div></div>
+<p>Markdown 不携带 Cookie 或 browser profile。每次任务都记录 source commit 和内容 hash。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-control-plane">2. Control plane<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#2-control-plane" class="hash-link" aria-label="2. Control plane的直接链接" title="2. Control plane的直接链接" translate="no">​</a></h3>
+<p>控制面负责：</p>
+<ul>
+<li class="">dry-run 和内容检查；</li>
+<li class="">单账号串行队列；</li>
+<li class="">create/update 模式；</li>
+<li class="">article ID 映射；</li>
+<li class="">超时、取消和告警；</li>
+<li class="">receipt 与审计；</li>
+<li class="">人工 Review 状态。</li>
+</ul>
+<p>它不处理扫码，也不保存知乎会话。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-browser-execution-plane">3. Browser execution plane<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#3-browser-execution-plane" class="hash-link" aria-label="3. Browser execution plane的直接链接" title="3. Browser execution plane的直接链接" translate="no">​</a></h3>
+<p>浏览器 runner 负责：</p>
+<ul>
+<li class="">固定 Chrome/extension 版本；</li>
+<li class="">持久化隔离 Profile；</li>
+<li class="">exact-extension 健康检查；</li>
+<li class="">MV3 worker 唤醒；</li>
+<li class="">平台 auth、图片上传和正文写入；</li>
+<li class="">风控/CAPTCHA 时停止并等待人工接管。</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-publication-ledger">4. Publication ledger<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#4-publication-ledger" class="hash-link" aria-label="4. Publication ledger的直接链接" title="4. Publication ledger的直接链接" translate="no">​</a></h3>
+<p>一个最小台账至少包含：</p>
+<div class="language-json codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-json codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"source"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"articles/example.md"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"source_sha256"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"..."</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"platform"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"zhihu"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"mode"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"create-draft"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"target_id"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"..."</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"target_url"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"..."</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"runner_version"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"..."</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"status"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"DRAFT_VERIFIED"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"updated_at"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"..."</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">}</span><br></div></code></pre></div></div>
+<p>这里保存文章身份和执行证据，不保存密码、Cookie、验证码或 bridge Token。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-human-gate">5. Human gate<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#5-human-gate" class="hash-link" aria-label="5. Human gate的直接链接" title="5. Human gate的直接链接" translate="no">​</a></h3>
+<p>系统自动化停在“草稿已经创建并验证”。人工负责：</p>
+<ul>
+<li class="">检查标题和正文；</li>
+<li class="">查看公式、表格和图片；</li>
+<li class="">修改平台特定细节；</li>
+<li class="">处理敏感内容、署名和合规；</li>
+<li class="">最终点击发布。</li>
+</ul>
+<p>这不是“自动化不完整”，而是明确的风险边界。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="状态机应该怎样设计">状态机应该怎样设计<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E7%8A%B6%E6%80%81%E6%9C%BA%E5%BA%94%E8%AF%A5%E6%80%8E%E6%A0%B7%E8%AE%BE%E8%AE%A1" class="hash-link" aria-label="状态机应该怎样设计的直接链接" title="状态机应该怎样设计的直接链接" translate="no">​</a></h2>
+<p>只有 <code>success / failed</code> 不够。推荐把写入建模成：</p>
+<!-- -->
+<p>几个硬规则：</p>
+<ol>
+<li class="">create 返回 ID 后立即写台账；写台账失败就进入人工核对。</li>
+<li class="">update 返回的 ID 必须与请求目标一致。</li>
+<li class="">写请求发出后连接中断，进入 <code>RESULT_UNKNOWN</code>，不能自动 create。</li>
+<li class="">内容 hash 未变化，直接 no-op。</li>
+<li class="">一个知乎账号同时只执行一个写任务。</li>
+<li class="">最终发布不是 create/update RPC 的参数，而是独立人工 gate。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="现在的实现与下一步">现在的实现与下一步<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E7%8E%B0%E5%9C%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E4%B8%8B%E4%B8%80%E6%AD%A5" class="hash-link" aria-label="现在的实现与下一步的直接链接" title="现在的实现与下一步的直接链接" translate="no">​</a></h2>
+<p>我们把需要持续维护的改动放进了 <a href="https://github.com/ChatArch/Wechatsync" target="_blank" rel="noopener noreferrer" class="">ChatArch/Wechatsync Fork</a>：</p>
+<ul>
+<li class="">bridge 的显式 bind host；</li>
+<li class="">MV3 多连接稳定性修复；</li>
+<li class=""><code>--post-id</code> 与独立 <code>updateArticle</code> RPC；</li>
+<li class="">知乎 adapter 的 <code>update()</code>；</li>
+<li class="">行内/块级公式转换；</li>
+<li class="">fenced code 图片误扫描修复；</li>
+<li class="">adapter 与 fail-closed 回归测试。</li>
+</ul>
+<p>当前 create-draft 和富文本链路已经在真实草稿中验收。update 代码已通过离线测试，但真实同 ID 成功路径仍应在一篇可删除测试草稿上独立完成，确认返回 ID 不变后再进入常规使用。</p>
+<p>接下来更值得做的不是“马上定时发布”，而是：</p>
+<ol>
+<li class="">把 browser runner 做成可检查、可重启的 launchd/systemd user service；</li>
+<li class="">给每条任务增加 source hash、目标 ID 和 result state；</li>
+<li class="">把 create 与 update fixture 放进真实账号低频回归；</li>
+<li class="">增加编辑页语义回读，而不是只看 API 响应；</li>
+<li class="">为 <code>RESULT_UNKNOWN</code>、会话过期和 target-side 手工修改设计人工处理入口；</li>
+<li class="">最后才考虑服务器控制面、队列和调度。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最后的判断">最后的判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E6%9C%80%E5%90%8E%E7%9A%84%E5%88%A4%E6%96%AD" class="hash-link" aria-label="最后的判断的直接链接" title="最后的判断的直接链接" translate="no">​</a></h2>
+<p>“从命令行写知乎”并不要求服务器拥有知乎 Cookie，也不要求用 Headless 浏览器重演所有点击。</p>
+<p>更清楚的分工是：<strong>内容和状态属于 CLI 控制面，身份属于 Chrome Profile，平台动作属于扩展 adapter，最终责任属于人工 Review。</strong></p>
+<p>这条链路真正有价值的地方，不只是它成功创建了一篇草稿，而是每个边界都可以被解释和验证：谁持有登录态、谁能发命令、图片去了哪里、目标 ID 是否固定、失败后能否安全停止、最终发布由谁确认。</p>
+<p>当这些问题都有明确答案时，浏览器自动化才从一次性的演示，变成可以继续设计 Infra 的执行节点。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="相关源码与延伸阅读">相关源码与延伸阅读<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E7%9B%B8%E5%85%B3%E6%BA%90%E7%A0%81%E4%B8%8E%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB" class="hash-link" aria-label="相关源码与延伸阅读的直接链接" title="相关源码与延伸阅读的直接链接" translate="no">​</a></h3>
+<ul>
+<li class=""><a href="https://github.com/ChatArch/Wechatsync" target="_blank" rel="noopener noreferrer" class="">ChatArch/Wechatsync Fork</a></li>
+<li class=""><a href="https://github.com/wechatsync/Wechatsync" target="_blank" rel="noopener noreferrer" class="">wechatsync/Wechatsync</a></li>
+<li class=""><a href="https://github.com/wechatsync/Wechatsync/blob/a98e42865387285afcc027c61836488748f3b30f/packages/core/src/adapters/platforms/zhihu.ts" target="_blank" rel="noopener noreferrer" class="">Wechatsync 知乎 adapter 基线实现</a></li>
+<li class=""><a href="https://github.com/wechatsync/Wechatsync/blob/a98e42865387285afcc027c61836488748f3b30f/packages/mcp-server/src/ws-bridge.ts" target="_blank" rel="noopener noreferrer" class="">Wechatsync WebSocket bridge 基线实现</a></li>
+<li class=""><a href="https://github.com/zimya/zhihu_obsidian" target="_blank" rel="noopener noreferrer" class="">Zhihu on Obsidian</a></li>
+<li class=""><a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zhihu-cli-publishing-server-control-plane" target="_blank" rel="noopener noreferrer" class="">上一篇：把知乎发布做成服务器任务</a></li>
+<li class=""><a href="https://www.zhihu.com/term/zhihu-terms" target="_blank" rel="noopener noreferrer" class="">知乎协议</a></li>
+</ul>]]></content:encoded>
+            <category>zhihu</category>
+            <category>wechatsync</category>
+            <category>chrome-extension</category>
+            <category>cli</category>
+            <category>infrastructure</category>
+            <category>publishing</category>
+        </item>
         <item>
             <title><![CDATA[别只搜 AI for Math：2026 下半年 CCF A/B 会议怎么选]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ccf-ab-ai-math-science-deadlines-2026</link>
@@ -3291,116 +3513,6 @@
             <category>writing</category>
             <category>mermaid</category>
             <category>mdx</category>
-        </item>
-        <item>
-            <title><![CDATA[Hermes SSH Mode：让模型安全地进入远端工作区]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace</guid>
-            <pubDate>Mon, 29 Jun 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[解释 Hermes SSH Mode 的机制、用法、安全边界，以及为什么模型需要一个可发现的 ssh_mode 工具来主动请求进入和退出远端工作区。]]></description>
-            <content:encoded><![CDATA[<p>Hermes SSH Mode 的核心目标，是让同一个 Agent 会话可以在需要时把 terminal、file、code execution 等任务执行面切到远端机器，同时保留清晰的授权边界和会话隔离。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>SSH Mode 不只是“帮模型跑一条 ssh 命令”，而是把当前会话的工具执行面切到远端；模型要能自主进入/退出，必须能看到一个明确、安全、受授权约束的 <code>ssh_mode</code> 工具。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么需要-ssh-mode">为什么需要 SSH Mode<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-ssh-mode" class="hash-link" aria-label="为什么需要 SSH Mode的直接链接" title="为什么需要 SSH Mode的直接链接" translate="no">​</a></h2>
-<p>普通 SSH 命令适合人类临时登录一台机器，但对 Agent 来说还不够。</p>
-<p>Agent 的工作不是只执行一条命令。它会连续调用：</p>
-<ul>
-<li class=""><code>terminal</code>：运行命令、看进程、跑测试；</li>
-<li class=""><code>read_file</code> / <code>write_file</code> / <code>patch</code> / <code>search_files</code>：读写和搜索项目文件；</li>
-<li class=""><code>execute_code</code>：运行小脚本做验证或自动化。</li>
-</ul>
-<p>如果只有一条 <code>ssh user@host</code> 命令，后续 file/code 工具并不会自动知道“我现在应该在远端”。Hermes SSH Mode 解决的是这个问题：<strong>把某个会话范围内的工具 backend 统一切到 SSH remote</strong>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="两种-ssh-backend系统级与会话级">两种 SSH backend：系统级与会话级<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E4%B8%A4%E7%A7%8D-ssh-backend%E7%B3%BB%E7%BB%9F%E7%BA%A7%E4%B8%8E%E4%BC%9A%E8%AF%9D%E7%BA%A7" class="hash-link" aria-label="两种 SSH backend：系统级与会话级的直接链接" title="两种 SSH backend：系统级与会话级的直接链接" translate="no">​</a></h2>
-<p>Hermes 里可以从两个层面理解 SSH：</p>
-<table><thead><tr><th>模式</th><th>影响范围</th><th>适合场景</th></tr></thead><tbody><tr><td>系统级 SSH backend</td><td>整个 Hermes 默认 terminal backend</td><td>这台 Hermes 实例主要就是在远端工作</td></tr><tr><td>Section / Thread 级 SSH Mode</td><td>当前聊天 section 或飞书 Thread</td><td>临时把一个任务切到远端，其他聊天仍保持本地</td></tr></tbody></table>
-<p>两者对模型的工具体验应该是等价的：只要当前上下文已经处于 SSH backend，<code>terminal</code>、文件工具、<code>execute_code</code> 就应该都打到同一个远端环境。</p>
-<p>差别在于范围：系统级是全局默认，会话级是局部绑定。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="在飞书里推荐的使用方式">在飞书里推荐的使用方式<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E5%9C%A8%E9%A3%9E%E4%B9%A6%E9%87%8C%E6%8E%A8%E8%8D%90%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F" class="hash-link" aria-label="在飞书里推荐的使用方式的直接链接" title="在飞书里推荐的使用方式的直接链接" translate="no">​</a></h2>
-<p>Hermes 在 Feishu / Lark 里使用 SSH Mode 时，推荐把远端工作放进 Thread，而不是污染父会话。</p>
-<table><thead><tr><th>目标</th><th>命令</th><th>说明</th></tr></thead><tbody><tr><td>在父会话进入远端</td><td><code>/ssh use &lt;alias&gt;</code></td><td>默认创建一个 Feishu Thread，并把 SSH 绑定到这个 Thread</td></tr><tr><td>在已有 Thread 切换目标</td><td><code>/ssh use &lt;alias&gt;</code></td><td>只影响当前 Thread / section</td></tr><tr><td>查看当前状态</td><td><code>/ssh status</code></td><td>查看是否绑定 SSH、绑定到哪个 target</td></tr><tr><td>回到本地</td><td><code>/ssh local</code></td><td>推荐的退出方式</td></tr><tr><td>兼容旧命令</td><td><code>/ssh off</code></td><td>保留为兼容别名，不作为主要文档入口</td></tr></tbody></table>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>Feishu Thread 边界</div><div class="admonitionContent_BuS1"><p>父会话里的 <code>/ssh use &lt;alias&gt;</code> 默认创建 Thread，是为了让“远端任务上下文”有一个清晰边界。父会话继续保持本地，Thread 内后续消息才进入远端工作模式。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么模型之前不知道怎么进入-ssh">为什么模型之前“不知道怎么进入 SSH”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%A8%A1%E5%9E%8B%E4%B9%8B%E5%89%8D%E4%B8%8D%E7%9F%A5%E9%81%93%E6%80%8E%E4%B9%88%E8%BF%9B%E5%85%A5-ssh" class="hash-link" aria-label="为什么模型之前“不知道怎么进入 SSH”的直接链接" title="为什么模型之前“不知道怎么进入 SSH”的直接链接" translate="no">​</a></h2>
-<p>一个重要经验是：模型不是通过读 slash command 列表来自动获得所有能力的。它主要依赖当前请求里暴露给它的工具 schema。</p>
-<p>如果 <code>ssh_mode</code> 工具没有出现在模型可见的工具集中，即使系统内部已经支持 <code>/ssh use</code>，模型也很难主动发现：</p>
-<ul>
-<li class="">当前是否已经在 SSH？</li>
-<li class="">有哪些 SSH target？</li>
-<li class="">如何请求进入？</li>
-<li class="">如何请求退出？</li>
-<li class="">什么时候需要用户授权？</li>
-</ul>
-<p>这类能力需要一个模型可见的 affordance。</p>
-<!-- -->
-<p>因此，SSH Mode 需要同时有两层入口：</p>
-<ol>
-<li class=""><strong>用户入口</strong>：<code>/ssh use</code>、<code>/ssh local</code>、<code>/ssh status</code>；</li>
-<li class=""><strong>模型入口</strong>：<code>ssh_mode.status</code>、<code>ssh_mode.list_targets</code>、<code>ssh_mode.request_use</code>、<code>ssh_mode.request_local</code>。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="模型自主切换必须有授权边界">模型自主切换必须有授权边界<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E6%A8%A1%E5%9E%8B%E8%87%AA%E4%B8%BB%E5%88%87%E6%8D%A2%E5%BF%85%E9%A1%BB%E6%9C%89%E6%8E%88%E6%9D%83%E8%BE%B9%E7%95%8C" class="hash-link" aria-label="模型自主切换必须有授权边界的直接链接" title="模型自主切换必须有授权边界的直接链接" translate="no">​</a></h2>
-<p>让模型“能请求进入 SSH”，不等于让模型随便切机器。</p>
-<p>一个安全的模型侧流程应该是：</p>
-<table><thead><tr><th>情况</th><th>行为</th></tr></thead><tbody><tr><td>当前 section 没有授权</td><td><code>request_use</code> 返回需要授权</td></tr><tr><td>用户运行 <code>/ssh yolo on &lt;alias&gt;</code></td><td>模型可在当前 section 请求进入该 alias</td></tr><tr><td>用户运行 <code>/ssh yolo on all</code></td><td>模型可在当前 section 请求进入任意已配置 target</td></tr><tr><td>用户用 <code>/ssh use</code> 手动创建 sticky binding</td><td>模型不应擅自清掉它</td></tr><tr><td>模型创建的临时 binding</td><td>模型可用 <code>request_local</code> 清理</td></tr></tbody></table>
-<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>安全边界</div><div class="admonitionContent_BuS1"><p><code>/ssh yolo on &lt;alias&gt;</code> 应该是 section-scoped 授权，而不是全局永久授权。它让模型在当前任务上下文里更自主，但仍然把权限限制在用户明确打开的范围内。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="ssh-mode-影响什么不影响什么">SSH Mode 影响什么，不影响什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#ssh-mode-%E5%BD%B1%E5%93%8D%E4%BB%80%E4%B9%88%E4%B8%8D%E5%BD%B1%E5%93%8D%E4%BB%80%E4%B9%88" class="hash-link" aria-label="SSH Mode 影响什么，不影响什么的直接链接" title="SSH Mode 影响什么，不影响什么的直接链接" translate="no">​</a></h2>
-<p>最容易混淆的是“任务执行面”和“Hermes 控制面”。</p>
-<p>SSH Mode 影响的是任务执行面：</p>
-<ul>
-<li class=""><code>terminal</code></li>
-<li class=""><code>read_file</code> / <code>write_file</code> / <code>patch</code> / <code>search_files</code></li>
-<li class=""><code>execute_code</code></li>
-</ul>
-<p>这些工具在当前 section 进入 SSH 后，应当像在远端工作一样。</p>
-<p>但 Hermes 自己的控制面仍然属于本地 Hermes 进程和本地 profile：</p>
-<ul>
-<li class=""><code>skill_view</code> / <code>skill_manage</code></li>
-<li class="">memory</li>
-<li class="">cron jobs</li>
-<li class="">session database</li>
-<li class="">gateway 状态</li>
-<li class="">profile config</li>
-</ul>
-<p>这意味着：如果模型完成一次远端任务后，要更新自己的 skill，正确方式是调用 <code>skill_manage</code>，写入本地 Hermes profile 的 skills；不要通过远端 file/terminal 去改远端机器上的 <code>~/.hermes/skills</code>，除非目标明确就是维护远端那套 Hermes 安装。</p>
-<!-- -->
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一个推荐工作流">一个推荐工作流<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E4%B8%80%E4%B8%AA%E6%8E%A8%E8%8D%90%E5%B7%A5%E4%BD%9C%E6%B5%81" class="hash-link" aria-label="一个推荐工作流的直接链接" title="一个推荐工作流的直接链接" translate="no">​</a></h2>
-<p>下面是一个典型的 Feishu Thread 工作流：</p>
-<ol>
-<li class="">用户在父会话说：这个任务去远端做。</li>
-<li class="">用户运行 <code>/ssh use &lt;alias&gt;</code>。</li>
-<li class="">Hermes 创建一个 Thread，并把该 Thread 绑定到 SSH target。</li>
-<li class="">Thread 中的后续任务，<code>terminal</code> / file / code 工具都走远端。</li>
-<li class="">如果希望模型后续能自己切入同一 target，用户运行 <code>/ssh yolo on &lt;alias&gt;</code>。</li>
-<li class="">任务完成后，用户运行 <code>/ssh local</code>，把该 Thread 回到本地 backend。</li>
-</ol>
-<p>如果用户只想让模型“建议进入”，而不是允许它自主切换，就不需要开 yolo：模型看到缺少授权后，应提示用户手动运行 <code>/ssh use &lt;alias&gt;</code>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="设计上的关键点">设计上的关键点<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E8%AE%BE%E8%AE%A1%E4%B8%8A%E7%9A%84%E5%85%B3%E9%94%AE%E7%82%B9" class="hash-link" aria-label="设计上的关键点的直接链接" title="设计上的关键点的直接链接" translate="no">​</a></h2>
-<p>这次 SSH Mode 的经验可以总结为几条通用 Agent 设计原则：</p>
-<ol>
-<li class=""><strong>Slash command 是用户 affordance，不是模型 affordance。</strong>  模型要自主使用某能力，需要工具 schema 或等价的模型可见入口。</li>
-<li class=""><strong>远端 backend 要覆盖整套任务执行工具。</strong>  只切 terminal 不够，file/code 工具也要命中同一个 backend。</li>
-<li class=""><strong>Thread / section 是天然的隔离边界。</strong>  尤其在 IM 场景，不要让父会话被临时远端任务污染。</li>
-<li class=""><strong>控制面不要被远端 backend 意外劫持。</strong>  skills、memory、cron、gateway 等属于 Hermes 本地 profile。</li>
-<li class=""><strong>自主性必须配授权。</strong>  yolo grant 应该是显式、局部、可撤销的。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="适合沉淀成-skill-的内容">适合沉淀成 Skill 的内容<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E9%80%82%E5%90%88%E6%B2%89%E6%B7%80%E6%88%90-skill-%E7%9A%84%E5%86%85%E5%AE%B9" class="hash-link" aria-label="适合沉淀成 Skill 的内容的直接链接" title="适合沉淀成 Skill 的内容的直接链接" translate="no">​</a></h2>
-<p>博客适合解释概念和设计；Skill 适合让模型重复执行流程。</p>
-<p>SSH Mode 的操作 Skill 应该记录：</p>
-<ul>
-<li class="">如何查看 <code>/ssh list</code> / <code>/ssh status</code>；</li>
-<li class="">如何验证 target 元数据而不泄露私钥路径；</li>
-<li class="">如何从父会话进入 Thread；</li>
-<li class="">如何授权模型自主请求进入；</li>
-<li class="">如何退出到 local；</li>
-<li class="">如何验证 terminal/file/code 是否真的走远端；</li>
-<li class="">哪些控制面仍然是本地。</li>
-</ul>
-<p>这类内容一旦稳定，就可以成为模型每次处理 SSH Mode 任务前加载的操作手册。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="结语">结语<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-ssh-mode-model-controlled-remote-workspace#%E7%BB%93%E8%AF%AD" class="hash-link" aria-label="结语的直接链接" title="结语的直接链接" translate="no">​</a></h2>
-<p>Hermes SSH Mode 的价值不只是“能连远端”，而是把远端执行、会话隔离、模型可发现能力和用户授权放进同一个闭环里。</p>
-<p>当这个闭环成立后，用户可以用 <code>/ssh use</code> 明确切换任务上下文，模型也可以在得到授权后主动请求进入或退出远端环境；而 Hermes 自己的 skills、memory、profile 仍然保持在本地控制面中，不会因为一次远端任务而混乱。</p>]]></content:encoded>
-            <category>hermes</category>
-            <category>ssh</category>
-            <category>agent</category>
-            <category>feishu</category>
-            <category>remote-workspace</category>
         </item>
     </channel>
 </rss>
