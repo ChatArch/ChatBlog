@@ -258,11 +258,14 @@ runner_id
 远端写入存在“请求发出后连接中断”的灰区，任务至少需要这些状态：
 
 ```text
-READY -> UPDATING_DRAFT -> DRAFT_UPDATED -> AWAITING_REVIEW -> PUBLISHED
-                    |              |
-                    v              v
-              RESULT_UNKNOWN    NEEDS_ACTION
+READY
+  -> UPDATING_DRAFT
+  -> DRAFT_UPDATED
+  -> AWAITING_REVIEW
+  -> PUBLISHED
 
+UPDATING_DRAFT -> RESULT_UNKNOWN
+DRAFT_UPDATED  -> NEEDS_ACTION
 manual target edit -> CONFLICT / DETACHED
 source deleted     -> ORPHANED
 ```
