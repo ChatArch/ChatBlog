@@ -19,6 +19,7 @@
 - Added a practical Glance configuration guide covering service widgets, RSS/Atom feeds, the full widget catalog, dependency boundaries, and a recommended first dashboard.
 - Added a three-part Lean soundness series centered on the `Counterexample to the Lean Conjecture` discussion, with focused companion guides to Comparator and the nanoda external kernel.
 - Added a 2025–2026 AI mathematics landscape covering ICM 2026, research datasets, formal-proof benchmarks, open-source systems, and an evidence audit of claimed open-problem results.
+- Added an AutoResearch engineering analysis covering action-space growth, validation debt, adaptive overfitting, independent confirmation, evidence lineage, and practical project selection.
 
 ### Changed
 
