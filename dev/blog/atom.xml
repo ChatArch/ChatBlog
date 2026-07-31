@@ -187,7 +187,7 @@
 <li class="">最终发布不是 create/update RPC 的参数，而是独立人工 gate。</li>
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="现在的实现与下一步">现在的实现与下一步<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E7%8E%B0%E5%9C%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E4%B8%8B%E4%B8%80%E6%AD%A5" class="hash-link" aria-label="现在的实现与下一步的直接链接" title="现在的实现与下一步的直接链接" translate="no">​</a></h2>
-<p>我们把需要持续维护的改动放进了 <a href="https://github.com/ChatArch/Wechatsync" target="_blank" rel="noopener noreferrer" class="">ChatArch/Wechatsync Fork</a>：</p>
+<p>我们在 <a href="https://github.com/ChatArch/Wechatsync" target="_blank" rel="noopener noreferrer" class="">ChatArch/Wechatsync Fork</a> 建立了长期 <code>dev</code> 集成分支。功能改动从 feature branch 发起 <a href="https://github.com/ChatArch/Wechatsync/pull/1" target="_blank" rel="noopener noreferrer" class="">Fork 内部 PR #1</a>，经过测试和 Review 后再进入 <code>dev</code>，而不是直接改上游同步分支：</p>
 <ul>
 <li class="">bridge 的显式 bind host；</li>
 <li class="">MV3 多连接稳定性修复；</li>
@@ -215,6 +215,8 @@
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="相关源码与延伸阅读">相关源码与延伸阅读<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline#%E7%9B%B8%E5%85%B3%E6%BA%90%E7%A0%81%E4%B8%8E%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB" class="hash-link" aria-label="相关源码与延伸阅读的直接链接" title="相关源码与延伸阅读的直接链接" translate="no">​</a></h3>
 <ul>
 <li class=""><a href="https://github.com/ChatArch/Wechatsync" target="_blank" rel="noopener noreferrer" class="">ChatArch/Wechatsync Fork</a></li>
+<li class=""><a href="https://github.com/ChatArch/Wechatsync/tree/dev" target="_blank" rel="noopener noreferrer" class="">ChatArch/Wechatsync <code>dev</code> 维护分支</a></li>
+<li class=""><a href="https://github.com/ChatArch/Wechatsync/pull/1" target="_blank" rel="noopener noreferrer" class="">安全更新与 bridge 修复 PR #1</a></li>
 <li class=""><a href="https://github.com/wechatsync/Wechatsync" target="_blank" rel="noopener noreferrer" class="">wechatsync/Wechatsync</a></li>
 <li class=""><a href="https://github.com/wechatsync/Wechatsync/blob/a98e42865387285afcc027c61836488748f3b30f/packages/core/src/adapters/platforms/zhihu.ts" target="_blank" rel="noopener noreferrer" class="">Wechatsync 知乎 adapter 基线实现</a></li>
 <li class=""><a href="https://github.com/wechatsync/Wechatsync/blob/a98e42865387285afcc027c61836488748f3b30f/packages/mcp-server/src/ws-bridge.ts" target="_blank" rel="noopener noreferrer" class="">Wechatsync WebSocket bridge 基线实现</a></li>
