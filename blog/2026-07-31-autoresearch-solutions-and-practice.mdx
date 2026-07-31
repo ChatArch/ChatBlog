@@ -1,12 +1,13 @@
 ---
-title: "AutoResearch 怎么落地：行动空间、验证债务与可信研究闭环"
+title: "AutoResearch 怎么落地：验证债务与可信闭环"
 date: 2026-07-31T13:00:00+08:00
 slug: autoresearch-open-source-landscape
 tags: [autoresearch, ai-scientist, research-agent, machine-learning, open-source]
 description: 从 autoresearch 到 AI Scientist，解释自动科研系统每扩大一层行动空间会新增什么验证债务，以及团队怎样用独立评价、确认集、证据链和人工问责构建可信闭环。
+toc_max_heading_level: 2
 ---
 
-# AutoResearch 怎么落地：行动空间、验证债务与可信研究闭环
+# AutoResearch 怎么落地：验证债务与可信闭环
 
 AutoResearch 最容易被描述成一条越来越长的流水线：搜论文、提 idea、改代码、跑实验、画图、写 LaTeX，再让另一个模型 review。按照这个口径，覆盖阶段越多，系统就越接近“AI Scientist”。
 
@@ -37,11 +38,11 @@ AutoResearch 的能力边界不取决于它自动化了多少科研步骤，而�
 
 按这四个问题，当前系统可以拆成三个不同但可嵌套的循环：
 
-| 循环 | 被更新的状态 | 系统动作 | 新观测 | 决策者 |
-|---|---|---|---|---|
-| **执行循环** | 代码、配置、环境、候选程序 | patch、运行、调参、回退 | metric、错误、资源消耗 | 固定 evaluator 与 guardrail |
-| **探究循环** | 竞争假设、已有证据、实验设计 | 选择实验、采样、改变条件 | 数据、效应、反例、不确定性 | 预先声明的统计/因果规则与研究者 |
-| **问责循环** | claim-evidence graph、复现状态、发布状态 | 审计、复验、缩小主张、补实验 | 独立 review、复现结果、证据缺口 | 与 proposer 分离的 reviewer / human gate |
+| 循环 | 状态 | 动作与观测 | 决策 |
+|---|---|---|---|
+| **执行循环** | 代码、配置、环境 | patch / run → metric、错误、成本 | 固定 evaluator 与 guardrail |
+| **探究循环** | 竞争假设与已有证据 | 设计实验 → 数据、效应、反例 | 预先声明的规则与研究者 |
+| **问责循环** | claim-evidence graph | audit / replicate → review 与证据缺口 | 独立 reviewer / human gate |
 
 ```mermaid
 flowchart TB
@@ -91,11 +92,7 @@ Sandbox、Git worktree、GPU queue、budget、artifact store 和权限系统也�
 - `train.py` 是唯一可编辑面；
 - `program.md` 由人类维护研究协议。
 
-每个候选在同一台 GPU 上训练固定 5 分钟，`val_bpb` 攭善就保留，否则回退。官方进展图记录了一次 83 个候选、15 次保留改进的运行：
-
-![autoresearch 官方实验进展图](/img/autoresearch-guide/autoresearch-progress.png)
-
-图源：[karpathy/autoresearch `progress.png`](https://github.com/karpathy/autoresearch/blob/master/progress.png)。
+每个候选在同一台 GPU 上训练固定 5 分钟，`val_bpb` 改善就保留，否则回退。官方 [`progress.png`](https://github.com/karpathy/autoresearch/blob/master/progress.png) 记录了一次 83 个候选、15 次保留改进的运行。
 
 它新增的能力是持续程序搜索；新增的验证债务是：单一 `val_bpb` 是否代表真正目标，反复查询同一 validation set 是否已经过拟合，以及延迟、显存、稳定性等未进入主指标的属性是否被牺牲。
 
@@ -109,11 +106,7 @@ Sandbox、Git worktree、GPU queue、budget、artifact store 和权限系统也�
 
 这项拆分新增的是归因能力：系统可以分别检查“假设不成立”和“代码没实现假设”。但如果 idea specification、patch、run、metric 和分析没有分别记录，角色越多，责任反而越模糊。
 
-[AutoRA](https://github.com/AutoResearch/autora)采用更接近经验科学的 state loop：experimentalist 基于当前状态选择条件，experiment runner 产生观测，theorist 根据累计数据更新模型，再把新状态交给下一轮。
-
-![AutoRA 官方经验科学闭环](/img/autoresearch-guide/autora-empirical-loop.png)
-
-图源：[AutoResearch/autora `overview.png`](https://github.com/AutoResearch/autora/blob/main/docs/img/overview.png)。
+[AutoRA](https://github.com/AutoResearch/autora)采用更接近经验科学的 [state loop](https://github.com/AutoResearch/autora/blob/main/docs/img/overview.png)：experimentalist 基于当前状态选择条件，experiment runner 产生观测，theorist 根据累计数据更新模型，再把新状态交给下一轮。
 
 这里的关键变化不是增加 LLM，而是系统开始决定“下一次应该收集什么数据”。[Curie](https://github.com/Just-Curieous/Curie)也把 question、starter code、实验 workspace、执行结果与报告组织成可复查过程，并用 [EXP-Bench](https://arxiv.org/abs/2505.24785)区分真实实验任务与普通 coding benchmark。
 
@@ -244,18 +237,22 @@ release_gate.review(evidence_store, include_failed_runs=True)
 只写 editable files、GPU budget 和 primary metric，得到的是一份 ML 优化作业。真正的 Research Contract 还必须规定认知和确认规则：
 
 ```yaml
-question: "Does the proposed mechanism improve generalization without increasing latency?"
+question: >-
+  Does the proposed mechanism improve generalization
+  without increasing latency?
 
 hypotheses:
-  primary: "The mechanism reduces validation error by improving representation quality."
+  primary: >-
+    The mechanism reduces validation error by improving
+    representation quality.
   rival_explanations:
-    - "The gain comes only from increased parameter count."
-    - "The gain is validation-set overfitting."
+    - The gain comes only from increased parameter count.
+    - The gain is validation-set overfitting.
   expected_observations:
-    - "Improvement persists across locked seeds and fresh data."
+    - Improvement persists across locked seeds and fresh data.
   falsification_conditions:
-    - "No gain after controlling parameter count."
-    - "Gain disappears on the locked confirmation set."
+    - No gain after controlling parameter count.
+    - Gain disappears on the locked confirmation set.
 
 action_space:
   editable:
@@ -307,15 +304,15 @@ gates:
 
 ## 今天怎么选：不要先安装最大的 Scientist
 
-| 现有条件 | 建议起点 | 它解决什么 | 首先偿还的验证债务 |
-|---|---|---|---|
-| 一个 ML repo、明确 metric、便宜实验 | [autoresearch](https://github.com/karpathy/autoresearch) | 最小可执行搜索合同 | 独立 confirmation、query budget、guardrail |
-| 同时保留多条代码路线 | [AIDE](https://github.com/WecoAI/aideml) | solution tree 与 debug/improve | 多重比较、winner's curse |
-| 已有量化/Kaggle/模型领域 runner | [RD-Agent](https://github.com/microsoft/RD-Agent) | idea 与 implementation 分工 | idea、patch、run、feedback 分别留痕 |
-| 下一次数据采集本身需要选择 | [AutoRA](https://github.com/AutoResearch/autora) / [Curie](https://github.com/Just-Curieous/Curie) | 主动实验与状态更新 | measurement bias、证伪规则、人工执行 gate |
-| 已有稳定实验平台，研究端到端编排 | [AI Scientist v1/v2](https://github.com/SakanaAI/AI-Scientist-v2) | idea、实验树、写作与 review 协议 | sandbox、文献遗漏、自我 review、独立确认 |
-| 结构化数据需要论文级追溯 | [data-to-paper](https://github.com/Technion-Kishony-lab/data-to-paper) | 数字到代码的 evidence chain | 统计方法有效性与领域专家审查 |
-| 多天任务需要恢复、接管和审计 | [DeepScientist](https://github.com/ResearAI/DeepScientist) / [ARIS](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep) | Research OS 与 workflow control | 另建 evaluator；持久状态不能替代科学确认 |
+| 现有条件 | 建议起点与作用 | 首要验证债务 |
+|---|---|---|
+| 一个 ML repo、明确 metric、便宜实验 | [autoresearch](https://github.com/karpathy/autoresearch)：最小搜索合同 | 独立 confirmation、query budget、guardrail |
+| 同时保留多条代码路线 | [AIDE](https://github.com/WecoAI/aideml)：solution tree | 多重比较、winner's curse |
+| 已有量化/Kaggle/模型 runner | [RD-Agent](https://github.com/microsoft/RD-Agent)：分开 idea 与实现 | idea、patch、run、feedback 分别留痕 |
+| 下一次数据采集需要选择 | [AutoRA](https://github.com/AutoResearch/autora) / [Curie](https://github.com/Just-Curieous/Curie)：主动实验 | measurement bias、证伪规则、人工 gate |
+| 已有稳定实验平台，研究端到端编排 | [AI Scientist v1/v2](https://github.com/SakanaAI/AI-Scientist-v2)：实验树与写作协议 | sandbox、文献遗漏、自我 review、独立确认 |
+| 结构化数据需要论文级追溯 | [data-to-paper](https://github.com/Technion-Kishony-lab/data-to-paper)：evidence chain | 统计有效性与领域专家审查 |
+| 多天任务需要恢复、接管和审计 | [DeepScientist](https://github.com/ResearAI/DeepScientist) / [ARIS](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep)：Research OS | 另建 evaluator；持久状态不能替代确认 |
 
 对已有模型、算力、Git 和论文工具的团队，推荐顺序是：
 
