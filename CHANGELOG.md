@@ -25,6 +25,7 @@
 - Added an end-to-end Zhihu draft pipeline practice covering persistent Chrome profiles, MV3 extension wake-up, loopback bridge security, local image upload, rich-content fidelity, fail-closed updates, and the resulting Infra state machine.
 - Added a Tau Ceti systems analysis covering human roadmaps, AI author/review workers, sandboxed Lean CI, five-repository trust boundaries, the public 50k-run review archive, measured throughput, and unresolved calibration/maintenance risks.
 - Added a broad-first CCF A/B deadline guide for AI for Math and AI for Science, covering open-round validation, contribution-based venue matching, remaining 2026 deadlines, January 2027 fallbacks, and official-source caveats.
+- Added a source-audited analysis of OpenAI Astra's ten mathematics and theoretical-computer-science results, including theorem-by-theorem scope, Lean and Comparator evidence, model and cost caveats, public reactions, attribution, and peer-review boundaries.
 
 ### Changed
 
