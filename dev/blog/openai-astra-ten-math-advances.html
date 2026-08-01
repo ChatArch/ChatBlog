@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-Hans" dir="ltr" class="blog-wrapper blog-post-page plugin-blog plugin-id-default" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">OpenAI Astra 真的解决了十道数学难题吗？逐项审计论文、Lean 证书与争议 | ChatBlog</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/social-card.svg"><meta data-rh="true" name="twitter:image" content="https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/social-card.svg"><meta data-rh="true" property="og:url" content="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances"><meta data-rh="true" property="og:locale" content="zh_Hans"><meta data-rh="true" name="docusaurus_locale" content="zh-Hans"><meta data-rh="true" name="docusaurus_tag" content="default"><meta data-rh="true" name="docsearch:language" content="zh-Hans"><meta data-rh="true" name="docsearch:docusaurus_tag" content="default"><meta data-rh="true" property="og:title" content="OpenAI Astra 真的解决了十道数学难题吗？逐项审计论文、Lean 证书与争议 | ChatBlog"><meta data-rh="true" name="description" content="逐项解释 Astra 在球堆积、非 sofic 群、量子并行重复、Ehrhart 猜想等方向的十项结果，并审计 249 页论文、47 万行 Lean、2000 美元成本说法、人类参与和同行评议边界。"><meta data-rh="true" property="og:description" content="逐项解释 Astra 在球堆积、非 sofic 群、量子并行重复、Ehrhart 猜想等方向的十项结果，并审计 249 页论文、47 万行 Lean、2000 美元成本说法、人类参与和同行评议边界。"><meta data-rh="true" property="og:type" content="article"><meta data-rh="true" property="article:published_time" content="2026-08-01T14:45:00.000Z"><meta data-rh="true" property="article:tag" content="ai-math,openai,astra,lean,formal-verification,open-problems"><link data-rh="true" rel="icon" href="/ChatBlog/dev/img/favicon.svg"><link data-rh="true" rel="canonical" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances"><link data-rh="true" rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances" hreflang="zh-Hans"><link data-rh="true" rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","@id":"https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances","mainEntityOfPage":"https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances","url":"https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances","headline":"OpenAI Astra 真的解决了十道数学难题吗？逐项审计论文、Lean 证书与争议","name":"OpenAI Astra 真的解决了十道数学难题吗？逐项审计论文、Lean 证书与争议","description":"逐项解释 Astra 在球堆积、非 sofic 群、量子并行重复、Ehrhart 猜想等方向的十项结果，并审计 249 页论文、47 万行 Lean、2000 美元成本说法、人类参与和同行评议边界。","datePublished":"2026-08-01T14:45:00.000Z","author":[],"keywords":[],"isPartOf":{"@type":"Blog","@id":"https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog","name":"ChatBlog 博客"}}</script><link rel="alternate" type="application/rss+xml" href="/ChatBlog/dev/blog/rss.xml" title="ChatBlog RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/ChatBlog/dev/blog/atom.xml" title="ChatBlog Atom Feed"><link rel="stylesheet" href="/ChatBlog/dev/assets/css/styles.77dd7837.css">
+<script src="/ChatBlog/dev/assets/js/runtime~main.d15ec040.js" defer="defer"></script>
+<script src="/ChatBlog/dev/assets/js/main.df29f748.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ChatBlog/dev/img/logo.svg"><div role="region" aria-label="跳到主要内容"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">跳到主要内容</a></div><nav aria-label="主导航" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="切换导航栏" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ChatBlog/dev/"><div class="navbar__logo"><img src="/ChatBlog/dev/img/logo.svg" alt="ChatBlog logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ChatBlog/dev/img/logo.svg" alt="ChatBlog logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">ChatBlog</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ChatBlog/dev/blog">博客</a><a class="navbar__item navbar__link" href="/ChatBlog/dev/docs/blocks/hello-world">知识块</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/ChatArch/ChatBlog" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="切换浅色/暗黑模式（当前为system mode）"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="container margin-vert--lg"><div class="row"><aside class="col col--3"><nav class="sidebar_re4s thin-scrollbar" aria-label="最近博文导航"><div class="sidebarItemTitle_pO2u margin-bottom--md">Recent posts</div><div role="group"><h3 class="yearGroupHeading_rMGB">2026</h3><ul class="sidebarItemList_Yudw clean-list"><li class="sidebarItem__DBe"><a aria-current="page" class="sidebarItemLink_mo7H sidebarItemLinkActive_I1ZP" href="/ChatBlog/dev/blog/openai-astra-ten-math-advances">OpenAI Astra 真的解决了十道数学难题吗？逐项审计论文、Lean 证书与争议</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline">从 Chrome 登录态到知乎草稿：我们如何打通一条可控的写入链路</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/dev/blog/ccf-ab-ai-math-science-deadlines-2026">别只搜 AI for Math：2026 下半年 CCF A/B 会议怎么选</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/dev/blog/tauceti-ai-mathlib-roadmap-review-system">Tau Ceti：人类写 roadmap，AI 真的能维护一座数学库吗？</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/dev/blog/zhihu-cli-publishing-server-control-plane">把知乎发布做成服务器任务：哪种 CLI 方案最稳？</a></li></ul></div></nav></aside><main class="col col--7"><article class=""><header><h1 class="title_f1Hy">OpenAI Astra 真的解决了十道数学难题吗？逐项审计论文、Lean 证书与争议</h1><div class="container_mt6G margin-vert--md"><time datetime="2026-08-01T14:45:00.000Z">2026年8月1日</time> · <!-- -->阅读需 29 分钟</div></header><div id="__blog-post-container" class="markdown"><p>2025 年 10 月，OpenAI 曾闹过一次很难看的数学误报：公司高管把 GPT-5 找到十道 Erdős 问题的<strong>既有文献解答</strong>，说成了“解决十道此前未解的问题”。数学家 Thomas Bloom 当时称这是 “a dramatic misrepresentation”，相关帖子随后被删除。</p>
+<p>不到一年后，OpenAI 又带着“十道开放问题”回来了。</p>
+<p>这一次，材料完全不同：一份 <a href="https://cdn.openai.com/pdf/ten-proofs-oai.pdf" target="_blank" rel="noopener noreferrer" class="">249 页技术文稿</a>、一份 <a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">62 页思路说明</a>、十个大型 Lean 文件、十二组 Comparator challenge，以及 OpenAI 对正确性的公开责任声明。产生论证的模型叫 <strong>Astra</strong>，是 OpenAI 尚未发布的下一代内部模型。</p>
+<p>如果这些结果经受住外部审查，这会是 AI 数学从“偶尔参与一篇论文”跨向“同一个通用系统批量产生研究级新数学”的重要节点。</p>
+<p>但新闻标题“新模型解决十道著名数学题”仍然漏掉了几乎所有关键限定。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>这不是十道竞赛题，也不是十个千禧年难题。更准确地说，Astra 产生了<strong>十组数学与理论计算机科学新结果</strong>：其中有完整反例和长期猜想的解决，也有对上界、下界和复杂度结果的重大改进。公开证据远强于普通模型宣传，但数学界的独立逐项审查、模型实验的成功率和完整成本仍未公开。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>核验口径</div><div class="admonitionContent_BuS1"><p>本文动态资料核验至 <strong>2026-08-01</strong>。OpenAI 的证明仓库在发布当天仍持续更新，因此代码审计固定在 <a href="https://github.com/openai/ten-proofs/tree/1f16bdcd2f22137d294a5abd61278fa8205bfba3" target="_blank" rel="noopener noreferrer" class=""><code>openai/ten-proofs@1f16bdc</code></a>。“OpenAI 声称”“媒体报道”“公开反应”和本文分析会分开标注。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把七个最容易误解的说法改正">先把七个最容易误解的说法改正<a href="#先把七个最容易误解的说法改正" class="hash-link" aria-label="先把七个最容易误解的说法改正的直接链接" title="先把七个最容易误解的说法改正的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>流行说法</th><th>更准确的表述</th></tr></thead><tbody><tr><td>OpenAI 发布了 Astra</td><td>**没有。**官方只确认一个内部版本产生了这些结果；没有 API、模型权重、系统卡或发布日期</td></tr><tr><td>Astra 解完了十道著名难题</td><td>它产生了十组新结果；有些完整解决猜想，有些只改进一侧的界或复杂度下界</td></tr><tr><td>这是十道 Erdős 问题</td><td>明确对应 Erdős 编号的只有 <strong>146、180、183</strong>；其余来自不同领域</td></tr><tr><td>这是千禧年大奖级突破</td><td>OpenAI 研究员 Noam Brown 明确说：<strong>没有千禧年问题</strong></td></tr><tr><td>十项研究总共只花 2,000 美元</td><td>这是成功解法 token 按 Sol API 价格的折算，不包括训练、失败尝试、基础设施、人类工资、整理和验证</td></tr><tr><td>AI 完全无人参与地写出十篇论文</td><td>OpenAI 说数学论证来自 Astra；人类与模型共同整理文稿，并帮助完成 Lean 形式化</td></tr><tr><td>公开了完整思考过程</td><td>公开的是模型在事后读取原始轨迹和成稿后写出的<strong>重建叙事</strong>，不是完整原始运行日志</td></tr></tbody></table>
+<p>最重要的修正是：<strong>“解决”不是一个二值标签。</strong></p>
+<p>证明一个猜想、推翻一个猜想、把指数上界从 0.599 改到 0.604、证明某种近似问题更难、确定一个方法本身的极限，都是新数学，但它们回答的问题层级不同。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这件事是怎么一步步发生的">这件事是怎么一步步发生的<a href="#这件事是怎么一步步发生的" class="hash-link" aria-label="这件事是怎么一步步发生的的直接链接" title="这件事是怎么一步步发生的的直接链接" translate="no">​</a></h2>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2025-年的误报为什么必须重提">2025 年的误报为什么必须重提<a href="#2025-年的误报为什么必须重提" class="hash-link" aria-label="2025 年的误报为什么必须重提的直接链接" title="2025 年的误报为什么必须重提的直接链接" translate="no">​</a></h3>
+<p><a href="https://techcrunch.com/2025/10/19/openais-embarrassing-math/" target="_blank" rel="noopener noreferrer" class="">TechCrunch 对 2025 年事件的回顾</a>记录了当时的原话：OpenAI VP Kevin Weil 宣称 GPT-5 “found solutions to 10 previously unsolved Erdős problems”。</p>
+<p>Bloom 随后解释，<code>erdosproblems.com</code> 上的 <code>Open</code> 只代表<strong>维护者尚不知道解答</strong>，不是一份经过穷尽文献审查的世界真理。GPT-5 找到的是 Bloom 不知道的旧论文。OpenAI 研究员 Sébastien Bubeck 后来也承认，模型只找到了文献中的既有解法。</p>
+<p>这个插曲留下了两条教训：</p>
+<ol>
+<li class="">proof checker 只能检查 correctness，不能检查 novelty；</li>
+<li class="">“数据库写着开放”不能替代系统性的文献审查。</li>
+</ol>
+<p>当前这批材料显然是在更高证据标准下发布的：不是只发推文，而是同时给出完整论证和形式化证书。但它仍需要外部专家确认文献新颖性和领域意义。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2026-年-5-月第一次真正扭转可信度">2026 年 5 月：第一次真正扭转可信度<a href="#2026-年-5-月第一次真正扭转可信度" class="hash-link" aria-label="2026 年 5 月：第一次真正扭转可信度的直接链接" title="2026 年 5 月：第一次真正扭转可信度的直接链接" translate="no">​</a></h3>
+<p>OpenAI 随后公布了一个内部模型对 <a href="https://openai.com/index/model-disproves-discrete-geometry-conjecture/" target="_blank" rel="noopener noreferrer" class="">Erdős 单位距离猜想的反例</a>。这一次有外部数学家检查、配套论文和后续改进；Tim Gowers 将其称为 AI 数学的一个里程碑。</p>
+<p>8 月 1 日的官方文章也特别强调，单位距离工作已经引出多篇后续研究。它不属于今天这“十项结果”，而是当前发布方式的前奏。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2026-年-7-月-31-日至-8-月-1-日astra-首次被确认">2026 年 7 月 31 日至 8 月 1 日：Astra 首次被确认<a href="#2026-年-7-月-31-日至-8-月-1-日astra-首次被确认" class="hash-link" aria-label="2026 年 7 月 31 日至 8 月 1 日：Astra 首次被确认的直接链接" title="2026 年 7 月 31 日至 8 月 1 日：Astra 首次被确认的直接链接" translate="no">​</a></h3>
+<p><a href="https://www.theinformation.com/briefings/exclusive-openai-previews-astra-ai-model-dc" target="_blank" rel="noopener noreferrer" class="">The Information</a>先报道 Sam Altman 在华盛顿向政策制定者演示 Astra。<a href="https://the-decoder.com/openai-announces-its-next-major-model-astra-by-dropping-ten-previously-unsolved-math-solutions/" target="_blank" rel="noopener noreferrer" class="">The Decoder 的转述</a>称，它可能协调多个 Agent，持续数小时或数天处理复杂项目。</p>
+<p>一天后，<a href="https://openai.com/index/ten-advances-in-mathematics/" target="_blank" rel="noopener noreferrer" class="">OpenAI 官方公告</a>第一次确认 Astra 名称，并称内部版本在十个至少十年没有主要进展的问题上取得结果。</p>
+<p>注意证据边界：</p>
+<ul>
+<li class=""><strong>官方确认</strong>：内部 Astra、下一代主要模型、十项结果、约 2,000 美元成功 token、论文与 Lean；</li>
+<li class=""><strong>媒体报道</strong>：长时程、多 Agent、华盛顿演示；</li>
+<li class=""><strong>仍属猜测</strong>：最终会叫 GPT-6、GPT-5.7，还是另一条产品线。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="openai-实际公开了什么">OpenAI 实际公开了什么<a href="#openai-实际公开了什么" class="hash-link" aria-label="OpenAI 实际公开了什么的直接链接" title="OpenAI 实际公开了什么的直接链接" translate="no">​</a></h2>
+<p>这不是只有一篇博客。</p>
+<ol>
+<li class=""><strong>技术文稿</strong>：249 页，作者写作 <code>OpenAI</code>，包含十章数学论文；</li>
+<li class=""><strong>思路说明</strong>：62 页、十二章——permanent 被拆为电路与公式两章，极值图论也拆成两章；</li>
+<li class=""><strong>Lean 仓库</strong>：十个结果文件，加一个统一 import 文件；</li>
+<li class=""><strong>Comparator challenges</strong>：十二组可信目标与 solution 对照配置；</li>
+<li class=""><strong>公开归因声明</strong>：OpenAI 说明数学论证来自 Astra，人类负责整理、形式化协助和正确性责任。</li>
+</ol>
+<p>“十项”只是发布包装。按独立 theorem family 计算，内容其实更多：编码理论有 binary/spherical 两支，最后一项又包含两个不同的 Erdős 猜想。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="十项结果的全景地图">十项结果的全景地图<a href="#十项结果的全景地图" class="hash-link" aria-label="十项结果的全景地图的直接链接" title="十项结果的全景地图的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th style="text-align:right">#</th><th>方向</th><th>结果类型</th><th>到底完成了什么</th><th>没有完成什么</th></tr></thead><tbody><tr><td style="text-align:right">1</td><td>高维球堆积</td><td>精确方法极限 + 新上界</td><td>确定 Cohn–Elkies 线性规划的渐近极限，并改进一般上界</td><td>没求出真实最优堆积密度</td></tr><tr><td style="text-align:right">2</td><td>二进制码、球面码</td><td>严格改进指数界</td><td>对每个固定参数都改进经典 MRRW / KL 指数</td><td>没给出精确码率或新解码器</td></tr><tr><td style="text-align:right">3</td><td>非 sofic 群</td><td>反例 / 存在性</td><td>构造非 sofic 群，否定“所有可数群都 sofic”</td><td>没解决 hyperlinear、surjunctive 等相邻问题</td></tr><tr><td style="text-align:right">4</td><td>Connes 刚性</td><td>无限反例族</td><td>不同性质 (T) 群可有相同群 von Neumann 代数</td><td>没否定所有更强的 W*-刚性现象</td></tr><tr><td style="text-align:right">5</td><td>Permanent 复杂度</td><td>新下界</td><td>电路达 <code>Omega(n^2 log log n)</code>，公式达 <code>Omega(n^4 / log n)</code></td><td>没证明超多项式下界或 VP≠VNP</td></tr><tr><td style="text-align:right">6</td><td>量子并行重复</td><td>一般定理</td><td>所有有限双人单轮纠缠博弈都指数衰减</td><td>定量指数不最优，范围不是所有量子协议</td></tr><tr><td style="text-align:right">7</td><td>最近向量问题</td><td>近似困难性</td><td>确定性证明 <code>n^(1/400)</code> 因子下仍 NP-hard</td><td>没攻破现实格密码，也没逼近平方根屏障</td></tr><tr><td style="text-align:right">8</td><td>Ehrhart 体积猜想</td><td>尖锐上界</td><td>所有维度证明 <code>(n+1)^n / n!</code> 的最佳体积界</td><td>没完成全部等号情形分类</td></tr><tr><td style="text-align:right">9</td><td>多色 Ramsey 数</td><td>渐近阶</td><td>证明 <code>R_k(3) = k^Theta(k)</code>，解决 Erdős #183</td><td>仍不知道精确指数和常数</td></tr><tr><td style="text-align:right">10</td><td>极值图论</td><td>两个反例</td><td>推翻 compactness 与 degeneracy 猜想，解决 #180、#146</td><td>是两个专业极值数命题，不是“图论全部解决”</td></tr></tbody></table>
+<p>下面逐项解释它们为什么重要。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-高维球堆积改进的是上界也证明了这套方法的天花板">1. 高维球堆积：改进的是上界，也证明了这套方法的天花板<a href="#1-高维球堆积改进的是上界也证明了这套方法的天花板" class="hash-link" aria-label="1. 高维球堆积：改进的是上界，也证明了这套方法的天花板的直接链接" title="1. 高维球堆积：改进的是上界，也证明了这套方法的天花板的直接链接" translate="no">​</a></h2>
+<p>球堆积问的是：同样大小的球最多能多密地塞进空间。二维是硬币，三维像炮弹；维度升高后，它同时连接编码理论、离散几何和信息论。</p>
+<p>Cohn–Elkies 方法把几何问题转成 Fourier 分析的线性规划。设 <code>LP_d</code> 是这套方法在 <code>d</code> 维能给出的最佳密度上界，新结果证明</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">lim_(d -&gt; infinity) LP_d^(1/d) = sqrt(e / (2 pi))</span><br></div></code></pre></div></div>
+<p>因此球堆积密度满足</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Delta_d &lt;= 2^(-(0.6044... + o(1))d)</span><br></div></code></pre></div></div>
+<p>经典 Kabatianskii–Levenshtein 指数约为 <code>0.599055</code>。数值变化看起来不大，但论文称这是 <strong>1978 年以来一般高维球堆积指数的首次改进</strong>。</p>
+<p>它还有双重意义：不仅给出更强上界，也证明在指数尺度上，任何 Cohn–Elkies 辅助函数都不可能继续超过这个阈值。换句话说，它既推进了方法，也找到了方法的天花板。</p>
+<p>但真实最优密度仍然未知；“球堆积问题被解决”仍是错误标题。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-二进制码与球面码近半个世纪没动的通用指数被严格推进">2. 二进制码与球面码：近半个世纪没动的通用指数被严格推进<a href="#2-二进制码与球面码近半个世纪没动的通用指数被严格推进" class="hash-link" aria-label="2. 二进制码与球面码：近半个世纪没动的通用指数被严格推进的直接链接" title="2. 二进制码与球面码：近半个世纪没动的通用指数被严格推进的直接链接" translate="no">​</a></h2>
+<p>二进制码要在 <code>{0,1}^n</code> 中放尽量多的码字，同时保证任意两者 Hamming 距离足够大。球面码则把点放在高维球面上，要求点与点的内积不能太高。</p>
+<p>它们共同描述一个核心权衡：<strong>信息数量与抗噪间隔不能同时无限增长。</strong></p>
+<p>新论文不只是找到某个参数上的小改进，而是证明：</p>
+<ul>
+<li class="">每个固定相对距离 <code>0 &lt; delta &lt; 1/2</code>，都严格改进完整优化后的 MRRW 指数；</li>
+<li class="">每个固定最大内积 <code>0 &lt; s &lt; 1</code>，都严格改进包含 spherical-cap 优化的 KL 指数；</li>
+<li class="">这是两条一般高维指数自 1977、1978 年以来第一次整体推进。</li>
+</ul>
+<p>技术上的新自由度，是不再只给每个码点附一个向量，而是附一个随码点移动的高维 harmonic subspace。指数级大的 projection rank 最后变成更小的码规模上界。</p>
+<p>这仍然是<strong>上界理论</strong>，并不直接给工程上可部署的新编码或解码算法。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-非-sofic-群十项里最像一个世界里此前不知道对象是否存在的结果">3. 非 sofic 群：十项里最像“一个世界里此前不知道对象是否存在”的结果<a href="#3-非-sofic-群十项里最像一个世界里此前不知道对象是否存在的结果" class="hash-link" aria-label="3. 非 sofic 群：十项里最像“一个世界里此前不知道对象是否存在”的结果的直接链接" title="3. 非 sofic 群：十项里最像“一个世界里此前不知道对象是否存在”的结果的直接链接" translate="no">​</a></h2>
+<p>一个群是 sofic 的，大意是它的任意有限乘法片段都可以被有限集合上的置换近似。有限群、amenable 群、residually finite 群以及大量熟悉的群都属于这个世界。</p>
+<p>自 Gromov 与 Weiss 在 1999–2000 年提出问题后，数学家一直不知道：<strong>是否所有可数群都是 sofic？</strong></p>
+<p>Astra 的论证证明二元 Leavitt 代数 <code>L_F2(1,2)</code> 的单位群不是 sofic。核心材料包括：</p>
+<ul>
+<li class="">Kazhdan 性质 (T) 与 expander；</li>
+<li class="">Kun 的 expander decomposition；</li>
+<li class="">Kun–Thom centralizer obstruction；</li>
+<li class="">Thompson 群 <code>V</code>；</li>
+<li class="">Leavitt 代数的二进制自相似结构。</li>
+</ul>
+<p>纸面论文给出一个具体非 sofic 群；Lean 文件还从有限 obstruction 推出“存在有限表示的非 sofic 群”。</p>
+<p>这个结论的边界也写得很清楚：它没有顺手解决该群是否 hyperlinear、surjunctive，也没有解决 Kaplansky 直接有限性等相邻猜想。一个核心存在性问题结束后，新的研究树才刚长出来。</p>
+<p>曼彻斯特大学数学家、<code>erdosproblems.com</code> 维护者 <a href="https://x.com/thomasfbloom/status/2083442290735902937" target="_blank" rel="noopener noreferrer" class="">Thomas Bloom 称其为 “Big news”</a>，并认为它比 5 月的单位距离反例更大；他同时说明这不是自己的专业方向。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-connes-刚性同一个算子代数影子不再唯一确定原群">4. Connes 刚性：同一个“算子代数影子”不再唯一确定原群<a href="#4-connes-刚性同一个算子代数影子不再唯一确定原群" class="hash-link" aria-label="4. Connes 刚性：同一个“算子代数影子”不再唯一确定原群的直接链接" title="4. Connes 刚性：同一个“算子代数影子”不再唯一确定原群的直接链接" translate="no">​</a></h2>
+<p>给一个可数离散群 <code>G</code>，可以构造它的群 von Neumann 代数 <code>L(G)</code>。Connes 的问题是：如果 <code>G</code> 具有 ICC 与性质 (T)，这个算子代数对象是否足以反推出原群？</p>
+<p>Astra 构造了</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Lambda, Gamma_0, Gamma_1, ...</span><br></div></code></pre></div></div>
+<p>它们彼此不同、都是有限生成 ICC 性质 (T) 群，却满足</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">L(Gamma_n) ≅ L(Lambda)</span><br></div></code></pre></div></div>
+<p>而且这些群两两 commensurable。结果不只给 Connes 猜想一个反例，还说明把“唯一”放宽为“有限多个可能”仍然不成立：同一个 group factor 有可数无限多个实现。</p>
+<p>这并不意味着刚性理论失效。论文特别指出，某些群仍是 W*-superrigid；被推翻的是“性质 (T) 本身就足以保证恢复原群”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-permanent-下界重大进展但离-vpvnp-仍很远">5. Permanent 下界：重大进展，但离 VP≠VNP 仍很远<a href="#5-permanent-下界重大进展但离-vpvnp-仍很远" class="hash-link" aria-label="5. Permanent 下界：重大进展，但离 VP≠VNP 仍很远的直接链接" title="5. Permanent 下界：重大进展，但离 VP≠VNP 仍很远的直接链接" translate="no">​</a></h2>
+<p>Permanent 与 determinant 只差置换项前面的正负号，但 determinant 有高效算法，permanent 则是代数复杂性理论的核心困难对象。</p>
+<p>新结果研究精确符号计算：</p>
+<ul>
+<li class="">允许任意复用中间结果、但不允许除法的一般算术电路，需要 <code>Omega(n^2 log log n)</code> 个门；</li>
+<li class="">树状算术公式需要 <code>Omega(n^4 / log n)</code> 个变量叶；</li>
+<li class="">即使允许合法除法，公式仍保留同阶下界，只改变常数。</li>
+</ul>
+<p>相对于输入变量数 <code>N = n^2</code>，这是 <code>Omega(N log log N)</code> 的电路下界和 <code>Omega(N^2 / log N)</code> 的公式下界。</p>
+<p>这里必须压住最容易出现的夸张：这些仍是<strong>多项式下界</strong>。它没有证明 permanent 需要超多项式电路，因此没有解决 VP 与 VNP，更没有解决 P 与 NP。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-量子并行重复把-raz-的经典原则推到一般纠缠博弈">6. 量子并行重复：把 Raz 的经典原则推到一般纠缠博弈<a href="#6-量子并行重复把-raz-的经典原则推到一般纠缠博弈" class="hash-link" aria-label="6. 量子并行重复：把 Raz 的经典原则推到一般纠缠博弈的直接链接" title="6. 量子并行重复：把 Raz 的经典原则推到一般纠缠博弈的直接链接" translate="no">​</a></h2>
+<p>在双人博弈里，裁判分别给 Alice 和 Bob 发问题；两人不能通信，但可以提前共享量子纠缠。如果单局不能总赢，把同一游戏独立重复 <code>n</code> 次并要求全部获胜，成功概率是否一定指数下降？</p>
+<p>经典情形由 Raz 在 1990 年代解决。量子情形因为跨局联合测量与纠缠，可以产生远比独立策略复杂的相关性。一般问题至少从 2004 年起就被明确列为开放问题。</p>
+<p>新定理证明，对任意有限双人单轮纠缠博弈，只要原始纠缠值小于 1，重复值就以 <code>exp(-c_G n)</code> 的速度下降。此前一般结果只有多项式衰减，指数定理只对特殊或修改后的游戏成立。</p>
+<p>论文中的 <code>epsilon^13</code> 定量损失并不声称最优；真正的突破是“一般游戏也指数衰减”这个定性结论。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-最近向量问题是最坏情形困难性不是格密码被破解">7. 最近向量问题：是最坏情形困难性，不是格密码被破解<a href="#7-最近向量问题是最坏情形困难性不是格密码被破解" class="hash-link" aria-label="7. 最近向量问题：是最坏情形困难性，不是格密码被破解的直接链接" title="7. 最近向量问题：是最坏情形困难性，不是格密码被破解的直接链接" translate="no">​</a></h2>
+<p>Closest Vector Problem 给出一个整数格和目标点，要求找到最近格点。它既是几何数论与算法理论的基础问题，也与格密码处在同一大类数学工具中。</p>
+<p>论文给出从 3SAT 到 Euclidean GapCVP 的确定性多项式归约，证明在格秩为 <code>n</code> 时，近似因子达到</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">n^(1/400)</span><br></div></code></pre></div></div>
+<p>仍然 NP-hard。</p>
+<p>此前无条件结果虽超过任意固定多对数，却形如 <code>n^(a / log log n)</code>，指数趋于零；固定多项式因子的相关结果依赖更强猜想。新结论把它推进为无条件、确定性的固定正指数。</p>
+<p>但部署中的格密码依赖结构化或平均情形假设，不是把最坏情形 CVP 实例直接塞进协议。这个结果增强理论困难性地图，不是“后量子密码破了”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="8-ehrhart-体积猜想解决-1964-年提出的尖锐不等式">8. Ehrhart 体积猜想：解决 1964 年提出的尖锐不等式<a href="#8-ehrhart-体积猜想解决-1964-年提出的尖锐不等式" class="hash-link" aria-label="8. Ehrhart 体积猜想：解决 1964 年提出的尖锐不等式的直接链接" title="8. Ehrhart 体积猜想：解决 1964 年提出的尖锐不等式的直接链接" translate="no">​</a></h2>
+<p>考虑一个 <code>n</code> 维凸体：它的重心在原点，原点还是唯一内部格点。这样的凸体最多能有多大体积？</p>
+<p>Ehrhart 在 1964 年猜测，中心化单纯形达到最大值。Astra 的证明给出所有维度的尖锐界：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">vol(K) &lt;= (n+1)^n / n!</span><br></div></code></pre></div></div>
+<p>等号确实由中心化单纯形达到。证明把凸体、Monge–Ampère transport、复环面上的 Laurent monomial、Bergman kernel 和 vanishing order 联系起来。</p>
+<p>论文保留了一个明确未解部分：是否所有极值体都必须是该单纯形的 unimodular 像，仍未分类完成。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="9-多色-ramsey-数终于知道它是超指数增长">9. 多色 Ramsey 数：终于知道它是超指数增长<a href="#9-多色-ramsey-数终于知道它是超指数增长" class="hash-link" aria-label="9. 多色 Ramsey 数：终于知道它是超指数增长的直接链接" title="9. 多色 Ramsey 数：终于知道它是超指数增长的直接链接" translate="no">​</a></h2>
+<p>把完全图的边涂成 <code>k</code> 种颜色，<code>R_k(3)</code> 是保证出现同色三角形所需的最少顶点数。</p>
+<p>过去的下界基本是常数的 <code>k</code> 次方，上界则接近 <code>k!</code>。于是一个长期问题是：<code>R_k(3)</code> 到底只是指数增长，还是超指数增长？</p>
+<p>新结果证明存在绝对常数 <code>c &gt; 0</code>，使得</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">R_k(3) &gt;= (c k^(1/3) / log k)^k</span><br></div></code></pre></div></div>
+<p>结合经典阶乘上界，得到</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">R_k(3) = k^Theta(k)</span><br></div></code></pre></div></div>
+<p>这解决 Erdős 问题 183，并推出 independence number 为 2 的图也可以有任意大的 Shannon capacity。</p>
+<p>它确定了增长类别，但上下界指数仍在大约 <code>1/3</code> 与 <code>1</code> 之间，远没有精确渐近式。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="10-一个编号下其实藏着两个-erdős-反例">10. 一个编号下其实藏着两个 Erdős 反例<a href="#10-一个编号下其实藏着两个-erdős-反例" class="hash-link" aria-label="10. 一个编号下其实藏着两个 Erdős 反例的直接链接" title="10. 一个编号下其实藏着两个 Erdős 反例的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="101-erdőssimonovits-compactness-猜想">10.1 Erdős–Simonovits compactness 猜想<a href="#101-erdőssimonovits-compactness-猜想" class="hash-link" aria-label="10.1 Erdős–Simonovits compactness 猜想的直接链接" title="10.1 Erdős–Simonovits compactness 猜想的直接链接" translate="no">​</a></h3>
+<p>对有限 forbidden family <code>F</code>，同时禁止所有成员，是否总与禁止其中某一个成员的 extremal number 同阶？修正后的猜想要求每个 forbidden graph 都含环，以排除简单的森林反例。</p>
+<p>论文构造一个有限 family，其中每个图都 connected、bipartite 且含环，但</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n, F) = O(n^(4/3 - 1/48))</span><br></div></code></pre></div></div>
+<p>而对每个单独的 <code>F</code>，仍有</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n, F) = Omega(n^(4/3))</span><br></div></code></pre></div></div>
+<p>所以整个 family 的约束确实比任何单一成员强一个幂次，推翻 compactness，解决 Erdős #180。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="102-退化度猜想">10.2 退化度猜想<a href="#102-退化度猜想" class="hash-link" aria-label="10.2 退化度猜想的直接链接" title="10.2 退化度猜想的直接链接" translate="no">​</a></h3>
+<p>Erdős 猜测固定 bipartite <code>r</code>-degenerate graph 的 extremal number 至多为 <code>O(n^(2 - 1/r))</code>。</p>
+<p>Astra 构造一个固定、connected、bipartite、2-degenerate 的图 <code>H</code>，却有</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n, H) &gt;= c n^(3/2 + epsilon)</span><br></div></code></pre></div></div>
+<p>反例在 <code>r = 2</code> 就出现，解决 Erdős #146。</p>
+<p>因此媒体所说的“十项”并不等于十个独立题目：第十项自己就结束了两个不同猜想。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="lean-证书让这次发布比普通-press-release-强在哪里">Lean 证书让这次发布比普通 press release 强在哪里<a href="#lean-证书让这次发布比普通-press-release-强在哪里" class="hash-link" aria-label="Lean 证书让这次发布比普通 press release 强在哪里的直接链接" title="Lean 证书让这次发布比普通 press release 强在哪里的直接链接" translate="no">​</a></h2>
+<p>固定提交 <code>1f16bdc</code> 的仓库包含：</p>
+<ul>
+<li class="">10 个结果文件和 <code>All.lean</code>；</li>
+<li class=""><strong>474,731 行</strong>顶层 Lean 源码，约 18.3 MB；</li>
+<li class="">12 个 Comparator JSON 配置；</li>
+<li class="">Lean 4.32.0、固定 mathlib 与 Comparator 依赖；</li>
+<li class="">全部配置启用 <code>nanoda</code> external checker；</li>
+<li class="">允许的 axiom 只有 <code>propext</code>、<code>Classical.choice</code>、<code>Quot.sound</code>。</li>
+</ul>
+<p>我对十个顶层结果文件做了字面扫描，没有发现 <code>sorry</code>、<code>admit</code>、自定义 <code>axiom</code> 或 <code>unsafe</code>。Comparator 的 Challenge 文件里出现 <code>sorry</code> 是正常设计：可信题面先留洞，再检查 Solution 是否证明了同一个 elaborated statement。</p>
+<!-- -->
+<p>这套栈把“能编译”提升为更强的问题：</p>
+<ol>
+<li class="">Solution 证明的是不是 Challenge 中同一个 theorem；</li>
+<li class="">是否偷换 definition 或传递依赖；</li>
+<li class="">是否使用允许范围外的 axiom；</li>
+<li class="">proof term 是否同时被 Lean 与另一个 checker 接受。</li>
+</ol>
+<p>如果想理解这条信任边界，可以参看本站的 <a class="" href="/ChatBlog/dev/blog/lean-comparator-trust-boundary-guide">Comparator 详解</a> 与 <a class="" href="/ChatBlog/dev/blog/nanoda-lean-external-kernel-guide">nanoda 外部内核指南</a>。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="机器检查仍留下什么">机器检查仍留下什么<a href="#机器检查仍留下什么" class="hash-link" aria-label="机器检查仍留下什么的直接链接" title="机器检查仍留下什么的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>层次</th><th>能确认</th><th>仍不能自动确认</th></tr></thead><tbody><tr><td>自然语言论文</td><td>论证可供人阅读</td><td>每一步是否无误、引用是否完整</td></tr><tr><td>Lean typecheck</td><td>形式 theorem 在固定环境可推出</td><td>theorem 是否忠实表达原猜想</td></tr><tr><td>Comparator</td><td>Challenge 与 Solution statement/依赖一致</td><td>Challenge 本身是否写对</td></tr><tr><td>Lean + nanoda</td><td>两个实现都接受 proof term</td><td>两个实现之外的共同假设、数学意义</td></tr><tr><td>文献审查</td><td>是否真是新结果</td><td>无法被 kernel 代替</td></tr><tr><td>领域同行评议</td><td>正确性、深度、可读性和影响</td><td>发布当天尚未完成</td></tr></tbody></table>
+<p>尤其要注意：这些 Challenge 也是 OpenAI 随仓库一起写的，不是外部数学家独立提供的题面。它们让审计具体、可重跑，却不自动构成第三方背书。</p>
+<p><code>GapCVP</code> 的四个 definition holes 也需要额外语义检查：Comparator 能校验它们的签名、依赖和 proof，但无法替人判断这些定义是否完整捕捉了复杂性理论中想表达的归约。</p>
+<p>发布快照的 <code>formalization.yaml</code> 把 review 状态写为 <code>agent-reviewed</code>。仓库当时没有 GitHub Actions 运行记录，因此“公开可构建”与“官方仓库已经公开跑过 CI”也要分开。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="62-页思考过程不是原始-chain-of-thought">62 页“思考过程”不是原始 chain of thought<a href="#62-页思考过程不是原始-chain-of-thought" class="hash-link" aria-label="62 页“思考过程”不是原始 chain of thought的直接链接" title="62 页“思考过程”不是原始 chain of thought的直接链接" translate="no">​</a></h2>
+<p>OpenAI 官方称同时发布“模型对思考过程的叙述”。但 <a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">PDF 的摘要</a>说得更精确：这些 notes 是一个 AI 模型读取<strong>原始 chains of thought、最终论文和 writeups 之后</strong>写出的重建。</p>
+<p>它记录了许多有价值的失败路线、转向和最终洞见，例如：</p>
+<ul>
+<li class="">编码界中第一次 recurrence 为什么不对；</li>
+<li class="">Ehrhart 证明为何放弃 harmonic symmetrization；</li>
+<li class="">CVP 如何从 signed moment histogram 转向 characteristic-two reconstruction；</li>
+<li class="">quantum repetition 如何从条件化障碍转向 postselection-stable sampleability。</li>
+</ul>
+<p>但它不是完整实验日志。我们仍然看不到：</p>
+<ul>
+<li class="">每个问题的原始 prompt；</li>
+<li class="">tool、检索、代码执行和多 Agent 调度记录；</li>
+<li class="">每次失败尝试及停止标准；</li>
+<li class="">人类在运行过程中是否给过中间反馈；</li>
+<li class="">候选证明被筛选和淘汰的完整轨迹。</li>
+</ul>
+<p>因此这些 notes 很适合<strong>理解最后的数学想法</strong>，不够用来独立复现实验中的“Astra 能力”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2000-美元到底说明了什么">2,000 美元到底说明了什么<a href="#2000-美元到底说明了什么" class="hash-link" aria-label="2,000 美元到底说明了什么的直接链接" title="2,000 美元到底说明了什么的直接链接" translate="no">​</a></h2>
+<p><a href="https://openai.com/index/ten-advances-in-mathematics/" target="_blank" rel="noopener noreferrer" class="">官方原话</a>是：找到十项 solution 所需 token，按 Sol API 价格大约值 2,000 美元。</p>
+<p>它支持一个重要结论：<strong>成功轨迹的边际推理 token 可能已经很便宜。</strong></p>
+<p>但它不支持“十项研究的总成本只有 2,000 美元”，因为至少缺少：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Astra 训练与后训练</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 失败问题的全部推理</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 每题未成功的分支和重试</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 问题筛选、数据与检索基础设施</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 人类研究员工资</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 文稿整理与引用核查</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 47 万行 Lean 的生成、构建和审计</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 计算集群、存储和组织成本</span><br></div></code></pre></div></div>
+<p>Noam Brown 随后承认，他们确实尝试过其他重大问题而没有成功；但没有给出总题数、成功率和失败 compute。他还说每题没有投入很多，test-time compute 可以继续扩大。</p>
+<p>这让 <code>2,000 美元</code> 更像成功样本的<strong>numerator</strong>，而不是完整实验的 denominator。</p>
+<p><a href="https://news.ycombinator.com/item?id=49132058" target="_blank" rel="noopener noreferrer" class="">Hacker News 的首发讨论</a>很快集中到三个问题：到底尝试了多少题、每题多少次、失败分支花了多少。科学漫画作者 <a href="https://bsky.app/profile/zachweinersmith.bsky.social/post/3mrzhh7lhls25" target="_blank" rel="noopener noreferrer" class="">Zach Weinersmith</a>也指出，若不报告失败尝试，成本数字会带有明显宣传色彩。</p>
+<p>这些疑问不否定数学定理，但会影响我们如何解读模型效率、可扩展性与经济意义。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么成功集中在可明确验证的数学形态">为什么成功集中在“可明确验证”的数学形态<a href="#为什么成功集中在可明确验证的数学形态" class="hash-link" aria-label="为什么成功集中在“可明确验证”的数学形态的直接链接" title="为什么成功集中在“可明确验证”的数学形态的直接链接" translate="no">​</a></h2>
+<p>十项结果横跨八个领域，看起来非常分散；它们的目标形态却有共同点：</p>
+<ul>
+<li class="">构造一个反例或对象；</li>
+<li class="">证明一个明确不等式；</li>
+<li class="">优化一个渐近指数；</li>
+<li class="">给出一个确定性归约；</li>
+<li class="">证明一类博弈的统一衰减定理。</li>
+</ul>
+<p>这些问题很难生成答案，却相对容易定义“什么算成功”，并能压缩成稳定 theorem statement。它们具有很高的 <strong>verification leverage</strong>：候选生成昂贵，最终检查比发现便宜。</p>
+<p>这并不削弱结果。恰恰相反，它解释了 AI 数学最可能先在哪里改变研究：不是一上来替代所有抽象判断，而是在<strong>目标明确、反馈严格、长链条可以被形式验证</strong>的领域，搜索并组合人类一个世纪积累的理论。</p>
+<p>但“selection of ten results”里的 <code>selection</code> 也很重要。数学家 <a href="https://bsky.app/profile/robinhouston.mathstodon.xyz.ap.brid.gy/post/3mrzanwxzuug2" target="_blank" rel="noopener noreferrer" class="">Robin Houston</a>注意到这个措辞，并追问 OpenAI 还保留了哪些结果。没有完整题库与失败集，我们不能从十个成功案例推出总体成功率。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="数学界与公共讨论现在分成三条线">数学界与公共讨论现在分成三条线<a href="#数学界与公共讨论现在分成三条线" class="hash-link" aria-label="数学界与公共讨论现在分成三条线的直接链接" title="数学界与公共讨论现在分成三条线的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-对结果本身的震动">1. 对结果本身的震动<a href="#1-对结果本身的震动" class="hash-link" aria-label="1. 对结果本身的震动的直接链接" title="1. 对结果本身的震动的直接链接" translate="no">​</a></h3>
+<p>Bloom 对非 sofic 群的反应最直接：“Big news”。一些理论计算机科学方向的公开讨论也强调，CVP 和 permanent 下界都是被顶尖研究者追了几十年的问题。</p>
+<p>重要的是，这种震动主要针对<strong>具体 theorem</strong>，不是针对“模型是不是 AGI”的营销推论。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-ai-替代数学家的反对意见">2. “AI 替代数学家”的反对意见<a href="#2-ai-替代数学家的反对意见" class="hash-link" aria-label="2. “AI 替代数学家”的反对意见的直接链接" title="2. “AI 替代数学家”的反对意见的直接链接" translate="no">​</a></h3>
+<p>Bloom <a href="https://x.com/thomasfbloom/status/2083444983592284465" target="_blank" rel="noopener noreferrer" class="">随后专门反驳</a>“GPT 正在替代数学家”的说法。他的理由是：猜想由数学家提出，工具建立在一个多世纪的理论上，系统由数学家与工程师构建，又阅读了数学家写下的材料。</p>
+<p>更准确的变化是职责重新分配：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">过去：人类选题 + 找路线 + 写证明 + 检查 + 写论文</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">现在：人类选题/建理论/定标准</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      + 模型搜索、组合、形式化</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      + kernel 机械检查</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      + 人类消化、归因、评估意义</span><br></div></code></pre></div></div>
+<p>当生成证明变快，审读、文献查新、问题选择与解释反而成为更紧的瓶颈。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-对评议制度和权力集中的担心">3. 对评议制度和权力集中的担心<a href="#3-对评议制度和权力集中的担心" class="hash-link" aria-label="3. 对评议制度和权力集中的担心的直接链接" title="3. 对评议制度和权力集中的担心的直接链接" translate="no">​</a></h3>
+<p>单日释放 249 页跨领域新数学，会把验证成本外包给许多学术共同体。模型是私有的，成功 proof 是开放的；这形成一种不对称：公司可以高并发地产生结果，公共数学界却要用稀缺专家时间逐篇消化。</p>
+<p>这也会改变研究议程。哪些问题被送给模型、哪些结果值得发布、哪些失败永远不可见，暂时都由 OpenAI 决定。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="openai-为什么引用-leiden-declaration又和它存在张力">OpenAI 为什么引用 Leiden Declaration，又和它存在张力<a href="#openai-为什么引用-leiden-declaration又和它存在张力" class="hash-link" aria-label="OpenAI 为什么引用 Leiden Declaration，又和它存在张力的直接链接" title="OpenAI 为什么引用 Leiden Declaration，又和它存在张力的直接链接" translate="no">​</a></h2>
+<p><a href="https://leidendeclaration.ai/" target="_blank" rel="noopener noreferrer" class="">Leiden Declaration on AI and Mathematics</a>由数学界社区发起，并获得 International Mathematical Union 背书。它强调 proof、透明、独立验证、人类责任、正确归因、开放科学和正常同行评议。</p>
+<p>OpenAI 在公告里主动引用它，但双方并非完全一致。</p>
+<table><thead><tr><th>议题</th><th>OpenAI 这次做法</th><th>Leiden Declaration 的要求</th></tr></thead><tbody><tr><td>工具披露</td><td>明确说论证由 Astra 生成</td><td>支持透明披露自动化工具</td></tr><tr><td>证明开放</td><td>论文与 Lean 公开</td><td>支持开放科学、形式验证和独立检查</td></tr><tr><td>正确性责任</td><td>OpenAI 表示承担责任</td><td>责任应由具体人类作者承担</td></tr><tr><td>作者身份</td><td>文稿作者写作 <code>OpenAI</code>，并反对把 AI 论证写成人类原创</td><td>credit 与 responsibility 不应赋给自动系统</td></tr><tr><td>发布渠道</td><td>公司博客、CDN 文稿与 GitHub 首发</td><td>press release 不能替代同行评议</td></tr><tr><td>获取能力</td><td>proof 开放，Astra 私有</td><td>担忧工业资源不对称和数学自治</td></tr></tbody></table>
+<p>OpenAI 的观点是：若人类在没有生成核心论证的情况下署名，会歪曲真实贡献。Declaration 的观点则是：AI 不是能承担学术责任的作者，数学仍应由具体人类负责。</p>
+<p>这不是一个格式问题，而是未来论文制度必须回答的难题：</p>
+<blockquote>
+<p>如果机器生成核心 idea，人类验证并对它负责，credit、authorship、liability 和 prior human work 应该如何拆分？</p>
+</blockquote>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这件事真正改变了什么">这件事真正改变了什么<a href="#这件事真正改变了什么" class="hash-link" aria-label="这件事真正改变了什么的直接链接" title="这件事真正改变了什么的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-研究级-ai-数学不再只是零散案例">1. “研究级 AI 数学”不再只是零散案例<a href="#1-研究级-ai-数学不再只是零散案例" class="hash-link" aria-label="1. “研究级 AI 数学”不再只是零散案例的直接链接" title="1. “研究级 AI 数学”不再只是零散案例的直接链接" translate="no">​</a></h3>
+<p>此前强案例通常是一项构造、一个反例或一篇有人类深度参与的论文。现在同一个内部系统横跨几何、群论、算子代数、复杂性、量子信息和组合数学，产生一整批可形式化的结果。</p>
+<p>即使十项中只有一部分最终被评为领域重大突破，<strong>跨领域吞吐本身</strong>也值得重视。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-证明资产开始和新闻同时发布">2. 证明资产开始和新闻同时发布<a href="#2-证明资产开始和新闻同时发布" class="hash-link" aria-label="2. 证明资产开始和新闻同时发布的直接链接" title="2. 证明资产开始和新闻同时发布的直接链接" translate="no">​</a></h3>
+<p>2025 年误报的问题是“一个社交媒体判断先跑出去，证据跟不上”。这一次 paper、Lean、Comparator 和 reasoning notes 同时出现，使争论可以落到具体 theorem、definition 和 proof term 上。</p>
+<p>这应当成为未来 AI 数学发布的最低模板，而不是额外加分项。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-数学研究的瓶颈正在从生成转向验证与消化">3. 数学研究的瓶颈正在从生成转向验证与消化<a href="#3-数学研究的瓶颈正在从生成转向验证与消化" class="hash-link" aria-label="3. 数学研究的瓶颈正在从生成转向验证与消化的直接链接" title="3. 数学研究的瓶颈正在从生成转向验证与消化的直接链接" translate="no">​</a></h3>
+<p>47 万行 Lean 并不等于 47 万行人类可理解的解释。机器可以检查 theorem 是否推出，但数学共同体仍要回答：</p>
+<ul>
+<li class="">证明的核心新 idea 是什么？</li>
+<li class="">哪些引理值得复用？</li>
+<li class="">与现有文献的关系是否准确？</li>
+<li class="">哪项结果真正改变领域，哪项只是技术性改进？</li>
+<li class="">新定理又打开了哪些问题？</li>
+</ul>
+<p>未来稀缺资源可能不是 proof token，而是 domain-expert attention。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-闭源模型与开放-proof-可以同时存在">4. 闭源模型与开放 proof 可以同时存在<a href="#4-闭源模型与开放-proof-可以同时存在" class="hash-link" aria-label="4. 闭源模型与开放 proof 可以同时存在的直接链接" title="4. 闭源模型与开放 proof 可以同时存在的直接链接" translate="no">​</a></h3>
+<p>数学结论可以独立检查，不要求 Astra 本身开源。这比只能相信闭源 benchmark 分数更好。</p>
+<p>但若要把这次发布当成“模型能力实验”，闭源仍是根本限制：外界不能用同一模型、同一 scaffold、同一预算复现成功率。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="它没有证明什么">它没有证明什么<a href="#它没有证明什么" class="hash-link" aria-label="它没有证明什么的直接链接" title="它没有证明什么的直接链接" translate="no">​</a></h2>
+<p>截至发布当天，这批结果没有证明：</p>
+<ul>
+<li class="">Astra 已经公开可用；</li>
+<li class="">十项都属于同一等级的“著名难题”；</li>
+<li class="">AI 已解决千禧年问题；</li>
+<li class="">2,000 美元是完整研发成本；</li>
+<li class="">模型能以稳定成功率处理任意开放问题；</li>
+<li class="">形式化 statement 已经得到所有相关领域专家的语义确认；</li>
+<li class="">249 页材料已经完成传统同行评议；</li>
+<li class="">数学家从此只剩下替 AI 检查答案的工作。</li>
+</ul>
+<p>Noam Brown 的一句话反而最诚实：他们尝试了其他重大问题，也失败了；只是 test-time compute 还能继续推高。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="接下来应该盯什么">接下来应该盯什么<a href="#接下来应该盯什么" class="hash-link" aria-label="接下来应该盯什么的直接链接" title="接下来应该盯什么的直接链接" translate="no">​</a></h2>
+<p>判断这是不是一次长期转折，未来几周和几个月至少要看七件事：</p>
+<ol>
+<li class=""><strong>领域专家逐项审查</strong>：尤其是 non-sofic、Connes rigidity 和 quantum parallel repetition；</li>
+<li class=""><strong>Lean challenge 的独立 semantic audit</strong>：statement 是否忠实、definitions 是否存在弱化；</li>
+<li class=""><strong>仓库 errata 与 commit 变化</strong>：发布首日已经持续更新；</li>
+<li class=""><strong>期刊或会议投稿</strong>：能否进入正常同行评议，而不只停在公司 CDN；</li>
+<li class=""><strong>文献新颖性检查</strong>：避免重演 2025 年“旧论文被当成新解”的问题；</li>
+<li class=""><strong>实验 denominator</strong>：总题数、失败率、每题尝试次数与总 compute；</li>
+<li class=""><strong>Astra 产品化</strong>：模型是否发布、第三方能否在相近预算下复现研究能力。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最后的判断">最后的判断<a href="#最后的判断" class="hash-link" aria-label="最后的判断的直接链接" title="最后的判断的直接链接" translate="no">​</a></h2>
+<p>这次不应该被缩成“ChatGPT 又做对了十道题”。</p>
+<p>它更像一个新的研究生产方式第一次以足够大的规模公开出现：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">人类积累理论与提出问题</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">        ↓</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">长时程模型搜索、组合和修订论证</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">        ↓</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Lean / Comparator / external kernel 压缩逻辑信任边界</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">        ↓</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">人类负责语义、文献、意义、归因和公共判断</span><br></div></code></pre></div></div>
+<p>与 2025 年那次误报相比，OpenAI 这次提供了真正可以被反驳、复算和审计的对象。这一点非常重要。</p>
+<p>但最准确的当前时态仍然是：</p>
+<blockquote>
+<p><strong>Astra 已经产生了十组高度实质性的数学与理论计算机科学结果，并公开了异常完整的证明资产；它们是否全部成为被数学共同体接受的定理，独立审查才刚刚开始。</strong></p>
+</blockquote>
+<p>如果这些证明顺利通过消化，数学史记住的可能不只是十个 theorem，而是 2026 年开始成形的一种分工：机器大规模探索证明空间，形式系统检查逻辑，人类重新集中到问题、意义、理解与责任。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="#主要来源" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="一手材料">一手材料<a href="#一手材料" class="hash-link" aria-label="一手材料的直接链接" title="一手材料的直接链接" translate="no">​</a></h3>
+<ul>
+<li class=""><a href="https://openai.com/index/ten-advances-in-mathematics/" target="_blank" rel="noopener noreferrer" class="">OpenAI：Ten advances in mathematics and theoretical computer science</a></li>
+<li class=""><a href="https://cdn.openai.com/pdf/ten-proofs-oai.pdf" target="_blank" rel="noopener noreferrer" class="">完整技术文稿：Ten Advances in Mathematics and Theoretical Computer Science</a></li>
+<li class=""><a href="https://github.com/openai/ten-proofs" target="_blank" rel="noopener noreferrer" class="">Lean 形式化仓库：openai/ten-proofs</a></li>
+<li class=""><a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">How the Ideas Came Together：思路重建说明</a></li>
+<li class=""><a href="https://openai.com/index/model-disproves-discrete-geometry-conjecture/" target="_blank" rel="noopener noreferrer" class="">OpenAI 2026 年 5 月单位距离结果</a></li>
+<li class=""><a href="https://leidendeclaration.ai/" target="_blank" rel="noopener noreferrer" class="">Leiden Declaration on AI and Mathematics</a></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="报道与公开讨论">报道与公开讨论<a href="#报道与公开讨论" class="hash-link" aria-label="报道与公开讨论的直接链接" title="报道与公开讨论的直接链接" translate="no">​</a></h3>
+<ul>
+<li class=""><a href="https://www.theinformation.com/briefings/exclusive-openai-previews-astra-ai-model-dc" target="_blank" rel="noopener noreferrer" class="">The Information：Exclusive: OpenAI Previews ‘Astra’ AI Model in DC</a></li>
+<li class=""><a href="https://the-decoder.com/openai-announces-its-next-major-model-astra-by-dropping-ten-previously-unsolved-math-solutions/" target="_blank" rel="noopener noreferrer" class="">The Decoder：Astra 与十项数学结果</a></li>
+<li class=""><a href="https://techcrunch.com/2025/10/19/openais-embarrassing-math/" target="_blank" rel="noopener noreferrer" class="">TechCrunch：OpenAI 2025 年 Erdős 误报回顾</a></li>
+<li class=""><a href="https://x.com/thomasfbloom/status/2083442290735902937" target="_blank" rel="noopener noreferrer" class="">Thomas Bloom：对 non-sofic 结果的评价</a></li>
+<li class=""><a href="https://x.com/thomasfbloom/status/2083444983592284465" target="_blank" rel="noopener noreferrer" class="">Thomas Bloom：为什么不能叫“替代数学家”</a></li>
+<li class=""><a href="https://x.com/polynoamial/status/2083467194663571701" target="_blank" rel="noopener noreferrer" class="">Noam Brown：Astra 与科学推理</a></li>
+<li class=""><a href="https://x.com/polynoamial/status/2083478171975082334" target="_blank" rel="noopener noreferrer" class="">Noam Brown：失败问题与可扩大的 test-time compute</a></li>
+<li class=""><a href="https://news.ycombinator.com/item?id=49132058" target="_blank" rel="noopener noreferrer" class="">Hacker News 首发讨论</a></li>
+</ul>
+<p>延伸阅读：本站此前的 <a class="" href="/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026">2025–2026 AI 数学开放问题全景</a>，解释了为什么奥赛成绩、形式化已知定理、新构造、开放问题和里程碑猜想必须分层评价。</p></div><footer class="docusaurus-mt-lg"><div class="row margin-top--sm theme-blog-footer-edit-meta-row"><div class="col"><b>标签：</b><ul class="tags_jXut padding--none margin-left--sm"><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/ai-math">ai-math</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/openai">openai</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/astra">astra</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/lean">lean</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/formal-verification">formal-verification</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/dev/blog/tags/open-problems">open-problems</a></li></ul></div></div><div class="row margin-top--sm theme-blog-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/ChatArch/ChatBlog/tree/main/blog/2026-08-01-openai-astra-ten-math-advances.mdx" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>编辑此页</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="博文分页导航"><a class="pagination-nav__link pagination-nav__link--next" href="/ChatBlog/dev/blog/zhihu-draft-chrome-bridge-pipeline"><div class="pagination-nav__sublabel">较旧一篇</div><div class="pagination-nav__label">从 Chrome 登录态到知乎草稿：我们如何打通一条可控的写入链路</div></a></nav></main><div class="col col--2"><div class="tableOfContents_bqdL thin-scrollbar"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#先把七个最容易误解的说法改正" class="table-of-contents__link toc-highlight">先把七个最容易误解的说法改正</a></li><li><a href="#这件事是怎么一步步发生的" class="table-of-contents__link toc-highlight">这件事是怎么一步步发生的</a><ul><li><a href="#2025-年的误报为什么必须重提" class="table-of-contents__link toc-highlight">2025 年的误报为什么必须重提</a></li><li><a href="#2026-年-5-月第一次真正扭转可信度" class="table-of-contents__link toc-highlight">2026 年 5 月：第一次真正扭转可信度</a></li><li><a href="#2026-年-7-月-31-日至-8-月-1-日astra-首次被确认" class="table-of-contents__link toc-highlight">2026 年 7 月 31 日至 8 月 1 日：Astra 首次被确认</a></li></ul></li><li><a href="#openai-实际公开了什么" class="table-of-contents__link toc-highlight">OpenAI 实际公开了什么</a></li><li><a href="#十项结果的全景地图" class="table-of-contents__link toc-highlight">十项结果的全景地图</a></li><li><a href="#1-高维球堆积改进的是上界也证明了这套方法的天花板" class="table-of-contents__link toc-highlight">1. 高维球堆积：改进的是上界，也证明了这套方法的天花板</a></li><li><a href="#2-二进制码与球面码近半个世纪没动的通用指数被严格推进" class="table-of-contents__link toc-highlight">2. 二进制码与球面码：近半个世纪没动的通用指数被严格推进</a></li><li><a href="#3-非-sofic-群十项里最像一个世界里此前不知道对象是否存在的结果" class="table-of-contents__link toc-highlight">3. 非 sofic 群：十项里最像“一个世界里此前不知道对象是否存在”的结果</a></li><li><a href="#4-connes-刚性同一个算子代数影子不再唯一确定原群" class="table-of-contents__link toc-highlight">4. Connes 刚性：同一个“算子代数影子”不再唯一确定原群</a></li><li><a href="#5-permanent-下界重大进展但离-vpvnp-仍很远" class="table-of-contents__link toc-highlight">5. Permanent 下界：重大进展，但离 VP≠VNP 仍很远</a></li><li><a href="#6-量子并行重复把-raz-的经典原则推到一般纠缠博弈" class="table-of-contents__link toc-highlight">6. 量子并行重复：把 Raz 的经典原则推到一般纠缠博弈</a></li><li><a href="#7-最近向量问题是最坏情形困难性不是格密码被破解" class="table-of-contents__link toc-highlight">7. 最近向量问题：是最坏情形困难性，不是格密码被破解</a></li><li><a href="#8-ehrhart-体积猜想解决-1964-年提出的尖锐不等式" class="table-of-contents__link toc-highlight">8. Ehrhart 体积猜想：解决 1964 年提出的尖锐不等式</a></li><li><a href="#9-多色-ramsey-数终于知道它是超指数增长" class="table-of-contents__link toc-highlight">9. 多色 Ramsey 数：终于知道它是超指数增长</a></li><li><a href="#10-一个编号下其实藏着两个-erdős-反例" class="table-of-contents__link toc-highlight">10. 一个编号下其实藏着两个 Erdős 反例</a><ul><li><a href="#101-erdőssimonovits-compactness-猜想" class="table-of-contents__link toc-highlight">10.1 Erdős–Simonovits compactness 猜想</a></li><li><a href="#102-退化度猜想" class="table-of-contents__link toc-highlight">10.2 退化度猜想</a></li></ul></li><li><a href="#lean-证书让这次发布比普通-press-release-强在哪里" class="table-of-contents__link toc-highlight">Lean 证书让这次发布比普通 press release 强在哪里</a><ul><li><a href="#机器检查仍留下什么" class="table-of-contents__link toc-highlight">机器检查仍留下什么</a></li></ul></li><li><a href="#62-页思考过程不是原始-chain-of-thought" class="table-of-contents__link toc-highlight">62 页“思考过程”不是原始 chain of thought</a></li><li><a href="#2000-美元到底说明了什么" class="table-of-contents__link toc-highlight">2,000 美元到底说明了什么</a></li><li><a href="#为什么成功集中在可明确验证的数学形态" class="table-of-contents__link toc-highlight">为什么成功集中在“可明确验证”的数学形态</a></li><li><a href="#数学界与公共讨论现在分成三条线" class="table-of-contents__link toc-highlight">数学界与公共讨论现在分成三条线</a><ul><li><a href="#1-对结果本身的震动" class="table-of-contents__link toc-highlight">1. 对结果本身的震动</a></li><li><a href="#2-ai-替代数学家的反对意见" class="table-of-contents__link toc-highlight">2. “AI 替代数学家”的反对意见</a></li><li><a href="#3-对评议制度和权力集中的担心" class="table-of-contents__link toc-highlight">3. 对评议制度和权力集中的担心</a></li></ul></li><li><a href="#openai-为什么引用-leiden-declaration又和它存在张力" class="table-of-contents__link toc-highlight">OpenAI 为什么引用 Leiden Declaration，又和它存在张力</a></li><li><a href="#这件事真正改变了什么" class="table-of-contents__link toc-highlight">这件事真正改变了什么</a><ul><li><a href="#1-研究级-ai-数学不再只是零散案例" class="table-of-contents__link toc-highlight">1. “研究级 AI 数学”不再只是零散案例</a></li><li><a href="#2-证明资产开始和新闻同时发布" class="table-of-contents__link toc-highlight">2. 证明资产开始和新闻同时发布</a></li><li><a href="#3-数学研究的瓶颈正在从生成转向验证与消化" class="table-of-contents__link toc-highlight">3. 数学研究的瓶颈正在从生成转向验证与消化</a></li><li><a href="#4-闭源模型与开放-proof-可以同时存在" class="table-of-contents__link toc-highlight">4. 闭源模型与开放 proof 可以同时存在</a></li></ul></li><li><a href="#它没有证明什么" class="table-of-contents__link toc-highlight">它没有证明什么</a></li><li><a href="#接下来应该盯什么" class="table-of-contents__link toc-highlight">接下来应该盯什么</a></li><li><a href="#最后的判断" class="table-of-contents__link toc-highlight">最后的判断</a></li><li><a href="#主要来源" class="table-of-contents__link toc-highlight">主要来源</a><ul><li><a href="#一手材料" class="table-of-contents__link toc-highlight">一手材料</a></li><li><a href="#报道与公开讨论" class="table-of-contents__link toc-highlight">报道与公开讨论</a></li></ul></li></ul></div></div></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">内容</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/dev/blog">博客</a></li><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/dev/docs/blocks/hello-world">知识块</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">源码</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/ChatArch/ChatBlog" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 ChatArch. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
