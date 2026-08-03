@@ -1,0 +1,234 @@
+---
+title: "ChatShare 文件分享底座选型：从 Droppy 到 Dufs、Copyparty 与 Gokapi"
+date: 2026-08-03
+slug: chatshare-file-sharing-backend-survey
+tags: [chatshare, file-sharing, self-hosted, object-storage, open-source]
+description: 静态调研 16 个文件服务器、临时分享与 S3 项目，区分路径型 URL、随机分享链接与对象存储语义，为 ChatShare 的单 Key、上传下载和文件名 URL 选择最小底座。
+---
+
+# ChatShare 文件分享底座选型：从 Droppy 到 Dufs、Copyparty 与 Gokapi
+
+“文件分享”至少有三种完全不同的产品：一种把 `目录/文件名` 直接变成 URL；一种上传后生成高熵临时链接；还有一种提供 S3 bucket/object API，接近七牛、MinIO 和对象存储。
+
+如果不先把这三类分开，很容易一边比较极简文件服务器，一边又把完整 Web 产品和分布式对象存储拉进来，最后得到一个没有决策价值的功能总表。
+
+这篇围绕 ChatShare 的第一阶段目标做静态调研：一个共享 Key、上传/下载 API、文件名或 object key 与 URL 明确关联、尽量轻量、不把账号体系和存储集群提前塞进来。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+如果第一版要的是“上传到指定路径，路径和文件名直接出现在 URL”，**Dufs** 是最小、最清楚的上游契约；如果现在就需要原生临时 share、密码和过期，优先看 **Copyparty**；如果核心是按天数/下载次数管理随机分享链接，优先看 **Gokapi**。
+:::
+
+:::info 证据口径
+本文快照日期为 **2026-08-03**。共纳入 16 个候选，证据来自官方仓库元数据、README、命令/API 文档、release、license、archive/deprecation 与 security notice。本文没有把仓库声明写成实跑结论，也没有进行统一 runtime benchmark；运行和部署属于 shortlist 之后的独立任务。
+:::
+
+## 先把“分享”分成三类
+
+```mermaid
+flowchart LR
+  A[文件分享需求] --> B[路径型文件服务器]
+  A --> C[临时 capability share]
+  A --> D[S3 / object storage]
+  B --> B1[/chosen/path/filename]
+  C --> C1[/random-share-id/filename]
+  D --> D1[/bucket/object-key]
+```
+
+- **路径型文件服务器**：文件树就是 URL 树，最接近“指定 key/path 上传，再拿到稳定地址”。
+- **临时分享系统**：服务端生成 share ID，重点是过期、下载次数、密码、撤销和收件人体验。
+- **S3 / object storage**：应用通过 bucket/object API 管理对象，语义最接近七牛，但通常也带来 access/secret、policy、lifecycle 和更大的运维面。
+
+## 16 个候选的全景图
+
+| 项目 | 类别 | 最有价值的能力 | 当前主要问题 | 第一轮判断 |
+| --- | --- | --- | --- | --- |
+| [Dufs](https://github.com/sigoden/dufs) | 路径型文件服务器 | PUT/GET/WebDAV，路径直接变 URL | 没有原生 share metadata/TTL | **入围：最小路径契约** |
+| [Copyparty](https://github.com/9001/copyparty) | 文件服务器 + share | 直接路径、resumable upload、临时 share、file/dir key | 功能和配置面很大 | **入围：丰富混合方案** |
+| [File Browser](https://github.com/filebrowser/filebrowser) | Web 文件管理器 | 漂亮的目录管理体验 | 宣布停止维护，仍有未修安全边界 | 淘汰，保留 UX 参考 |
+| Droppy | 历史 Web 文件管理器 | 用户熟悉的简单文件存储体验 | npm 最新 2020，原仓库不可用 | 仅作需求参照 |
+| [SFTPGo](https://github.com/drakkan/sftpgo) | 企业文件传输平台 | SFTP/HTTP/WebDAV、多云后端、用户与 public links | 身份、协议和 license 面过重 | 观察 |
+| [OpenList](https://github.com/OpenListTeam/OpenList) | 云盘聚合器 | 多 storage、permalink、preview、WebDAV | 重点是聚合/转发，不是最小存储底座 | 参考 UI/聚合能力 |
+| [Gokapi](https://github.com/Forceu/Gokapi) | 临时分享 | 过期、下载次数、file request、REST、S3 | share ID 模型，不是指定 object path | **入围：临时生命周期** |
+| [transfer.sh](https://github.com/dutchcoders/transfer.sh) | curl 临时分享 | 最小 PUT + 返回链接，Max-Days/Downloads | 官方 README 有 auth/IP bypass 警告 | 安全问题解决前淘汰 |
+| [MicroBin](https://github.com/szabodanika/microbin) | paste/file share | 小型单文件、动物名 ID、过期、加密 | paste 模型，不是 object key | 轻量参考 |
+| [Pingvin Share](https://github.com/stonith404/pingvin-share) | 完整分享产品 | WeTransfer 式 UI、收件人、reverse share | 原项目已归档 | 淘汰原项目 |
+| [Pingvin Share X](https://github.com/smp46/pingvin-share-x) | 完整分享产品 | 维护中的 Pingvin 继任者 | Node/Prisma/Docker-first，明显更重 | 产品体验参考 |
+| [MinIO](https://github.com/minio/minio) | S3 object store | 经典 bucket/object 与 SDK 语义 | Community 仓不再维护、source-only | 只作 S3 语义参考 |
+| [Garage](https://github.com/deuxfleurs-org/garage) | 分布式 S3 | 小中规模跨节点复制 | 多节点价值不是第一阶段需要 | 观察 |
+| [SeaweedFS](https://github.com/seaweedfs/seaweedfs) | 分布式 file/object store | S3、Filer、WebDAV、TTL、tiering | 即使 mini 也包含多个子系统 | 初版过重 |
+| [rclone serve](https://github.com/rclone/rclone) | storage gateway | 多后端转 HTTP/WebDAV/S3 | `serve s3` 官方仍标 Experimental | gateway 参考 |
+| [RustFS](https://github.com/rustfs/rustfs) | 新 S3 object store | Apache-2.0、S3 core、single-node | lifecycle/distributed/KMS 仍 under testing | 未来观察 |
+
+## Dufs：最小的“路径就是 URL”
+
+Dufs 是一个 Rust 文件服务器。它没有先把自己包装成完整协作平台，而是把一个目录变成 HTTP/WebDAV 资源：
+
+- `PUT` 上传；
+- `GET` / Range 下载；
+- `DELETE` 删除；
+- `MKCOL` 建目录；
+- `MOVE` 移动；
+- account/path 级 read-only / read-write 权限；
+- 可把 anonymous read 与认证写入分开。
+
+![Dufs official demo](/img/chatshare-storage-research/dufs-demo.png)
+
+它最适合回答当前核心问题：如果上传目标是 `assets/2026/report.pdf`，最终 URL 就保留 `assets/2026/report.pdf`，而不是只返回一个和原路径无关的 share ID。
+
+它的缺口也很明确：没有原生 share 数据库、TTL、下载次数和 password-per-link。也就是说，Dufs 适合作为最薄的路径 API，不应该被误写成已经具备完整 ChatShare 生命周期。
+
+### 适合与不适合
+
+| 维度 | 判断 |
+| --- | --- |
+| 适合 | 第一版只做单 Key 上传、稳定路径 URL、直接下载 |
+| 不适合 | 第一版就要过期、撤销、下载次数、每链接密码 |
+| 封装边界 | ChatShare 管 Key、key/path 校验、URL 输出；Dufs 管文件 HTTP/WebDAV |
+| 许可证/维护 | Apache-2.0；2026 年仍活跃 |
+
+## Copyparty：路径 URL 与临时 share 都有，但面更大
+
+Copyparty 同样把 URL prefix 映射到目录，但它已经发展成一个完整文件门户：
+
+- raw PUT、multipart 和自定义 resumable upload；
+- dedup、搜索、media index、thumbnail；
+- WebDAV、SFTP、FTP、TFTP；
+- account + volume 权限；
+- file key、dir key；
+- 临时 share prefix、密码、过期和 visitor upload。
+
+![Copyparty official upload view, cropped to remove deployment status](/img/chatshare-storage-research/copyparty-upload-public.png)
+
+*Copyparty 官方上传界面；已裁去账号、磁盘容量和权限状态栏。*
+
+它的优势是少写很多 share lifecycle；风险是 ChatShare 很容易从“薄封装”变成“把 Copyparty 所有能力重新暴露一遍”。如果选择它，第一版必须严格限定只用上传、下载、路径、share 和最小权限，不让 media/index/protocol 体系自动变成产品需求。
+
+### 适合与不适合
+
+| 维度 | 判断 |
+| --- | --- |
+| 适合 | 现在就需要直接路径 + 临时 share + expiry |
+| 不适合 | 目标只是几条稳定 HTTP API，要求最少配置和行为 |
+| 封装边界 | 固定 volume/account，ChatShare 只暴露 allowlist |
+| 许可证/维护 | MIT；2026 年高度活跃 |
+
+## Gokapi：真正围绕“临时分享”设计
+
+Gokapi 不是文件树服务器，而是 Firefox Send 风格的分享产品。它原生考虑：
+
+- 按天数或下载次数过期；
+- file request；
+- 用户/角色；
+- dedup；
+- 本地或 S3 存储；
+- REST API；
+- 内置和端到端加密；
+- OIDC。
+
+![Gokapi official download view with demo filename redacted](/img/chatshare-storage-research/gokapi-download-public.png)
+
+*Gokapi 官方下载页；已遮盖 README 演示文件名和大小。*
+
+它更适合“上传后生成一个临时链接”，不适合直接承担“调用者指定长期 object key”。如果 ChatShare 的第一性需求重新变成过期 share，而不是稳定路径，它就会比 Dufs 更自然。
+
+### 适合与不适合
+
+| 维度 | 判断 |
+| --- | --- |
+| 适合 | 过期、下载次数、撤销、文件请求是核心 |
+| 不适合 | URL 必须由调用者指定的路径和文件名组成 |
+| 封装边界 | ChatShare 调 REST API，避免重做 lifecycle |
+| 许可证/维护 | AGPL-3.0；2026 年活跃 |
+
+## 为什么不先上 S3
+
+S3 的 bucket/object key 确实最接近七牛：对象 key 可以是 `assets/2026/report.pdf`，SDK、policy、presigned URL 和 lifecycle 也很成熟。
+
+但这次候选里没有一个同时满足“当前维护、成熟、轻量、单 Key、无需把对象存储运维也带进来”：
+
+- MinIO Community 仓已经停止维护并改为 source-only；
+- Garage 的价值在跨节点复制；
+- SeaweedFS 是完整分布式存储平台；
+- rclone `serve s3` 仍是 Experimental；
+- RustFS 还在补 lifecycle/distributed/KMS 等能力。
+
+第一版只有上传和下载时，直接把 ChatShare 变成 S3 管理层，增加的复杂度可能大于获得的价值。S3 更适合作为以后 storage backend 或兼容层，而不是当前唯一入口。
+
+## 被淘汰项目也保留了什么
+
+- **Droppy / File Browser**：告诉我们简单 Web 文件树为什么直观，也提醒维护与安全生命周期比 UI 更重要。
+- **transfer.sh**：PUT 上传、返回 filename-bearing URL、delete URL 和 Max-Days/Downloads 的 API ergonomics 很值得借鉴。
+- **MicroBin**：人类可读的 capability ID 和 paste/file 混合体验。
+- **Pingvin Share X**：收件人、reverse share、密码、OIDC/LDAP 等完整产品形态。
+- **OpenList**：permalink、preview 和多 storage 的浏览体验。
+
+调研不是只留下赢家。明确写出“为什么没有选”，才能避免下一轮重新走一遍相同路径。
+
+## 当前 shortlist
+
+| 目标 | 第一候选 | 第二候选 |
+| --- | --- | --- |
+| 指定 path/filename，直接得到稳定 URL | **Dufs** | Copyparty |
+| 路径 URL + 原生临时 share | **Copyparty** | Dufs + 自己补 metadata |
+| 过期/下载次数优先 | **Gokapi** | Copyparty |
+| 完整 WeTransfer 式产品 | Pingvin Share X | Gokapi |
+| 真正 S3/Qiniu API | 后续单独开 object-storage 选型 | 当前不提前引入 |
+
+## 给 ChatShare 第一版的静态建议
+
+如果继续按“后续再复杂化，先把 share 功能做出来”的方向，第一版契约可以收窄成：
+
+```text
+输入：
+  本地文件
+  可选 object key/path（默认安全文件名）
+  一个配置好的 upload Key
+
+行为：
+  认证上传到指定 key/path
+
+输出：
+  path 中保留 key 和 filename 的稳定 URL
+
+下载：
+  GET 稳定 URL
+```
+
+账号、多用户 Key、TTL、下载次数、per-link password、reverse share、S3、Web UI 和 CDN 都留到后续明确需求。
+
+这个契约和 Dufs 最接近；Copyparty 与 Gokapi 则分别保留为“需要原生 share lifecycle”时的两种升级方向。
+
+## 下一步不是把三个候选全部启动一遍
+
+静态报告已经把候选缩到三个。若以后还有一个静态证据无法回答、且会改变选择的问题，应单独开实践 Project，例如：
+
+> 在目标反向代理后，上游是否能正确保留 UTF-8 path、Range 和 Content-Disposition？
+
+实践应作为独立验证任务放到隔离、资源受控的环境中，一次只验证必要的最少候选，并提前定义资源、端口、停止和清理方式。
+
+## 主要一手来源
+
+- [Dufs](https://github.com/sigoden/dufs)
+- [Copyparty](https://github.com/9001/copyparty)
+- [Gokapi](https://github.com/Forceu/Gokapi)
+- [File Browser maintenance/security notice](https://github.com/filebrowser/filebrowser)
+- [transfer.sh security warning and API](https://github.com/dutchcoders/transfer.sh)
+- [MicroBin](https://github.com/szabodanika/microbin)
+- [Pingvin Share](https://github.com/stonith404/pingvin-share) and [Pingvin Share X](https://github.com/smp46/pingvin-share-x)
+- [SFTPGo](https://github.com/drakkan/sftpgo)
+- [OpenList](https://github.com/OpenListTeam/OpenList)
+- [MinIO community repository notice](https://github.com/minio/minio)
+- [Garage](https://github.com/deuxfleurs-org/garage)
+- [SeaweedFS](https://github.com/seaweedfs/seaweedfs)
+- [rclone serve s3](https://rclone.org/commands/rclone_serve_s3/)
+- [RustFS](https://github.com/rustfs/rustfs)
+
+## 图片来源
+
+本文使用的图片均来自对应项目官方 GitHub README / repository attachments，用于项目调研说明：
+
+- Dufs demo screenshot: [sigoden/dufs README](https://github.com/sigoden/dufs)
+- Copyparty upload screenshot, cropped to remove deployment/account status: [9001/copyparty README](https://github.com/9001/copyparty)
+- Gokapi download screenshot, with the demo filename/size redacted: [Forceu/Gokapi README](https://github.com/Forceu/Gokapi)
