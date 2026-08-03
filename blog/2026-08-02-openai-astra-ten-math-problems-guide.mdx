@@ -1,0 +1,783 @@
+---
+title: "OpenAI Astra 的十个数学问题到底在研究什么？一篇读懂背景、难点与结果边界"
+date: 2026-08-02T01:20:00+08:00
+slug: openai-astra-ten-math-problems-guide
+tags: [ai-math, openai, astra, mathematics, theoretical-computer-science, lean]
+description: "把 OpenAI Astra 十项数学与理论计算机科学结果拆成十个完整概要：逐项解释题意、研究背景、历史难点、Astra 的证明思路、结果意义、没有解决什么，以及 Lean 与同行评议边界。"
+---
+
+上一篇我们做的是新闻核验：OpenAI 最近公开的 Astra 十项数学结果，究竟是不是“新模型解决了十道著名数学题”。结论是：事情基本属实，但流行说法太粗糙。
+
+这篇换一个问题：**如果不看标题党，这十个问题本身到底在研究什么？**
+
+它们横跨高维几何、编码理论、群论、算子代数、代数复杂性、量子信息、格算法、凸几何和极值组合。读者很容易只记住“十个难题”，却不知道每一项究竟难在哪里、研究史卡在什么地方、Astra 到底推进了哪一层。
+
+所以这篇是总览：把此前十份专题调研压成一篇大博客，每一项都给一个相对完整的概要。
+
+<!-- truncate -->
+
+:::tip 一句话总结
+Astra 这批结果不是十道同质的竞赛题，而是十种不同类型的研究动作：有的完整推翻长期猜想，有的证明尖锐不等式，有的确定渐近增长阶，有的改进上界或下界，有的则证明某个强方法本身已经到达天花板。要理解它们，关键不是问“有没有解决”，而是问“解决的是哪个层级的问题”。
+:::
+
+:::info 资料边界
+本文基于 OpenAI 的 [249 页技术文稿](https://cdn.openai.com/pdf/ten-proofs-oai.pdf)、[62 页思路重建](https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf)、[`openai/ten-proofs`](https://github.com/openai/ten-proofs) 形式化仓库，以及此前完成的逐项本地调研。代码审计口径固定在 `openai/ten-proofs@1f16bdc`。思路重建不是原始 chain-of-thought；Lean 证书也不等于传统同行评议。
+:::
+
+## 为什么需要第二篇
+
+上一篇 [新闻核验文章](/blog/openai-astra-ten-math-advances) 主要回答四件事：
+
+1. Astra 是否真的存在；
+2. OpenAI 是否真的公开了论文与 Lean 证书；
+3. “十道著名数学题”这个说法哪里准确、哪里误导；
+4. 这批结果与 2025 年 OpenAI 的 Erdős 问题误报有什么不同。
+
+但新闻核验只解决“可信度”的第一层。真正困难的是第二层：**这些问题为什么重要？**
+
+比如：
+
+- “球堆积”这项不是求出了高维最优堆积，而是求出了 Cohn–Elkies 线性规划方法的渐近极限；
+- “Permanent 下界”很重要，但距离 VP≠VNP 仍很远；
+- “非 sofic 群”看起来冷门，却是一个二十多年不知道反例是否存在的基础问题；
+- “多色 Ramsey”解决了 Erdős #183，但不是求出了精确公式；
+- 第十项其实包含两个不同的 Erdős 极值图论反例。
+
+这就是本文的目标：**逐项讲清楚问题、背景、难点、Astra 的贡献和边界。**
+
+## 先给十项结果分个类
+
+OpenAI 的官方包装是“ten advances”，但这十项不是同一种成果。把它们放进同一个表，最容易看清它们的差异。
+
+| # | 方向 | 最准确的结果类型 | Astra 实际完成了什么 | 不应误写成 |
+|---:|---|---|---|---|
+| 1 | 高维球堆积 | 方法极限 + 新上界 | 精确确定 Cohn–Elkies LP 的渐近能力，并改进一般高维上界指数 | 求出真实最优球堆积密度 |
+| 2 | 二进制码、球面码 | 严格改进通用指数界 | 对所有固定参数改进 MRRW / KL 经典上界指数 | 构造新码或求出精确容量 |
+| 3 | 非 sofic 群 | 反例 / 存在性定理 | 构造非 sofic 群，否定“所有可数群都 sofic” | 同时解决 hyperlinear、surjunctive、Kaplansky 问题 |
+| 4 | Connes 刚性 | 无限反例族 | 构造无限多个不同 property-(T) 群共享同一群 von Neumann 代数 | 否定所有 W*-刚性理论 |
+| 5 | Permanent 复杂度 | 新算术下界 | 给出一般电路和公式模型的新多项式下界 | 证明 VP≠VNP 或 P≠NP |
+| 6 | 量子并行重复 | 一般指数定理 | 证明有限双人单轮纠缠博弈的全赢概率指数衰减 | 覆盖所有量子交互协议，或给出最优指数 |
+| 7 | GapCVP | 固定多项式近似困难性 | 无条件确定性证明 `n^(1/400)` 近似仍 NP-hard | 破解实际格密码 |
+| 8 | Ehrhart 体积猜想 | 尖锐不等式 | 证明所有维度的 sharp volume bound | 完成全部等号情形分类 |
+| 9 | 多色三角 Ramsey | 渐近增长阶 | 证明 `R_k(3)=k^Theta(k)`，解决 Erdős #183 | 求出精确指数或常数 |
+| 10 | 极值图论 | 两个猜想反例 | 推翻 compactness 与 degeneracy 猜想，解决 Erdős #180、#146 | 分类所有 Turán 数或所有退化图 |
+
+如果再按学科分，可以粗略分成四块：
+
+- 几何与分析：球堆积、编码界、Ehrhart；
+- 代数与刚性：非 sofic 群、Connes 刚性；
+- 理论计算机与量子：Permanent、量子并行重复、GapCVP；
+- 组合与极值图论：多色 Ramsey、compactness / degeneracy。
+
+这个分布本身很重要：它显示 Astra 不是只在一个窄领域做局部优化，而是跨越多个证明文化和技术栈。
+
+## 共同背景：Astra、论文、Lean 和人类参与
+
+OpenAI 这次公开的不是一个模型产品，而是一组研究资产：
+
+1. [官方公告](https://openai.com/index/ten-advances-in-mathematics/)；
+2. [249 页技术文稿](https://cdn.openai.com/pdf/ten-proofs-oai.pdf)；
+3. [62 页思路重建说明](https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf)；
+4. [Lean 形式化仓库](https://github.com/openai/ten-proofs)；
+5. 十二组 Comparator challenge。
+
+官方说法是：数学论证由内部 Astra 模型产生，人类和模型一起把结果整理成文稿，并帮助形式化。OpenAI 对正确性承担公开责任。
+
+这比普通模型宣传强很多，因为它给出了可检查对象：自然语言论文、形式化定理、proof term、Comparator 配置和外部 checker 路径。
+
+但它仍然留下三类边界：
+
+| 层次 | 已经公开 | 仍需等待 |
+|---|---|---|
+| 数学证明 | 论文和 Lean 证书 | 领域专家逐项审读 |
+| 形式验证 | Lean / Comparator / nanoda 路线 | statement 是否忠实表达自然语言问题 |
+| 模型能力 | 成功结果和事后说明 | 原始 prompt、失败集、总尝试次数、完整成本 |
+
+所以本文讨论每一项时都会刻意区分：**定理层面做了什么，应用或哲学层面没有推出什么。**
+
+## 1. 高维球堆积：改进上界，也找到 Cohn–Elkies 方法的天花板
+
+球堆积是最容易直观理解的一项：给定同样大小的球，怎样在空间里塞得最密？二维像硬币摆放，三维像炮弹堆叠。维度升高后，它不再只是几何图像，而会连接编码理论、离散几何和信息论。
+
+高维球堆积的经典任务是估计最优密度 `Delta_d`。下界告诉我们“至少可以塞这么密”，上界告诉我们“不可能比这更密”。Astra 这项结果属于上界方向。
+
+### 研究背景
+
+20 世纪以来，高维球堆积一直有两条主线：
+
+- Minkowski、Rogers 等人的几何数论与覆盖方法；
+- Kabatianskii–Levenshtein 在 1978 年给出的经典指数上界。
+
+2003 年，Cohn 和 Elkies 提出 Fourier 线性规划方法：寻找一个辅助函数 `f`，让 `f` 和 Fourier transform `hat f` 满足一组正负性条件，从而推出 packing density 上界。
+
+这套方法后来在 `d=8` 和 `d=24` 达到巅峰：Viazovska 及 Cohn、Kumar、Miller、Radchenko、Viazovska 用它解决了 E8 和 Leech lattice 的最优球堆积。
+
+但高维一般情形仍有两个问题：
+
+1. Cohn–Elkies 方法能否在高维指数上超过 KL 1978？
+2. 这套方法本身的渐近极限到底在哪里？
+
+Astra 的结果同时回答了这两个问题。
+
+### Astra 证明了什么
+
+设 `LP_d` 是 `d` 维 Cohn–Elkies 线性规划能给出的最佳密度上界。新定理证明
+
+```text
+lim_(d -> infinity) LP_d^(1/d) = sqrt(e / (2 pi)).
+```
+
+由此推出球堆积密度满足
+
+```text
+Delta_d <= 2^(-(0.6044... + o(1))d).
+```
+
+经典 KL 指数约为 `0.599055...`。数值只前进了一点点，但在高维指数问题里，这就是自 1978 年以来一般球堆积上界指数的首次推进。
+
+### 难点在哪里
+
+证明一个更好的上界已经很难；证明“这一整套方法不可能再好”更难。
+
+Astra 的路线把 Cohn–Elkies 辅助函数转成 Fourier sign uncertainty 问题。粗略地说，如果一个函数和它的 Fourier transform 具有特定符号约束，那么它的负质量不可能被压到太小半径里。
+
+最后两个 sign-uncertainty 常数都被证明为
+
+```text
+(1 / pi + o(1)) sqrt(d).
+```
+
+上界部分需要构造接近最优的函数；下界部分需要证明任何函数都无法越过这个半径障碍。论文中用到 Mellin transform、Gamma 函数、saddle-point asymptotics 和最大值原理。
+
+### 没有解决什么
+
+它没有求出真实的高维最优球堆积密度。更准确地说，它告诉我们：
+
+- Cohn–Elkies 方法可以超过 KL 指数；
+- 但在指数尺度上，这套方法最多也就到这里。
+
+所以这项结果既是推进，也是“方法论的封顶”。
+
+## 2. 二进制码与球面码：近半个世纪未动的通用指数被推进
+
+编码理论关心的是：如何在噪声中可靠传输信息。
+
+二进制码可以想象成 `{0,1}^n` 里的点集。码字越多，信息率越高；码字之间距离越远，抗噪能力越强。球面码则是在高维球面上放点，要求不同点之间夹角足够大。
+
+这两个问题形式不同，背后都在问：**有限维空间里，最多能放多少个彼此足够分开的点？**
+
+### 研究背景
+
+二进制码的经典上界来自 Delsarte 线性规划，以及 McEliece–Rodemich–Rumsey–Welch，即 MRRW bound。球面码的经典通用上界来自 Delsarte–Goethals–Seidel 与 Kabatianskii–Levenshtein。
+
+这些界非常强，强到几十年没有被整体改进。很多后来的结果能在特殊参数、附加条件或有限维实验上更好，但要在所有固定参数上推进 general exponent，一直没有实现。
+
+### Astra 证明了什么
+
+对二进制码，Astra 证明：每个固定相对距离
+
+```text
+0 < delta < 1/2
+```
+
+下，都能严格改进完整优化后的 MRRW 指数。
+
+对球面码，Astra 证明：每个固定最大内积
+
+```text
+0 < s < 1
+```
+
+下，都能严格改进包含 spherical-cap 优化在内的 KL 指数。
+
+这不是某个点上的数值优化，而是全参数范围的严格推进。
+
+### 关键想法
+
+经典 Delsarte / MRRW / KL 方法大多给每个码点附一个向量或一个 zonal kernel，再用正定性推出约束。
+
+Astra 的新自由度是：给每个码点附一个会随码点移动的高维 harmonic subspace。这样得到的 projection rank 是指数级的，最后能转成码规模的指数级上界改进。
+
+直观说，它不是只看两个点之间的距离，而是把点附近一整块“谐波方向空间”也纳入证书。
+
+### 没有解决什么
+
+它仍是上界理论。
+
+它没有：
+
+- 构造更好的码；
+- 给出新的实际解码算法；
+- 求出 exact rate；
+- 解决所有有限长度编码问题。
+
+但在高维渐近通用界这个层面，它确实推进了半个世纪的基准线。
+
+## 3. 非 sofic 群：此前不知道反例是否存在的世界，终于出现了反例
+
+这项结果对普通读者最陌生，但它在群论和动力系统附近非常基础。
+
+一个群可以理解为一套对称操作。所谓 sofic，大意是：群的任意有限乘法片段，都可以由有限集合上的置换近似出来。
+
+如果一个无限群很复杂，但它的每一小块行为都能被有限置换近似，那么它就是 sofic。
+
+### 研究背景
+
+Gromov 和 Weiss 在 1999–2000 年前后提出 sofic 群的概念和问题。大量熟悉的群都是 sofic：
+
+- finite groups；
+- amenable groups；
+- residually finite groups；
+- 很多由这些类构造出来的群。
+
+于是自然问题变成：
+
+> 是否所有可数群都是 sofic？
+
+二十多年里，没有人找到反例。
+
+### Astra 证明了什么
+
+Astra 证明二元 Leavitt 代数
+
+```text
+L_F2(1,2)
+```
+
+的单位群不是 sofic。Lean 形式化中还推出：存在有限表示的非 sofic 群。
+
+这是否定 universal soficity conjecture 的完整反例。
+
+### 难点在哪里
+
+构造非 sofic 群很难，因为 soficity 过于宽泛：只要每个有限乘法片段能被近似，就算成功。你必须构造一个群，使得任何有限置换近似都会在某处自相矛盾。
+
+Astra 的证明把几个很远的工具放在一起：
+
+- property (T) 与 expander；
+- Kun 的 expander decomposition；
+- Kun–Thom centralizer obstruction；
+- Thompson 群 `V`；
+- Leavitt 代数的二进制自相似结构。
+
+粗略图景是：property (T) 让近似行为变得刚性，Leavitt 代数和 Thompson 群提供自相似压缩结构，centralizer obstruction 则逼出一个有限近似世界里不该出现的结论。
+
+### 没有解决什么
+
+它没有自动推出：
+
+- 这个群非 hyperlinear；
+- Gottschalk surjunctivity 被否定；
+- Kaplansky 直接有限性问题被解决；
+- 所有与 soficity 相邻的猜想都倒下。
+
+它解决的是一个非常核心、非常具体的存在性问题：**非 sofic 群确实存在。**
+
+## 4. Connes 刚性：同一个算子代数“影子”不再唯一确定原群
+
+这项来自算子代数和群论交界。
+
+给一个可数离散群 `G`，可以构造它的群 von Neumann 代数 `L(G)`。可以把它理解成群的一个分析化、算子化“影子”。Connes 的问题问的是：
+
+> 如果 `G` 是 ICC 且具有 property (T)，那么 `L(G)` 是否足以反推出 `G`？
+
+如果答案为真，那么这类群在算子代数层面具有很强的刚性。
+
+### 研究背景
+
+在 amenable ICC 群中，情况恰好相反：很多不同群都会给出同一个 hyperfinite factor，群信息严重丢失。
+
+Connes 希望 property (T) 能阻止这种坍缩。Popa 后来的刚性理论又提出更细的问题：即便不能唯一，是否至少只有有限多个群对应同一个 factor？
+
+### Astra 证明了什么
+
+Astra 构造了可数无限多个群
+
+```text
+Gamma_0, Gamma_1, Gamma_2, ...
+```
+
+以及一个群 `Lambda`，满足：
+
+- 它们都是 finitely generated；
+- 都是 ICC；
+- 都有 property (T)；
+- 两两不 isomorphic；
+- 彼此 commensurable；
+- 但
+
+```text
+L(Gamma_n) ≅ L(Lambda).
+```
+
+这不仅否定唯一恢复，也否定 finite-to-one 版本。
+
+### 证明路线的直觉
+
+关键是构造一批不同群，它们在群结构上能被区分，但它们作用在某个概率空间上的 orbit-equivalence 数据足够相同，以至于给出同构的 group von Neumann algebra。
+
+论文中的一条主线是：`L(A semidirect K)` 在某些条件下只看 dual probability space 与 `K` 的作用，而不完全记住 compact group law。于是可以在同一底层空间上放入普通 law 和带 binary carry 的变体，再用 torsion / index 不变量区分这些群。
+
+### 没有解决什么
+
+它不是说 W*-刚性不存在。
+
+很多具体群仍然可能 W*-superrigid。被推翻的是：**ICC + property (T) 这两个条件本身足以保证群由 group factor 唯一或有限确定。**
+
+## 5. Permanent 算术复杂度：重要下界，但不是 VP≠VNP
+
+Permanent 和 determinant 形式上只差一个符号：determinant 对排列带正负号，permanent 全部取正号。
+
+这个小差别导致复杂性完全不同。determinant 有高效算法；permanent 是代数复杂性理论里的核心难题，与 Valiant 的 VNP-completeness 紧密相关。
+
+### 研究背景
+
+在布尔复杂性里，大家熟悉 P vs NP。在代数复杂性里，对应的深层问题是 VP vs VNP。Permanent 是 VNP-complete 的代表性多项式。
+
+如果能证明 permanent 需要超多项式大小的算术电路，就会得到 VP≠VNP。但这种目标远超当前技术。
+
+所以研究者长期积累的是各种模型下的下界：公式、受限电路、深度限制、电路是否允许除法等。
+
+### Astra 证明了什么
+
+Astra 给出三个主要下界：
+
+- division-free 一般算术电路需要
+
+```text
+Omega(n^2 log log n)
+```
+
+个门；
+
+- division-free 公式需要
+
+```text
+Omega(n^4 / log n)
+```
+
+个变量叶；
+
+- 即使允许合法除法，公式仍有同阶下界，只是常数变化。
+
+如果把输入变量数记作 `N=n^2`，这就是一般电路的 `Omega(N log log N)` 与公式的接近二次下界。
+
+### 为什么难
+
+一般电路可以共享中间计算、制造 cancellation；公式不能共享但结构仍很灵活；允许除法后还会出现更多代数等价表达。
+
+Astra 的证明用到两套思路：
+
+1. 对 specialization 后的 permanent 分析 critical locus，用 Bezout、Baur–Strassen 梯度技巧和 root-of-unity 构造得到电路下界；
+2. 对公式下界，证明某些 complementary permanents 的系数具有代数独立性，再把 formula leaves 逐步 charge 到这些自由度上。
+
+### 没有解决什么
+
+这些仍然都是多项式下界。
+
+它没有证明：
+
+- permanent 需要超多项式电路；
+- VP≠VNP；
+- P≠NP；
+- 一般布尔电路下界。
+
+但在无条件一般模型下推进 permanent lower bounds，本身已经非常困难。
+
+## 6. 量子并行重复：经典 Raz 定理的量子版终于覆盖一般纠缠博弈
+
+并行重复定理问的是一个很自然的问题：
+
+如果一个游戏单局不能总赢，把它独立重复很多次并要求全部赢，成功概率会不会指数下降？
+
+经典两人博弈中，Raz 在 1990 年代证明了著名的 parallel repetition theorem。
+
+量子世界里，Alice 和 Bob 可以提前共享纠缠。即使重复游戏之间问题独立，玩家的测量策略也可以跨局纠缠，导致分析困难得多。
+
+### 研究背景
+
+量子并行重复至少从 2004 年起就是明确开放问题。此前有两类进展：
+
+- 对特殊游戏或修改后的规则证明指数衰减；
+- 对一般游戏证明多项式衰减。
+
+但“所有有限双人单轮纠缠博弈都指数衰减”一直没有解决。
+
+### Astra 证明了什么
+
+设单局纠缠值小于 1，也就是存在 `epsilon > 0` 使单局最多赢 `1-epsilon`。Astra 证明重复 `n` 次并要求全部获胜时，成功概率以
+
+```text
+exp(-c_G n)
+```
+
+的速度下降。
+
+这里 `c_G` 依赖原游戏。论文给出的定量包含 `epsilon^13` 一类损失，不声称最优。
+
+### 难点在哪里
+
+量子策略的难点不是“有随机性”，而是：
+
+- 多局之间可以联合测量；
+- 事后条件化可能把罕见事件放大；
+- purification 选择可能出现 holonomy 障碍；
+- 有限维策略的维度会随重复次数增长。
+
+Astra 的路线用 resolvent purification 构造 postselection-stable sampleability，再用 size-biased martingale 控制罕见事件，最后通过 quantum correlated sampling 抽回一局，制造与单局最优值的矛盾。
+
+### 没有解决什么
+
+它覆盖的是论文定义下的有限、双人、单轮、经典问答、tensor-product entangled game。
+
+它不覆盖所有量子交互协议，也不声称指数常数最优。但在“一般量子并行重复是否指数下降”这个层面，它给出了完整正面 theorem。
+
+## 7. GapCVP：最坏情形近似困难性增强，不是格密码被破解
+
+Closest Vector Problem，简称 CVP：给一个整数格和目标点，找最近格点。
+
+GapCVP 是它的判定近似版本：区分“有格点很近”和“所有格点都很远”。问题是：近似因子放宽到多大，问题仍然 NP-hard？
+
+### 研究背景
+
+CVP 的 exact 版本很早就知道 NP-hard。近似版本更微妙。
+
+过去无条件结果可以达到超过任意固定多对数的因子，但形如
+
+```text
+n^(a / log log n)
+```
+
+指数会趋于零。固定正多项式因子的困难性此前依赖更强复杂性假设。
+
+另一方面，`sqrt(n)` 附近又有 `NP cap coNP` 类型的屏障，说明现有技术很难直接逼近那里。
+
+### Astra 证明了什么
+
+Astra 给出从 3SAT 到 Euclidean GapCVP 的确定性多项式归约，证明在格秩为 `n` 时，近似因子
+
+```text
+n^(1/400)
+```
+
+下仍然 NP-hard。
+
+它还推出 binary nearest codeword / syndrome decoding 的 `n^(1/200)` 困难性，以及固定有理 `ell_p` 范数下的相应变体。
+
+### 证明路线的直觉
+
+核心是把布尔满足性编码成 Reed–Solomon / nearest-codeword 型问题，再把编码距离精确转成欧氏格距离。
+
+几个关键词是：
+
+- characteristic-two Reed–Solomon evaluation；
+- power sums；
+- Hankel / Vandermonde 重建；
+- valuations 锁定布尔一致性；
+- parity-lift 把 Hamming weight 变成 squared Euclidean distance。
+
+直观地说，证明要防止一个近似解“局部看起来像多个不同 assignment 的拼接”。它必须把所有局部代数信息逼成同一个全局 assignment。
+
+### 没有解决什么
+
+这不是“格密码被破解”。
+
+现实中的格密码使用结构化格、平均情形假设和具体参数安全性。Astra 的结果是 worst-case general lattice hardness。它增强理论困难性地图，但不直接攻击 ML-KEM、ML-DSA 等部署协议。
+
+## 8. Ehrhart 体积猜想：1964 年提出的尖锐体积不等式
+
+这项来自凸几何和格点几何。
+
+设 `K` 是 `R^n` 中一个 full-dimensional convex body，满足：
+
+- 重心在原点；
+- 原点是唯一内部整数格点。
+
+问题问：这样的凸体最大体积是多少？
+
+### 研究背景
+
+Ehrhart 在 1964 年猜测，极值由中心化单纯形达到，对应上界是
+
+```text
+vol(K) <= (n+1)^n / n!.
+```
+
+单纯形情形和若干特殊情形早有进展，但一般 convex body 可以是 irrational、nonpolyhedral，不带方便的 toric 组合结构。
+
+### Astra 证明了什么
+
+Astra 证明了所有维度的尖锐不等式：
+
+```text
+vol(K) <= (n+1)^n / n!.
+```
+
+中心化单纯形达到这个值。
+
+### 难点在哪里
+
+常规对称化方法容易丢掉关键的 `n!` 因子；把问题只做成 rational polytope 又不能覆盖一般 convex body。
+
+Astra 的证明把多个分析和复几何工具连起来：
+
+1. 用 Monge–Ampere potential 把测度 transport 到 `K`；
+2. 在复环面上用 Laurent monomial 近似；
+3. 用 jet filtration 计算 vanishing order，`n!` 因子在这里自然出现；
+4. 通过 rank-one Bergman kernel 关上 convexity gap；
+5. 比较上下 slope，得到尖锐体积界。
+
+### 没有解决什么
+
+体积不等式本身解决了，但等号情形仍没有完全分类。
+
+也就是说，中心化单纯形确实是 extremizer；但是否所有 extremizer 都必须是它的 unimodular image，论文没有完成全部证明。
+
+## 9. 多色三角 Ramsey 数：终于知道 `R_k(3)` 是 `k^Theta(k)`
+
+把完全图的每条边涂成 `k` 种颜色之一。`R_k(3)` 是最小的顶点数，使得任意 `k`-染色都必然出现同色三角形。
+
+当 `k=2` 时，这是经典 Ramsey 数 `R(3,3)=6`。当颜色数增长时，问题变成：`R_k(3)` 到底增长多快？
+
+### 研究背景
+
+长期以来，下界基本来自固定小构造的 tensor 或 sum-free partitions，形如固定常数的 `k` 次方。上界接近阶乘 `k!`。
+
+Erdős 问题 #183 的核心就是：
+
+```text
+R_k(3)^(1/k)
+```
+
+是否趋于无穷？
+
+如果趋于无穷，就说明增长不是 fixed-base exponential，而是 superexponential。
+
+### Astra 证明了什么
+
+Astra 证明存在绝对常数 `c > 0`，使得
+
+```text
+R_k(3) >= (c k^(1/3) / log k)^k.
+```
+
+结合已有阶乘上界，得到
+
+```text
+R_k(3) = k^Theta(k).
+```
+
+这解决 Erdős #183。它还推出 independence number 为 2 的图可以有任意大的 Shannon capacity。
+
+### 证明思路
+
+固定小构造 tensor 永远只能得到 fixed base。要让 base 随 `k` 增长，必须让颜色结构本身递归扩张。
+
+Astra 的构造有三层：
+
+- saturated random matrix；
+- two-sided coordinate cover；
+- palette-separated recursive coloring。
+
+递归过程中，不只是维护 triangle-free，还维护每个颜色图的 chromatic invariant。这样可以防止跨 block 的同色三角形在递归里重新出现。
+
+### 没有解决什么
+
+它确定了增长阶，但没有求出 sharp exponent。
+
+目前下界 log 规模大约相当于 `(1/3-o(1)) k log k`，上界约为 `(1+o(1)) k log k`。中间仍有大空间。
+
+## 10. 极值图论：一个编号下藏着两个 Erdős 反例
+
+OpenAI 的第十项叫 “Compactness and degeneracy”，其实包含两个独立猜想的反例。
+
+它们都属于 extremal graph theory：给定 forbidden graph 或 forbidden family，问一个 `n` 顶点图最多能有多少条边而不包含它们。
+
+### 10.1 Erdős–Simonovits compactness 猜想
+
+对一个有限 forbidden family `F`，同时禁止所有成员得到的 extremal number 记为 `ex(n,F)`。一个自然想法是：整个 family 的限制，也许总是由其中某个最强成员主导。
+
+早期版本有简单森林反例，所以修正后要求 family 中每个成员都含 cycle。
+
+Astra 构造一个有限 family，其中每个图都是：
+
+- connected；
+- bipartite；
+- 含 cycle。
+
+但同时禁止整个 family 时，只有
+
+```text
+ex(n, F) = O(n^(4/3 - 1/48)) = O(n^(21/16));
+```
+
+而禁止任意单个成员时仍有
+
+```text
+ex(n, F_i) = Omega(n^(4/3)).
+```
+
+所以 family 的联合约束确实比任何单一成员都强一个多项式因子。这推翻 corrected compactness conjecture，解决 Erdős #180。
+
+证明中用到 generalized quadrangles、`J/K` templates、特征奇偶、admissible quotients 和 half-square 控制。
+
+### 10.2 Erdős degeneracy 猜想
+
+一个图是 `r`-degenerate，意思是它的每个非空子图里都有度数不超过 `r` 的点。
+
+Erdős 猜测：固定 bipartite `r`-degenerate 图 `H` 的 extremal number 应该满足
+
+```text
+ex(n,H) = O(n^(2 - 1/r)).
+```
+
+`r=2` 时，这个预测就是 `O(n^(3/2))`。
+
+Astra 构造了一个固定、connected、bipartite、2-degenerate 图 `H`，却满足
+
+```text
+ex(n,H) >= c n^(3/2 + epsilon)
+```
+
+对所有足够大 `n` 成立。这已经在 `r=2` 推翻猜想，解决 Erdős #146。
+
+证明路线大意是：构造一个 pair-generated layered graph `H`，再在 Hamming-ball host 中随机抽样。若出现 `H` 的嵌入，每往下一层都会迫使某个 bounded entropy potential 增加。层数足够深后，potential 超过上限，矛盾。
+
+### 没有解决什么
+
+这两项都是具体 extremal conjecture 的反例，不是一般图论分类。
+
+特别是 degeneracy 反例给出一个巨大但固定的 `H`，并不告诉我们所有 2-degenerate bipartite graphs 的 exact extremal numbers。
+
+## 横向看：这十项为什么不是“十个同等级奖杯”
+
+把十项放在一起，最容易出现一种误读：好像它们都是同一个难度、同一种性质、同一个完成度。
+
+实际更像这样：
+
+| 类型 | 对应结果 | 完成度 |
+|---|---|---|
+| 方法极限 | 球堆积 | 完整解决 Cohn–Elkies 渐近能力；原球堆积仍未解 |
+| 通用界推进 | 编码、Permanent、GapCVP | 严格推进已知边界；核心精确问题仍远 |
+| 反例 | 非 sofic、Connes、极值图论 | 对相应猜想是完整负面解决 |
+| 正面一般 theorem | 量子并行重复 | 在论文范围内给出完整指数定理 |
+| 尖锐不等式 | Ehrhart | 体积界解决，等号分类仍留白 |
+| 增长阶 | 多色 Ramsey | `k^Theta(k)` 解决，精确指数仍未知 |
+
+从先修知识看，Connes、量子并行重复、Ehrhart 的门槛最高；从对象存在性看，非 sofic 群最震动；从公众直觉看，球堆积、Ramsey、极值图论最容易解释；从复杂性理论长期目标看，Permanent 和 GapCVP 最容易被误读成“接近终极问题”，但实际上仍离 VP≠VNP 和实用密码攻击很远。
+
+## 它们共同揭示了 Astra 擅长什么
+
+十项结果横跨很多学科，但成功形态有共同点。
+
+它们都适合被压成清晰的 theorem target：
+
+- 构造一个反例；
+- 证明一个不等式；
+- 改进一个上界或下界；
+- 给出一个归约；
+- 确定一个渐近增长阶；
+- 证明某类对象全部满足某种衰减。
+
+这些问题具有很高的 verification leverage：生成候选证明很难，但一旦有候选，数学家和 proof assistant 可以相对明确地检查。
+
+这说明 AI 数学可能最先改变的不是“所有数学判断”，而是下面这种工作流：
+
+```text
+目标清晰的问题
+  -> 大规模搜索与组合证明路线
+  -> 形式系统压缩逻辑信任边界
+  -> 人类审查语义、文献和意义
+```
+
+Astra 的亮点不是会做十道题，而是同一个系统能跨领域执行这种长链 proof synthesis。
+
+## 但也要看到选择偏差
+
+OpenAI 展示的是成功结果，不是完整实验记录。
+
+我们仍不知道：
+
+- 总共尝试了多少问题；
+- 每题跑了多少分支；
+- 失败问题是什么；
+- 人类是否在中间给过反馈；
+- 原始 prompt 和 tool traces 长什么样；
+- `2,000 美元`之外的训练、失败、人工和形式化成本是多少。
+
+所以，十项结果能证明：Astra 在这些问题上产生了非常强的 proof artifacts。它不能直接证明：Astra 对任意开放问题都有稳定成功率。
+
+## Lean 证书强在哪里，又不能替代什么
+
+Lean 形式化让这批结果比普通 press release 强很多。
+
+固定快照的仓库包含十个结果文件、十二组 Comparator 配置和 nanoda 外部检查路径。Comparator 的作用，是检查可信 challenge 与 solution 证明的是同一个 elaborated statement，并限制可达 axiom。
+
+这能极大降低“证明里藏了逻辑漏洞”的风险。
+
+但 Lean 不能自动回答：
+
+| 问题 | Lean 能否自动解决 |
+|---|---|
+| theorem 是否从 definitions 推出 | 可以 |
+| proof 是否用了未允许 axiom | 可以检查 |
+| statement 是否忠实表达原自然语言猜想 | 不能完全自动 |
+| 引用文献是否完整 | 不能 |
+| 结果是否真正新颖 | 不能 |
+| 这项结果对领域有多重要 | 不能 |
+| 论文是否通过同行评议 | 不能 |
+
+因此最合理的态度是：
+
+> 形式化证明让审查对象变得具体，但数学共同体仍要审查定义、语义、历史和意义。
+
+## 如果只记住十句话
+
+1. 球堆积：Astra 改进一般高维上界，并证明 Cohn–Elkies 方法的指数天花板。
+2. 编码理论：二进制码和球面码的经典通用指数界，半世纪来首次全参数严格推进。
+3. 非 sofic 群：此前没人知道是否存在的反例，现在有了。
+4. Connes 刚性：property (T) 群不能仅凭 group factor 唯一或有限恢复。
+5. Permanent：下界很强，但仍是多项式下界，不是 VP≠VNP。
+6. 量子并行重复：一般有限双人单轮纠缠博弈终于有指数衰减定理。
+7. GapCVP：最坏情形固定多项式近似困难性增强，不是格密码被破解。
+8. Ehrhart：1964 年提出的 sharp volume inequality 被证明，等号分类仍开放。
+9. 多色 Ramsey：`R_k(3)` 的增长阶确定为 `k^Theta(k)`，解决 Erdős #183。
+10. 极值图论：第十项其实推翻两个猜想，解决 Erdős #180 和 #146。
+
+## 接下来应该看什么
+
+未来几周到几个月，真正重要的不是再看更多营销标题，而是看这些 proof artifacts 如何被数学界消化：
+
+1. 各领域专家是否逐项确认自然语言证明；
+2. Lean statement 是否被独立 semantic audit；
+3. OpenAI 仓库是否出现 errata 或 statement 调整；
+4. 这些结果是否进入正常期刊或会议同行评议；
+5. 后续研究是否复用其中的关键 lemma 和构造；
+6. OpenAI 是否公开更多实验 denominator；
+7. Astra 或相近能力是否能被第三方在相近预算下复现。
+
+## 最后的判断
+
+这十项结果不应该被缩成“AI 做了十道题”。更准确的说法是：
+
+> Astra 在十个目标清晰、验证杠杆很高的数学与理论计算机科学问题上，产生了可审计的新证明资产；这些资产已经足够具体，足以让外部数学界逐项检查，也足够广泛，足以改变我们对 AI 参与研究级数学的预期。
+
+如果它们全部经受住外部审查，数学史记住的可能不只是这十个 theorem，而是一种新分工开始成形：
+
+```text
+人类提出问题、建立理论和判断意义；
+模型大规模搜索、组合和修订证明；
+形式系统检查逻辑；
+数学共同体审查语义、文献、归因和价值。
+```
+
+这比“AI 替代数学家”复杂得多，也重要得多。
+
+## 主要来源
+
+- [OpenAI：Ten advances in mathematics and theoretical computer science](https://openai.com/index/ten-advances-in-mathematics/)
+- [Ten Advances in Mathematics and Theoretical Computer Science](https://cdn.openai.com/pdf/ten-proofs-oai.pdf)
+- [How the Ideas Came Together](https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf)
+- [openai/ten-proofs](https://github.com/openai/ten-proofs)
+- [上一篇核验文章：OpenAI Astra 真的解决了十道数学难题吗？](/blog/openai-astra-ten-math-advances)
+- [Leiden Declaration on AI and Mathematics](https://leidendeclaration.ai/)
