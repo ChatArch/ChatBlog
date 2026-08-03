@@ -27,6 +27,7 @@
 - Added a broad-first CCF A/B deadline guide for AI for Math and AI for Science, covering open-round validation, contribution-based venue matching, remaining 2026 deadlines, January 2027 fallbacks, and official-source caveats.
 - Added a source-audited analysis of OpenAI Astra's ten mathematics and theoretical-computer-science results, including theorem-by-theorem scope, Lean and Comparator evidence, model and cost caveats, public reactions, attribution, and peer-review boundaries.
 - Added a long-form guide to the ten Astra math problems, summarizing each problem's research background, historical bottlenecks, Astra result, proof route, limitations, and verification status.
+- Added a static ChatShare backend survey covering 16 direct-path file servers, temporary sharing systems, and S3/object-storage candidates, with sourced screenshots and a category-aware shortlist.
 
 ### Changed
 
