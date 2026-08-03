@@ -36,3 +36,5 @@
 - Clarified the CCF deadline guide's counting units, source hierarchy, and submission terminology.
 
 ### Fixed
+
+- Quoted slash-prefixed path labels in the ChatShare survey so its Mermaid taxonomy diagram renders instead of showing a lexical error.
