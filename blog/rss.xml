@@ -4,10 +4,141 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Sat, 01 Aug 2026 17:20:00 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 03 Aug 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[ChatShare 文件分享底座选型：从 Droppy 到 Dufs、Copyparty 与 Gokapi]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey</guid>
+            <pubDate>Mon, 03 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[静态调研 16 个文件服务器、临时分享与 S3 项目，区分路径型 URL、随机分享链接与对象存储语义，为 ChatShare 的单 Key、上传下载和文件名 URL 选择最小底座。]]></description>
+            <content:encoded><![CDATA[<p>“文件分享”至少有三种完全不同的产品：一种把 <code>目录/文件名</code> 直接变成 URL；一种上传后生成高熵临时链接；还有一种提供 S3 bucket/object API，接近七牛、MinIO 和对象存储。</p>
+<p>如果不先把这三类分开，很容易一边比较极简文件服务器，一边又把完整 Web 产品和分布式对象存储拉进来，最后得到一个没有决策价值的功能总表。</p>
+<p>这篇围绕 ChatShare 的第一阶段目标做静态调研：一个共享 Key、上传/下载 API、文件名或 object key 与 URL 明确关联、尽量轻量、不把账号体系和存储集群提前塞进来。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>如果第一版要的是“上传到指定路径，路径和文件名直接出现在 URL”，<strong>Dufs</strong> 是最小、最清楚的上游契约；如果现在就需要原生临时 share、密码和过期，优先看 <strong>Copyparty</strong>；如果核心是按天数/下载次数管理随机分享链接，优先看 <strong>Gokapi</strong>。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>本文快照日期为 <strong>2026-08-03</strong>。共纳入 16 个候选，证据来自官方仓库元数据、README、命令/API 文档、release、license、archive/deprecation 与 security notice。本文没有把仓库声明写成实跑结论，也没有进行统一 runtime benchmark；运行和部署属于 shortlist 之后的独立任务。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把分享分成三类">先把“分享”分成三类<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E5%85%88%E6%8A%8A%E5%88%86%E4%BA%AB%E5%88%86%E6%88%90%E4%B8%89%E7%B1%BB" class="hash-link" aria-label="先把“分享”分成三类的直接链接" title="先把“分享”分成三类的直接链接" translate="no">​</a></h2>
+<!-- -->
+<ul>
+<li class=""><strong>路径型文件服务器</strong>：文件树就是 URL 树，最接近“指定 key/path 上传，再拿到稳定地址”。</li>
+<li class=""><strong>临时分享系统</strong>：服务端生成 share ID，重点是过期、下载次数、密码、撤销和收件人体验。</li>
+<li class=""><strong>S3 / object storage</strong>：应用通过 bucket/object API 管理对象，语义最接近七牛，但通常也带来 access/secret、policy、lifecycle 和更大的运维面。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="16-个候选的全景图">16 个候选的全景图<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#16-%E4%B8%AA%E5%80%99%E9%80%89%E7%9A%84%E5%85%A8%E6%99%AF%E5%9B%BE" class="hash-link" aria-label="16 个候选的全景图的直接链接" title="16 个候选的全景图的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>项目</th><th>类别</th><th>最有价值的能力</th><th>当前主要问题</th><th>第一轮判断</th></tr></thead><tbody><tr><td><a href="https://github.com/sigoden/dufs" target="_blank" rel="noopener noreferrer" class="">Dufs</a></td><td>路径型文件服务器</td><td>PUT/GET/WebDAV，路径直接变 URL</td><td>没有原生 share metadata/TTL</td><td><strong>入围：最小路径契约</strong></td></tr><tr><td><a href="https://github.com/9001/copyparty" target="_blank" rel="noopener noreferrer" class="">Copyparty</a></td><td>文件服务器 + share</td><td>直接路径、resumable upload、临时 share、file/dir key</td><td>功能和配置面很大</td><td><strong>入围：丰富混合方案</strong></td></tr><tr><td><a href="https://github.com/filebrowser/filebrowser" target="_blank" rel="noopener noreferrer" class="">File Browser</a></td><td>Web 文件管理器</td><td>漂亮的目录管理体验</td><td>宣布停止维护，仍有未修安全边界</td><td>淘汰，保留 UX 参考</td></tr><tr><td>Droppy</td><td>历史 Web 文件管理器</td><td>用户熟悉的简单文件存储体验</td><td>npm 最新 2020，原仓库不可用</td><td>仅作需求参照</td></tr><tr><td><a href="https://github.com/drakkan/sftpgo" target="_blank" rel="noopener noreferrer" class="">SFTPGo</a></td><td>企业文件传输平台</td><td>SFTP/HTTP/WebDAV、多云后端、用户与 public links</td><td>身份、协议和 license 面过重</td><td>观察</td></tr><tr><td><a href="https://github.com/OpenListTeam/OpenList" target="_blank" rel="noopener noreferrer" class="">OpenList</a></td><td>云盘聚合器</td><td>多 storage、permalink、preview、WebDAV</td><td>重点是聚合/转发，不是最小存储底座</td><td>参考 UI/聚合能力</td></tr><tr><td><a href="https://github.com/Forceu/Gokapi" target="_blank" rel="noopener noreferrer" class="">Gokapi</a></td><td>临时分享</td><td>过期、下载次数、file request、REST、S3</td><td>share ID 模型，不是指定 object path</td><td><strong>入围：临时生命周期</strong></td></tr><tr><td><a href="https://github.com/dutchcoders/transfer.sh" target="_blank" rel="noopener noreferrer" class="">transfer.sh</a></td><td>curl 临时分享</td><td>最小 PUT + 返回链接，Max-Days/Downloads</td><td>官方 README 有 auth/IP bypass 警告</td><td>安全问题解决前淘汰</td></tr><tr><td><a href="https://github.com/szabodanika/microbin" target="_blank" rel="noopener noreferrer" class="">MicroBin</a></td><td>paste/file share</td><td>小型单文件、动物名 ID、过期、加密</td><td>paste 模型，不是 object key</td><td>轻量参考</td></tr><tr><td><a href="https://github.com/stonith404/pingvin-share" target="_blank" rel="noopener noreferrer" class="">Pingvin Share</a></td><td>完整分享产品</td><td>WeTransfer 式 UI、收件人、reverse share</td><td>原项目已归档</td><td>淘汰原项目</td></tr><tr><td><a href="https://github.com/smp46/pingvin-share-x" target="_blank" rel="noopener noreferrer" class="">Pingvin Share X</a></td><td>完整分享产品</td><td>维护中的 Pingvin 继任者</td><td>Node/Prisma/Docker-first，明显更重</td><td>产品体验参考</td></tr><tr><td><a href="https://github.com/minio/minio" target="_blank" rel="noopener noreferrer" class="">MinIO</a></td><td>S3 object store</td><td>经典 bucket/object 与 SDK 语义</td><td>Community 仓不再维护、source-only</td><td>只作 S3 语义参考</td></tr><tr><td><a href="https://github.com/deuxfleurs-org/garage" target="_blank" rel="noopener noreferrer" class="">Garage</a></td><td>分布式 S3</td><td>小中规模跨节点复制</td><td>多节点价值不是第一阶段需要</td><td>观察</td></tr><tr><td><a href="https://github.com/seaweedfs/seaweedfs" target="_blank" rel="noopener noreferrer" class="">SeaweedFS</a></td><td>分布式 file/object store</td><td>S3、Filer、WebDAV、TTL、tiering</td><td>即使 mini 也包含多个子系统</td><td>初版过重</td></tr><tr><td><a href="https://github.com/rclone/rclone" target="_blank" rel="noopener noreferrer" class="">rclone serve</a></td><td>storage gateway</td><td>多后端转 HTTP/WebDAV/S3</td><td><code>serve s3</code> 官方仍标 Experimental</td><td>gateway 参考</td></tr><tr><td><a href="https://github.com/rustfs/rustfs" target="_blank" rel="noopener noreferrer" class="">RustFS</a></td><td>新 S3 object store</td><td>Apache-2.0、S3 core、single-node</td><td>lifecycle/distributed/KMS 仍 under testing</td><td>未来观察</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="dufs最小的路径就是-url">Dufs：最小的“路径就是 URL”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#dufs%E6%9C%80%E5%B0%8F%E7%9A%84%E8%B7%AF%E5%BE%84%E5%B0%B1%E6%98%AF-url" class="hash-link" aria-label="Dufs：最小的“路径就是 URL”的直接链接" title="Dufs：最小的“路径就是 URL”的直接链接" translate="no">​</a></h2>
+<p>Dufs 是一个 Rust 文件服务器。它没有先把自己包装成完整协作平台，而是把一个目录变成 HTTP/WebDAV 资源：</p>
+<ul>
+<li class=""><code>PUT</code> 上传；</li>
+<li class=""><code>GET</code> / Range 下载；</li>
+<li class=""><code>DELETE</code> 删除；</li>
+<li class=""><code>MKCOL</code> 建目录；</li>
+<li class=""><code>MOVE</code> 移动；</li>
+<li class="">account/path 级 read-only / read-write 权限；</li>
+<li class="">可把 anonymous read 与认证写入分开。</li>
+</ul>
+<p><img decoding="async" loading="lazy" alt="Dufs official demo" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/dufs-demo-f349d3235862b58391a674144587e95b.png" width="1279" height="843" class="img_ev3q"></p>
+<p>它最适合回答当前核心问题：如果上传目标是 <code>assets/2026/report.pdf</code>，最终 URL 就保留 <code>assets/2026/report.pdf</code>，而不是只返回一个和原路径无关的 share ID。</p>
+<p>它的缺口也很明确：没有原生 share 数据库、TTL、下载次数和 password-per-link。也就是说，Dufs 适合作为最薄的路径 API，不应该被误写成已经具备完整 ChatShare 生命周期。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="适合与不适合">适合与不适合<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E9%80%82%E5%90%88%E4%B8%8E%E4%B8%8D%E9%80%82%E5%90%88" class="hash-link" aria-label="适合与不适合的直接链接" title="适合与不适合的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>适合</td><td>第一版只做单 Key 上传、稳定路径 URL、直接下载</td></tr><tr><td>不适合</td><td>第一版就要过期、撤销、下载次数、每链接密码</td></tr><tr><td>封装边界</td><td>ChatShare 管 Key、key/path 校验、URL 输出；Dufs 管文件 HTTP/WebDAV</td></tr><tr><td>许可证/维护</td><td>Apache-2.0；2026 年仍活跃</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="copyparty路径-url-与临时-share-都有但面更大">Copyparty：路径 URL 与临时 share 都有，但面更大<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#copyparty%E8%B7%AF%E5%BE%84-url-%E4%B8%8E%E4%B8%B4%E6%97%B6-share-%E9%83%BD%E6%9C%89%E4%BD%86%E9%9D%A2%E6%9B%B4%E5%A4%A7" class="hash-link" aria-label="Copyparty：路径 URL 与临时 share 都有，但面更大的直接链接" title="Copyparty：路径 URL 与临时 share 都有，但面更大的直接链接" translate="no">​</a></h2>
+<p>Copyparty 同样把 URL prefix 映射到目录，但它已经发展成一个完整文件门户：</p>
+<ul>
+<li class="">raw PUT、multipart 和自定义 resumable upload；</li>
+<li class="">dedup、搜索、media index、thumbnail；</li>
+<li class="">WebDAV、SFTP、FTP、TFTP；</li>
+<li class="">account + volume 权限；</li>
+<li class="">file key、dir key；</li>
+<li class="">临时 share prefix、密码、过期和 visitor upload。</li>
+</ul>
+<p><img decoding="async" loading="lazy" alt="Copyparty official upload view, cropped to remove deployment status" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/copyparty-upload-public-ca42a6f1392a996f414453fba3def6dc.png" width="972" height="391" class="img_ev3q"></p>
+<p><em>Copyparty 官方上传界面；已裁去账号、磁盘容量和权限状态栏。</em></p>
+<p>它的优势是少写很多 share lifecycle；风险是 ChatShare 很容易从“薄封装”变成“把 Copyparty 所有能力重新暴露一遍”。如果选择它，第一版必须严格限定只用上传、下载、路径、share 和最小权限，不让 media/index/protocol 体系自动变成产品需求。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="适合与不适合-1">适合与不适合<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E9%80%82%E5%90%88%E4%B8%8E%E4%B8%8D%E9%80%82%E5%90%88-1" class="hash-link" aria-label="适合与不适合的直接链接" title="适合与不适合的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>适合</td><td>现在就需要直接路径 + 临时 share + expiry</td></tr><tr><td>不适合</td><td>目标只是几条稳定 HTTP API，要求最少配置和行为</td></tr><tr><td>封装边界</td><td>固定 volume/account，ChatShare 只暴露 allowlist</td></tr><tr><td>许可证/维护</td><td>MIT；2026 年高度活跃</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="gokapi真正围绕临时分享设计">Gokapi：真正围绕“临时分享”设计<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#gokapi%E7%9C%9F%E6%AD%A3%E5%9B%B4%E7%BB%95%E4%B8%B4%E6%97%B6%E5%88%86%E4%BA%AB%E8%AE%BE%E8%AE%A1" class="hash-link" aria-label="Gokapi：真正围绕“临时分享”设计的直接链接" title="Gokapi：真正围绕“临时分享”设计的直接链接" translate="no">​</a></h2>
+<p>Gokapi 不是文件树服务器，而是 Firefox Send 风格的分享产品。它原生考虑：</p>
+<ul>
+<li class="">按天数或下载次数过期；</li>
+<li class="">file request；</li>
+<li class="">用户/角色；</li>
+<li class="">dedup；</li>
+<li class="">本地或 S3 存储；</li>
+<li class="">REST API；</li>
+<li class="">内置和端到端加密；</li>
+<li class="">OIDC。</li>
+</ul>
+<p><img decoding="async" loading="lazy" alt="Gokapi official download view with demo filename redacted" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/gokapi-download-public-c03c87c66e5d9fe92bd084fc75da7c08.png" width="1464" height="869" class="img_ev3q"></p>
+<p><em>Gokapi 官方下载页；已遮盖 README 演示文件名和大小。</em></p>
+<p>它更适合“上传后生成一个临时链接”，不适合直接承担“调用者指定长期 object key”。如果 ChatShare 的第一性需求重新变成过期 share，而不是稳定路径，它就会比 Dufs 更自然。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="适合与不适合-2">适合与不适合<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E9%80%82%E5%90%88%E4%B8%8E%E4%B8%8D%E9%80%82%E5%90%88-2" class="hash-link" aria-label="适合与不适合的直接链接" title="适合与不适合的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>适合</td><td>过期、下载次数、撤销、文件请求是核心</td></tr><tr><td>不适合</td><td>URL 必须由调用者指定的路径和文件名组成</td></tr><tr><td>封装边界</td><td>ChatShare 调 REST API，避免重做 lifecycle</td></tr><tr><td>许可证/维护</td><td>AGPL-3.0；2026 年活跃</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么不先上-s3">为什么不先上 S3<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E5%85%88%E4%B8%8A-s3" class="hash-link" aria-label="为什么不先上 S3的直接链接" title="为什么不先上 S3的直接链接" translate="no">​</a></h2>
+<p>S3 的 bucket/object key 确实最接近七牛：对象 key 可以是 <code>assets/2026/report.pdf</code>，SDK、policy、presigned URL 和 lifecycle 也很成熟。</p>
+<p>但这次候选里没有一个同时满足“当前维护、成熟、轻量、单 Key、无需把对象存储运维也带进来”：</p>
+<ul>
+<li class="">MinIO Community 仓已经停止维护并改为 source-only；</li>
+<li class="">Garage 的价值在跨节点复制；</li>
+<li class="">SeaweedFS 是完整分布式存储平台；</li>
+<li class="">rclone <code>serve s3</code> 仍是 Experimental；</li>
+<li class="">RustFS 还在补 lifecycle/distributed/KMS 等能力。</li>
+</ul>
+<p>第一版只有上传和下载时，直接把 ChatShare 变成 S3 管理层，增加的复杂度可能大于获得的价值。S3 更适合作为以后 storage backend 或兼容层，而不是当前唯一入口。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="被淘汰项目也保留了什么">被淘汰项目也保留了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E8%A2%AB%E6%B7%98%E6%B1%B0%E9%A1%B9%E7%9B%AE%E4%B9%9F%E4%BF%9D%E7%95%99%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="被淘汰项目也保留了什么的直接链接" title="被淘汰项目也保留了什么的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Droppy / File Browser</strong>：告诉我们简单 Web 文件树为什么直观，也提醒维护与安全生命周期比 UI 更重要。</li>
+<li class=""><strong>transfer.sh</strong>：PUT 上传、返回 filename-bearing URL、delete URL 和 Max-Days/Downloads 的 API ergonomics 很值得借鉴。</li>
+<li class=""><strong>MicroBin</strong>：人类可读的 capability ID 和 paste/file 混合体验。</li>
+<li class=""><strong>Pingvin Share X</strong>：收件人、reverse share、密码、OIDC/LDAP 等完整产品形态。</li>
+<li class=""><strong>OpenList</strong>：permalink、preview 和多 storage 的浏览体验。</li>
+</ul>
+<p>调研不是只留下赢家。明确写出“为什么没有选”，才能避免下一轮重新走一遍相同路径。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="当前-shortlist">当前 shortlist<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E5%BD%93%E5%89%8D-shortlist" class="hash-link" aria-label="当前 shortlist的直接链接" title="当前 shortlist的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>目标</th><th>第一候选</th><th>第二候选</th></tr></thead><tbody><tr><td>指定 path/filename，直接得到稳定 URL</td><td><strong>Dufs</strong></td><td>Copyparty</td></tr><tr><td>路径 URL + 原生临时 share</td><td><strong>Copyparty</strong></td><td>Dufs + 自己补 metadata</td></tr><tr><td>过期/下载次数优先</td><td><strong>Gokapi</strong></td><td>Copyparty</td></tr><tr><td>完整 WeTransfer 式产品</td><td>Pingvin Share X</td><td>Gokapi</td></tr><tr><td>真正 S3/Qiniu API</td><td>后续单独开 object-storage 选型</td><td>当前不提前引入</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="给-chatshare-第一版的静态建议">给 ChatShare 第一版的静态建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E7%BB%99-chatshare-%E7%AC%AC%E4%B8%80%E7%89%88%E7%9A%84%E9%9D%99%E6%80%81%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="给 ChatShare 第一版的静态建议的直接链接" title="给 ChatShare 第一版的静态建议的直接链接" translate="no">​</a></h2>
+<p>如果继续按“后续再复杂化，先把 share 功能做出来”的方向，第一版契约可以收窄成：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">输入：</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  本地文件</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  可选 object key/path（默认安全文件名）</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  一个配置好的 upload Key</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">行为：</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  认证上传到指定 key/path</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">输出：</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  path 中保留 key 和 filename 的稳定 URL</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">下载：</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  GET 稳定 URL</span><br></div></code></pre></div></div>
+<p>账号、多用户 Key、TTL、下载次数、per-link password、reverse share、S3、Web UI 和 CDN 都留到后续明确需求。</p>
+<p>这个契约和 Dufs 最接近；Copyparty 与 Gokapi 则分别保留为“需要原生 share lifecycle”时的两种升级方向。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="下一步不是把三个候选全部启动一遍">下一步不是把三个候选全部启动一遍<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E4%B8%8B%E4%B8%80%E6%AD%A5%E4%B8%8D%E6%98%AF%E6%8A%8A%E4%B8%89%E4%B8%AA%E5%80%99%E9%80%89%E5%85%A8%E9%83%A8%E5%90%AF%E5%8A%A8%E4%B8%80%E9%81%8D" class="hash-link" aria-label="下一步不是把三个候选全部启动一遍的直接链接" title="下一步不是把三个候选全部启动一遍的直接链接" translate="no">​</a></h2>
+<p>静态报告已经把候选缩到三个。若以后还有一个静态证据无法回答、且会改变选择的问题，应单独开实践 Project，例如：</p>
+<blockquote>
+<p>在目标反向代理后，上游是否能正确保留 UTF-8 path、Range 和 Content-Disposition？</p>
+</blockquote>
+<p>实践应作为独立验证任务放到隔离、资源受控的环境中，一次只验证必要的最少候选，并提前定义资源、端口、停止和清理方式。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要一手来源">主要一手来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E4%B8%BB%E8%A6%81%E4%B8%80%E6%89%8B%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要一手来源的直接链接" title="主要一手来源的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://github.com/sigoden/dufs" target="_blank" rel="noopener noreferrer" class="">Dufs</a></li>
+<li class=""><a href="https://github.com/9001/copyparty" target="_blank" rel="noopener noreferrer" class="">Copyparty</a></li>
+<li class=""><a href="https://github.com/Forceu/Gokapi" target="_blank" rel="noopener noreferrer" class="">Gokapi</a></li>
+<li class=""><a href="https://github.com/filebrowser/filebrowser" target="_blank" rel="noopener noreferrer" class="">File Browser maintenance/security notice</a></li>
+<li class=""><a href="https://github.com/dutchcoders/transfer.sh" target="_blank" rel="noopener noreferrer" class="">transfer.sh security warning and API</a></li>
+<li class=""><a href="https://github.com/szabodanika/microbin" target="_blank" rel="noopener noreferrer" class="">MicroBin</a></li>
+<li class=""><a href="https://github.com/stonith404/pingvin-share" target="_blank" rel="noopener noreferrer" class="">Pingvin Share</a> and <a href="https://github.com/smp46/pingvin-share-x" target="_blank" rel="noopener noreferrer" class="">Pingvin Share X</a></li>
+<li class=""><a href="https://github.com/drakkan/sftpgo" target="_blank" rel="noopener noreferrer" class="">SFTPGo</a></li>
+<li class=""><a href="https://github.com/OpenListTeam/OpenList" target="_blank" rel="noopener noreferrer" class="">OpenList</a></li>
+<li class=""><a href="https://github.com/minio/minio" target="_blank" rel="noopener noreferrer" class="">MinIO community repository notice</a></li>
+<li class=""><a href="https://github.com/deuxfleurs-org/garage" target="_blank" rel="noopener noreferrer" class="">Garage</a></li>
+<li class=""><a href="https://github.com/seaweedfs/seaweedfs" target="_blank" rel="noopener noreferrer" class="">SeaweedFS</a></li>
+<li class=""><a href="https://rclone.org/commands/rclone_serve_s3/" target="_blank" rel="noopener noreferrer" class="">rclone serve s3</a></li>
+<li class=""><a href="https://github.com/rustfs/rustfs" target="_blank" rel="noopener noreferrer" class="">RustFS</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="图片来源">图片来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/chatshare-file-sharing-backend-survey#%E5%9B%BE%E7%89%87%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="图片来源的直接链接" title="图片来源的直接链接" translate="no">​</a></h2>
+<p>本文使用的图片均来自对应项目官方 GitHub README / repository attachments，用于项目调研说明：</p>
+<ul>
+<li class="">Dufs demo screenshot: <a href="https://github.com/sigoden/dufs" target="_blank" rel="noopener noreferrer" class="">sigoden/dufs README</a></li>
+<li class="">Copyparty upload screenshot, cropped to remove deployment/account status: <a href="https://github.com/9001/copyparty" target="_blank" rel="noopener noreferrer" class="">9001/copyparty README</a></li>
+<li class="">Gokapi download screenshot, with the demo filename/size redacted: <a href="https://github.com/Forceu/Gokapi" target="_blank" rel="noopener noreferrer" class="">Forceu/Gokapi README</a></li>
+</ul>]]></content:encoded>
+            <category>chatshare</category>
+            <category>file-sharing</category>
+            <category>self-hosted</category>
+            <category>object-storage</category>
+            <category>open-source</category>
+        </item>
         <item>
             <title><![CDATA[OpenAI Astra 的十个数学问题到底在研究什么？一篇读懂背景、难点与结果边界]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide</link>
@@ -3951,195 +4082,6 @@
             <category>discourse</category>
             <category>ai</category>
             <category>self-hosted</category>
-        </item>
-        <item>
-            <title><![CDATA[Hermes Multi-Agent：Profile、Subagent 与 Kanban 的三层协作模型]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban</guid>
-            <pubDate>Sat, 25 Jul 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[从源码梳理 Hermes 如何用 Profile、delegate_task、Kanban、Gateway multiplex 和 terminal backend 组合出不同人格、不同记忆与不同执行环境的多 Agent 系统。]]></description>
-            <content:encoded><![CDATA[<p>Hermes 不是用一个单一的“多智能体开关”来实现 Multi-Agent，而是把能力拆成几层：Profile 负责长期身份，<code>delegate_task</code> 负责临时并行，Kanban 负责持久协作，Gateway multiplex 负责多入口路由，terminal backend 负责把执行面放到本地、容器、SSH 或云环境。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>如果目标是“不同个性、不同记忆、长期分工的多个 Agent”，用 <strong>Profile + Kanban</strong>；如果只是“一次对话里并行查几个方向”，用 <strong><code>delegate_task</code></strong>；如果要“不同机器执行”，给对应 profile 或 session 配 <strong>SSH / Docker / Modal / Daytona</strong> 等 terminal backend。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把几个概念分开">先把几个概念分开<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E5%85%88%E6%8A%8A%E5%87%A0%E4%B8%AA%E6%A6%82%E5%BF%B5%E5%88%86%E5%BC%80" class="hash-link" aria-label="先把几个概念分开的直接链接" title="先把几个概念分开的直接链接" translate="no">​</a></h2>
-<p>Hermes 里的 Multi-Agent 至少有五个相关概念，它们解决的问题不同：</p>
-<table><thead><tr><th>层级</th><th>机制</th><th>解决什么</th><th>生命周期</th><th>是否有独立人格/记忆</th></tr></thead><tbody><tr><td>长期身份</td><td>Profile</td><td>独立配置、人格、记忆、技能、会话、密钥</td><td>长期</td><td>是</td></tr><tr><td>临时并行</td><td><code>delegate_task</code> subagent</td><td>同一次任务内并行推理或局部探索</td><td>单次任务</td><td>默认不是</td></tr><tr><td>持久协作</td><td>Kanban</td><td>多 profile 之间用任务板交接、重试、审计</td><td>跨进程、跨天</td><td>是，按 assignee profile</td></tr><tr><td>多入口路由</td><td>Gateway multiplex</td><td>一个 gateway 同时服务多个 profile</td><td>gateway 进程期</td><td>是，按路由 profile</td></tr><tr><td>执行环境</td><td>terminal backend / SSH mode</td><td>把 terminal、file、code 工具放到本机、容器、远端或云</td><td>profile 或 session 级</td><td>不直接决定人格</td></tr></tbody></table>
-<p>可以把它理解成下面这张图：</p>
-<!-- -->
-<p>这篇文章按源码路径解释这些层怎么配合。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="profile真正的长期-agent-身份">Profile：真正的长期 Agent 身份<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#profile%E7%9C%9F%E6%AD%A3%E7%9A%84%E9%95%BF%E6%9C%9F-agent-%E8%BA%AB%E4%BB%BD" class="hash-link" aria-label="Profile：真正的长期 Agent 身份的直接链接" title="Profile：真正的长期 Agent 身份的直接链接" translate="no">​</a></h2>
-<p>Profile 是 Hermes 的长期多 Agent 基础。源码注释直接把它定义成“多个隔离 Hermes 实例”的管理层：每个 profile 都是一个独立 <code>HERMES_HOME</code>，拥有自己的 <code>config.yaml</code>、<code>.env</code>、memory、sessions、skills、gateway、cron 和 logs。对应代码在 <code>hermes_cli/profiles.py:1</code>。</p>
-<p>默认 profile 是根目录本身，named profile 在 <code>profiles/&lt;name&gt;/</code> 下。<code>get_profile_dir()</code> 把 <code>default</code> 映射到默认 Hermes home，把 named profile 映射到 profiles 目录，见 <code>hermes_cli/profiles.py:367</code>。</p>
-<p>创建一个 profile 时，Hermes 会初始化一组目录：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">memories/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">sessions/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">skills/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">skins/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">logs/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">plans/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">workspace/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">cron/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">home/</span><br></div></code></pre></div></div>
-<p>这组目录定义在 <code>hermes_cli/profiles.py:39</code>。也就是说，profile 不是一个标签，而是一套完整状态目录。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="人格soulmd">人格：<code>SOUL.md</code><a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E4%BA%BA%E6%A0%BCsoulmd" class="hash-link" aria-label="人格soulmd的直接链接" title="人格soulmd的直接链接" translate="no">​</a></h3>
-<p>Profile 的人格主要来自 profile-local <code>SOUL.md</code>。用户文档也明确说：<code>--clone</code> 会复制 <code>config.yaml</code>、<code>.env</code>、<code>SOUL.md</code> 和 skills；如果要不同 personality，可以编辑目标 profile 的 <code>SOUL.md</code>，见 <code>website/docs/user-guide/profiles.md:47</code>。</p>
-<p>系统提示构建时会从当前 <code>get_hermes_home()/SOUL.md</code> 读取身份内容。这样 <code>researcher</code> 和 <code>writer</code> 可以拥有不同的叙述风格、职责边界和默认行为。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="记忆memoriesmemorymd-与-memoriesusermd">记忆：<code>memories/MEMORY.md</code> 与 <code>memories/USER.md</code><a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E8%AE%B0%E5%BF%86memoriesmemorymd-%E4%B8%8E-memoriesusermd" class="hash-link" aria-label="记忆memoriesmemorymd-与-memoriesusermd的直接链接" title="记忆memoriesmemorymd-与-memoriesusermd的直接链接" translate="no">​</a></h3>
-<p>内置记忆也跟随 profile。<code>memory_tool</code> 使用当前 <code>get_hermes_home()/memories</code>，而不是 import 时固定一个全局路径。这是 profile 隔离很关键的一点：不同 profile 的 <code>MEMORY.md</code> / <code>USER.md</code> 不会自然混到一起。</p>
-<p>外部 memory provider 也是 profile 可配置的。以 Honcho 为例，文档明确提到 multi-agent profiles 会用不同 peer profiles 隔离 AI peer 的观察与结论，避免不同 agent 的上下文交叉污染，见 <code>website/docs/user-guide/features/honcho.md:31</code>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="配置与密钥configyaml--env">配置与密钥：<code>config.yaml</code> / <code>.env</code><a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E9%85%8D%E7%BD%AE%E4%B8%8E%E5%AF%86%E9%92%A5configyaml--env" class="hash-link" aria-label="配置与密钥configyaml--env的直接链接" title="配置与密钥configyaml--env的直接链接" translate="no">​</a></h3>
-<p>每个 profile 有自己的 <code>config.yaml</code> 与 <code>.env</code>。这使得不同 Agent 可以用不同模型、不同工具集、不同 terminal backend、不同 bot token 或 API key。</p>
-<p>多 profile gateway multiplex 时，密钥隔离更严格：<code>agent/secret_scope.py</code> 明确说明不能把所有 profile 的 <code>.env</code> union 到进程全局 <code>os.environ</code>，否则 profile A 的 key 可能泄漏给 profile B。它提供了 context-local secret scope，并在 multiplex active 但无 scope 时 fail-closed，见 <code>agent/secret_scope.py:1</code> 和 <code>agent/secret_scope.py:123</code>。</p>
-<p>具体 per-turn scope 在 <code>gateway/run.py:_profile_runtime_scope</code>：</p>
-<ul>
-<li class=""><code>set_hermes_home_override(profile_home)</code>：把 <code>get_hermes_home()</code> 指向当前路由 profile；</li>
-<li class=""><code>set_secret_scope(build_profile_secret_scope(profile_home))</code>：把该 profile 的 <code>.env</code> 作为当前 context 的密钥来源；</li>
-<li class="">结束时 reset 两个 contextvar。</li>
-</ul>
-<p>代码入口在 <code>gateway/run.py:1441</code>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="会话与-skills也随-profile">会话与 skills：也随 profile<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E4%BC%9A%E8%AF%9D%E4%B8%8E-skills%E4%B9%9F%E9%9A%8F-profile" class="hash-link" aria-label="会话与 skills：也随 profile的直接链接" title="会话与 skills：也随 profile的直接链接" translate="no">​</a></h3>
-<p>会话数据库默认是当前 <code>HERMES_HOME/state.db</code>，skills 目录也是当前 <code>HERMES_HOME/skills</code>。因此一个 profile 的会话历史、长期技能和 prompt snapshot 都可以独立演化。</p>
-<p>这就是为什么 Profile 才是 Hermes 里“真正的长期 Agent”：它有名字、有身份、有记忆、有配置、有密钥、有技能、有会话。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="delegate_task临时-subagent而不是另一个-profile"><code>delegate_task</code>：临时 subagent，而不是另一个 profile<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#delegate_task%E4%B8%B4%E6%97%B6-subagent%E8%80%8C%E4%B8%8D%E6%98%AF%E5%8F%A6%E4%B8%80%E4%B8%AA-profile" class="hash-link" aria-label="delegate_task临时-subagent而不是另一个-profile的直接链接" title="delegate_task临时-subagent而不是另一个-profile的直接链接" translate="no">​</a></h2>
-<p><code>delegate_task</code> 是 Hermes 的短期并行机制。它用于一次对话或一次任务中，把若干子任务分给临时子 Agent 做，最后把 summary 回流给父 Agent。</p>
-<p>源码文件 <code>tools/delegate_tool.py</code> 的开头说明了设计目标：子 Agent 有 fresh conversation、自己的 task id、受限 toolset、聚焦的 system prompt；父 Agent 只看到最终 summary，看不到子 Agent 的中间工具调用，见 <code>tools/delegate_tool.py:1</code>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="子-agent-怎么创建">子 Agent 怎么创建<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E5%AD%90-agent-%E6%80%8E%E4%B9%88%E5%88%9B%E5%BB%BA" class="hash-link" aria-label="子 Agent 怎么创建的直接链接" title="子 Agent 怎么创建的直接链接" translate="no">​</a></h3>
-<p><code>_build_child_agent()</code> 会构造一个新的 <code>AIAgent</code>，并传入：</p>
-<ul>
-<li class="">child prompt：由 goal + context 拼出；</li>
-<li class=""><code>quiet_mode=True</code>；</li>
-<li class=""><code>platform="subagent"</code>；</li>
-<li class=""><code>skip_context_files=True</code>；</li>
-<li class=""><code>skip_memory=True</code>；</li>
-<li class=""><code>parent_session_id</code>：指向父 session；</li>
-<li class=""><code>enabled_toolsets</code>：从父 Agent 工具集继承并过滤。</li>
-</ul>
-<p>关键调用在 <code>tools/delegate_tool.py:1050</code> 到 <code>tools/delegate_tool.py:1350</code> 一带。</p>
-<p>这里的 <code>skip_memory=True</code> 很关键：subagent 默认不是一个长期 profile identity，它不会自然带着自己的 <code>SOUL.md</code> 和长期 memory 生活。它更像是父 Agent 在一次任务里临时 fork 出来的匿名执行分支。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="工具隔离与安全限制">工具隔离与安全限制<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E5%B7%A5%E5%85%B7%E9%9A%94%E7%A6%BB%E4%B8%8E%E5%AE%89%E5%85%A8%E9%99%90%E5%88%B6" class="hash-link" aria-label="工具隔离与安全限制的直接链接" title="工具隔离与安全限制的直接链接" translate="no">​</a></h3>
-<p>子 Agent 的默认黑名单包括：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">delegate_task</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">clarify</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">memory</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">send_message</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">execute_code</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">cronjob</span><br></div></code></pre></div></div>
-<p>定义在 <code>tools/delegate_tool.py:44</code>。这意味着 leaf subagent 不能继续递归生子、不能向用户发起澄清、不能写共享 memory、不能跨平台发消息、不能自己创建 cron job。</p>
-<p><code>role="orchestrator"</code> 可以让子 Agent 保留 delegation 能力，但要受 <code>delegation.max_spawn_depth</code> 与 <code>delegation.orchestrator_enabled</code> 约束。默认 <code>max_spawn_depth=1</code>，所以默认是扁平结构：父 Agent 可以开子 Agent，子 Agent 不能再开孙 Agent。深度控制在 <code>tools/delegate_tool.py:467</code>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="并行限流与异步回流">并行、限流与异步回流<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E5%B9%B6%E8%A1%8C%E9%99%90%E6%B5%81%E4%B8%8E%E5%BC%82%E6%AD%A5%E5%9B%9E%E6%B5%81" class="hash-link" aria-label="并行、限流与异步回流的直接链接" title="并行、限流与异步回流的直接链接" translate="no">​</a></h3>
-<p><code>delegation.max_concurrent_children</code> 控制一次 fan-out 的最大并行子 Agent 数，默认是 3，见 <code>tools/delegate_tool.py:354</code>。</p>
-<p>批量任务会通过 daemon thread pool 并行运行，核心逻辑在 <code>tools/delegate_tool.py:2457</code> 到 <code>tools/delegate_tool.py:2680</code>。顶层 Agent 调用 <code>delegate_task</code> 时，<code>run_agent.py:_dispatch_delegate_task</code> 会强制 background：父会话不阻塞，子 Agent 完成后结果作为新的 completion event 回到原会话，见 <code>run_agent.py:5696</code>。</p>
-<p>异步 registry 在 <code>tools/async_delegation.py</code>。它会把 dispatch 和 completion 记录到当前 profile 的 <code>state.db</code>，并通过共享 completion queue 把结果送回 CLI / gateway drain loop，见 <code>tools/async_delegation.py:1</code>、<code>tools/async_delegation.py:425</code> 和 <code>tools/async_delegation.py:632</code>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="适合和不适合的场景">适合和不适合的场景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E9%80%82%E5%90%88%E5%92%8C%E4%B8%8D%E9%80%82%E5%90%88%E7%9A%84%E5%9C%BA%E6%99%AF" class="hash-link" aria-label="适合和不适合的场景的直接链接" title="适合和不适合的场景的直接链接" translate="no">​</a></h3>
-<p><code>delegate_task</code> 适合：</p>
-<ul>
-<li class="">并行阅读几个独立文件；</li>
-<li class="">让两个子 Agent 分别调研 A/B 方案；</li>
-<li class="">让子 Agent 做代码 review、资料摘录、局部验证；</li>
-<li class="">父 Agent 需要一个短 summary 才能继续推理。</li>
-</ul>
-<p>它不适合：</p>
-<ul>
-<li class="">需要跨天继续的工作；</li>
-<li class="">需要长期身份、长期记忆、长期技能演化的 Agent；</li>
-<li class="">需要人类中途评论、block/unblock、审计 trail 的流程；</li>
-<li class="">需要不同 profile 各自带不同 <code>SOUL.md</code> 与 <code>.env</code> 的工作。</li>
-</ul>
-<p>这些应该交给 Kanban + Profile。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="kanban把-profile-当成长期-worker-调度">Kanban：把 profile 当成长期 worker 调度<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#kanban%E6%8A%8A-profile-%E5%BD%93%E6%88%90%E9%95%BF%E6%9C%9F-worker-%E8%B0%83%E5%BA%A6" class="hash-link" aria-label="Kanban：把 profile 当成长期 worker 调度的直接链接" title="Kanban：把 profile 当成长期 worker 调度的直接链接" translate="no">​</a></h2>
-<p>Kanban 是 Hermes 里最像“多 Agent 协作系统”的机制。文档把它定义为一个 SQLite-backed durable task board：所有 profile 共享同一个 board，每个 task 有 assignee，每个 worker 是完整 OS process，带自己的 identity。见 <code>website/docs/user-guide/features/kanban.md:7</code>。</p>
-<p>官方文档也明确比较了 Kanban 和 <code>delegate_task</code>：</p>
-<table><thead><tr><th>维度</th><th><code>delegate_task</code></th><th>Kanban</th></tr></thead><tbody><tr><td>形态</td><td>RPC / fork-join</td><td>Durable queue + state machine</td></tr><tr><td>子 Agent</td><td>匿名 subagent</td><td>named profile worker</td></tr><tr><td>记忆</td><td>默认无长期记忆</td><td>使用 assignee profile 的长期记忆</td></tr><tr><td>恢复</td><td>不可恢复</td><td>可 block、unblock、retry、reclaim</td></tr><tr><td>审计</td><td>summary 回流</td><td>SQLite events / comments / runs</td></tr><tr><td>人类介入</td><td>不支持</td><td>可以评论、阻塞、解阻塞</td></tr></tbody></table>
-<p>对应说明在 <code>website/docs/user-guide/features/kanban.md:32</code>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="dispatcher-如何-spawn-worker">dispatcher 如何 spawn worker<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#dispatcher-%E5%A6%82%E4%BD%95-spawn-worker" class="hash-link" aria-label="dispatcher 如何 spawn worker的直接链接" title="dispatcher 如何 spawn worker的直接链接" translate="no">​</a></h3>
-<p>Kanban dispatcher 会扫描 ready tasks，检查 assignee 是否是一个真实 Hermes profile，然后 claim 任务并调用 <code>_default_spawn()</code>。调度主逻辑在 <code>hermes_cli/kanban_db.py:7240</code>。</p>
-<p><code>_default_spawn()</code> 的核心动作是启动一个子进程：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">hermes -p &lt;assignee&gt; --cli --accept-hooks chat -q "work kanban task &lt;task_id&gt;"</span><br></div></code></pre></div></div>
-<p>源码入口在 <code>hermes_cli/kanban_db.py:7904</code>。它会给 worker 注入一组环境变量：</p>
-<table><thead><tr><th>变量</th><th>含义</th></tr></thead><tbody><tr><td><code>HERMES_HOME</code></td><td>assignee profile 的 home，让 worker 读取自己的配置、记忆和 skills</td></tr><tr><td><code>HERMES_PROFILE</code></td><td>worker 的 profile 名，用于评论署名</td></tr><tr><td><code>HERMES_KANBAN_TASK</code></td><td>当前任务 id</td></tr><tr><td><code>HERMES_KANBAN_WORKSPACE</code></td><td>当前任务 workspace</td></tr><tr><td><code>HERMES_KANBAN_DB</code></td><td>当前 board 的 SQLite 路径</td></tr><tr><td><code>HERMES_KANBAN_BOARD</code></td><td>当前 board slug</td></tr><tr><td><code>HERMES_KANBAN_WORKSPACES_ROOT</code></td><td>当前 board 的 workspace root</td></tr><tr><td><code>TERMINAL_CWD</code></td><td>pin 到任务 workspace</td></tr></tbody></table>
-<p><code>HERMES_HOME</code> 注入逻辑在 <code>hermes_cli/kanban_db.py:7933</code>，board / workspace pinning 在 <code>hermes_cli/kanban_db.py:7994</code>，最终 <code>subprocess.Popen</code> 在 <code>hermes_cli/kanban_db.py:8069</code>。</p>
-<p>这意味着 Kanban worker 不是匿名子 Agent，而是一个完整 profile：它会使用 assignee profile 的 <code>SOUL.md</code>、memory、skills、model、toolsets、secrets 和 terminal backend。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="worker-协议">worker 协议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#worker-%E5%8D%8F%E8%AE%AE" class="hash-link" aria-label="worker 协议的直接链接" title="worker 协议的直接链接" translate="no">​</a></h3>
-<p>每个 Kanban worker 的系统提示都会注入 <code>KANBAN_GUIDANCE</code>：</p>
-<ol>
-<li class="">先调用 <code>kanban_show()</code> 读任务、父任务 handoff、历史尝试和评论；</li>
-<li class="">进入 <code>$HERMES_KANBAN_WORKSPACE</code> 工作；</li>
-<li class="">长任务定期 <code>kanban_heartbeat()</code>；</li>
-<li class="">完成时 <code>kanban_complete()</code>；卡住时 <code>kanban_block()</code>。</li>
-</ol>
-<p>文档说明见 <code>website/docs/user-guide/features/kanban.md:361</code>。</p>
-<p>如果 worker 进程正常退出但任务仍是 running，dispatcher 会认为这是 protocol violation，而不是直接把任务当完成。这样任务状态不会只靠文本输出漂移，而是必须通过 <code>kanban_*</code> 工具落库。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="orchestrator-profile">orchestrator profile<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#orchestrator-profile" class="hash-link" aria-label="orchestrator profile的直接链接" title="orchestrator profile的直接链接" translate="no">​</a></h3>
-<p>Kanban 还支持 orchestrator 模式：一个 profile 不自己做实现，而是把高层目标拆成多个子任务，分配给 researcher、coder、writer、reviewer 等 specialist profile。</p>
-<p>文档里的推荐做法是：orchestrator profile 只开 <code>kanban</code> / gateway / memory 等控制面工具，关闭 terminal / file / code / web 这类实现工具，避免它“忍不住自己干活”，见 <code>website/docs/user-guide/features/kanban.md:430</code>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="gateway-multiplex一个入口服务多个-profile">Gateway multiplex：一个入口服务多个 profile<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#gateway-multiplex%E4%B8%80%E4%B8%AA%E5%85%A5%E5%8F%A3%E6%9C%8D%E5%8A%A1%E5%A4%9A%E4%B8%AA-profile" class="hash-link" aria-label="Gateway multiplex：一个入口服务多个 profile的直接链接" title="Gateway multiplex：一个入口服务多个 profile的直接链接" translate="no">​</a></h2>
-<p>默认情况下，每个 profile 可以跑自己的 gateway：</p>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">coder gateway start</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">writer gateway start</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">researcher gateway start</span><br></div></code></pre></div></div>
-<p>这是一 profile 一进程，隔离最清晰。文档在 <code>website/docs/user-guide/multi-profile-gateways.md:5</code>。</p>
-<p>另一种模式是 multiplex：default gateway 作为唯一入口进程，同时服务机器上的多个 profile。开启方式：</p>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">hermes config set gateway.multiplex_profiles true</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">hermes gateway restart</span><br></div></code></pre></div></div>
-<p>文档说明见 <code>website/docs/user-guide/multi-profile-gateways.md:59</code>。</p>
-<p>multiplex 的关键不是“把所有 profile 配置混进一个进程”，而是每个 turn 动态切 profile scope：</p>
-<!-- -->
-<p>同时，gateway session key 会按 profile namespace 隔离。默认 profile 继续用历史兼容的 <code>agent:main</code>，named profile 用 <code>agent:&lt;profile&gt;</code>，这样同一个平台、同一个 chat 在不同 profile 下不会撞 session。实现见 <code>gateway/session.py:851</code> 和 <code>gateway/session.py:1300</code>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="多机器靠执行-backend不靠-profile-名字本身">多机器：靠执行 backend，不靠 profile 名字本身<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E5%A4%9A%E6%9C%BA%E5%99%A8%E9%9D%A0%E6%89%A7%E8%A1%8C-backend%E4%B8%8D%E9%9D%A0-profile-%E5%90%8D%E5%AD%97%E6%9C%AC%E8%BA%AB" class="hash-link" aria-label="多机器：靠执行 backend，不靠 profile 名字本身的直接链接" title="多机器：靠执行 backend，不靠 profile 名字本身的直接链接" translate="no">​</a></h2>
-<p>Profile 不是 sandbox，也不是机器。它只是 Hermes 状态目录隔离。用户文档特别提醒：profile 和 workspace / sandbox 是不同概念；local backend 下，agent 仍然有同一个 OS 用户能访问的文件权限，见 <code>website/docs/user-guide/profiles.md:125</code>。</p>
-<p>如果要让 Agent 到不同机器或不同隔离环境工作，要配置 terminal backend。</p>
-<p>文档列出的 backend 包括：</p>
-<table><thead><tr><th>Backend</th><th>作用</th></tr></thead><tbody><tr><td><code>local</code></td><td>在当前机器执行，默认方式</td></tr><tr><td><code>docker</code></td><td>容器隔离，适合安全和复现</td></tr><tr><td><code>ssh</code></td><td>远端机器，适合把 Agent 执行面放到服务器</td></tr><tr><td><code>singularity</code></td><td>HPC / rootless container 场景</td></tr><tr><td><code>modal</code></td><td>serverless cloud 执行</td></tr><tr><td><code>daytona</code></td><td>cloud sandbox workspace</td></tr></tbody></table>
-<p>见 <code>website/docs/user-guide/features/tools.md:56</code>。</p>
-<p>Profile 级配置示例：</p>
-<div class="language-yaml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-yaml codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token key atrule" style="color:#00a4db">terminal</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">backend</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> ssh</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">cwd</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> /absolute/path/to/project</span><br></div></code></pre></div></div>
-<p>这会让该 profile 的 terminal / file / code execution 默认走 SSH backend。</p>
-<p>另外，gateway session 也可以临时进入 SSH Mode。<code>tools/ssh_mode_tool.py</code> 提供模型可见控制面：</p>
-<ul>
-<li class=""><code>ssh_mode.status</code>：查看当前 session 是否在 SSH；</li>
-<li class=""><code>ssh_mode.list_targets</code>：列出 Hermes 管理的 SSH targets；</li>
-<li class=""><code>ssh_mode.request_use</code>：在授权后切入 SSH；</li>
-<li class=""><code>ssh_mode.request_local</code>：退出模型创建的 SSH binding。</li>
-</ul>
-<p>对应实现见 <code>tools/ssh_mode_tool.py:144</code>、<code>tools/ssh_mode_tool.py:170</code> 和 <code>tools/ssh_mode_tool.py:262</code>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="任务执行面和控制面要分开">任务执行面和控制面要分开<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E4%BB%BB%E5%8A%A1%E6%89%A7%E8%A1%8C%E9%9D%A2%E5%92%8C%E6%8E%A7%E5%88%B6%E9%9D%A2%E8%A6%81%E5%88%86%E5%BC%80" class="hash-link" aria-label="任务执行面和控制面要分开的直接链接" title="任务执行面和控制面要分开的直接链接" translate="no">​</a></h3>
-<p>SSH / Docker / Modal 影响的是任务执行面：</p>
-<ul>
-<li class=""><code>terminal</code></li>
-<li class="">file tools</li>
-<li class=""><code>execute_code</code></li>
-</ul>
-<p>但 Hermes 控制面仍属于本地 profile：</p>
-<ul>
-<li class="">skills</li>
-<li class="">memory</li>
-<li class="">cron</li>
-<li class="">session database</li>
-<li class="">gateway status</li>
-<li class="">profile config</li>
-</ul>
-<p>这也是为什么“远端机器”不等于“远端 Hermes profile”。如果目标是维护远端那套 Hermes，需要在那里单独部署 Hermes；如果只是让本地 profile 在远端工作区执行命令，配置 terminal backend 即可。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="三种典型组合">三种典型组合<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E4%B8%89%E7%A7%8D%E5%85%B8%E5%9E%8B%E7%BB%84%E5%90%88" class="hash-link" aria-label="三种典型组合的直接链接" title="三种典型组合的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-一次性并行调研">1. 一次性并行调研<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#1-%E4%B8%80%E6%AC%A1%E6%80%A7%E5%B9%B6%E8%A1%8C%E8%B0%83%E7%A0%94" class="hash-link" aria-label="1. 一次性并行调研的直接链接" title="1. 一次性并行调研的直接链接" translate="no">​</a></h3>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">用户问题 -&gt; 父 Agent -&gt; delegate_task(A/B/C) -&gt; 子 Agent summaries -&gt; 父 Agent 总结</span><br></div></code></pre></div></div>
-<p>适合短平快，不需要长期记忆。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-长期角色协作">2. 长期角色协作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#2-%E9%95%BF%E6%9C%9F%E8%A7%92%E8%89%B2%E5%8D%8F%E4%BD%9C" class="hash-link" aria-label="2. 长期角色协作的直接链接" title="2. 长期角色协作的直接链接" translate="no">​</a></h3>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">hermes profile create researcher --description "Searches docs, code, and web sources."</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">hermes profile create writer --description "Writes polished Chinese technical posts."</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">hermes profile create reviewer --description "Reviews claims, risks, and missing tests."</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">hermes kanban init</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">hermes gateway start</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">hermes kanban create "整理某个系统的公开技术文章" --assignee researcher</span><br></div></code></pre></div></div>
-<p>接下来可以让 researcher 完成资料、writer 接 synthesis、reviewer 做事实校验。每个 worker 都是自己的 profile。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-多环境执行">3. 多环境执行<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#3-%E5%A4%9A%E7%8E%AF%E5%A2%83%E6%89%A7%E8%A1%8C" class="hash-link" aria-label="3. 多环境执行的直接链接" title="3. 多环境执行的直接链接" translate="no">​</a></h3>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">hermes profile create remote-coder --description "Implements code on a remote staging host."</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">remote-coder config set terminal.backend ssh</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">remote-coder config set terminal.cwd /srv/project</span><br></div></code></pre></div></div>
-<p><code>remote-coder</code> 的身份、记忆、skills 在本地 profile；它的执行面走远端 SSH。需要更强隔离时，用 Docker / Modal / Daytona。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="边界与风险">边界与风险<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E8%BE%B9%E7%95%8C%E4%B8%8E%E9%A3%8E%E9%99%A9" class="hash-link" aria-label="边界与风险的直接链接" title="边界与风险的直接链接" translate="no">​</a></h2>
-<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>Profile 不是安全沙箱</div><div class="admonitionContent_BuS1"><p>Profile 隔离的是 Hermes 应用状态，不是 OS 权限。local backend 下，同一 Unix 用户能读写的路径，profile 通常也能访问。强隔离需要容器、SSH 到独立机器、云 sandbox 或 OS 级权限隔离。</p></div></div>
-<p>需要特别注意：</p>
-<ol>
-<li class=""><strong>secrets 不能全局混用。</strong> multiplex 模式下应该通过 <code>get_secret()</code> 与 secret scope 读取密钥，避免直接读 <code>os.environ</code> 造成跨 profile 泄漏。</li>
-<li class=""><strong>修改 <code>SOUL.md</code> / skills / memory 不一定影响当前 session。</strong> 很多 prompt 内容在 session 开始或 prompt cache 中固定；修改后最好开新 session。</li>
-<li class=""><strong><code>delegate_task</code> 的结果是 self-report。</strong> 父 Agent 应验证子 Agent 声称写入的文件、URL 或外部副作用。</li>
-<li class=""><strong>Kanban board 是共享协作面。</strong> comments、metadata、task bodies 不应该写入 token、私密路径或不可公开信息。</li>
-<li class=""><strong>clone profile 会复制身份与密钥。</strong> <code>--clone</code> / <code>--clone-all</code> 很方便，但复制 <code>.env</code> 前要确认是否真的希望两个 profile 使用同一批凭据。</li>
-<li class=""><strong>多机器不是自动分布式。</strong> Hermes 默认是单机 profile + 单机 SQLite board；跨机器 fleet 需要额外部署、共享存储或外部 lane 设计。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="推荐心智模型">推荐心智模型<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-multi-agent-profile-subagent-kanban#%E6%8E%A8%E8%8D%90%E5%BF%83%E6%99%BA%E6%A8%A1%E5%9E%8B" class="hash-link" aria-label="推荐心智模型的直接链接" title="推荐心智模型的直接链接" translate="no">​</a></h2>
-<p>最后可以用这四句话记住 Hermes 的 Multi-Agent 设计：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Profile       = 长期身份、人格、记忆、配置、密钥、技能</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Subagent      = 一次任务里的匿名临时并行分支</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Kanban        = 多个长期 profile 之间的 durable work queue</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Terminal backend = 把某个 profile/session 的执行面放到本地、容器、远端或云</span><br></div></code></pre></div></div>
-<p>因此，Hermes 确实能做到“不同个性、不同记忆、不同机器协作”，但正确组合是：</p>
-<ul>
-<li class="">不同个性 / 记忆：创建不同 Profile；</li>
-<li class="">多角色长期协作：用 Kanban 把任务分配给不同 profile；</li>
-<li class="">临时并行探索：用 <code>delegate_task</code>；</li>
-<li class="">不同机器执行：给 profile 或 session 配 SSH / Docker / Modal / Daytona；</li>
-<li class="">一个入口服务多个 profile：在确认 secret 路径安全后开启 Gateway multiplex。</li>
-</ul>
-<p>这套设计的优点是边界清晰：长期身份、临时并行、持久调度、入口路由、执行环境各自独立，可以按任务复杂度逐层启用，而不是把所有“多 Agent”场景都塞进一个机制里。</p>]]></content:encoded>
-            <category>hermes</category>
-            <category>agent</category>
-            <category>multi-agent</category>
-            <category>profile</category>
-            <category>kanban</category>
         </item>
     </channel>
 </rss>
