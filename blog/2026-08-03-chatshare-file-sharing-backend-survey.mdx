@@ -31,9 +31,9 @@ flowchart LR
   A[文件分享需求] --> B[路径型文件服务器]
   A --> C[临时 capability share]
   A --> D[S3 / object storage]
-  B --> B1[/chosen/path/filename]
-  C --> C1[/random-share-id/filename]
-  D --> D1[/bucket/object-key]
+  B --> B1["/chosen/path/filename"]
+  C --> C1["/random-share-id/filename"]
+  D --> D1["/bucket/object-key"]
 ```
 
 - **路径型文件服务器**：文件树就是 URL 树，最接近“指定 key/path 上传，再拿到稳定地址”。
