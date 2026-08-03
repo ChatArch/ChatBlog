@@ -28,6 +28,7 @@
 - Added a source-audited analysis of OpenAI Astra's ten mathematics and theoretical-computer-science results, including theorem-by-theorem scope, Lean and Comparator evidence, model and cost caveats, public reactions, attribution, and peer-review boundaries.
 - Added a long-form guide to the ten Astra math problems, summarizing each problem's research background, historical bottlenecks, Astra result, proof route, limitations, and verification status.
 - Added a static ChatShare backend survey covering 16 direct-path file servers, temporary sharing systems, and S3/object-storage candidates, with sourced screenshots and a category-aware shortlist.
+- Added a review draft on the Agent Community operating model, connecting Human Admin, community infrastructure, long-lived Profiles, task gates, and the `Detect -> Judge -> Action` autonomy loop.
 
 ### Changed
 
