@@ -1,0 +1,251 @@
+---
+title: "RSS 与 RSSHub 入门：把网页更新变成可订阅的信息流"
+date: 2026-08-05
+slug: rss-and-rsshub-foundation-for-chatrss
+tags: [rss, rsshub, syndication, chatrss, automation]
+description: 从 RSS/Atom 的订阅模型讲起，解释 feed、阅读器、channel、item 和更新轮询，再说明 RSSHub 如何把没有原生订阅源的网站、API 和社区事件转换成可消费 feed，为 ChatRSS minor 版本做概念铺垫。
+---
+
+# RSS 与 RSSHub 入门：把网页更新变成可订阅的信息流
+
+准备给 ChatRSS 发 minor 版本之前，最好先把它依赖的两个概念讲清楚：**RSS 是什么**，以及 **RSSHub 为什么重要**。ChatRSS 不是要重做 RSSHub，而是把 RSSHub 已经生成的 feed 进一步变成 Agent 和团队可以处理的任务流。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+RSS 是一种开放的内容订阅格式，把“网页有没有更新”变成机器可读的 feed；RSSHub 则把大量原本没有 RSS 的网站、API 和社区页面转换成 RSS/Atom feed。ChatRSS 的位置在下一层：消费这些 feed，去重、记录，并把 issue、PR、评论这类更新转成需要处理的协作事件。
+:::
+
+:::info 证据口径
+本文参考 RSS Advisory Board 的 [RSS 2.0 Specification](https://www.rssboard.org/rss-specification)、IETF [RFC 4287 Atom Syndication Format](https://datatracker.ietf.org/doc/html/rfc4287)、[RSSHub 官方文档](https://docs.rsshub.app/) 与 [RSSHub GitHub 仓库](https://github.com/DIYgod/RSSHub)。文中对 RSSHub GitHub 路由的说明来自 RSSHub 当前公开源码中的 route 定义。
+:::
+
+## RSS 解决的是“更新发现”问题
+
+没有 RSS 时，一个人或程序想知道某个网页有没有新内容，通常只能重复打开页面、扫描 DOM、点进详情页、记住上次看到哪里。这对人是噪音，对程序是脆弱的爬虫。
+
+RSS 的思路很朴素：内容提供方发布一个稳定 URL，里面是一份 XML 文档，列出这个站点或频道最近的更新。阅读器或自动化程序定期拉取这个 URL，对比其中的条目，就知道哪些是新内容。
+
+```text
+内容站点 / 项目 / 社区
+        │ 发布
+        ▼
+RSS / Atom feed（稳定 URL + 结构化 XML）
+        │ 被定期拉取
+        ├── RSS 阅读器：给人看
+        └── 自动化程序：去重、归档、通知、触发任务
+```
+
+RSS 2.0 规范把 RSS 定义为 **Web content syndication format**，也就是 Web 内容聚合/分发格式。它不是一个阅读器，也不是某个中心化平台，而是一种开放格式。
+
+## 一个 feed 里有什么
+
+一个典型 RSS feed 可以粗略理解成两层：
+
+| 层级 | 作用 |
+| --- | --- |
+| `channel` | 这个订阅源本身的元信息，例如标题、站点链接、描述、语言、缓存建议等。 |
+| `item` | 一条具体更新，例如一篇文章、一个 issue、一条评论、一次发布。 |
+
+最小化以后，它像这样：
+
+```xml
+<rss version="2.0">
+  <channel>
+    <title>Example Updates</title>
+    <link>https://example.com/</link>
+    <description>Recent updates from Example</description>
+
+    <item>
+      <title>New article</title>
+      <link>https://example.com/posts/new-article</link>
+      <guid>https://example.com/posts/new-article</guid>
+      <pubDate>Wed, 05 Aug 2026 00:00:00 GMT</pubDate>
+      <description>Short summary...</description>
+    </item>
+  </channel>
+</rss>
+```
+
+对自动化来说，最关键的通常是：
+
+- `title`：人能读懂的事件标题；
+- `link`：回到原始页面的地址；
+- `guid` / `id`：去重用的稳定标识；
+- `pubDate` / `updated`：排序和时间窗口；
+- `description` / `content`：摘要或正文。
+
+RSSHub 和 ChatRSS 的分工，也基本围绕这些字段展开：RSSHub 负责把各种来源整理成 feed；ChatRSS 负责消费 feed、识别新条目、决定哪些条目值得通知或写入任务日志。
+
+## RSS、Atom、feed 不必混成一团
+
+日常说“RSS”时，很多人其实是在泛指“订阅源”。严格一点看：
+
+| 名称 | 本质 | 常见结构 |
+| --- | --- | --- |
+| RSS 2.0 | XML syndication format | `rss` / `channel` / `item` |
+| Atom | XML-based document format for feeds | `feed` / `entry` |
+| feed | 泛称 | 可以是 RSS，也可以是 Atom，阅读器通常都支持 |
+
+Atom RFC 4287 把 Atom 描述为一种 XML-based document format，用于描述由多个 `entry` 组成的 feed。它和 RSS 的实际用途很接近：让内容以结构化方式被订阅、同步和再分发。
+
+所以在工程里更实用的说法是：**我们消费 feed**。至于它底层是 RSS 2.0 还是 Atom，解析器应该负责兼容；业务逻辑只关心条目是不是新、链接指向哪里、事件类型是什么。
+
+## 为什么 RSS 对 Agent 仍然有价值
+
+很多网站已经有 App、推送、邮件通知、Webhook 或 GraphQL API。RSS 看起来像旧技术，但它对 Agent 和自动化有几个仍然很强的优点：
+
+1. **开放**：feed 是 URL + XML，不要求接入某个私有 SDK。
+2. **低耦合**：消费者不需要知道网站内部数据库或前端状态。
+3. **可缓存**：RSS 天然适合按时间间隔拉取和去重。
+4. **可组合**：一个阅读器、一个 bot、一个归档器可以消费同一份 feed。
+5. **可审计**：每条 item 通常都有原文链接和发布时间，便于回看。
+
+这很适合 ChatArch 这类工作流：Agent 不应该每隔几分钟去“刷网页”，也不应该只依赖人肉转发。更好的方式是把外部世界先整理成稳定事件流，再决定哪些事件进入任务系统。
+
+## RSS 的现实问题：不是每个站点都愿意给你 feed
+
+RSS 的理想前提是：内容源愿意发布 feed。但现实里经常遇到这些情况：
+
+| 问题 | 影响 |
+| --- | --- |
+| 网站没有原生 RSS | 只能靠网页解析或 API 封装。 |
+| feed 太粗 | 全站更新混在一起，无法按栏目、标签、用户、仓库过滤。 |
+| feed 太浅 | 只有标题和链接，没有正文或关键字段。 |
+| 现代页面依赖前端渲染 | 普通 XML/HTML 拉取拿不到有效内容。 |
+| 登录、限流、地区访问 | 需要 token、代理、缓存或自托管策略。 |
+| 更新噪音太多 | push、star、评论、issue、release 混在一起，必须再做事件分类。 |
+
+这就是 RSSHub 出场的地方。
+
+## RSSHub 做了什么
+
+RSSHub 的口号是 **Everything is RSSible**。它不是一个普通 RSS 阅读器，而是一个“feed 生成网络”：给定一个 route，把某个网站、社区、平台或 API 的内容转换成 RSS/Atom feed。
+
+它的基本模型是：
+
+```text
+原始来源：网站 / API / GitHub / Telegram / Bilibili / 论坛 / 博客
+        │
+        ▼
+RSSHub route：/platform/resource/params
+        │
+        ▼
+标准 feed：RSS / Atom
+        │
+        ├── Folo / RSS 阅读器
+        ├── RSSHub Radar / 发现工具
+        └── ChatRSS / bot / 归档器 / 自动化系统
+```
+
+RSSHub 官方 README 当前把它描述为世界上最大的 RSS network，并提到由 5,000+ global instances 组成；官方文档首页也强调 public instances、预置 routes、开源协议和生态工具。这里的重点不是数字本身，而是它的角色：**RSSHub 把“没有订阅源的地方”变成“有 route 的订阅源”。**
+
+## route 是 RSSHub 的核心抽象
+
+RSSHub 的 route 类似一个 URL 模板。你把参数填进去，就得到一个 feed 地址。
+
+RSSHub 官方入门文档用 Telegram 举例：route 是：
+
+```text
+/telegram/channel/:username/:routeParams?
+```
+
+把 `:username` 替换成 `awesomeRSSHub`，再加上实例域名，就得到：
+
+```text
+https://rsshub.app/telegram/channel/awesomeRSSHub
+```
+
+这个 URL 可以直接放进 RSS 阅读器，也可以被程序拉取。
+
+对 ChatRSS 来说，最相关的是 GitHub 路由。RSSHub 当前公开源码里能看到这些 GitHub route 形态：
+
+| 事件 | RSSHub route | 用途 |
+| --- | --- | --- |
+| Issues | `/github/issue/:user/:repo/:state?/:labels?` | 订阅仓库 issue，支持 open/closed/all 与 label 过滤。 |
+| Pull Requests | `/github/pull/:user/:repo/:state?/:labels?` | 订阅仓库 PR。 |
+| Comments | `/github/comments/:user/:repo/:number?` | 订阅 issue / PR 评论；不填 number 时可看更宽范围。 |
+| Repo events | `/github/repo_event/:owner/:repo/:types?` | 订阅仓库事件，例如创建、删除、fork、issue 事件等。 |
+
+这就解释了 ChatRSS 为什么不直接从 GitHub API 开始：RSSHub 已经把 GitHub 的多个事件面整理成 feed，ChatRSS 可以先消费这些 feed，再做任务判断。
+
+## public instance、self-host 与缓存
+
+RSSHub 可以用 public instance，也可以自托管。两者差别不只是“谁来出服务器”：
+
+| 模式 | 适合 | 风险 / 代价 |
+| --- | --- | --- |
+| Public instance | 快速试用、个人订阅、低频场景 | 稳定性、限流、可用 route、访问策略不完全受控。 |
+| Self-hosted instance | 团队自动化、内部任务流、需要 token/proxy/cache 的来源 | 需要部署、更新、监控、缓存和依赖管理。 |
+
+RSSHub 官方部署文档推荐 Docker Compose 部署，并说明某些能力可能涉及 Redis、browserless / Puppeteer、代理和环境变量配置。对 ChatRSS 这种“要稳定转成任务”的系统，自托管通常更可控：可以固定版本、配置 GitHub token、设置缓存时间、观察失败，并把实例作为基础设施管理。
+
+## RSSHub 不是任务系统
+
+RSSHub 的边界应该说清楚：它负责把来源变成 feed，但它不负责替团队判断“这条更新该不该处理”。
+
+例如 GitHub 仓库里：
+
+- 新 issue 可能需要修复；
+- 新 PR 可能需要 review；
+- 新 comment 可能需要回复；
+- repo_event 里的 push/star/fork 可能只是背景上下文。
+
+如果把这些都当成同等级通知，结果就是噪音。ChatRSS 当前的实现已经采用任务导向策略：
+
+| RSSHub feed 条目 | ChatRSS 处理方式 |
+| --- | --- |
+| issue | 作为任务事件，通知并可写入事件日志。 |
+| pull | 作为任务事件，通知并可写入事件日志。 |
+| comments | 作为任务事件，通知并可写入事件日志。 |
+| repo_event | 默认只落本地 JSONL，作为背景记录。 |
+
+这层判断不应该塞回 RSSHub。RSSHub 是 feed 生成器；ChatRSS 是 feed 消费后的协作解释层。
+
+## ChatRSS minor 版本应该围绕什么展开
+
+既然 RSSHub 解决“从来源到 feed”，ChatRSS minor 版本就应该把重点放在“从 feed 到任务流”：
+
+1. **配置体验**：默认仓库、RSSHub 实例、通知目标、文档 token 等配置要清楚可见。
+2. **route 模板**：明确支持哪些 RSSHub route，哪些属于任务事件，哪些只是背景事件。
+3. **去重与状态**：`seen` 状态、JSONL 日志、首次启动 silent sync 要可解释、可恢复。
+4. **通知策略**：issue / PR / comment 的文案应该直接给下一步处理建议，避免把背景事件变成打扰。
+5. **运行可见性**：`chatrss ps`、`cat`、server status 这类命令要帮助用户知道它是否在工作。
+6. **发布与文档**：PyPI minor 版本、README、ChatBlog、示例配置和快速开始要同步。
+
+这篇文章只是第一步：先让读者明白底层的信息流。后续如果写 ChatRSS minor release note，就可以少讲“什么是 RSSHub”，直接讲 ChatRSS 做了哪些封装。
+
+## 一个推荐的心智模型
+
+可以把这套系统分成三层：
+
+```text
+第一层：RSS / Atom
+  开放格式，负责表达“有哪些更新”。
+
+第二层：RSSHub
+  路由和抓取层，负责把不同网站/API 转成 feed。
+
+第三层：ChatRSS
+  协作解释层，负责去重、落盘、通知、写文档、区分任务和背景。
+```
+
+这个分层能避免两个常见误解：
+
+- 不要让 ChatRSS 重新实现 RSSHub 的 route 生态；
+- 不要期待 RSSHub 替团队完成任务优先级判断。
+
+正确方向是：RSSHub 越稳定，ChatRSS 越应该专注在“把 feed 变成可处理事件”。
+
+## 主要来源
+
+- [RSS 2.0 Specification — RSS Advisory Board](https://www.rssboard.org/rss-specification)
+- [RFC 4287 — The Atom Syndication Format](https://datatracker.ietf.org/doc/html/rfc4287)
+- [RSSHub 官方文档](https://docs.rsshub.app/)
+- [RSSHub GitHub 仓库](https://github.com/DIYgod/RSSHub)
+- [RSSHub Getting Started](https://docs.rsshub.app/guide/)
+- [RSSHub Deployment](https://docs.rsshub.app/deploy/)
+- [RSSHub GitHub issue route source](https://github.com/DIYgod/RSSHub/blob/master/lib/routes/github/issue.ts)
+- [RSSHub GitHub pull route source](https://github.com/DIYgod/RSSHub/blob/master/lib/routes/github/pulls.ts)
+- [RSSHub GitHub comments route source](https://github.com/DIYgod/RSSHub/blob/master/lib/routes/github/comments.ts)
+- [RSSHub GitHub repo_event route source](https://github.com/DIYgod/RSSHub/blob/master/lib/routes/github/repo-event.ts)
