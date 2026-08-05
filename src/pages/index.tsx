@@ -6,22 +6,22 @@ import styles from './index.module.css';
 
 const cards = [
   {
+    title: '时间轴归档',
+    description: '像 wzhecnu.cn 的时间轴一样，按年份集中展示全部文章，每条文章独立显示日期和标题。',
+    to: '/blog/archive',
+    action: '查看时间轴',
+  },
+  {
     title: '最新博客',
     description: '按时间倒序阅读最近发布的公开技术文章；页面底部可以继续翻到更早的分页。',
     to: '/blog',
     action: '打开博客首页',
   },
   {
-    title: '完整文章归档',
-    description: '按年份和日期查看全部历史文章，不再只依赖最近博文侧栏。',
-    to: '/blog/archive',
-    action: '查看完整归档',
-  },
-  {
-    title: '文档与知识块列表',
-    description: '长期可复用的文档、知识块和站点说明统一从这里进入。',
-    to: '/docs/intro',
-    action: '查看文档列表',
+    title: '标签索引',
+    description: '按主题标签回看文章，适合找同一方向的连续内容。',
+    to: '/blog/tags',
+    action: '按标签浏览',
   },
   {
     title: '源码优先',
@@ -33,24 +33,19 @@ const cards = [
 
 const browseLinks = [
   {
-    label: '完整文章历史',
+    label: '时间轴',
     to: '/blog/archive',
-    description: '一页看完全部博文，按日期浏览。',
+    description: '按年份分组浏览全部历史文章。',
   },
   {
-    label: '博客分页浏览',
-    to: '/blog/page/2',
-    description: '从第 2 页继续翻旧文章。',
+    label: '最新文章',
+    to: '/blog',
+    description: '从最近更新开始阅读。',
   },
   {
-    label: '标签索引',
+    label: '标签',
     to: '/blog/tags',
-    description: '按主题标签回看文章。',
-  },
-  {
-    label: '文档列表',
-    to: '/docs/intro',
-    description: '查看长期文档和知识块入口。',
+    description: '按主题方向筛选文章。',
   },
 ];
 
@@ -65,13 +60,13 @@ function HomepageHeader() {
         </p>
         <div className={styles.actions}>
           <Link className="button button--primary button--lg" to="/blog/archive">
-            浏览完整文章历史
+            查看时间轴归档
           </Link>
           <Link className="button button--secondary button--lg" to="/blog">
             阅读最新博客
           </Link>
-          <Link className="button button--secondary button--lg" to="/docs/intro">
-            查看文档列表
+          <Link className="button button--secondary button--lg" to="/blog/tags">
+            按标签浏览
           </Link>
         </div>
       </div>
@@ -84,10 +79,10 @@ function BrowseSection() {
     <section className={styles.browse}>
       <div className="container">
         <div className={styles.sectionHeader}>
-          <p className={styles.eyebrow}>Archive / Index</p>
-          <Heading as="h2">从这里找历史文章和文档</Heading>
+          <p className={styles.eyebrow}>Archive</p>
+          <Heading as="h2">先从时间轴找历史文章</Heading>
           <p>
-            主页直接暴露完整归档、分页、标签和文档列表入口；想回看旧文章时，不需要只靠“最近博文”侧栏慢慢翻。
+            完整归档现在是专门的时间轴页面：按年份分组，日期单独成列，不再把中文月份前缀塞进文章标题里。
           </p>
         </div>
         <div className={styles.browseGrid}>

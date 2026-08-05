@@ -55,13 +55,13 @@
 
 .browseGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
 .browseItem {
   display: flex;
-  min-height: 9rem;
+  min-height: 8rem;
   flex-direction: column;
   justify-content: space-between;
   padding: 1.25rem;

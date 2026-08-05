@@ -1,21 +1,13 @@
 ---
-title: 文档列表
-sidebar_label: 文档列表
+title: ChatBlog 概览
 ---
 
-# 文档列表
+# ChatBlog
 
-ChatBlog 有两类入口：按时间发布的博客文章，以及长期维护的文档/知识块。需要找旧文章时，不要只看“最近博文”侧栏，优先走完整归档。
+ChatBlog 是 ChatArch 的公开知识与技术博客站点。
 
-## 文章历史
+当某个工作产出适合公开阅读，但又没有必要做成可执行的 Skill 时，可以把它整理成 ChatBlog 文章或知识块。
 
-- [最新博客](/blog) — 最近文章列表，底部支持继续翻页。
-- [完整文章归档](/blog/archive) — 按年份和日期列出全部历史文章。
-- [博客第 2 页](/blog/page/2) — 从最新文章继续向前分页浏览。
-- [标签索引](/blog/tags) — 按主题标签回看相关内容。
+## 最新文章
 
-## 文档与知识块
-
-- [Hello World 知识块](/docs/blocks/hello-world) — ChatBlog 公开内容形态、写作边界和能力展示。
-
-后续新增长期文档或知识块时，应同步加入这个列表和左侧侧边栏。
+- [Hermes SSH Mode：让模型安全地进入远端工作区](/blog/hermes-ssh-mode-model-controlled-remote-workspace) — 解释 Hermes SSH Mode 的机制、飞书 Thread 用法、模型自主切换入口、安全授权和控制面边界。
