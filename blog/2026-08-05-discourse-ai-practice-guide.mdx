@@ -1,0 +1,331 @@
+---
+title: "Discourse AI 实践指南：把论坛变成 Agent 社区的 AI 工作台"
+date: 2026-08-05
+slug: discourse-ai-practice-guide
+tags: [discourse, ai, agent, self-hosted]
+---
+
+Discourse AI 不是“给论坛套一个聊天机器人”这么简单。更准确地说，它是一组嵌在 Discourse 里的 AI 能力：写作助手、AI Bot、语义搜索、相关话题、总结、垃圾信息检测、AI triage 和自动化报告。它适合增强 topic/comment 型社区，而不是替代 Mattermost、Discord 或 Slack 这类实时聊天入口。
+
+这篇文章回答三个问题：**Discourse AI 到底有什么功能？普通用户和管理员怎么用？我们在 ChatArch 这台自托管 Discourse 上实测到了什么？**
+
+<!-- truncate -->
+
+## 先说结论
+
+我们当前的判断是：
+
+- **Discourse 负责长期讨论和决策沉淀**：topic、post、category、tag、review、search 都适合留下可追踪上下文。
+- **Discourse AI 负责论坛内的辅助智能**：写作、解释、问答、总结、审核和路由建议。
+- **Mattermost / Discord-like 平台负责实时入口**：适合频道化聊天、即时通知和 bot 房间。
+- **Hermes / Agent Router 负责执行任务**：通过 API、webhook、plugin 或 automation 读写 Discourse，而不是把 Discourse AI 当作 Hermes 的原生 gateway。
+
+这次本机实践结果也很清楚：Discourse AI plugin 已启用，AI Helper 和 AI Bot 已开启，默认 LLM 可完成真实调用并写入 Discourse AI 审计日志；但 embeddings 和 summarization 当前未启用，所以 AI Search、Related Topics、Summarize 这几类能力只能作为“下一步可启用方向”，不能说已经在本站实测可用。
+
+## Discourse AI 是哪一层
+
+官方把 Discourse AI 描述为一套把 AI 集成进 Discourse 的功能集合。它现在是 bundled with Discourse core 的官方插件，不需要再单独安装外部 plugin；官方主文档也强调这些功能可以独立启用，并且不锁定单一模型供应商：管理员可以根据隐私、性能、能力和成本选择不同 provider。
+
+官方入口：
+
+- [Discourse AI](https://meta.discourse.org/t/discourse-ai/259214)
+- [Discourse AI features](https://discourse.org/ai)
+- [Discourse AI Self-Hosted Guide](https://meta.discourse.org/t/discourse-ai-self-hosted-guide/259598)
+
+我把它理解成三层：
+
+| 层 | 说明 | 在 Agent 社区里的位置 |
+| --- | --- | --- |
+| Discourse core | topic、post、category、tag、user、moderation、search | 长期事实源和讨论沉淀 |
+| Discourse AI | helper、bot、summary、semantic search、triage、spam detection | 论坛内辅助智能 |
+| 外部 Agent / Gateway | Hermes、任务 runner、Git/CI/文档工具 | 执行任务、回写结果、跨平台路由 |
+
+它不是实时聊天总线。真正要做“频道里 @bot，bot 立刻回复并调工具”的体验，Mattermost 这类 Slack-like 平台更直接；Discourse 更适合把一次讨论、一次任务、一条决策沉淀成一个有标题、有状态、有评论历史的 topic。
+
+## 官方功能速览
+
+Discourse AI 的功能很多，第一次使用时最容易混在一起。下面按“用户能感知什么”和“管理员要启用什么”来分。
+
+| 功能 | 官方用途 | 怎么用 | 启用前提 |
+| --- | --- | --- | --- |
+| [AI Bot](https://meta.discourse.org/t/enable-ai-bot/266012) | 和 Discourse 内的 AI agent 对话；支持选择 agent / LLM，多人可在同一个 bot 私信里互动 | 用户通过 AI bot 入口发起私信式对话；管理员可限制哪些用户/组可用 | Discourse AI enabled；至少一个 LLM；把 LLM 开放给 bot |
+| [Helper](https://meta.discourse.org/t/enable-ai-helper/283943) | 写 topic/reply 时生成标题、改写、审校、翻译、表格；阅读时解释/翻译选中文本 | 在 composer 或阅读页面中选择 AI helper 操作；官方文档也列出 Windows `CTRL ALT P`、macOS `⌘ ⌥ P` 快捷键 | Discourse AI enabled；LLM；相关 helper 开关/权限 |
+| [AI Search](https://meta.discourse.org/t/enable-ai-search/282420) | 用语义相似度找相关 topic，超越关键词匹配 | 搜索时出现 AI 结果或在完整搜索页切换 AI search | Embeddings 是硬前提；HyDE 等增强还需要 LLM |
+| [Related Topics](https://meta.discourse.org/t/enable-related-topics/281807) | 在读完一个 topic 后推荐语义相关 topic | 阅读 topic 后查看 related/suggested topics 区域 | Embeddings 是硬前提 |
+| [Summarize](https://meta.discourse.org/t/discourse-ai-summarization/262711) | 对长 topic 或 chat channel 生成摘要，快速 catch up | 在 topic map 或 chat channel 里触发 summary；可查看生成时间和模型 | 至少一个 LLM；`ai_summarization_enabled` 等设置 |
+| [Spam Detection](https://meta.discourse.org/t/discourse-ai-spam-detection/343541) | 用 AI 辅助判断垃圾帖并进入审核流程 | 管理员在 AI spam 页面配置扫描范围、模型和处理方式 | LLM；审核策略；适合和传统 trust level / review 队列配合 |
+| [AI Triage](https://meta.discourse.org/t/discourse-ai-ai-triage/281227) | 结合 Automation 自动分类、打标、回复、隐藏、flag 等 | 管理员配置 automation rule，让 AI 根据内容执行指定动作 | `discourse-ai` + `discourse-automation`；规则和权限边界 |
+
+第一轮最推荐先启用的不是所有功能，而是 **AI Bot + Helper**。它们最容易被人理解，也最不容易不小心改变社区结构。Search、Related Topics 和 Summarize 很有价值，但对 embeddings、summary agent、索引、成本和权限的要求更高，适合第二阶段再开。
+
+## 普通用户怎么用
+
+如果你只是社区用户，不需要知道模型 key 或后台配置。可以从三个入口开始。
+
+### 1. 写帖子时用 Helper
+
+在写 topic 或 reply 时，Helper 可以帮你做这些事：
+
+- 根据正文生成更清楚的标题；
+- 审校拼写、语法和表达；
+- 把一段话改成更正式、简短或结构化；
+- 生成 Markdown 表格；
+- 翻译选中文本；
+- 对图片生成 caption；
+- 把自然语言日期转换成 Markdown-friendly smart date。
+
+适合的用法是：先自己写背景、目标、证据，再让 Helper 清理表达。不要反过来只给一句“帮我写个方案”，否则 AI 会很容易补不存在的上下文。
+
+### 2. 用 AI Bot 问站内上下文问题
+
+AI Bot 更像一个站内助手。它可以回答和社区内容有关的问题，也可以按 persona/agent 切换不同回答方式。
+
+适合问：
+
+```text
+这个 topic 里已经确认了哪些结论？
+请把这段讨论整理成 5 条行动项。
+基于这个分类最近的 topic，哪些问题还没有 owner？
+帮我把这条任务改成可执行的 PRD。
+```
+
+不适合直接问：
+
+```text
+请直接部署生产服务。
+请删除这些数据。
+请把 API key 发出来。
+请替我批准这次成本开销。
+```
+
+涉及部署、删除、发布、权限、费用、凭据的动作，仍然应该由人确认，或者交给带审批边界的 Hermes / Agent Router。
+
+### 3. 在长讨论里用摘要和决策闭环
+
+当 Summarize 启用后，它最适合处理长 topic：
+
+```text
+背景很多 -> 先让 AI 总结争议点
+评论很多 -> 让 AI 提炼行动项
+即将收尾 -> 让 AI 写 accepted / rejected / follow-up 草稿
+人类确认 -> 结论进入 Decisions 或项目文档
+```
+
+这里的关键不是“让 AI 代替人做决定”，而是让 AI 降低读长 thread 的成本。最终决策仍然应该由人类明确回复 accepted、revise 或 reject。
+
+## 管理员怎么启用
+
+管理员侧可以按这个顺序做，别一口气把所有 AI 功能都打开。
+
+### 第一步：确认 Discourse AI plugin 和 LLM
+
+最小可用条件：
+
+```text
+Discourse AI plugin: enabled
+Default LLM model: configured
+AI secret: present, but never printed
+LLM validation: response status 200
+```
+
+在自托管环境里，key 应该进入 Discourse 自己的 secret store，或者进入服务级 `0600` secret 文件，再由部署脚本写入 Discourse；不要把 key 写进博客、项目报告、聊天记录或 PR。
+
+### 第二步：先开 Helper 和 AI Bot
+
+这两项更像“人类可控的助手”：
+
+```text
+ai_helper_enabled = true
+ai_bot_enabled = true
+ai_bot_enabled_llms includes the default LLM id
+```
+
+然后限制可用用户/组。早期建议先给管理员、维护者或小范围测试用户，而不是全站开放。
+
+### 第三步：再考虑 embeddings 和总结
+
+AI Search、Related Topics 需要 embeddings；Summarize 需要 summary agent / LLM 设置。它们不是“打开 Discourse AI 就自动有”的能力。
+
+启用前要先回答：
+
+- embeddings 由哪个 provider 提供？
+- 索引全站历史 topic 的成本和时间是多少？
+- 匿名用户是否能用 AI search？
+- summary 是否允许普通用户触发？
+- 生成结果缓存多久？
+- 审计日志保留多久？
+
+### 第四步：最后再开自动化和审核类能力
+
+Spam Detection 和 AI Triage 能改 review / tag / category / hidden / flag 等状态，影响比 Helper 大很多。它们适合在规则明确后启用：
+
+```text
+先 dry-run 或低风险动作
+再开放自动打标
+最后才考虑自动隐藏、自动回复或升级审核
+```
+
+对于 Agent 社区，AI triage 很适合未来做“topic 路由”：把 topic 按内容打上 `route-infra`、`route-skill`、`status-waiting-human` 等标签。但这一步应该和人工审核、日志和 rollback 一起设计。
+
+## 本机实践：我们验证了什么
+
+这次实践在 `zhihong.oray` 上的 ChatArch Discourse 服务完成。服务入口是：
+
+```text
+https://discourse.public.wzhecnu.cn/
+```
+
+站内记录 topic：
+
+```text
+https://discourse.public.wzhecnu.cn/t/discourse-ai-2026-08-05/17
+```
+
+当前站点匿名访问该 topic 会跳登录页，所以公开博客只记录无敏感摘要；完整实践记录留在站内 `Agent Runs` 分类。
+
+### 状态快照
+
+通过 Rails runner 读取非敏感状态，得到：
+
+| 项 | 当前值 |
+| --- | --- |
+| `discourse-ai` plugin | enabled |
+| `ai_helper_enabled` | `true` |
+| `ai_bot_enabled` | `true` |
+| `ai_default_llm_model` | `1` |
+| `ai_bot_enabled_llms` | `1` |
+| `ai_embeddings_enabled` | `false` |
+| `ai_summarization_enabled` | `false` |
+| 默认 LLM | `ChatArch Byted ark-code-latest` / OpenAI-compatible provider |
+| companion bot user | `ark-code-latest1` |
+
+这里没有输出任何 API key、URL secret、admin password、session、cookie 或 token。
+
+### 最小 LLM 调用
+
+我们没有只看后台开关，而是通过 Discourse AI 自己的 LLM facade 做了一次最小调用：
+
+```ruby
+DiscourseAi::Completions::Llm.proxy(model).generate(
+  prompt,
+  user: user,
+  max_tokens: 80,
+  feature_name: "chatarch_blog_practice",
+  feature_context: { task: "discourse_ai_blog", date: "2026-08-05" },
+)
+```
+
+返回结果是：
+
+```text
+Discourse AI 已通过站点配置的 LLM 成功完成一次最小实践调用。
+```
+
+审计摘要：
+
+| 项 | 值 |
+| --- | --- |
+| Audit id | `3` |
+| Feature | `chatarch_blog_practice` |
+| Model | `ark-code-latest` |
+| Response status | `200` |
+| Request tokens | `192` |
+| Response tokens | `17` |
+| Duration | `932 ms` |
+
+这说明模型配置、Discourse AI 调用路径和审计日志链路都是真实工作的。
+
+### 可见实践回复
+
+第二步，我们让 Discourse AI 根据当前站点状态生成 4 条中文实践建议，并把输出回写到上面的站内 topic。回写由模型 companion user `ark-code-latest1` 作为可见回复完成。
+
+审计摘要：
+
+| 项 | 值 |
+| --- | --- |
+| Topic | `Discourse AI 实践记录：2026-08-05` |
+| Category | `Agent Runs` |
+| Post | `#2` |
+| Audit id | `4` |
+| Feature | `chatarch_blog_visible_practice` |
+| Model | `ark-code-latest` |
+| Response status | `200` |
+| Request tokens | `334` |
+| Response tokens | `260` |
+| Duration | `6281 ms` |
+
+Rails readback 也确认：topic 里有 2 个 post，实践回复包含 marker、feature name 和 response status 200。
+
+## 这次没有验证什么
+
+有些能力官方存在，但本站当前还没启用，因此不能写成“已经跑通”。
+
+| 功能 | 当前状态 | 为什么不宣称实测 |
+| --- | --- | --- |
+| AI Search | `ai_embeddings_enabled=false` | 语义搜索依赖 embeddings |
+| Related Topics | `ai_embeddings_enabled=false` | 相关话题同样依赖 embeddings |
+| Summarize | `ai_summarization_enabled=false` | 总结开关未启用，summary agent 未作为本次实践开放 |
+| Spam Detection | 相关 AI agent disabled | 会进入审核/处置流程，需单独设计策略 |
+| AI Triage | 未启用自动化规则 | 会改分类、标签、隐藏、回复等状态，不能无审核开启 |
+
+这点很重要：**安装了 Discourse AI plugin，不等于每一个 AI feature 都已经可用。**博客和报告应该分清“官方支持”“本站已启用”“本站已实测”三种状态。
+
+## 和 Mattermost / Hermes 怎么分工
+
+当前 ChatArch Agent Community 更适合采用双层结构：
+
+```text
+Mattermost / realtime room
+  -> 快速讨论、通知、@bot、短消息
+  -> 适合 Hermes Gateway 或 Agent Router 做即时响应
+
+Discourse / topic space
+  -> 长期讨论、任务记录、设计、决策、审计
+  -> 适合 AI Helper、AI Bot、Summarize、Triage 做论坛内辅助
+```
+
+典型闭环可以是：
+
+```text
+1. 人在 Mattermost 里快速提出问题
+2. Agent Router 判断需要沉淀
+3. 创建或更新 Discourse topic
+4. Discourse AI 帮忙整理上下文、摘要和行动项
+5. Hermes / Agent 执行任务，把结果回写到 topic
+6. 人类确认 accepted / revise / reject
+7. 结论同步到项目文档、ChatBoard 或博客
+```
+
+这样分工比“所有事情都塞进一个聊天频道”稳得多。实时平台解决响应速度，Discourse 解决上下文寿命，Hermes 解决任务执行。
+
+## 实践建议
+
+如果你也在自托管 Discourse 上启用 AI，我建议按下面顺序推进：
+
+1. **先只跑 LLM validation**：确认模型能从 Discourse 容器内访问，审计日志有 response status 200。
+2. **先给小范围用户开 Helper / AI Bot**：它们是低风险的人类辅助入口。
+3. **让 AI 输出成为草稿，不要直接成为事实**：summary、title、reply 都要经过人看一眼。
+4. **再开 embeddings**：为 AI Search 和 Related Topics 做准备，先评估索引成本。
+5. **最后做 automation / triage**：只有当分类、标签、审核规则稳定后，才让 AI 自动改状态。
+6. **把所有实践写回 Discourse topic**：每次启用一个 AI feature，就在 `Agent Runs` 或 `Decisions` 里留下记录。
+
+## 小结
+
+Discourse AI 最有价值的地方，不是让论坛“看起来有 AI”，而是把 AI 放进一个有 topic、post、category、tag、review 和 audit log 的协作系统里。
+
+在 ChatArch 当前实践里，Discourse AI 已经能完成最小 LLM 调用和可见 topic 回复；Helper / Bot 可以作为第一阶段使用入口。Search、Related Topics、Summarize、Spam Detection、AI Triage 则需要继续补 embeddings、summary agent、审核规则和权限边界。
+
+所以它的定位应该是：**让长期讨论空间更容易读、写、总结和路由；不要把它误当成实时 agent gateway，也不要把 AI 输出误当成未经审核的事实源。**
+
+## 资料来源
+
+- [Discourse AI](https://meta.discourse.org/t/discourse-ai/259214)
+- [Discourse AI - AI bot](https://meta.discourse.org/t/enable-ai-bot/266012)
+- [Discourse AI - Helper](https://meta.discourse.org/t/enable-ai-helper/283943)
+- [Discourse AI - AI search](https://meta.discourse.org/t/enable-ai-search/282420)
+- [Discourse AI - Summarize](https://meta.discourse.org/t/discourse-ai-summarization/262711)
+- [Discourse AI - Spam detection](https://meta.discourse.org/t/discourse-ai-spam-detection/343541)
+- [Discourse AI - AI triage](https://meta.discourse.org/t/discourse-ai-ai-triage/281227)
+- [Discourse AI - Related topics](https://meta.discourse.org/t/enable-related-topics/281807)
+- [Discourse AI - Self-Hosted Guide](https://meta.discourse.org/t/discourse-ai-self-hosted-guide/259598)
+- 相关部署背景：[ChatArch Agent Community：Discourse + AI 社区使用说明](/blog/chatarch-discourse-ai-community-usage)
