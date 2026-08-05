@@ -22,6 +22,10 @@ Multica 最值得关注的不是“又支持了哪些模型”，而是它把 Ag
 本文快照时间为 **2026-08-05 12:20 CST**。证据来自 Multica 官方仓库、README、文档、GitHub API、release、license、Docker Compose 和关键 package/go 配置。本轮没有安装 Multica、没有启动 daemon、没有登录 Multica Cloud，也没有运行 self-host stack；所有运行体验和稳定性判断都留给后续受控实践。
 :::
 
+![Multica 官方首页上的 Issues 看板示意图](/img/multica-managed-agents-platform/multica-home-board.jpg)
+
+*Multica 官方首页的产品图：左侧是 workspace 导航，中间是 Issues 看板，任务卡片像项目管理工具一样按 Backlog / Todo / In Progress / In Review / Done 流动。本文使用的 Multica 页面图均来自其公开官网与公开 use case，属于官方演示数据，不是本轮实跑截图。*
+
 ## 先回答：Multica 到底是哪一层
 
 官方 README 把 Multica 定位成 “open-source managed agents platform”：把 coding agents 变成真实队友，可以分配任务、追踪进度、沉淀 skills。它支持的不是一个单独 agent，而是一批已经在你机器上安装并登录的 coding CLI，例如 Claude Code、Codex、GitHub Copilot CLI、OpenCode、Hermes、Cursor Agent、Kimi、Qwen Code、Trae CLI 等。
@@ -55,6 +59,10 @@ Multica 的 [Core concepts](https://multica.ai/docs/concepts) 文档把系统拆
 | Autopilot | schedule / webhook / manual trigger + runbook | 把周期性工作和事件驱动工作纳入同一套 task 记录 |
 
 这套模型最重要的设计选择是：**Agent 可以像人一样成为 issue 的 assignee，但执行记录被拆成 task**。所以同一个 issue 可以先交给一个 implementation agent，失败后由 reviewer agent 接手，或者在讨论里再次 @mention 某个 agent 产生新 run；历史不会被覆盖。
+
+![Multica 官方 use case 中，db-boy 在 Issue 评论里自动贴出 weekly metrics 报告](/img/multica-managed-agents-platform/multica-db-boy-weekly-metrics.jpg)
+
+*官方 use case 里的“24/7 高级数据分析师 db-boy”：agent 把分析结果贴回 issue/comment，并以 HTML dashboard/指标卡形式交付。它很好地说明了 Multica 想让 agent 留在 issue lifecycle 里，而不是只在一次聊天里回复。*
 
 ## 一次 run 怎么发生
 
@@ -105,6 +113,10 @@ Self-host 路径也已经有明显产品化痕迹。`docker-compose.selfhost.yml
 2. **Skill injection 要按工具约定落盘**：例如 Claude Code 走 `.claude/skills/`，Codex 使用 per-task `CODEX_HOME/skills/`，Hermes 使用 per-task `HERMES_HOME/skills/`。
 3. **Custom runtime profile 很重要**：如果团队有内部 wrapper、固定参数、版本钉死命令，Multica 让 workspace owner/admin 建 custom profile，再由每台 connected computer 自己解析命令。
 
+![Multica 官方 use case 中 db-boy 的 Agent 个人页与 instructions 页面](/img/multica-managed-agents-platform/multica-db-boy-profile.jpg)
+
+*官方 use case 中的 agent 个人页：左侧能看到 runtime、model、visibility、concurrency 和 attached skill，右侧是 instructions / skills / environment / custom args 等配置页。这张图比文字更直观地说明：在 Multica 里，Agent 是可配置、可审计、可分配任务的 workspace 成员。*
+
 对 Hermes 来说，这个位置很微妙：在 Multica 眼里，Hermes 可以是一个被编排的 runtime provider；但在 ChatArch 眼里，Hermes 自己也可以做入口、会话、工具、技能和调度。两者真正有价值的互操作点不是“谁套谁”，而是 task context、skill injection、runtime profile、session resume、progress writeback 这些契约能不能对齐。
 
 ## Squads 和 Autopilots：从单 agent 到团队调度
@@ -137,6 +149,10 @@ Multica 的文档显示它不只做 web board。
 - Slack Bot 和 webhook/autopilot trigger 则覆盖 SaaS chat 与外部事件进入 Agent 的路径。
 
 这说明 Multica 的产品方向不是“请大家换到一个新聊天窗口”，而是把 agent 带进 GitHub、Feishu、Slack、自托管 Git provider 和 schedule/webhook 这些已经存在的协作入口。
+
+![Multica 官方 use case 中，人类在评论里 @db-boy，agent 回复并链接 follow-up Issue](/img/multica-managed-agents-platform/multica-db-boy-ad-hoc-question.jpg)
+
+*官方 use case 中的评论交互：人类在 issue/comment 里 @ agent，agent 回答后还能链接一条 follow-up issue。这个页面图比“支持 @mention”更重要：它展示的是人、agent、讨论和后续任务在同一条协作线里闭环。*
 
 ## 为什么它会火
 
@@ -266,3 +282,4 @@ Multica 把“AI coding tool”往前推进了一层：从一个人在终端里�
 - Integrations: [GitHub integration](https://multica.ai/docs/github-integration), [Self-hosted Git providers](https://multica.ai/docs/vcs-integration), [Feishu Bot](https://multica.ai/docs/lark-bot-integration), [Slack Bot](https://multica.ai/docs/slack-bot-integration)
 - Operations and security: [Self-hosting guide](https://github.com/multica-ai/multica/blob/main/SELF_HOSTING.md), [Advanced self-hosting configuration](https://github.com/multica-ai/multica/blob/main/SELF_HOSTING_ADVANCED.md), [Security model](https://multica.ai/docs/security-model), [Multica License](https://github.com/multica-ai/multica/blob/main/LICENSE)
 - Dynamic snapshot used in this article: GitHub repository metadata, language stats, releases, organization repositories and selected raw files fetched on 2026-08-05 12:20 CST.
+- 图片来源：Multica 官方首页与官方 use case [如何在 Multica 拥有一位 24/7 的高级数据分析师](https://multica.ai/usecases/auto-data-analysis)。本文只使用公开页面中的官方演示图，并在正文中明确标注为官方演示数据。
