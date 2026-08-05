@@ -34,8 +34,68 @@
   margin-top: 2rem;
 }
 
+.browse {
+  padding: 4rem 0 1rem;
+}
+
+.sectionHeader {
+  max-width: 820px;
+  margin-bottom: 1.5rem;
+}
+
+.sectionHeader h2 {
+  margin-bottom: 0.75rem;
+}
+
+.sectionHeader p:last-child {
+  color: var(--ifm-color-emphasis-700);
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+
+.browseGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.browseItem {
+  display: flex;
+  min-height: 9rem;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border: 1px solid rgba(14, 116, 144, 0.18);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(240, 249, 255, 0.92), rgba(255, 255, 255, 0.98));
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.browseItem:hover {
+  border-color: rgba(14, 116, 144, 0.42);
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.1);
+  color: inherit;
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.browseItem span {
+  color: #0f172a;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.browseItem small {
+  margin-top: 1rem;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.6;
+}
+
 .cards {
-  padding: 4rem 0;
+  padding: 3rem 0 4rem;
 }
 
 .cardCol {
@@ -53,4 +113,20 @@
 
 .card h3 {
   margin-bottom: 0.75rem;
+}
+
+@media screen and (max-width: 996px) {
+  .browseGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .hero {
+    padding: 5rem 0 4rem;
+  }
+
+  .browseGrid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,5 +1,6 @@
 const sidebars = {
   blocks: [
+    'intro',
     {
       type: 'category',
       label: '知识块',
