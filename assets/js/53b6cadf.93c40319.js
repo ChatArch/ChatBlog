@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkchatblog=globalThis.webpackChunkchatblog||[]).push([[4841],{99629(a,h,l){l.r(h),l.d(h,{default:()=>c});l(96540);var t=l(56347),b=l(74848);function c(){return(0,b.jsx)(t.rd,{to:"/blog/archive"})}}}]);
