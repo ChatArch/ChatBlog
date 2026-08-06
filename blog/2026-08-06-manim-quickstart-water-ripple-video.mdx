@@ -1,0 +1,328 @@
+---
+title: "Manim Quickstart：从 plan.md 到第一条水波纹视频"
+date: 2026-08-06
+slug: manim-quickstart-water-ripple-video
+tags: [manim, python, video, quickstart]
+description: 用一个“水滴入水后的圆形波纹”小例子，走完 Manim 视频生产的最小闭环：先写 plan.md，再写 script.py，用 -ql 快速渲染，最后通过 ChatShare 分享 MP4 并嵌入 ChatBlog。
+---
+
+# Manim Quickstart：从 `plan.md` 到第一条水波纹视频
+
+上一篇文章讲了 Manim 的定位：它是一个 **Python-first 的数学动画生产工具**，但完整视频生产并不是 pure Python-only，还会涉及 LaTeX、Cairo/Pango、FFmpeg/PyAV、素材、旁白、字幕和发布。
+
+这篇换成一个更落地的问题：**如果今天只想从零生成一条“能看的小视频”，最小闭环应该怎么走？**
+
+我们用一个 14 秒左右的“水滴入水后的圆形波纹”来演示。它不追求大片质感，只追求流程完整：先想清楚解释目标，再写代码，再真实渲染，再把 MP4 放到文章里。
+
+<!-- truncate -->
+
+:::tip 最终结果
+这就是本文实际跑出来的 MP4：Manim CE `0.20.1`，`-ql` 草稿质量，854×480，15 FPS，H.264，约 214 KB。
+:::
+
+<figure>
+  <video
+    controls
+    preload="metadata"
+    poster="https://share.public.wzhecnu.cn/chatblog/manim-quickstart/water-ripple-poster.jpg"
+    style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--ifm-color-emphasis-200)', background: '#0b1020' }}
+  >
+    <source src="https://share.public.wzhecnu.cn/chatblog/manim-quickstart/water-ripple-quickstart.mp4" type="video/mp4" />
+    你的浏览器不支持 HTML5 video。可以直接打开：
+    https://share.public.wzhecnu.cn/chatblog/manim-quickstart/water-ripple-quickstart.mp4
+  </video>
+  <figcaption>
+    Manim Quickstart demo：水滴、波纹扩散和公式 <code>r = vt</code>。视频文件通过 ChatShare 暴露为稳定 URL，再由 ChatBlog 的 MDX <code>{'<video>'}</code> 标签嵌入。
+  </figcaption>
+</figure>
+
+## 这个 quickstart 演示什么
+
+这个例子故意不复杂。它只证明一条最小生产线是通的：
+
+```mermaid
+flowchart LR
+  Plan[plan.md 解释目标] --> Script[script.py Manim 场景]
+  Script --> Draft[manim -ql 快速渲染]
+  Draft --> MP4[WaterRippleQuickstart.mp4]
+  MP4 --> Share[ChatShare 稳定 URL]
+  Share --> Blog[ChatBlog video 嵌入]
+```
+
+这里的“水视频”不是要做流体仿真。它只是一个足够小的解释型视频：
+
+- 先出现标题；
+- 水滴落到水面；
+- 三圈波纹扩散并淡出；
+- 显示最小数学模型 `r = v t`；
+- 最后提示下一步可以换高清、加配音和字幕。
+
+这个规模正好适合作为 Manim 入门模板：有叙事、有形状动画、有 TeX 公式、有真实 MP4，又不会把第一次实践拖成重型项目。
+
+## Step 0：项目目录
+
+先不要直接写一个孤零零的 `example.py`。哪怕是 quickstart，也建议按“解释视频”来组织：
+
+```text
+quickstart-water-video/
+  plan.md        # 先写清楚解释目标和场景顺序
+  script.py      # Manim 场景代码
+  media/         # Manim 自动生成的 partial movie 和最终 MP4
+```
+
+真实跑完后，Manim 会生成类似路径：
+
+```text
+media/videos/script/480p15/WaterRippleQuickstart.mp4
+```
+
+这就是后面要分享和嵌入的文件。
+
+## Step 1：先写 `plan.md`
+
+Manim 最大的坑不是 API，而是“直接开写代码”。解释型视频要先回答：观众的问题是什么？这条视频只讲哪一个概念？画面顺序是什么？
+
+这次的 `plan.md` 可以很短：
+
+```md
+# Manim Quickstart Demo Plan
+
+## 目标
+
+做一个 12 秒左右的“水滴入水后的圆形波纹”小视频，用来演示 Manim 从叙事计划到 Python 脚本再到 MP4 的最小完整流程。
+
+## 观众问题
+
+水滴落到水面后，为什么我们看到的是一圈圈向外扩散的圆形波纹？
+
+## 一句话解释
+
+波前在均匀水面上以近似恒定速度向四周传播，所以半径随时间增长，可以用 `r = v t` 做一个最小模型。
+
+## 场景结构
+
+1. 标题：从一个水滴开始。
+2. 水滴落下：蓝色水面线 + 水滴下落。
+3. 波纹扩散：三圈半透明圆逐步扩大并淡出。
+4. 数学模型：显示 `r = v t`，旁边用箭头说明“时间越长，半径越大”。
+5. 结尾：这就是第一个 Manim 小视频：先 plan，再 script，再 render。
+```
+
+这一步的价值是限定范围。只要 `plan.md` 还在发散，就不要急着写 Manim 代码。
+
+## Step 2：写 `script.py`
+
+这条视频只用 Manim 的基础对象：
+
+- `Text`：标题和中文说明；
+- `Line`：水面；
+- `Circle` / `Star`：水滴、波纹和溅起效果；
+- `MathTex`：公式 `r = vt`；
+- `FadeIn`、`Create`、`GrowFromCenter`、`Write`：基本动画。
+
+核心代码如下：
+
+```python
+from manim import *
+
+
+class WaterRippleQuickstart(Scene):
+    def construct(self):
+        self.camera.background_color = "#0b1020"
+
+        title = Text("Manim Quickstart：一滴水的波纹", font_size=36, color=WHITE)
+        subtitle = Text("从 plan.md 到 script.py，再到 MP4", font_size=22, color=BLUE_B)
+        subtitle.next_to(title, DOWN, buff=0.35)
+        self.play(FadeIn(title, shift=DOWN), FadeIn(subtitle, shift=UP), run_time=1.2)
+        self.wait(0.6)
+        self.play(title.animate.to_edge(UP), FadeOut(subtitle), run_time=0.8)
+
+        surface = Line(LEFT * 5.5, RIGHT * 5.5, color=BLUE_C, stroke_width=5).shift(DOWN * 1.2)
+        surface_label = Text("水面", font_size=22, color=BLUE_B).next_to(surface, DOWN, buff=0.2).to_edge(LEFT)
+        drop = Circle(radius=0.18, color=BLUE_A, fill_color=BLUE_A, fill_opacity=1).shift(UP * 1.5)
+        drop_tail = Line(drop.get_top() + UP * 0.35, drop.get_top(), color=BLUE_A, stroke_width=3)
+        self.play(Create(surface), FadeIn(surface_label), FadeIn(drop), Create(drop_tail), run_time=1.0)
+        self.play(drop.animate.move_to(surface.get_center() + UP * 0.05), FadeOut(drop_tail), run_time=1.0)
+
+        splash = Star(n=8, outer_radius=0.45, inner_radius=0.12, color=TEAL_A, fill_opacity=0.35).move_to(surface.get_center())
+        self.play(FadeOut(drop), GrowFromCenter(splash), run_time=0.4)
+        self.play(FadeOut(splash), run_time=0.4)
+
+        center = surface.get_center()
+        ripples = VGroup(
+            Circle(radius=0.25, color=TEAL_A, stroke_width=5).move_to(center),
+            Circle(radius=0.25, color=BLUE_B, stroke_width=4).move_to(center),
+            Circle(radius=0.25, color=BLUE_D, stroke_width=3).move_to(center),
+        )
+        self.add(ripples)
+        self.play(
+            ripples[0].animate.scale(5.2).set_stroke(opacity=0.0),
+            ripples[1].animate.scale(3.7).set_stroke(opacity=0.0),
+            ripples[2].animate.scale(2.3).set_stroke(opacity=0.0),
+            run_time=2.6,
+            rate_func=linear,
+        )
+        self.remove(ripples)
+
+        formula = MathTex("r = v t", color=WHITE).scale(1.2).shift(UP * 0.25)
+        formula_box = SurroundingRectangle(formula, color=BLUE_B, buff=0.25)
+        explanation = VGroup(
+            Text("r：波纹半径", font_size=24, color=TEAL_A),
+            Text("v：传播速度", font_size=24, color=BLUE_B),
+            Text("t：经过时间", font_size=24, color=WHITE),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.18).next_to(formula_box, DOWN, buff=0.35)
+        arrow = Arrow(start=LEFT * 2.8 + DOWN * 1.1, end=RIGHT * 2.8 + DOWN * 1.1, color=TEAL_A)
+        arrow_label = Text("时间增加 → 半径变大", font_size=24, color=TEAL_A).next_to(arrow, DOWN, buff=0.15)
+        self.play(Write(formula), Create(formula_box), run_time=0.9)
+        self.play(FadeIn(explanation, shift=UP), Create(arrow), FadeIn(arrow_label), run_time=1.2)
+        self.wait(1.0)
+
+        outro = Text("第一条 Manim 小视频完成", font_size=34, color=WHITE)
+        outro_sub = Text("下一步：把 -ql 草稿换成 -qh 高清，再加配音和字幕", font_size=22, color=BLUE_B)
+        outro_group = VGroup(outro, outro_sub).arrange(DOWN, buff=0.35)
+        self.play(FadeOut(VGroup(surface, surface_label, formula, formula_box, explanation, arrow, arrow_label, title)))
+        self.play(FadeIn(outro_group, scale=0.9), run_time=1.0)
+        self.wait(1.2)
+```
+
+第一次写 Manim 代码时，建议先接受“朴素但稳定”的画面。真正重要的是把对象、动画、时间和输出路径跑通。
+
+## Step 3：用 `-ql` 快速渲染
+
+在已经装好 Manim CE 的环境里运行：
+
+```bash
+manim -ql --media_dir media script.py WaterRippleQuickstart
+```
+
+这里的几个点要注意：
+
+| 参数 | 作用 |
+| --- | --- |
+| `-ql` | low quality，快速草稿，本文实际输出是 480p15 |
+| `--media_dir media` | 把 Manim 生成物固定放进当前项目的 `media/` |
+| `script.py` | Python 脚本文件 |
+| `WaterRippleQuickstart` | 要渲染的 `Scene` 类名 |
+
+本文实际运行后，Manim 输出：
+
+```text
+Rendered WaterRippleQuickstart
+Played 14 animations
+File ready at .../media/videos/script/480p15/WaterRippleQuickstart.mp4
+```
+
+并用 `ffprobe` 回读到：
+
+```json
+{
+  "codec_name": "h264",
+  "width": 854,
+  "height": 480,
+  "r_frame_rate": "15/1",
+  "duration": "14.334000",
+  "size": "214020"
+}
+```
+
+这个阶段只验证叙事和画面节奏，不急着上高清。等脚本稳定后，再换：
+
+```bash
+manim -qh --media_dir media script.py WaterRippleQuickstart
+```
+
+## Step 4：生成 poster
+
+博客里直接放 `<video>` 时，最好配一张 poster，避免页面初始位置是一块黑框。
+
+```bash
+ffmpeg -y \
+  -ss 00:00:04 \
+  -i media/videos/script/480p15/WaterRippleQuickstart.mp4 \
+  -frames:v 1 \
+  -q:v 2 \
+  water-ripple-poster.jpg
+```
+
+这不是 Manim 必须步骤，但对博客阅读体验很有帮助。
+
+## Step 5：用 ChatShare 发布 MP4
+
+ChatBlog 是静态站。视频文件可以放进仓库，但大一点的视频会让 Git 仓库膨胀；更自然的做法是把视频作为媒体对象分享出去，文章只嵌入 URL。
+
+这里用 ChatShare：
+
+```bash
+chatshare put --overwrite \
+  media/videos/script/480p15/WaterRippleQuickstart.mp4 \
+  chatblog/manim-quickstart/water-ripple-quickstart.mp4
+
+chatshare put --overwrite \
+  water-ripple-poster.jpg \
+  chatblog/manim-quickstart/water-ripple-poster.jpg
+```
+
+得到稳定 URL：
+
+```text
+https://share.public.wzhecnu.cn/chatblog/manim-quickstart/water-ripple-quickstart.mp4
+https://share.public.wzhecnu.cn/chatblog/manim-quickstart/water-ripple-poster.jpg
+```
+
+发布后还要验证 HTTP 头。本文回读结果显示：
+
+```text
+video  status=200  content-type=video/mp4   accept-ranges=bytes  content-length=214020
+poster status=200  content-type=image/jpeg  accept-ranges=bytes  content-length=15000
+```
+
+`accept-ranges=bytes` 对视频体验很重要：浏览器可以按需拉取和拖动，不必一次性下载完整文件。
+
+## Step 6：在 ChatBlog 里嵌入视频
+
+ChatBlog 用 Docusaurus + MDX，MDX 支持直接写 HTML5 `<video>`。文章里可以这样嵌：
+
+```mdx
+<figure>
+  <video
+    controls
+    preload="metadata"
+    poster="https://share.public.wzhecnu.cn/chatblog/manim-quickstart/water-ripple-poster.jpg"
+    style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--ifm-color-emphasis-200)' }}
+  >
+    <source src="https://share.public.wzhecnu.cn/chatblog/manim-quickstart/water-ripple-quickstart.mp4" type="video/mp4" />
+    你的浏览器不支持 HTML5 video。
+  </video>
+  <figcaption>Manim Quickstart demo：水滴、波纹扩散和公式 r = vt。</figcaption>
+</figure>
+```
+
+这个方式比把 MP4 塞进 Git 更轻，也比只贴一个下载链接更适合博客阅读。
+
+## 这个例子的可改进点
+
+它只是第一条 quickstart，不是最终作品。下一步可以按同一套流程逐步增强：
+
+| 层面 | 现在 | 下一步 |
+| --- | --- | --- |
+| 画质 | `-ql` 480p15 | `-qh` 或自定义 1080p30/60 |
+| 叙事 | 屏幕文字 | 加旁白稿和字幕 |
+| 物理模型 | `r = vt` 最小模型 | 加振幅衰减、波峰间距、介质速度 |
+| 视觉 | 圆形波纹 | 加半透明水面、粒子、水滴阴影 |
+| 交付 | 单 MP4 | 多 scene 拼接、片头片尾、封面图 |
+
+最重要的是不要一步跳到“大片”。先把这条闭环跑通：
+
+```text
+plan.md -> script.py -> manim -ql -> mp4 -> share URL -> blog video embed
+```
+
+这条闭环稳定后，Manim 才真正从“一个 Python 库”变成“可以持续产出解释型视频的工作流”。
+
+## 相关链接
+
+- [Manim Community Edition](https://www.manim.community/)
+- [Manim 文档](https://docs.manim.community/)
+- [Manim GitHub](https://github.com/ManimCommunity/manim)
+- [上一篇：Manim：用 Python 搭一条数学动画视频生产线](/blog/manim-python-math-animation-video-pipeline)
+- [本文 demo MP4](https://share.public.wzhecnu.cn/chatblog/manim-quickstart/water-ripple-quickstart.mp4)
