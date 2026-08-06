@@ -15,7 +15,7 @@ description: 调研千问 AI 平台 Token Plan 的个人版、团队版、Credit
 <!-- truncate -->
 
 :::info 证据口径
-快照时间为 **2026-08-06 CST**。证据来自千问 AI 平台公开定价与文档、一次脱敏的 `/models` 只读发现、一次 Codex 最小 smoke，以及一台已有 CRS 实例的只读代码/运行态检查。本文不包含任何 API Key、账号密钥、服务器地址或私有路径。
+快照时间为 **2026-08-06 CST**。证据来自千问 AI 平台公开定价与文档、一次脱敏的 `/models` 只读发现、一次 Codex 最小 smoke，以及一台已有 CRS 实例的 HTTP Admin API 接入和 relay smoke。本文不包含任何 API Key、账号密钥、服务器地址或私有路径。
 :::
 
 ## 先校正：这是 Token Plan，不是普通 DashScope 按量计费
@@ -133,16 +133,16 @@ qwen3.6-flash   快速问答 / 低风险批处理 / 小脚本
 | `baseApi` | `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` |
 | `apiKey` | 千问 Token Plan API Key |
 | `providerEndpoint` | `responses` |
-| `accountType` | 先 `dedicated` 测试，稳定后再决定是否 `shared` |
-| `isActive` / `schedulable` | 先 false / false 建账校验，再启用 |
+| `accountType` | 先 `dedicated`，稳定后再决定是否 `shared` |
+| `isActive` / `schedulable` | dedicated 账号可启用；是否进入共享池另行决定 |
 
 调度层还支持把 CRS API Key 的 `openaiAccountId` 绑定为 `responses:<accountId>`。这意味着可以先创建一个专门的 CRS Key，只让它走千问 Token Plan，而不是立刻把千问放进所有 OpenAI 请求的共享池。
 
 这对 ChatArch 很重要：**接入新供应方时，先做专属 Key + 专属账号 + 最小 smoke，再考虑共享池。** 这样可以避免一个新账号的 401、429、模型不兼容或 Credits 策略影响整个 CRS 用户池。
 
-## 现有 CRS 生态的缺口：服务支持，运维 CLI 还不完整
+## HTTP 接入实测：服务已接入，运维 CLI 仍需补齐
 
-只读检查显示，已有 CRS 服务本身支持 `OpenAI-Responses` 账号，也有 Admin API：
+实际接入时没有走 SSH，而是直接走 CRS HTTPS Admin API。已有 CRS 服务本身支持 `OpenAI-Responses` 账号，也有 Admin API：
 
 ```text
 GET/POST /admin/openai-responses-accounts
@@ -150,7 +150,17 @@ POST /admin/openai-responses-accounts/:id/test
 API Key openaiAccountId = responses:<accountId>
 ```
 
-但当前安装的 ChatCRS 运维 CLI 仍停留在健康检查、调试、verify、cutover 等命令面，没有稳定的：
+这次用本机脚本读取已有 ChatEnv 管理配置，调用 Admin API 完成了三件事：
+
+```text
+1. 创建 / 复用 Qwen Token Plan Personal 作为 OpenAI-Responses dedicated account
+2. 用 Admin test endpoint 验证 qwen3.8-max 上游可用
+3. 创建临时 CRS API Key，绑定 openaiAccountId=responses:<accountId>，通过 /openai/v1/responses 返回 OK，然后删除临时 Key
+```
+
+最终回读状态是：OpenAI-Responses account count = 1；这个千问账号是 active + schedulable 的 dedicated account；没有留下持久绑定 API Key，所以不会直接影响共享池或现有用户。
+
+运维 CLI 仍停留在健康检查、调试、verify、cutover 等命令面，还没有稳定的：
 
 ```text
 chatcrs admin openai-responses account add --dry-run/--execute
@@ -158,21 +168,21 @@ chatcrs key bind-openai-responses --dry-run/--execute
 chatcrs account test --model qwen3.8-max
 ```
 
-所以本文的接入结论分两层：
+所以本文的接入结论也分两层：
 
-1. **CRS runtime 层：可接入。** 千问 Token Plan 能作为 OpenAI-Responses API-key 账号新增。
-2. **ChatCRS 运维生态层：建议补 CLI。** 否则新增账号仍要手动走 Web/Admin API，不够 ChatArch-contained，也不够可审计。
+1. **CRS runtime 层：已接入并验证。** 千问 Token Plan 已作为 OpenAI-Responses API-key 账号进入 CRS，并通过一次端到端 relay smoke。
+2. **ChatCRS 运维生态层：建议补 CLI。** 否则新增账号仍要手写脚本或手动走 Web/Admin API，不够 ChatArch-contained，也不够可审计。
 
-最低风险的接入顺序应该是：
+最低风险的接入顺序应该保持为：
 
 ```text
 1. 轮换/准备一把专用于 CRS 的千问 Token Plan Key
 2. Admin API dry-run：校验 baseApi、providerEndpoint、账号名、启用状态
-3. 创建 OpenAI-Responses 账号，但 isActive=false / schedulable=false
+3. 创建 OpenAI-Responses dedicated 账号，不直接进共享池
 4. 用 Admin API 自带 test endpoint 做 qwen3.8-max 最小测试
 5. 创建临时 CRS API Key，绑定 openaiAccountId=responses:<accountId>
-6. 通过 /openai/v1/responses 做一次确定性 smoke
-7. 删除临时 Key，保留或启用账号
+6. 通过 /openai/v1/responses 做一次确定性 smoke，例如输出 OK
+7. 删除临时 Key，只保留账号；需要对外开放时再创建持久绑定 Key
 8. 再决定是否加入共享池、限额、并发和模型策略
 ```
 
@@ -202,9 +212,9 @@ Token Plan 的计量单位是 Credits，但 CRS 生态里常见的是 tokens、r
 - 对 CRS，它可以作为 OpenAI-compatible Responses API provider，纳入统一 Key、统一路由和统一审计；
 - 对 ChatCRS，它暴露出一个需要补齐的运维面：API-key provider 账号的 dry-run、创建、测试、绑定、限额和回读。
 
-所以，我会把下一步拆成两个 PR：
+这次实践已经完成了 runtime 侧接入，因此下一步不再是“能不能接”，而是“如何纳入日常运维”：
 
 1. **ChatCRS Provider 管理 PR**：新增 `qwen-token-plan` / `openai-responses` 账号管理命令，全部 plan-by-default，写入必须 `--execute`，审计输出脱敏。
-2. **CRS 接入实践 PR/任务**：用轮换后的专用 Key 在非共享路径上创建账号，绑定临时 CRS Key，跑最小 Responses smoke，再决定是否启用共享池。
+2. **持久调用 Key 策略**：决定是给某个调用方创建 dedicated CRS Key，还是在团队版/组织级账号准备好以后再进入共享池。
 
-只有这两步都完成，才算真正把千问 Token Plan 接进 ChatArch 的 CRS 生态，而不是只在某台机器上手工保存了一把 Key。
+到这里，千问 Token Plan 已经不是“理论可接”，而是已经通过 CRS Admin API 和 relay smoke 走通；剩下的是把这条路径产品化、审计化和限额化。
