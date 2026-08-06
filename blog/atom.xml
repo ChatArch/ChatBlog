@@ -137,6 +137,114 @@
         <category label="kakeya" term="kakeya"/>
     </entry>
     <entry>
+        <title type="html"><![CDATA[Agent 写文件到底用 patch 还是 replace：Codex、Claude Code、Qwen Code 的工具协议拆解]]></title>
+        <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace</id>
+        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace"/>
+        <updated>2026-08-06T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[拆解 OpenAI Responses、Anthropic Messages、千问 OpenAI-compatible 与常见 agent client 的三层关系，比较 Codex、Claude Code、Qwen Code、Gemini CLI、OpenCode、Aider、Roo、Cline、Cursor 在文件编辑时到底偏 patch、replace、write_file 还是多工具并存。]]></summary>
+        <content type="html"><![CDATA[<p>上一篇 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/qwen-token-plan-coding-crs">千问 Token Plan 调研</a> 解决的是“千问 Token Plan 怎么接进 Codex、Hermes 和 CRS”。但接完以后还有一个更容易混淆的问题：<strong>模型 API 是 OpenAI-compatible，并不代表 agent 改文件也按 OpenAI Codex 的 patch 方式来。</strong></p>
+<p>这篇文章专门拆开这个问题：OpenAI、Anthropic、Qwen、Gemini 这些 provider 的 wire API 是一层；Codex、Claude Code、Qwen Code、Gemini CLI、OpenCode、Aider、Roo Code、Cline、Cursor 这些 agent client 暴露给模型的文件工具是另一层；最后 client 在本地到底怎么落盘，又是第三层。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p><strong>OpenAI API 本身不规定“写文件=patch 还是 replace”；OpenAI Codex CLI 是 patch 派；Anthropic 官方 text editor tool 是 string replace 派；Qwen Code 继承/同构的是 Gemini CLI 的 <code>replace + write_file</code> 派。</strong></p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先分清三层不然一定会说错">先分清三层，不然一定会说错<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#%E5%85%88%E5%88%86%E6%B8%85%E4%B8%89%E5%B1%82%E4%B8%8D%E7%84%B6%E4%B8%80%E5%AE%9A%E4%BC%9A%E8%AF%B4%E9%94%99" class="hash-link" aria-label="先分清三层，不然一定会说错的直接链接" title="先分清三层，不然一定会说错的直接链接" translate="no">​</a></h2>
+<p>讨论“它写文件用 patch 还是 replace”时，至少要拆成三层：</p>
+<table><thead><tr><th>层</th><th>问题</th><th>例子</th></tr></thead><tbody><tr><td>Provider wire API</td><td>请求发给谁、用什么模型协议？</td><td>OpenAI Responses、Anthropic Messages、Gemini API、Qwen OpenAI-compatible</td></tr><tr><td>Agent client tool schema</td><td>模型在对话里看到什么工具？</td><td><code>apply_patch</code>、<code>Edit</code>、<code>replace</code>、<code>write_file</code>、<code>search_replace</code></td></tr><tr><td>Local apply implementation</td><td>client 在本地怎么改文件？</td><td>解析 patch、old/new string replace、whole-file overwrite、diff/fuzzy patch、shell 命令</td></tr></tbody></table>
+<p>所以，不能说“千问走 OpenAI-compatible，因此写文件就是 OpenAI patch”。OpenAI-compatible 只说明 HTTP/JSON 调用协议像 OpenAI；文件怎么改，取决于你用的是 Codex、Qwen Code、Hermes、Cline 还是别的 client。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="openaiapi-层不固定codex-client-是-patch-first">OpenAI：API 层不固定，Codex client 是 patch-first<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#openaiapi-%E5%B1%82%E4%B8%8D%E5%9B%BA%E5%AE%9Acodex-client-%E6%98%AF-patch-first" class="hash-link" aria-label="OpenAI：API 层不固定，Codex client 是 patch-first的直接链接" title="OpenAI：API 层不固定，Codex client 是 patch-first的直接链接" translate="no">​</a></h2>
+<p>OpenAI 的 Responses / function calling 文档讲的是通用工具调用流程：应用把工具定义发给模型，模型返回 tool call，应用侧执行，再把结果回传。这个机制本身没有规定“本地写文件工具”必须叫 <code>patch</code>、<code>replace</code> 或 <code>write_file</code>。</p>
+<p>但如果问的是 <strong>OpenAI 官方 Codex CLI / Codex client</strong>，结论就很明确：它是 <strong>patch-first</strong>。</p>
+<p>公开源码里可以看到 Codex 有 <code>apply_patch</code> 解析与审批路径；patch action 覆盖新增、删除、更新文件。也就是说，Codex 这类 coding client 倾向让模型产出结构化补丁，再由 client 解析、校验、展示 diff、申请批准和落盘。</p>
+<p>同时，Codex 的 app-server protocol 里也有类似 <code>FsWriteFileParams { filePath, content }</code> 的 whole-file write 参数。这说明它不是“永远只有 patch”。但从 coding agent 的核心编辑原语看，Codex 明显属于 patch 派。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="anthropic官方-text-editor-tool-是-replace-派claude-code-产品层是-editwrite-工具族">Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#anthropic%E5%AE%98%E6%96%B9-text-editor-tool-%E6%98%AF-replace-%E6%B4%BEclaude-code-%E4%BA%A7%E5%93%81%E5%B1%82%E6%98%AF-editwrite-%E5%B7%A5%E5%85%B7%E6%97%8F" class="hash-link" aria-label="Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族的直接链接" title="Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族的直接链接" translate="no">​</a></h2>
+<p>Anthropic 也要分 API 层和产品层。</p>
+<p>在 Anthropic Messages API 的通用 tool use 里，工具可以由应用自己定义，执行也发生在应用或环境侧。因此通用 API 层同样不固定。</p>
+<p>不过 Anthropic 官方文档现在有一个明确的 text editor tool：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">type: text_editor_20250728</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">name: str_replace_based_edit_tool</span><br></div></code></pre></div></div>
+<p>它支持 <code>view</code>、<code>str_replace</code>、<code>create</code>、<code>insert</code>、<code>undo_edit</code> 等命令。核心编辑命令叫 <code>str_replace</code>，参数是 <code>old_str</code> 和 <code>new_str</code>。官方流程也写得很直白：从 Claude 的 tool use request 里取出文件路径、old text、新 text，然后在文件里执行文本替换。</p>
+<p>所以如果问 <strong>Anthropic 官方 text editor tool</strong>，答案是：<strong>replace 派</strong>。</p>
+<p>但如果问 <strong>Claude Code</strong>，公开文档能确认的是产品层工具名：<code>Read</code>、<code>Edit</code>、<code>MultiEdit</code>、<code>Write</code>、<code>Bash</code> 等。Claude Code 本身不是完整开源项目，公开文档不足以严谨证明它每次 <code>Edit</code> 内部一定转成某种 unified diff 或某种 string replace。更稳妥的说法是：Claude Code 是 Anthropic / Claude 产品工具族，公开暴露的是 <code>Edit/MultiEdit/Write</code> 这套编辑能力。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="qwen-code不是-anthropic-native也不是-codex-patch它是-gemini-cli-式-replace--write_file">Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#qwen-code%E4%B8%8D%E6%98%AF-anthropic-native%E4%B9%9F%E4%B8%8D%E6%98%AF-codex-patch%E5%AE%83%E6%98%AF-gemini-cli-%E5%BC%8F-replace--write_file" class="hash-link" aria-label="Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file的直接链接" title="Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file的直接链接" translate="no">​</a></h2>
+<p>千问这里最容易混淆，因为有两个事实同时成立：</p>
+<ol>
+<li class=""><strong>千问 Token Plan 接入 ChatArch / CRS / Hermes 时，推荐走 OpenAI-compatible / Responses。</strong> 这是上一篇文章的结论，也是我们当前配置的 provider wire API。</li>
+<li class=""><strong>Qwen Code 这个 agent client 的文件工具形态，更像 Gemini CLI。</strong> 它的公开文档和源码里，文件编辑工具是 <code>replace</code> 和 <code>write_file</code>。</li>
+</ol>
+<p>Qwen Code 的 file-system tools 里，<code>replace</code> 使用 <code>old_string</code> / <code>new_string</code> 做精确替换；<code>write_file</code> 则写入完整文件内容，语义上就是 whole-file write / overwrite。</p>
+<p>这意味着：</p>
+<table><thead><tr><th>场景</th><th>判断</th></tr></thead><tbody><tr><td>Hermes / CRS 里接千问 Token Plan</td><td>OpenAI-compatible / Responses provider</td></tr><tr><td>用 Codex 调千问模型</td><td>Codex client 工具层仍是 patch-first</td></tr><tr><td>用 Qwen Code 调千问模型</td><td>Qwen Code 工具层是 Gemini 式 <code>replace + write_file</code></td></tr><tr><td>把千问硬说成 Anthropic-native</td><td>不推荐，除非中间网关明确做 Anthropic schema 转换</td></tr></tbody></table>
+<p>所以，“千问是 OpenAI 还是 Anthropic 派”这个问题要拆开答：<strong>模型接口推荐 OpenAI-compatible；Qwen Code 工具协议是 Gemini CLI 派；不是 Claude Code / Anthropic-native 派。</strong></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="常见-agent-client-快速矩阵">常见 agent client 快速矩阵<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#%E5%B8%B8%E8%A7%81-agent-client-%E5%BF%AB%E9%80%9F%E7%9F%A9%E9%98%B5" class="hash-link" aria-label="常见 agent client 快速矩阵的直接链接" title="常见 agent client 快速矩阵的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>Client</th><th>默认/主要平台派系</th><th>文件编辑原语</th><th>判断</th></tr></thead><tbody><tr><td>OpenAI Codex CLI</td><td>OpenAI / ChatGPT / Responses</td><td><code>apply_patch</code>；另有 whole-file write 参数</td><td><strong>patch-first</strong></td></tr><tr><td>Claude Code</td><td>Anthropic / Claude</td><td><code>Edit</code>、<code>MultiEdit</code>、<code>Write</code>、<code>Read</code>、<code>Bash</code></td><td>产品工具族；内部细节公开不足</td></tr><tr><td>Anthropic text editor tool</td><td>Anthropic Messages API</td><td><code>str_replace_based_edit_tool</code>，<code>str_replace(old_str,new_str)</code></td><td><strong>replace 派</strong></td></tr><tr><td>Gemini CLI</td><td>Google Gemini</td><td><code>replace(old_string,new_string)</code>、<code>write_file(content)</code></td><td><strong>replace + whole-file write</strong></td></tr><tr><td>Qwen Code</td><td>Qwen / DashScope；Gemini CLI 工具形态</td><td><code>replace(old_string,new_string)</code>、<code>write_file(content)</code></td><td><strong>Gemini/Qwen Code 派</strong></td></tr><tr><td>OpenCode</td><td>多 provider</td><td><code>edit(oldString,newString)</code>、<code>write(content)</code></td><td><strong>replace + whole-file write</strong></td></tr><tr><td>Aider</td><td>多 provider</td><td>whole-file、search/replace、unified diff 等 edit formats</td><td><strong>多格式</strong></td></tr><tr><td>Roo Code</td><td>多 provider / VS Code</td><td><code>apply_patch</code>、<code>apply_diff</code>、<code>search_replace</code>、<code>write_to_file</code>、<code>edit_file</code></td><td><strong>多原语并存</strong></td></tr><tr><td>Cline</td><td>多 provider / VS Code</td><td><code>replace_in_file</code>、<code>write_to_file</code>、<code>apply_patch</code>；SDK <code>editor</code> 有 <code>old_text/new_text/insert_line</code></td><td><strong>replace/write/patch 并存</strong></td></tr><tr><td>Cursor Agent / Cursor CLI</td><td>Cursor 产品，多模型入口</td><td>公开文档没明确到底 patch 还是 replace</td><td><strong>底层编辑原语未公开到足够粒度</strong></td></tr><tr><td>Hermes Agent</td><td>Hermes 自定义 agent，可接多 provider</td><td><code>patch</code>、<code>write_file</code>、<code>read_file</code> 等宿主工具</td><td><strong>由 Hermes 工具层决定，不由 provider 决定</strong></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么这件事重要">为什么这件事重要<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E4%BB%B6%E4%BA%8B%E9%87%8D%E8%A6%81" class="hash-link" aria-label="为什么这件事重要的直接链接" title="为什么这件事重要的直接链接" translate="no">​</a></h2>
+<p>它不只是术语问题，而是会影响 agent 的可靠性和成本。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="patch-first-的优点">patch-first 的优点<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#patch-first-%E7%9A%84%E4%BC%98%E7%82%B9" class="hash-link" aria-label="patch-first 的优点的直接链接" title="patch-first 的优点的直接链接" translate="no">​</a></h3>
+<p>patch-first 的好处是 diff 明确、审阅友好、失败边界清楚。适合：</p>
+<ul>
+<li class="">跨文件但局部修改；</li>
+<li class="">需要人类 review 的代码改动；</li>
+<li class="">希望保留上下文、不让模型重写整文件；</li>
+<li class="">需要在 PR 里形成清晰补丁的工作流。</li>
+</ul>
+<p>Codex、Roo 的 <code>apply_patch</code>、Hermes 的 <code>patch</code> 都属于这类思路。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="replace-派的优点和风险">replace 派的优点和风险<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#replace-%E6%B4%BE%E7%9A%84%E4%BC%98%E7%82%B9%E5%92%8C%E9%A3%8E%E9%99%A9" class="hash-link" aria-label="replace 派的优点和风险的直接链接" title="replace 派的优点和风险的直接链接" translate="no">​</a></h3>
+<p><code>old_string/new_string</code> replace 对模型来说直观，工具实现也简单。它适合小范围、唯一上下文明确的修改。</p>
+<p>风险是：</p>
+<ul>
+<li class=""><code>old_string</code> 不唯一时可能误改；</li>
+<li class=""><code>old_string</code> 和真实文件只差一点点时会失败；</li>
+<li class="">大段 replace 对上下文完整性要求高；</li>
+<li class="">如果 client 自动 fuzzy match，可能需要额外审阅。</li>
+</ul>
+<p>Anthropic text editor、Gemini CLI、Qwen Code、OpenCode、Cline SDK editor 都有明显的 replace 色彩。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="write_file--whole-file-overwrite-的风险最大">write_file / whole-file overwrite 的风险最大<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#write_file--whole-file-overwrite-%E7%9A%84%E9%A3%8E%E9%99%A9%E6%9C%80%E5%A4%A7" class="hash-link" aria-label="write_file / whole-file overwrite 的风险最大的直接链接" title="write_file / whole-file overwrite 的风险最大的直接链接" translate="no">​</a></h3>
+<p><code>write_file(content)</code> 很适合新建文件或小文件重写，但对大文件风险最大：模型可能漏掉 imports、注释、边缘分支、配置项或格式细节。</p>
+<p>如果一个 client 暴露 <code>write_file</code>，系统提示和工具实现最好要求：</p>
+<ul>
+<li class="">先读文件；</li>
+<li class="">大文件避免整文件重写；</li>
+<li class="">重写后做 diff；</li>
+<li class="">运行格式/测试；</li>
+<li class="">明确失败时不要“猜一个完整文件”。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="对-chatarch-的实践建议">对 ChatArch 的实践建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#%E5%AF%B9-chatarch-%E7%9A%84%E5%AE%9E%E8%B7%B5%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="对 ChatArch 的实践建议的直接链接" title="对 ChatArch 的实践建议的直接链接" translate="no">​</a></h2>
+<p>第一，<strong>千问 Token Plan 继续按 OpenAI-compatible / Responses 接入 CRS/Hermes</strong>。这是模型调用协议最稳的路径。</p>
+<p>第二，<strong>不要为了“像 Claude Code”而把千问硬塞 Anthropic-native</strong>。只有当某个 client 明确强依赖 Anthropic Messages 或 Anthropic text editor schema，并且中间网关真的能转换字段时，才值得这么做。</p>
+<p>第三，<strong>评估新的 agent client 时，固定问三件事</strong>：</p>
+<ol>
+<li class="">provider wire API 是谁？</li>
+<li class="">model-visible tools 是什么 schema？</li>
+<li class="">local apply 是 patch、replace、write_file、diff 还是 shell？</li>
+</ol>
+<p>第四，<strong>在写适配文档时不要混用层级词</strong>。比如：</p>
+<ul>
+<li class="">“Qwen Token Plan 是 OpenAI-compatible provider”是对的；</li>
+<li class="">“Qwen Code 因为用了千问所以是 OpenAI Codex patch 派”是错的；</li>
+<li class="">“Claude Code 是 Anthropic 产品工具族”是对的；</li>
+<li class="">“Anthropic 所有 coding client 都是 <code>str_replace_based_edit_tool</code>”则过度外推。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="参考入口">参考入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/agent-client-edit-protocols-patch-replace#%E5%8F%82%E8%80%83%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="参考入口的直接链接" title="参考入口的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" rel="noopener noreferrer" class="">OpenAI function calling</a></li>
+<li class=""><a href="https://platform.openai.com/docs/api-reference/responses" target="_blank" rel="noopener noreferrer" class="">OpenAI Responses API</a></li>
+<li class=""><a href="https://github.com/openai/codex" target="_blank" rel="noopener noreferrer" class="">OpenAI Codex repository</a></li>
+<li class=""><a href="https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/text-editor-tool" target="_blank" rel="noopener noreferrer" class="">Anthropic text editor tool</a></li>
+<li class=""><a href="https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/overview" target="_blank" rel="noopener noreferrer" class="">Anthropic tool use overview</a></li>
+<li class=""><a href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank" rel="noopener noreferrer" class="">Claude Code settings</a></li>
+<li class=""><a href="https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/file-system.md" target="_blank" rel="noopener noreferrer" class="">Gemini CLI file-system tools</a></li>
+<li class=""><a href="https://github.com/QwenLM/qwen-code" target="_blank" rel="noopener noreferrer" class="">Qwen Code repository</a></li>
+<li class=""><a href="https://github.com/QwenLM/qwen-code/blob/main/docs/developers/tools/file-system.md" target="_blank" rel="noopener noreferrer" class="">Qwen Code file-system tools</a></li>
+<li class=""><a href="https://github.com/sst/opencode/blob/dev/packages/opencode/src/tool/edit.ts" target="_blank" rel="noopener noreferrer" class="">OpenCode edit tool</a></li>
+<li class=""><a href="https://aider.chat/docs/more/edit-formats.html" target="_blank" rel="noopener noreferrer" class="">Aider edit formats</a></li>
+<li class=""><a href="https://github.com/RooCodeInc/Roo-Code/tree/main/apps/docs/docs/advanced-usage/available-tools" target="_blank" rel="noopener noreferrer" class="">Roo Code available tools</a></li>
+<li class=""><a href="https://github.com/cline/cline" target="_blank" rel="noopener noreferrer" class="">Cline repository</a></li>
+<li class=""><a href="https://docs.cursor.com/en/cli/overview" target="_blank" rel="noopener noreferrer" class="">Cursor CLI overview</a></li>
+</ul>]]></content>
+        <category label="agent" term="agent"/>
+        <category label="codex" term="codex"/>
+        <category label="claude-code" term="claude-code"/>
+        <category label="qwen" term="qwen"/>
+        <category label="tooling" term="tooling"/>
+    </entry>
+    <entry>
         <title type="html"><![CDATA[把 PPT 做成前端项目：Frontend Harness Slides 的工作流与实践路线]]></title>
         <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow</id>
         <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow"/>
@@ -4018,189 +4126,5 @@
         <category label="open-problems" term="open-problems"/>
         <category label="datasets" term="datasets"/>
         <category label="icm" term="icm"/>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[一份‘反证 Collatz 猜想’的 Lean 代码，为什么同时通过了两个 checker]]></title>
-        <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda</id>
-        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda"/>
-        <updated>2026-07-31T01:30:00.000Z</updated>
-        <summary type="html"><![CDATA[完整复盘 Lean 社区的 Counterexample to the Lean Conjecture 讨论：一份 Collatz“反证”如何利用 Lean nested-inductive 漏检与旧版 nanoda 的独立漏洞，通过当时的 comparator，并推动 LeanEval 改成双 kernel 验证。]]></summary>
-        <content type="html"><![CDATA[<p>2026 年 7 月 28 日，Lean Zulip 的 <code>lean4</code> stream 出现了一个很难忽略的 topic：<a href="https://leanprover.zulipchat.com/#narrow/channel/270676-lean4/topic/Counterexample.20to.20the.20Lean.20Conjecture.20.28Soundness.20Bug.29/near/613135216" target="_blank" rel="noopener noreferrer" class=""><code>Counterexample to the Lean Conjecture (Soundness Bug)</code></a>。</p>
-<p>帖子里的三个事实放在一起，几乎像一道故意设计的判断题：</p>
-<ol>
-<li class="">一个不到 500 行的 Lean 仓库声称“反证”了 Collatz 猜想。</li>
-<li class="">它没有 <code>sorry</code>，<code>#print axioms</code> 没暴露隐藏公理，当时的 comparator.live 和旧版 nanoda 都接受了它。</li>
-<li class="">它没有解决 Collatz。它真正构造出来的是一个利用 kernel soundness bug 的无公理 <code>False</code>。</li>
-</ol>
-<p>这不是“形式化验证忽然失效”的故事，也不是一个模型真的完成了世纪数学突破。它更具体，也更值得研究：一份 proof artifact 把 <strong>Lean 官方 kernel 的漏检</strong> 与 <strong>旧版 nanoda 的另一处漏检</strong> 拼在一起，恰好穿过了两套原本彼此独立的检查。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>这份 Collatz“反证”同时通过两个 checker，并不是两个 checker 共享同一个 bug。Lean 在 nested-inductive 翻译时漏查了一个参数；旧版 nanoda 又错误接受了一个 non-structure projection。artifact 把一个表达式放进“Lean 完全没检查、旧 nanoda 检查错了”的交集里。</p></div></div>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>系列说明</div><div class="admonitionContent_BuS1"><p>这是三篇系列的主文，完整讲事件、技术机制、社区讨论与修复。两篇工具补充分别解释 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-comparator-trust-boundary-guide">Comparator 到底在检查什么</a> 和 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/nanoda-lean-external-kernel-guide">nanoda 为什么能作为另一个 Lean kernel</a>。不打开补充文章，也不影响理解本文。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先说清楚它反证的不是-collatz">先说清楚：它反证的不是 Collatz<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E5%85%88%E8%AF%B4%E6%B8%85%E6%A5%9A%E5%AE%83%E5%8F%8D%E8%AF%81%E7%9A%84%E4%B8%8D%E6%98%AF-collatz" class="hash-link" aria-label="先说清楚：它反证的不是 Collatz的直接链接" title="先说清楚：它反证的不是 Collatz的直接链接" translate="no">​</a></h2>
-<p>原始仓库是 <a href="https://github.com/xrchz/CollatzLean" target="_blank" rel="noopener noreferrer" class=""><code>xrchz/CollatzLean</code></a>。Ramana Kumar 在 7 月 25 日提交了 <a href="https://github.com/xrchz/CollatzLean/commit/a79357462a33d2a6babd4cf6c8d8bcd25425d653" target="_blank" rel="noopener noreferrer" class=""><code>a793574</code></a>，commit 标题是 <code>Finish disproof</code>。</p>
-<p>从公开 theorem surface 看，它像一个正常的数学结论：</p>
-<div class="language-lean codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-lean codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">theorem exists_nonterminating_orbit : ∃ n, Diverges n :=</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  limitingProfile_is_exceptional</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">theorem not_conjecture : ¬ Conjecture :=</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  exceptionalOrbit_refutes_conjecture exists_nonterminating_orbit</span><br></div></code></pre></div></div>
-<p>如果这些 theorem 真由 Lean 的逻辑规则推出，那么 Collatz conjecture 的确被反驳了。问题在于，仓库里的 proof term 不是通过正常数学构造得到的。<code>Collatz/ProfileEnvelope.lean</code> 和 <code>Collatz/Limit.lean</code> 使用 Lean metaprogramming API 直接拼 <code>Expr</code>、投影和 <code>Declaration</code>，再通过 <code>addDecl</code> 把声明交给 kernel。</p>
-<p>这种写法本身并不等于作弊。Lean 的设计允许 tactic 和 metaprogram 任意复杂，甚至完全不可信；安全边界在于它们最终生成的 term 必须由 kernel 检查。真正的问题是：这次 kernel 恰好漏看了一部分 term。</p>
-<p>所以 Zulip topic 标题里的 “Lean Conjecture” 是一个黑色幽默式的双关。被给出 counterexample 的不是数学上的 Collatz conjecture，而是“Lean 的 checked kernel 不会接受 <code>False</code>”这条人们平时依赖的 soundness 假设。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="三天里发生了什么">三天里发生了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E4%B8%89%E5%A4%A9%E9%87%8C%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="三天里发生了什么的直接链接" title="三天里发生了什么的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>时间（UTC）</th><th>事件</th><th>结果</th></tr></thead><tbody><tr><td>7 月 25 日</td><td><code>CollatzLean@a793574</code> 提交 <code>Finish disproof</code></td><td>Collatz 外衣下的 exploit artifact 公开</td></tr><tr><td>7 月 26–27 日</td><td>Lean Kernel Arena 合并 #81、#82、#83；<code>nanoda_lib#22</code> 修复</td><td>nanoda 的 projection 与 inductive metadata 检查被加固</td></tr><tr><td>7 月 28 日 03:28</td><td>Kiran 提交 <a href="https://github.com/leanprover/lean4/issues/14576" target="_blank" rel="noopener noreferrer" class=""><code>lean4#14576</code></a></td><td>把问题缩成普通 checked <code>addDecl</code> 可接受的无公理 <code>False</code></td></tr><tr><td>7 月 28 日 05:08–13:39</td><td>Leonardo de Moura 提交并合并 <a href="https://github.com/leanprover/lean4/pull/14577" target="_blank" rel="noopener noreferrer" class=""><code>lean4#14577</code></a></td><td>Lean 补上 nested-inductive 参数检查</td></tr><tr><td>7 月 28 日 07:16</td><td>Jack McCarthy 发起 Zulip 主帖</td><td>39 名参与者留下 202 条消息</td></tr><tr><td>7 月 29 日</td><td>comparator.live 改用 Comparator + nanoda</td><td>旧 Lean 上由 nanoda 拒绝；新 Lean 自己先拒绝</td></tr><tr><td>7 月 30 日</td><td><a href="https://github.com/leanprover/lean-eval/pull/486" target="_blank" rel="noopener noreferrer" class=""><code>lean-eval#486</code></a> 与 submissions #895 合并</td><td>LeanEval 强制 standard kernel 与 nanoda 同时接受</td></tr></tbody></table>
-<p>这里有个容易误读的时间关系：<code>CollatzLean</code> commit 早于公开的 Kernel Arena nanoda 报告和修复。</p>
-<p>Ramana Kumar 后来<a href="https://leanprover.zulipchat.com/#narrow/channel/270676-lean4/topic/Counterexample.20to.20the.20Lean.20Conjecture.20.28Soundness.20Bug.29/near/613197533" target="_blank" rel="noopener noreferrer" class="">确认有一个或多个 LLM 参与了仓库生成</a>，但他说 nanoda 报告的时间重合很可能只是巧合，同时也保留了“不知道模型是否已见过相关材料”的不确定性。</p>
-<p>现有证据不足以把这件事写成“AI 读取新漏洞报告后主动攻击 Lean”。能够确认的只有 LLM involvement，以及最终 artifact 确实组合了两处独立漏洞。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="lean-kernel-漏看了什么">Lean kernel 漏看了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#lean-kernel-%E6%BC%8F%E7%9C%8B%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="Lean kernel 漏看了什么的直接链接" title="Lean kernel 漏看了什么的直接链接" translate="no">​</a></h2>
-<p>Kiran 的 issue 给出了一份自包含 reproducer。它特意说明，代码走的是普通、应当受检查的 <code>addDecl</code> 路径，没有使用：</p>
-<ul>
-<li class=""><code>sorry</code></li>
-<li class=""><code>unsafeCast</code></li>
-<li class=""><code>debug.skipKernelTC</code></li>
-<li class=""><code>addDeclWithoutChecking</code></li>
-<li class="">FFI</li>
-<li class="">手工篡改 <code>.olean</code></li>
-</ul>
-<p>这点很重要。如果 reproducer 只是显式关闭 kernel checking，那不构成 kernel soundness bug。这里的声明确实提交给了 checked path，只是检查不完整。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="那个本来不该合法的-projection">那个本来不该合法的 projection<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E9%82%A3%E4%B8%AA%E6%9C%AC%E6%9D%A5%E4%B8%8D%E8%AF%A5%E5%90%88%E6%B3%95%E7%9A%84-projection" class="hash-link" aria-label="那个本来不该合法的 projection的直接链接" title="那个本来不该合法的 projection的直接链接" translate="no">​</a></h3>
-<p>reproducer 先定义几种简单类型：</p>
-<div class="language-lean codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-lean codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">inductive P : Prop where | mk (b : Bool)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">structure C where b : Bool</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">inductive W : Type where | mk (p : P)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">inductive L (α : Type) (b : Bool) : Type where | mk</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">inductive T : Bool → Prop where | mk : T true</span><br></div></code></pre></div></div>
-<p>随后 metaprogram 构造一个 nested inductive <code>E</code>。它的 constructor type 中含有大致这样的 nested occurrence：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">L (E w) (C.0 (C.0 w))</span><br></div></code></pre></div></div>
-<p>但局部变量 <code>w</code> 的类型是 <code>W</code>，不是 structure <code>C</code>。对 <code>w</code> 连续做 <code>C</code> 的 field projection 明显不应通过 type checking。</p>
-<p>Lean 处理 nested inductive 时，并不是原样保留所有 nested occurrence。它会把 <code>I Ds is</code> 一类应用翻译成辅助 inductive 声明。bug 就出在这次翻译里：参数 <code>Ds</code> 从生成的辅助类型中被丢掉了，但 kernel 没有在完整 inductive environment 可用后单独检查这些参数。</p>
-<!-- -->
-<p><a href="https://github.com/leanprover/lean4/pull/14577" target="_blank" rel="noopener noreferrer" class=""><code>lean4#14577</code></a> 的修复说明很直接：nested occurrence 的 parametric arguments 过去会逃过 type checking；修复后，kernel 在正在声明的 inductive types 可用时逐一检查它们。</p>
-<p>这才是根本 bug。后面那些 hash collision、cache 和复杂 <code>let</code>，都是把“一个表达式没人检查”放大成 <code>False</code> 的工程。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="从漏查一个参数到证明-false">从漏查一个参数，到证明 <code>False</code><a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E4%BB%8E%E6%BC%8F%E6%9F%A5%E4%B8%80%E4%B8%AA%E5%8F%82%E6%95%B0%E5%88%B0%E8%AF%81%E6%98%8E-false" class="hash-link" aria-label="从漏查一个参数到证明-false的直接链接" title="从漏查一个参数到证明-false的直接链接" translate="no">​</a></h2>
-<p>光把一个 ill-typed subexpression 塞进 environment 还不够。要生成最终的 <code>boom : False</code>，artifact 还需要让 Lean 在不同上下文里对相关表达式产生矛盾的类型判断。</p>
-<p>代码先构造两个语义不同的 Boolean expression：</p>
-<div class="language-lean codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-lean codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">let exceptionalParity := stageParity (mkConst ``Bool.false) 78670</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">let descendingParity := stageParity (mkConst ``Bool.true) 24083</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">unless exceptionalParity.hash == descendingParity.hash &amp;&amp;</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    exceptionalParity.approxDepth == descendingParity.approxDepth do</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  throwError "finite-stage parity summaries are not aligned"</span><br></div></code></pre></div></div>
-<p>一个最终归约到 <code>false</code>，另一个归约到 <code>true</code>。数字 <code>78670</code> 和 <code>24083</code> 不是数学常数，而是为 expression hash collision 挑出来的 padding。代码还要求两者的 <code>approxDepth</code> 相同。</p>
-<p>后续大致做了六件事：</p>
-<ol>
-<li class="">用这两个碰撞表达式构造 dependent values。</li>
-<li class="">把不合法 projection 放进 nested-inductive 参数，也就是 Lean 漏检的位置。</li>
-<li class="">安排多个局部 <code>let</code>，让 type inference 先沿“正常”路径缓存一个结果。</li>
-<li class="">用相同 hash 和 <code>approxDepth</code> 避开某些快速区分路径。</li>
-<li class="">在另一条路径上命中不该复用的 infer cache 结果。</li>
-<li class="">最终得到一个被视为 <code>T false</code> 的值，而 <code>T</code> 唯一的 constructor 只能构造 <code>T true</code>；对这个不可能值做 elimination，得到 <code>False</code>。</li>
-</ol>
-<p>Joachim Breitner 在<a href="https://leanprover.zulipchat.com/#narrow/channel/270676-lean4/topic/Counterexample.20to.20the.20Lean.20Conjecture.20.28Soundness.20Bug.29/near/613671451" target="_blank" rel="noopener noreferrer" class="">消息 613671451</a> 里强调了这段工程的复杂度。</p>
-<p>作者不仅找到一个没被 type-check 的位置，还用了 carefully crafted expressions、hash collision 和 infer cache 布局，把它做成了 proof of false。</p>
-<p>需要再强调一次：<strong>hash collision 不是 Lean 的 soundness bug</strong>。hash 本来就只该用于加速，正确实现必须在碰撞时回退到结构或 definitional equality 检查。真正打开缺口的是 nested-inductive 参数漏检；collision 和 cache choreography 负责把缺口武器化。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么代码看起来像-collatz-数学">为什么代码看起来像 Collatz 数学<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BB%A3%E7%A0%81%E7%9C%8B%E8%B5%B7%E6%9D%A5%E5%83%8F-collatz-%E6%95%B0%E5%AD%A6" class="hash-link" aria-label="为什么代码看起来像 Collatz 数学的直接链接" title="为什么代码看起来像 Collatz 数学的直接链接" translate="no">​</a></h2>
-<p>原始仓库没有使用 <code>E</code>、<code>W</code>、<code>T</code> 这种方便写 issue 的名字。它把构造放进一套 Collatz 语义外衣：</p>
-<ul>
-<li class=""><code>OrbitToken</code></li>
-<li class=""><code>OrbitCarrier</code></li>
-<li class=""><code>NormalizedStep</code></li>
-<li class=""><code>ProfileEnvelope</code></li>
-<li class=""><code>synchronizedDescentProfile</code></li>
-<li class=""><code>limitingDescentProfile</code></li>
-</ul>
-<p>比如它会检查“finite-stage parity summaries are aligned”，再构造“stable dependent envelope”。只看 theorem 名和注释，读者容易把它理解成某种有限阶段收敛或极限论证。</p>
-<p>但关键代码并没有藏到看不见的地方：仓库直接调用 <code>mkProj</code>、<code>mkApp</code>、<code>Expr.hash</code>、<code>approxDepth</code> 和 <code>addDecl</code>。Kiran 在讨论中表示，仓库总量不到 500 行、meta code 很醒目，而且它声称解决的是 Collatz，任何有经验的 verification researcher 都会把它当成需要深挖的异常样本。他把这种呈现描述为“cheeky”，但不认为这是一次试图秘密夹带 bug 的恶意提交。</p>
-<p>社区对这种披露风格没有完全一致的评价。有人觉得数学命名增加了不必要的混淆，也有人认为它恰好展示了真实对抗性 proof artifact 会是什么样。无论站在哪边，Kiran 的最小 issue 都完成了一件关键工作：把“Collatz 叙事”与“Lean kernel bug”分开，让修复者可以直接面对一个短小的 <code>False</code> reproducer。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一个工具comparator-为什么会通过">第一个工具：Comparator 为什么会通过<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%B7%A5%E5%85%B7comparator-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E9%80%9A%E8%BF%87" class="hash-link" aria-label="第一个工具：Comparator 为什么会通过的直接链接" title="第一个工具：Comparator 为什么会通过的直接链接" translate="no">​</a></h2>
-<p><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-comparator-trust-boundary-guide">Comparator</a> 的主要任务，不是证明 Lean kernel 本身没有 bug。它防的是另一组常见攻击：</p>
-<ul>
-<li class="">Challenge 和 Solution 实际证明的 statement 不一致。</li>
-<li class="">untrusted imports 重新定义了 statement 依赖的 constant。</li>
-<li class="">宏、notation 或 typeclass 让同一段表面文字表达不同含义。</li>
-<li class="">proof 偷用了 <code>sorryAx</code> 或未列入 allowlist 的 axiom。</li>
-<li class="">build-time meta code 修改文件、环境或 trusted artifacts。</li>
-</ul>
-<p>Comparator 会分别 sandbox-build/export Challenge 与 Solution，比较目标 theorem 的 statement 和传递依赖 constant graph，检查 reachable axioms，最后把 exported environment replay 到 kernel。</p>
-<p>这份 exploit 恰好满足了 Comparator 当时能验证的条件：</p>
-<ul>
-<li class="">statement 没有漂移；</li>
-<li class="">没用禁止 axiom；</li>
-<li class="">sandbox 没被逃逸；</li>
-<li class="">exported proof 被当时有 bug 的 standard Lean kernel 接受。</li>
-</ul>
-<p>因此 comparator.live 当时显示 <code>Success</code> 并不神秘。它把 proof 交给了与漏洞处在同一信任边界内的 kernel，没有另一个实现来否决结果。</p>
-<p>7 月 29 日，Rob Simmons 在<a href="https://leanprover.zulipchat.com/#narrow/channel/270676-lean4/topic/Counterexample.20to.20the.20Lean.20Conjecture.20.28Soundness.20Bug.29/near/613492055" target="_blank" rel="noopener noreferrer" class="">消息 613492055</a> 记录：Jack 最初贴出的链接确实曾返回成功；随后 comparator.live 改为文档所称的 gold standard，也就是 Comparator 配至少一个 external checker，这里使用 nanoda。</p>
-<p>改完后，Lean 4.32.0 的 proof 被 nanoda 拒绝；到修复后的 Lean 4.32.2，standard kernel 自己就先拒绝了它。</p>
-<p>事件证明的是“Comparator 需要独立 kernel 才能覆盖 kernel implementation bug”，不是“Comparator 没有用”。没有它，statement drift、hidden axiom 和 build-time manipulation 仍然没有被解决。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第二个工具为什么旧-nanoda-也通过了">第二个工具：为什么旧 nanoda 也通过了<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E7%AC%AC%E4%BA%8C%E4%B8%AA%E5%B7%A5%E5%85%B7%E4%B8%BA%E4%BB%80%E4%B9%88%E6%97%A7-nanoda-%E4%B9%9F%E9%80%9A%E8%BF%87%E4%BA%86" class="hash-link" aria-label="第二个工具：为什么旧 nanoda 也通过了的直接链接" title="第二个工具：为什么旧 nanoda 也通过了的直接链接" translate="no">​</a></h2>
-<p>这里最容易写错成一句笼统的“nanoda 也有相同漏洞”。事实恰好相反。</p>
-<p><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/nanoda-lean-external-kernel-guide">nanoda</a> 是 Rust 编写的外部 Lean type checker。对 Kiran 的最小 Lean reproducer，修复版 nanoda 会检查 constructor 的完整原始类型，因此能够看到 Lean nested-inductive translation 丢掉的那个畸形参数，并独立拒绝它。</p>
-<p>原始 Collatz artifact 之所以能通过旧 nanoda，是因为它额外触发了 nanoda 自己的一处 projection bug。</p>
-<p>Lean Kernel Arena PR <a href="https://github.com/leanprover/lean-kernel-arena/pull/81" target="_blank" rel="noopener noreferrer" class=""><code>#81</code></a> 把问题压缩成了这个示意：</p>
-<div class="language-lean codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-lean codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">inductive Bad : Prop</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  | mk1 : False → Bad</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  | mk2 : True → Bad</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">theorem bad : False := (Bad.mk2 True.intro).1</span><br></div></code></pre></div></div>
-<p><code>Bad</code> 有两个 constructor，不是 structure。<code>.1</code> 却把 <code>Bad.mk2 True.intro</code> 当成可以从第一个 constructor 投影字段的 structure value。旧 nanoda 没有严格验证“被投影的 inductive 确实是合法 structure”，于是按错误的 constructor metadata 推出了 <code>False</code>。</p>
-<p>Collatz artifact 里的 <code>OrbitCarrier</code> 与 <code>NormalizedStep</code> 正好构造出这类 non-structure projection。结果变成：</p>
-<!-- -->
-<p>Joachim 在<a href="https://leanprover.zulipchat.com/#narrow/channel/270676-lean4/topic/Counterexample.20to.20the.20Lean.20Conjecture.20.28Soundness.20Bug.29/near/613170568" target="_blank" rel="noopener noreferrer" class="">消息 613170568</a> 里的概括最准确：</p>
-<blockquote>
-<p>a proof that passes two independent checkers with two independent bugs</p>
-</blockquote>
-<p>这也是为什么版本信息不能省略：</p>
-<ul>
-<li class=""><strong>修复版 nanoda</strong> 拒绝 Lean-only 最小 reproducer。</li>
-<li class=""><strong>旧版 nanoda</strong> 接受包含额外 non-structure projection 的原始 Collatz artifact。</li>
-<li class=""><code>ammkrn/nanoda_lib#22</code> 在 7 月 27 日加强了 structure、constructor、inductive 与 recursor auxiliary-data 检查。</li>
-</ul>
-<p>一句“nanoda 能过/不能过”没有意义，必须同时写明 artifact、checker commit 和 export format 版本。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="社区真正争论的不只是一个-c-漏检">社区真正争论的，不只是一个 C++ 漏检<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E7%A4%BE%E5%8C%BA%E7%9C%9F%E6%AD%A3%E4%BA%89%E8%AE%BA%E7%9A%84%E4%B8%8D%E5%8F%AA%E6%98%AF%E4%B8%80%E4%B8%AA-c-%E6%BC%8F%E6%A3%80" class="hash-link" aria-label="社区真正争论的，不只是一个 C++ 漏检的直接链接" title="社区真正争论的，不只是一个 C++ 漏检的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="nested-inductive-缺少完整独立的规格">nested inductive 缺少完整、独立的规格<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#nested-inductive-%E7%BC%BA%E5%B0%91%E5%AE%8C%E6%95%B4%E7%8B%AC%E7%AB%8B%E7%9A%84%E8%A7%84%E6%A0%BC" class="hash-link" aria-label="nested inductive 缺少完整、独立的规格的直接链接" title="nested inductive 缺少完整、独立的规格的直接链接" translate="no">​</a></h3>
-<p>Chris Bailey 把 nested inductive 称作 kernel 最复杂的区域之一，并指出其理论与实现细节没有一份脱离 C++ codebase 的完整严格说明。Jeremy Chen 也提醒，Lean4Lean 当时并没有完整的 inductive specification，相关实现基本沿用了 official kernel，因此同样会带上这处 bug。</p>
-<p>这揭示了“另写一个 checker”的边界。如果第二个实现照抄第一个实现的复杂分支，它们在代码仓库上独立，却未必在错误模式上独立。implementation diversity 有价值，但真正强的独立性还需要独立规格、独立实现策略和持续的 adversarial test suite。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="llm-参与不等于已证明-ai-自主攻击">LLM 参与，不等于已证明 AI 自主攻击<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#llm-%E5%8F%82%E4%B8%8E%E4%B8%8D%E7%AD%89%E4%BA%8E%E5%B7%B2%E8%AF%81%E6%98%8E-ai-%E8%87%AA%E4%B8%BB%E6%94%BB%E5%87%BB" class="hash-link" aria-label="LLM 参与，不等于已证明 AI 自主攻击的直接链接" title="LLM 参与，不等于已证明 AI 自主攻击的直接链接" translate="no">​</a></h3>
-<p>直接证据只有两点：Ramana 确认 LLM 参与；artifact 展现了相当高的 exploit engineering 水平。</p>
-<p>无法确认的部分更多：哪个模型写了哪段、模型是否看过 nanoda 报告、人是否提示它寻找 verifier bug、它是否“理解”自己在做 soundness exploit。把这些空白补成一个完整的 AI 攻击故事，会比原始 artifact 更像虚构。</p>
-<p>但 Joseph Myers 提出的风险不依赖这次 provenance 是否能完全还原：当 agent 有能力合法解决数学题，也有能力寻找 verifier bug 时，重大结果不能只问“CI 绿了吗”。审查还要判断 proof architecture 是否对应预期数学论证，尤其要检查 custom metaprogramming、直接 <code>Expr</code> 构造和声明注入。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="proof-digestion-没有被形式化证明淘汰">proof digestion 没有被形式化证明淘汰<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#proof-digestion-%E6%B2%A1%E6%9C%89%E8%A2%AB%E5%BD%A2%E5%BC%8F%E5%8C%96%E8%AF%81%E6%98%8E%E6%B7%98%E6%B1%B0" class="hash-link" aria-label="proof digestion 没有被形式化证明淘汰的直接链接" title="proof digestion 没有被形式化证明淘汰的直接链接" translate="no">​</a></h3>
-<p>形式化 proof 的强项，是把庞大推理压缩到一个小 trusted checker 可以机械核验的对象。但“checker 接受”从来不是一句脱离前提的绝对结论。它依赖：</p>
-<ul>
-<li class="">formal statement 与人类想表达的问题一致；</li>
-<li class="">imports 和 definitions 是可信的；</li>
-<li class="">proof 没使用未允许 axioms；</li>
-<li class="">build 与 export 没被攻击；</li>
-<li class="">kernel logic 和具体实现没有被 exploit；</li>
-<li class="">运行 verifier 的系统没有撒谎。</li>
-</ul>
-<p>Comparator、external checker 和 proof digestion 分别覆盖不同层。把其中任意一层叫作“最终答案”，都会掩盖剩下的信任假设。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="修复后的验证链是什么">修复后的验证链是什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E4%BF%AE%E5%A4%8D%E5%90%8E%E7%9A%84%E9%AA%8C%E8%AF%81%E9%93%BE%E6%98%AF%E4%BB%80%E4%B9%88" class="hash-link" aria-label="修复后的验证链是什么的直接链接" title="修复后的验证链是什么的直接链接" translate="no">​</a></h2>
-<p>Lean 自身在 #14577 补上了漏掉的 type check。工具层也同时改变。</p>
-<p>LeanEval PR <a href="https://github.com/leanprover/lean-eval/pull/486" target="_blank" rel="noopener noreferrer" class=""><code>#486</code></a> 不再让单个 problem 自己决定是否启用 nanoda。<code>WorkspaceTest.lean</code> 会读取 committed config 后强制覆盖：</p>
-<div class="language-lean codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-lean codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">let config := config.setObjVal! "enable_nanoda" (Json.bool true)</span><br></div></code></pre></div></div>
-<p>如果 <code>nanoda_bin</code> 不存在，evaluation 失败，而不是静默回退到单 kernel。当前流程可以画成：</p>
-<!-- -->
-<p>这是比“再跑一次 comparator”强得多的变化，因为第二次 replay 使用不同语言、不同代码和不同实现结构。</p>
-<p>但它仍不是数学意义上的绝对保证。Lean 官方文档列出的剩余假设包括：Lean logic sound、Comparator plumbing 正确、sandbox 安全、所有 checker 不会同时命中 implementation bug、trusted Challenge 没有人为错误或误导。此次事件甚至展示了“不同 checker 的不同 bug 可以被同一个 artifact 组合利用”这种低概率但真实的失败模式。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这件事留下的五条实用规则">这件事留下的五条实用规则<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E8%BF%99%E4%BB%B6%E4%BA%8B%E7%95%99%E4%B8%8B%E7%9A%84%E4%BA%94%E6%9D%A1%E5%AE%9E%E7%94%A8%E8%A7%84%E5%88%99" class="hash-link" aria-label="这件事留下的五条实用规则的直接链接" title="这件事留下的五条实用规则的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-把statement-integrity和kernel-soundness分开">1. 把“statement integrity”和“kernel soundness”分开<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#1-%E6%8A%8Astatement-integrity%E5%92%8Ckernel-soundness%E5%88%86%E5%BC%80" class="hash-link" aria-label="1. 把“statement integrity”和“kernel soundness”分开的直接链接" title="1. 把“statement integrity”和“kernel soundness”分开的直接链接" translate="no">​</a></h3>
-<p>Comparator 很擅长确认你证明的是 trusted Challenge，而不是一个被换过定义的相似句子。external kernel 擅长减少单个 kernel implementation bug。两件事不能互相替代。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-记录精确版本而不是只写工具名">2. 记录精确版本，而不是只写工具名<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#2-%E8%AE%B0%E5%BD%95%E7%B2%BE%E7%A1%AE%E7%89%88%E6%9C%AC%E8%80%8C%E4%B8%8D%E6%98%AF%E5%8F%AA%E5%86%99%E5%B7%A5%E5%85%B7%E5%90%8D" class="hash-link" aria-label="2. 记录精确版本，而不是只写工具名的直接链接" title="2. 记录精确版本，而不是只写工具名的直接链接" translate="no">​</a></h3>
-<p>验证报告至少要带：Lean toolchain、Comparator、landrun、lean4export、external checker 的 commit；原始 artifact 与 minimized MWE 也应同时保留。否则下一位复现者只会得到互相矛盾的“我这里能过”和“我这里不能过”。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-对-major-ai-proof-审计-meta-code">3. 对 major AI proof 审计 meta code<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#3-%E5%AF%B9-major-ai-proof-%E5%AE%A1%E8%AE%A1-meta-code" class="hash-link" aria-label="3. 对 major AI proof 审计 meta code的直接链接" title="3. 对 major AI proof 审计 meta code的直接链接" translate="no">​</a></h3>
-<p>自定义 tactic 很正常，不能看到 <code>meta</code> 就判定恶意。但直接构造 <code>Expr</code>、调用 <code>addDecl</code>、手写 projection、比较 hash/depth，应该触发更高等级的人工检查。尤其当这些代码与数学叙事之间的关系说不清时。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-external-checker-必须-fail-closed">4. external checker 必须 fail closed<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#4-external-checker-%E5%BF%85%E9%A1%BB-fail-closed" class="hash-link" aria-label="4. external checker 必须 fail closed的直接链接" title="4. external checker 必须 fail closed的直接链接" translate="no">​</a></h3>
-<p>配置里写了 <code>enable_nanoda</code> 不够。CI 必须证明 binary 确实存在、确实执行，缺失时整个 validation 失败。LeanEval #486 专门加入了这条行为。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-多-checker-是风险降低不是神谕">5. 多 checker 是风险降低，不是神谕<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#5-%E5%A4%9A-checker-%E6%98%AF%E9%A3%8E%E9%99%A9%E9%99%8D%E4%BD%8E%E4%B8%8D%E6%98%AF%E7%A5%9E%E8%B0%95" class="hash-link" aria-label="5. 多 checker 是风险降低，不是神谕的直接链接" title="5. 多 checker 是风险降低，不是神谕的直接链接" translate="no">​</a></h3>
-<p>两个实现通常比一个好，特别是在 host language、term representation 和检查策略不同的时候。但 checker 数量不是 soundness 的形式证明。更长期的工作包括独立规格、kernel verification、adversarial regression corpus，以及对复杂 inductive machinery 的更清晰理论描述。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最后">最后<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E6%9C%80%E5%90%8E" class="hash-link" aria-label="最后的直接链接" title="最后的直接链接" translate="no">​</a></h2>
-<p>这份代码没有反证 Collatz。它反证了一种更随意的验证习惯：只要 <code>lake build</code> 成功、<code>#print axioms</code> 干净、某个网页显示绿色，就把整条信任链压成一句“Lean verified”。</p>
-<p>更准确的说法应该带上主语和前提：<strong>某个明确版本的 checker，在某个明确配置和 trusted statement 下，接受了这份 artifact。</strong></p>
-<p>Lean 社区对事件的响应其实相当快：最小化、修 kernel、补 external checker、把 nanoda 变成 LeanEval 的强制门槛，前后不到三天。真正需要记住的不是“Lean 也会有 bug”这句常识，而是修复所体现的分层思路：statement、axiom、sandbox、kernel replay、implementation diversity、human digestion，各自解决不同问题。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="工具补充">工具补充<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E5%B7%A5%E5%85%B7%E8%A1%A5%E5%85%85" class="hash-link" aria-label="工具补充的直接链接" title="工具补充的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-comparator-trust-boundary-guide">Comparator 到底在检查什么：从 Challenge/Solution 到 external kernel</a></li>
-<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/nanoda-lean-external-kernel-guide">nanoda：为什么 Lean 还需要另一个 kernel</a></li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda#%E4%B8%BB%E8%A6%81%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://leanprover.zulipchat.com/#narrow/channel/270676-lean4/topic/Counterexample.20to.20the.20Lean.20Conjecture.20.28Soundness.20Bug.29/near/613135216" target="_blank" rel="noopener noreferrer" class="">Lean Zulip 主帖：Counterexample to the Lean Conjecture</a></li>
-<li class=""><a href="https://github.com/leanprover/lean4/issues/14576" target="_blank" rel="noopener noreferrer" class=""><code>leanprover/lean4#14576</code></a>：无公理 <code>False</code> 的最小 reproducer</li>
-<li class=""><a href="https://github.com/leanprover/lean4/pull/14577" target="_blank" rel="noopener noreferrer" class=""><code>leanprover/lean4#14577</code></a>：nested-inductive 参数检查修复</li>
-<li class=""><a href="https://github.com/xrchz/CollatzLean/commit/a79357462a33d2a6babd4cf6c8d8bcd25425d653" target="_blank" rel="noopener noreferrer" class=""><code>xrchz/CollatzLean@a793574</code></a>：原始 artifact</li>
-<li class=""><a href="https://github.com/leanprover/lean-kernel-arena/pull/81" target="_blank" rel="noopener noreferrer" class="">Lean Kernel Arena #81</a>：nanoda non-structure projection reproducer</li>
-<li class=""><a href="https://github.com/ammkrn/nanoda_lib/pull/22" target="_blank" rel="noopener noreferrer" class=""><code>ammkrn/nanoda_lib#22</code></a>：nanoda inductive/projection hardening</li>
-<li class=""><a href="https://github.com/leanprover/lean-eval/pull/486" target="_blank" rel="noopener noreferrer" class=""><code>leanprover/lean-eval#486</code></a>：强制 nanoda external kernel</li>
-<li class=""><a href="https://lean-lang.org/doc/reference/latest/ValidatingProofs/#validating-comparator" target="_blank" rel="noopener noreferrer" class="">Lean Reference：Validating a Lean Proof</a></li>
-</ul>]]></content>
-        <category label="lean" term="lean"/>
-        <category label="formal-verification" term="formal-verification"/>
-        <category label="theorem-proving" term="theorem-proving"/>
-        <category label="security" term="security"/>
-        <category label="ai" term="ai"/>
     </entry>
 </feed>
