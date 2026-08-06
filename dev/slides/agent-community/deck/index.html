@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent Community Quick Start Slides</title>
+  <style>
+    :root {
+      --outer: #0f1724;
+      --paper: #fffdf8;
+      --ink: #111827;
+      --muted: #6b7280;
+      --faint: #e5e7eb;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --amber: #d97706;
+      --amber-soft: #fef3c7;
+      --violet: #7c3aed;
+      --violet-soft: #ede9fe;
+      --shadow: 0 30px 80px rgba(0, 0, 0, .36);
+      --hand: "LXGW WenKai Lite", "Kaiti SC", STKaiti, "STSong", "Songti SC", serif;
+      --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 10%, #1f2937 0, var(--outer) 44%, #070b12 100%);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      font-family: var(--hand);
+    }
+
+    .deck-shell {
+      width: min(1280px, calc(100vw - 44px));
+      aspect-ratio: 16 / 9;
+      position: relative;
+      filter: drop-shadow(var(--shadow));
+    }
+
+    .stage {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(17,24,39,.035) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,.025) 1px, transparent 1px),
+        var(--paper);
+      background-size: 48px 48px, 48px 48px, auto;
+      border-radius: 2px;
+      box-shadow: inset 0 0 0 1px rgba(17, 24, 39, .08);
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: -20% -10%;
+      background:
+        radial-gradient(ellipse at 50% 45%, transparent 0 56%, rgba(37,99,235,.06) 57% 59%, transparent 60%),
+        radial-gradient(ellipse at 22% 76%, transparent 0 46%, rgba(17,24,39,.05) 47% 49%, transparent 50%);
+      transform: rotate(-18deg);
+      pointer-events: none;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 54px 70px 58px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 20px;
+      z-index: 1;
+    }
+
+    .kicker {
+      font-family: var(--mono);
+      font-size: clamp(10px, 1.2vw, 14px);
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      color: var(--blue);
+      font-weight: 800;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      font-size: clamp(38px, 5.2vw, 72px);
+      line-height: 1.05;
+      letter-spacing: -.04em;
+      font-weight: 900;
+      text-wrap: balance;
+    }
+    h2 {
+      font-size: clamp(30px, 4vw, 52px);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+      font-weight: 900;
+      text-wrap: balance;
+    }
+    h3 {
+      font-size: clamp(20px, 2.1vw, 28px);
+      line-height: 1.15;
+      font-weight: 900;
+    }
+    .lead {
+      margin-top: 18px;
+      font-size: clamp(18px, 2.1vw, 29px);
+      line-height: 1.35;
+      color: var(--blue);
+      font-weight: 850;
+      text-wrap: balance;
+    }
+    .subtle {
+      color: var(--muted);
+      font-size: clamp(14px, 1.55vw, 20px);
+      line-height: 1.55;
+    }
+
+    .content {
+      position: relative;
+      min-height: 0;
+    }
+
+    .hero-content {
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+    .hero-card { max-width: 980px; position: relative; z-index: 2; }
+    .tag-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 42px;
+    }
+    .tag {
+      font-family: var(--mono);
+      border: 2px dashed rgba(37, 99, 235, .42);
+      background: rgba(219, 234, 254, .68);
+      color: #1d4ed8;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 850;
+      font-size: clamp(12px, 1.25vw, 16px);
+    }
+    .punchline {
+      margin-top: 30px;
+      font-size: clamp(20px, 2.3vw, 32px);
+      line-height: 1.28;
+      font-weight: 900;
+      color: var(--ink);
+      background: linear-gradient(transparent 58%, rgba(37,99,235,.18) 58%);
+      display: inline;
+    }
+
+    .board {
+      position: absolute;
+      border: 2px solid rgba(17,24,39,.16);
+      background: rgba(255,255,255,.78);
+      border-radius: 22px;
+      box-shadow: 0 12px 30px rgba(17,24,39,.08);
+      padding: 20px;
+    }
+    .hand-card {
+      border: 2px solid rgba(17,24,39,.18);
+      border-radius: 20px 24px 18px 22px;
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 10px 24px rgba(17,24,39,.07);
+      padding: 17px 18px;
+      position: relative;
+    }
+    .hand-card.red { background: var(--red-soft); border-color: rgba(220,38,38,.32); color: #7f1d1d; }
+    .hand-card.green { background: var(--green-soft); border-color: rgba(22,163,74,.32); color: #14532d; }
+    .hand-card.blue { background: var(--blue-soft); border-color: rgba(37,99,235,.32); color: #1e3a8a; }
+    .hand-card.amber { background: var(--amber-soft); border-color: rgba(217,119,6,.32); color: #78350f; }
+    .hand-card.violet { background: var(--violet-soft); border-color: rgba(124,58,237,.32); color: #4c1d95; }
+    .hand-card small, .mini-label {
+      display: block;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .11em;
+      font-size: 11px;
+      font-weight: 900;
+      opacity: .72;
+      margin-bottom: 7px;
+    }
+    .hand-card strong {
+      display: block;
+      font-size: clamp(18px, 2vw, 26px);
+      line-height: 1.12;
+      font-weight: 950;
+    }
+    .hand-card p {
+      margin-top: 8px;
+      color: inherit;
+      opacity: .86;
+      font-size: clamp(13px, 1.25vw, 17px);
+      line-height: 1.42;
+      font-family: var(--sans);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      height: 100%;
+      align-items: center;
+    }
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .bubble-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transform: rotate(-2deg);
+    }
+    .bubble {
+      width: fit-content;
+      max-width: 95%;
+      padding: 12px 15px;
+      border-radius: 18px 18px 18px 4px;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      font-family: var(--mono);
+      color: #374151;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(17,24,39,.05);
+    }
+    .bubble:nth-child(even) { align-self: flex-end; border-radius: 18px 18px 4px 18px; background: #eef2ff; }
+
+    .missing-grid { display: grid; gap: 16px; }
+    .warning-strip {
+      position: absolute;
+      left: 40px;
+      right: 40px;
+      bottom: 18px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #111827;
+      color: #fff7ed;
+      font-size: clamp(17px, 1.85vw, 25px);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .topic-table {
+      left: 31%; top: 19%; width: 38%; height: 42%;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border-style: dashed;
+      background: #fff;
+    }
+    .topic-table .topic-title { font-size: clamp(28px, 3vw, 42px); font-weight: 950; }
+    .topic-meta { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+    .topic-meta span { font-family: var(--mono); padding: 7px 9px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-weight: 850; font-size: 12px; }
+    .seat { position: absolute; width: 190px; text-align: center; }
+    .seat .avatar { font-size: 34px; margin-bottom: 4px; }
+    .seat.researcher { left: 8%; top: 20%; }
+    .seat.builder { left: 10%; bottom: 22%; }
+    .seat.reviewer { right: 10%; top: 18%; }
+    .action-chain { right: 7%; bottom: 17%; width: 250px; }
+    .arrow { font-family: var(--mono); color: var(--blue); font-weight: 950; font-size: 26px; text-align: center; }
+
+    .bridge {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 20px;
+      align-items: center;
+      height: 100%;
+    }
+    .bridge-icon { font-size: 56px; color: var(--blue); font-weight: 950; }
+    .queue {
+      position: absolute;
+      left: 50%; bottom: 16px; transform: translateX(-50%);
+      display: flex; gap: 8px; align-items: center;
+      font-family: var(--mono); font-weight: 900; color: #1d4ed8;
+    }
+    .queue span { padding: 8px 10px; border: 2px dashed rgba(37,99,235,.35); border-radius: 12px; background: rgba(219,234,254,.8); }
+
+    .admin-console {
+      width: 74%; margin: 0 auto 24px;
+      border: 3px solid rgba(17,24,39,.22);
+      background: #fff;
+      border-radius: 26px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 14px 30px rgba(17,24,39,.1);
+    }
+    .admin-console .crown { font-size: 42px; }
+    .governance-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+    .executor-row { display: flex; justify-content: center; gap: 16px; margin-top: 24px; }
+    .executor { padding: 13px 17px; border-radius: 16px; border: 2px dashed rgba(17,24,39,.22); background: rgba(255,255,255,.8); font-weight: 900; }
+
+    .layers { width: 82%; margin: 0 auto; display: grid; gap: 10px; }
+    .layer {
+      display: grid; grid-template-columns: 230px 1fr;
+      align-items: center; gap: 18px;
+      border: 2px solid rgba(17,24,39,.16);
+      background: rgba(255,255,255,.85);
+      border-radius: 18px;
+      padding: 13px 18px;
+      box-shadow: 0 8px 18px rgba(17,24,39,.055);
+    }
+    .layer-name { font-family: var(--mono); font-weight: 950; color: var(--ink); }
+    .layer-role { color: #374151; font-family: var(--sans); font-size: 16px; line-height: 1.35; }
+    .link-note { margin: 16px auto 0; width: fit-content; padding: 12px 16px; border-radius: 999px; background: #111827; color: white; font-weight: 900; }
+
+    .loop-wrap { position: relative; height: 100%; }
+    .loop-ring {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-12deg);
+      width: 54%; aspect-ratio: 1 / 1; border: 9px dashed rgba(37,99,235,.22); border-radius: 999px;
+    }
+    .loop-node { position: absolute; width: 230px; text-align: center; }
+    .loop-node.detect { left: 10%; top: 28%; }
+    .loop-node.judge { left: 50%; top: 13%; transform: translateX(-50%); }
+    .loop-node.action { right: 10%; top: 28%; }
+    .loop-node.readback { left: 50%; bottom: 8%; transform: translateX(-50%); }
+
+    .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; height: 100%; }
+    .scope-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; font-family: var(--sans); }
+    .scope-list li { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.68); font-weight: 750; }
+    .acceptance { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: 76%; text-align: center; }
+
+    .memory-chain { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 46px; flex-wrap: wrap; }
+    .chain-node { padding: 15px 18px; border-radius: 19px; border: 2px solid rgba(37,99,235,.27); background: #eff6ff; font-family: var(--mono); font-weight: 950; color: #1d4ed8; }
+    .closing-stack { text-align: center; display: grid; place-items: center; height: 100%; }
+    .final-line { font-size: clamp(31px, 4vw, 56px); font-weight: 950; line-height: 1.12; max-width: 980px; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #9ca3af;
+      position: relative;
+      z-index: 5;
+    }
+    .dots { display: flex; gap: 5px; align-items: center; }
+    .dot { width: 7px; height: 7px; border-radius: 99px; background: #d1d5db; opacity: .85; cursor: pointer; }
+    .dot.active { width: 24px; background: var(--blue); }
+    .controls { display: flex; gap: 8px; align-items: center; }
+    .controls button {
+      border: 1px solid rgba(17,24,39,.18);
+      background: rgba(255,255,255,.84);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-family: var(--mono);
+      font-weight: 900;
+      color: #374151;
+      cursor: pointer;
+    }
+    .controls button:hover { background: #eff6ff; color: var(--blue); }
+
+    .visible { animation: pop .24s ease-out both; }
+    @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .visible { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck-shell" aria-label="Agent Community deck v1">
+    <section class="stage" id="stage"></section>
+  </main>
+
+  <script>
+    const scenes = [
+      { key: 'thesis', label: 'Thesis', maxBeat: 2, kicker: 'SCENE 1 · THESIS', title: 'Agent Community：<br><span style="font-size:.88em">从机器人群聊到可治理议事厅</span>', lead: 'Topic-based discussion · long-lived Agent Profiles · Human Admin governance · verifiable action loop' },
+      { key: 'failure', label: 'Failure', maxBeat: 2, kicker: 'SCENE 2 · FAILURE', title: '如果只做“机器人群聊”，会得到热闹但不可追踪' },
+      { key: 'topic', label: 'New Model', maxBeat: 2, kicker: 'SCENE 3 · TOPIC', title: '新模型：Topic 是议事空间，不是消息流' },
+      { key: 'profiles', label: 'Profiles', maxBeat: 2, kicker: 'SCENE 4 · PROFILES', title: '长期 Agent Profile 才像社区成员' },
+      { key: 'admin', label: 'Human Admin', maxBeat: 2, kicker: 'SCENE 5 · HUMAN ADMIN', title: 'Human Admin 不是退出，而是上移为治理者' },
+      { key: 'layers', label: 'Layers', maxBeat: 2, kicker: 'SCENE 6 · LAYERS', title: '不做大一统平台，先把每层职责说清楚' },
+      { key: 'loop', label: 'Loop', maxBeat: 2, kicker: 'SCENE 7 · LOOP', title: '自治不是先全自动，而是先能闭环' },
+      { key: 'slice', label: 'First Slice', maxBeat: 2, kicker: 'SCENE 8 · FIRST SLICE', title: '第一版要克制：先跑通一个可验收 slice' },
+      { key: 'closing', label: 'Closing', maxBeat: 2, kicker: 'SCENE 9 · CLOSING', title: 'Agent Community 的目标，是把讨论变成组织记忆' }
+    ];
+
+    const qs = new URLSearchParams(location.search);
+    let sceneIndex = clamp((parseInt(qs.get('scene') || '1', 10) || 1) - 1, 0, scenes.length - 1);
+    let beatIndex = clamp(parseInt(qs.get('beat') || '0', 10) || 0, 0, scenes[sceneIndex].maxBeat);
+
+    function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+    function show(min, html) { return beatIndex >= min ? `<div class="visible">${html}</div>` : ''; }
+    function html(strings, ...values) { return strings.map((s, i) => s + (values[i] ?? '')).join(''); }
+
+    function updateUrl() {
+      const url = new URL(location.href);
+      url.searchParams.set('scene', String(sceneIndex + 1));
+      url.searchParams.set('beat', String(beatIndex));
+      history.replaceState(null, '', url);
+      document.title = `${sceneIndex + 1}. ${scenes[sceneIndex].label} — Agent Community Deck v1`;
+    }
+
+    function render() {
+      const scene = scenes[sceneIndex];
+      beatIndex = clamp(beatIndex, 0, scene.maxBeat);
+      updateUrl();
+      document.getElementById('stage').innerHTML = html`
+        <article class="slide" data-scene="${scene.key}" data-beat="${beatIndex}">
+          ${renderHeader(scene)}
+          <div class="content">${renderScene(scene)}</div>
+          ${renderFooter(scene)}
+        </article>
+      `;
+    }
+
+    function renderHeader(scene) {
+      if (scene.key === 'thesis' || scene.key === 'closing') return '<div></div>';
+      return html`<header><div class="kicker">${scene.kicker}</div><h2>${scene.title}</h2></header>`;
+    }
+
+    function renderScene(scene) {
+      const renderers = { thesis, failure, topic, profiles, admin, layers, loop, slice, closing };
+      return renderers[scene.key]();
+    }
+
+    function thesis() {
+      return html`
+        <div class="hero-content">
+          <div class="hero-card">
+            <div class="kicker">CHATBLOG SLIDES · QUICK START DEMO</div>
+            <h1>${scenes[0].title}</h1>
+            <p class="lead">${scenes[0].lead}</p>
+            ${show(1, `<div class="tag-row"><span class="tag">Topic</span><span class="tag">Profile</span><span class="tag">Human Admin</span><span class="tag">Loop</span></div>`)}
+            ${show(2, `<p class="punchline">重点不是“让 bot 更多”，而是让每一次讨论都能留下证据、决策和行动。</p>`)}
+          </div>
+        </div>`;
+    }
+
+    function failure() {
+      return html`
+        <div class="two-col">
+          <div class="bubble-stream">
+            ${['bot: 我来处理一下…', 'tool: output 148 lines', 'agent: maybe fixed', 'bot: 再试一次？', 'human: 刚才决定是什么？'].map(x => `<div class="bubble">${x}</div>`).join('')}
+          </div>
+          ${show(1, `<div class="missing-grid">
+            <div class="hand-card red"><small>missing</small><strong>No decision</strong><p>讨论没有沉淀成可引用的结论。</p></div>
+            <div class="hand-card red"><small>missing</small><strong>No owner</strong><p>不知道谁负责下一步，也不知道谁验收。</p></div>
+            <div class="hand-card red"><small>missing</small><strong>No readback</strong><p>没有 URL、任务、PR、截图或运行证据。</p></div>
+          </div>`)}
+        </div>
+        ${show(2, `<div class="warning-strip">消息越多，不等于协作越强；没有结构的热闹，只会制造组织遗忘。</div>`)}
+      `;
+    }
+
+    function topic() {
+      return html`
+        <div class="loop-wrap">
+          <div class="board topic-table">
+            <div>
+              <div class="mini-label">topic table</div>
+              <div class="topic-title">一个问题的议事桌</div>
+              <div class="topic-meta"><span>Goal</span><span>Context</span><span>Evidence</span></div>
+            </div>
+          </div>
+          ${show(1, `<div class="seat researcher hand-card blue"><div class="avatar">🔎</div><strong>Researcher</strong><p>补来源和反例。</p></div>
+            <div class="seat builder hand-card amber"><div class="avatar">🛠️</div><strong>Builder</strong><p>给实现路径。</p></div>
+            <div class="seat reviewer hand-card green"><div class="avatar">✅</div><strong>Reviewer</strong><p>看证据和验收。</p></div>`)}
+          ${show(2, `<div class="action-chain hand-card violet"><small>action chain</small><strong>Decision → Task → PR / Doc / Run</strong><p>Topic 不是终点，它要能推动外部事实源变化。</p></div>`)}
+        </div>
+        ${show(2, `<div class="warning-strip" style="background:#1e3a8a">群聊按时间流走；Topic 按问题留下。</div>`)}
+      `;
+    }
+
+    function profiles() {
+      return html`
+        <div class="bridge">
+          <div class="hand-card blue">
+            <small>profile / seat</small>
+            <strong>长期 Agent Profile</strong>
+            <p>身份、记忆、技能、权限、风格和长期责任。像社区里的固定席位。</p>
+          </div>
+          ${show(2, `<div class="bridge-icon">⇄</div>`)}
+          ${show(1, `<div class="hand-card amber"><small>subagent / branch</small><strong>临时执行分身</strong><p>一次任务里的并行分支，完成后回传总结，不承担长期身份。</p></div>`)}
+        </div>
+        ${show(2, `<div class="queue"><span>Kanban</span><span>accepted</span><span>revise</span><span>reject</span><span>handoff</span></div>`)}
+        ${show(2, `<div class="warning-strip" style="background:#111827">Profile 是席位，subagent 是临时分身；社区需要席位，不只需要分身。</div>`)}
+      `;
+    }
+
+    function admin() {
+      return html`
+        <div>
+          <div class="admin-console">
+            <div class="crown">👑</div>
+            <h3>Human Admin Governance Console</h3>
+            <p class="subtle">人类保留目标、边界、权限和验收主权。</p>
+          </div>
+          ${show(1, `<div class="governance-row">
+            <div class="hand-card blue"><small>goal</small><strong>定目标</strong></div>
+            <div class="hand-card amber"><small>boundary</small><strong>划边界</strong></div>
+            <div class="hand-card violet"><small>permission</small><strong>配权限</strong></div>
+            <div class="hand-card green"><small>verdict</small><strong>做验收</strong></div>
+          </div>`)}
+          ${show(2, `<div class="executor-row"><div class="executor">Researcher</div><div class="executor">Builder</div><div class="executor">Reviewer</div><div class="executor">Operator</div></div>`)}
+        </div>
+        ${show(2, `<div class="warning-strip" style="background:#064e3b">人类不应该被工具细节吞掉，而应该保留目标、选择和验收主权。</div>`)}
+      `;
+    }
+
+    function layers() {
+      const rows = [
+        ['Real-time rooms', '即时通知、临时频道、工作间气氛。'],
+        ['Discourse', '长期 topic/comment、证据、反对意见和决策沉淀。'],
+        ['Hermes Router', '调工具、执行任务、读写外部系统。'],
+        ['Kanban / ChatBoard', '任务状态、交接、accepted / revise / reject。'],
+        ['Git / Docs / Issues', '代码、文档、PR、issue 与事实源。']
+      ];
+      return html`
+        <div class="layers">
+          ${rows.map((row, idx) => beatIndex >= (idx === 0 ? 0 : 1) ? `<div class="layer visible"><div class="layer-name">${row[0]}</div><div class="layer-role">${row[1]}</div></div>` : '').join('')}
+        </div>
+        ${show(2, `<div class="link-note">不要互相替代，要互相回链。</div>`)}
+        ${show(2, `<div class="warning-strip" style="background:#1f2937">Discourse 负责议事，Hermes 负责执行，Kanban 负责状态，Git/Docs 负责事实源。</div>`)}
+      `;
+    }
+
+    function loop() {
+      return html`
+        <div class="loop-wrap">
+          <div class="loop-ring"></div>
+          <div class="loop-node detect hand-card blue"><small>01 / signal</small><strong>Detect</strong><p>从 topic、事件、任务板和服务状态发现需要处理的信号。</p></div>
+          ${show(0, `<div class="loop-node judge hand-card amber"><small>02 / rule</small><strong>Judge</strong><p>根据规则、权限、上下文判断是否行动，是否需要叫人。</p></div>`)}
+          ${show(0, `<div class="loop-node action hand-card green"><small>03 / artifact</small><strong>Action</strong><p>创建评论、任务、PR、文档或请求确认。</p></div>`)}
+          ${show(2, `<div class="loop-node readback hand-card violet"><small>04 / evidence</small><strong>Readback</strong><p>回读 URL、任务 ID、截图、commit 或运行结果。</p></div>`)}
+        </div>
+        ${show(2, `<div class="warning-strip" style="background:#581c87">没有 readback 的 action，不算完成；没有证据的自治，只是幻觉。</div>`)}
+      `;
+    }
+
+    function slice() {
+      return html`
+        <div class="scope-grid">
+          <div class="hand-card red">
+            <small>not now</small>
+            <strong>不要第一版就全自治</strong>
+            <ul class="scope-list">
+              <li>无限 agent 和复杂权限</li>
+              <li>大一统社区 runtime</li>
+              <li>没有 evidence 的自动行动</li>
+              <li>把聊天工具当事实源</li>
+            </ul>
+          </div>
+          ${show(1, `<div class="hand-card green"><small>first slice</small><strong>先跑通可验收闭环</strong><ul class="scope-list"><li>少数长期 Profile</li><li>固定 topic 模板</li><li>评论 schema 和证据要求</li><li>每次行动都有 readback URL</li></ul></div>`)}
+        </div>
+        ${show(2, `<div class="acceptance hand-card blue"><small>acceptance</small><strong>打开链接 → 看懂结构 → 能继续改 deck</strong><p>第一版只证明组织方式成立，再扩大自动化半径。</p></div>`)}
+      `;
+    }
+
+    function closing() {
+      return html`
+        <div class="closing-stack">
+          <div>
+            <div class="kicker">FINAL POSITION</div>
+            <h1>${scenes[8].title}</h1>
+            ${show(0, `<div class="memory-chain"><span class="chain-node">Topic</span><span class="arrow">→</span><span class="chain-node">Decision</span><span class="arrow">→</span><span class="chain-node">Action</span><span class="arrow">→</span><span class="chain-node">Evidence</span><span class="arrow">→</span><span class="chain-node">Memory</span></div>`)}
+            ${show(1, `<p class="lead" style="margin-top:34px;color:#111827">Human Admin 在上方治理；Agent Profiles 在下方持续协作。</p>`)}
+            ${show(2, `<p class="final-line" style="margin:38px auto 0">从聊天工具，变成可治理的智能体协作操作系统。</p>`)}
+          </div>
+        </div>`;
+    }
+
+    function renderFooter(scene) {
+      return html`
+        <footer class="footer">
+          <div>← / → navigate · Home / End · URL state: ?scene=${sceneIndex + 1}&beat=${beatIndex}</div>
+          <div class="dots" aria-label="scene progress">
+            ${scenes.map((s, idx) => `<span class="dot ${idx === sceneIndex ? 'active' : ''}" title="${idx + 1}. ${s.label}" onclick="jumpScene(${idx})"></span>`).join('')}
+          </div>
+          <div class="controls">
+            <button onclick="prev()" aria-label="Previous beat or scene">←</button>
+            <button onclick="next()" aria-label="Next beat or scene">${sceneIndex + 1}.${beatIndex}</button>
+            <button onclick="next()" aria-label="Next beat or scene">→</button>
+          </div>
+        </footer>`;
+    }
+
+    function next() {
+      const scene = scenes[sceneIndex];
+      if (beatIndex < scene.maxBeat) beatIndex += 1;
+      else if (sceneIndex < scenes.length - 1) { sceneIndex += 1; beatIndex = 0; }
+      render();
+    }
+
+    function prev() {
+      if (beatIndex > 0) beatIndex -= 1;
+      else if (sceneIndex > 0) { sceneIndex -= 1; beatIndex = scenes[sceneIndex].maxBeat; }
+      render();
+    }
+
+    function jumpScene(index) { sceneIndex = clamp(index, 0, scenes.length - 1); beatIndex = 0; render(); }
+
+    window.next = next;
+    window.prev = prev;
+    window.jumpScene = jumpScene;
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') { event.preventDefault(); next(); }
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') { event.preventDefault(); prev(); }
+      if (event.key === 'Home') { event.preventDefault(); sceneIndex = 0; beatIndex = 0; render(); }
+      if (event.key === 'End') { event.preventDefault(); sceneIndex = scenes.length - 1; beatIndex = scenes[sceneIndex].maxBeat; render(); }
+    });
+
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(location.search);
+      sceneIndex = clamp((parseInt(params.get('scene') || '1', 10) || 1) - 1, 0, scenes.length - 1);
+      beatIndex = clamp(parseInt(params.get('beat') || '0', 10) || 0, 0, scenes[sceneIndex].maxBeat);
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
