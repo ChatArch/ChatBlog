@@ -1,0 +1,210 @@
+---
+title: "千问 Token Plan 调研：把 Coding 额度接进 Codex 与 CRS"
+date: 2026-08-06
+slug: qwen-token-plan-coding-crs
+tags: [qwen, token-plan, codex, crs, chatarch]
+description: 调研千问 AI 平台 Token Plan 的个人版、团队版、Credits 额度、模型清单、Codex 接入方式，以及它作为 OpenAI-compatible API-key 账号接入 CRS 生态的可行性与边界。
+---
+
+# 千问 Token Plan 调研：把 Coding 额度接进 Codex 与 CRS
+
+很多“AI 编程套餐”看起来都像一个简单问题：**多少钱、给多少量、能不能接到我现有的 coding 工具里？** 但千问 AI 平台的 Token Plan 更像一个新的供应侧形态：它不是传统按量 API 余额，也不是单一 IDE 插件会员，而是面向 Claude Code、Codex、Cursor、Qwen Code、Qoder、OpenCode 等工具的 Credits 订阅。
+
+本文的结论很直接：**Token Plan 可以接 Codex，也可以作为 OpenAI-compatible API-key 账号接进 CRS；但要把它纳入 ChatArch 的 CRS 运维生态，需要把“Credits 窗口、账号类型、禁用/启用、Key 绑定、用量回读”当成一套独立 Provider 管理，而不是把它粗暴塞进普通 OpenAI OAuth 账号池。**
+
+<!-- truncate -->
+
+:::info 证据口径
+快照时间为 **2026-08-06 CST**。证据来自千问 AI 平台公开定价与文档、一次脱敏的 `/models` 只读发现、一次 Codex 最小 smoke，以及一台已有 CRS 实例的只读代码/运行态检查。本文不包含任何 API Key、账号密钥、服务器地址或私有路径。
+:::
+
+## 先校正：这是 Token Plan，不是普通 DashScope 按量计费
+
+千问 AI 平台的开发者文档同时存在两类 OpenAI-compatible 入口：
+
+| 场景 | Base URL |
+| --- | --- |
+| Token Plan 个人版 / 团队版 | `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` |
+| 普通按量计费 | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+
+这个区别很关键。Token Plan API Key 不能当然拿去普通 DashScope endpoint 用；在本轮只读验证里，同一把 Token Plan Key 对 Token Plan Base URL 可见 `/models`，对 DashScope Base URL 返回 `invalid_api_key`。所以后续无论接 Codex、Cursor 还是 CRS，第一条配置规则都是：**Base URL 不能填错**。
+
+官方入口：
+
+- [Token Plan 个人版概述](https://platform.qianwenai.com/docs/token-plan/personal/token-plan-personal-overview)
+- [Token Plan 团队版概述](https://platform.qianwenai.com/docs/token-plan/team/token-plan-team-overview)
+- [Codex 接入文档](https://platform.qianwenai.com/docs/developer-guides/clients-and-developer-tools/codex)
+- [Cursor 接入文档](https://platform.qianwenai.com/docs/developer-guides/clients-and-developer-tools/cursor)
+
+## 个人版：双窗口 Credits，而不是月初给一大桶 token
+
+个人版按 Credits 统一计量，官方把额度拆成 **5 小时窗口** 和 **7 天窗口** 两层。任一窗口触顶都会影响继续使用。
+
+| 档位 | 限时价 | 每 7 天限额 | 每 5 小时限额 | 并发 Agent | 适合 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Lite | ¥39/月（原 ¥60/月） | 2,500 Credits | 700 Credits | 1–2 | 偶尔让 Agent 改小功能、读代码、写脚本 |
+| Standard | ¥139/月（原 ¥180/月） | 10,000 Credits | 3,000 Credits | 3–4 | 日常 AI 编程、review、调研和小规模自动化 |
+| Pro | ¥499/月（原 ¥600/月） | 40,000 Credits | 12,000 Credits | 6–8 | 多 Agent 并行、长上下文、重度 coding workflow |
+| 加油包 | ¥100/个/月 | 20,000 Credits/个 | 不受 5 小时 / 7 天窗口约束 | - | 突发补量；需有效订阅，最多 5 个 |
+
+这套设计的实际含义是：
+
+1. **它在保护短时峰值**：5 小时窗口会限制一口气开很多长上下文 Agent。
+2. **它在保护周期总量**：7 天窗口避免月底前一次性烧穿所有资源。
+3. **它不等于固定 token 单价**：Credits 消耗和模型、上下文、思考模式、工具调用、多模态能力有关。
+4. **它不适合无界自动化**：个人版文档把使用边界限定在编程工具和智能体工具里，不应当当成自定义后端或批量 API 池使用。
+
+如果只是“偶尔让 Codex 帮我改一个小文件”，Lite 够试水。若要把 Codex/Claude Code/Cursor 当作日常工程工具，Standard 才像正常起步。若要跑多 Agent、长上下文、CRS 中继或团队内部试点，Pro 才有足够缓冲，但仍然要控 Credits。
+
+## 团队版：更像席位池，重点是管理和数据边界
+
+团队版按席位给额度，每个席位绑定成员和 API Key，不应共享。它比个人版更适合组织场景的原因不只是额度更高，而是它有成员管理、用量分析、席位分配/回收，以及更明确的数据边界。
+
+| 席位 | 限时价 | 月度额度 | 适合 |
+| --- | ---: | ---: | --- |
+| 标准席位 | ¥150/席位/月（原 ¥198） | 25,000 Credits/席位/月 | 轻度 AI 辅助开发者 |
+| 高级席位 | ¥550/席位/月（原 ¥698） | 100,000 Credits/席位/月 | 高频 AI 编程/办公成员 |
+| 尊享席位 | ¥1,398/席位/月 | 250,000 Credits/席位/月 | 重度依赖 AI 的核心开发者 |
+| 团队加油包 | ¥5,000/个 | 625,000 Credits/个 | 团队突发补量，1 个月有效 |
+
+个人版文档写明输入和输出会用于服务改进与模型优化；团队版则承诺不使用对话数据训练模型。对 ChatArch 这类要处理代码、内部服务、调研材料和运维上下文的组织来说，这个差异比单价更重要：**个人版适合个人工具接入和短期试验，团队版才更像组织级 Provider。**
+
+## 模型清单：不是只有千问，也包括 DeepSeek、智谱、图片和语音
+
+官方个人版支持模型覆盖文本、视觉理解、图像、语音和视频生成能力。一次脱敏 `/models` 只读发现中，某个个人 Token Plan Key 返回了 11 个 OpenAI-compatible 模型：
+
+```text
+qwen3.7-max
+qwen3.7-plus
+qwen3.6-flash
+glm-5.2
+deepseek-v4-pro
+wan2.7-image
+wan2.7-image-pro
+qwen-audio-3.0-tts-plus
+deepseek-v4-flash-0731
+qwen3.8-max
+qwen-audio-3.0-realtime-plus
+```
+
+官方个人版文档还列出 HappyHorse 视频模型，但这次 `/models` 没返回它们。比较稳妥的解释是：视频可能走专用异步接口，或者当前 Key 没在 OpenAI-compatible `/models` 暴露视频能力。由于视频生成 Credits 消耗可能明显更高，本文没有做视频端点实践。
+
+对 coding workflow，最重要的是这几个模型：
+
+| 模型 | 适合场景 |
+| --- | --- |
+| `qwen3.8-max` | 复杂代码理解、规划、跨文件修改、深推理任务 |
+| `qwen3.7-max` | 高质量文本/代码推理，可能作为 `3.8` 的低风险替代 |
+| `qwen3.7-plus` | 日常 coding、review、解释、文档生成 |
+| `qwen3.6-flash` | 低成本快速问答、脚本草稿、轻量批处理 |
+| `deepseek-v4-pro` / `glm-5.2` | 供应侧多样性，对比模型或 fallback 候选 |
+
+## Codex：已经能接，关键是 Responses API
+
+官方 Codex 文档直接给出 Token Plan 的 Codex 配置方式：自定义 `model_provider`，Base URL 指向 Token Plan endpoint，环境变量用 `OPENAI_API_KEY`，并使用 `wire_api = "responses"`。
+
+本轮用独立 profile 做了最小 smoke，没有覆盖原有 Codex 默认配置：
+
+```text
+model: qwen3.8-max
+provider: Model_Studio_Token_Plan_Personal
+reasoning effort: xhigh
+final output: OK
+```
+
+这证明它不是“理论上 OpenAI-compatible”，而是可以实际接进 Codex CLI。真正需要注意的是成本：Codex 的 system prompt、工具协议、上下文和 reasoning 都会消耗输入 token；即使让它只回复 `OK`，也会有不小的上下文开销。用 Token Plan 跑 Codex 时，最重要的不是“能不能跑”，而是**给不同任务选不同模型，并且减少无关上下文**。
+
+建议的本地策略：
+
+```text
+qwen3.8-max     复杂实现 / 架构审查 / 跨文件重构
+qwen3.7-plus    日常 coding / 文档 / review
+qwen3.6-flash   快速问答 / 低风险批处理 / 小脚本
+```
+
+## CRS：应该作为 OpenAI-Responses 账号接入
+
+从 CRS 角度看，千问 Token Plan 不应该被当作普通 OpenAI OAuth/Codex 账号。它的本质是：**一个 OpenAI-compatible API-key provider，且支持 Responses API。**
+
+已有 CRS 代码里正好有这个抽象：`OpenAI-Responses` 账户。它的关键字段包括：
+
+| 字段 | 千问 Token Plan 推荐值 |
+| --- | --- |
+| `baseApi` | `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` |
+| `apiKey` | 千问 Token Plan API Key |
+| `providerEndpoint` | `responses` |
+| `accountType` | 先 `dedicated` 测试，稳定后再决定是否 `shared` |
+| `isActive` / `schedulable` | 先 false / false 建账校验，再启用 |
+
+调度层还支持把 CRS API Key 的 `openaiAccountId` 绑定为 `responses:<accountId>`。这意味着可以先创建一个专门的 CRS Key，只让它走千问 Token Plan，而不是立刻把千问放进所有 OpenAI 请求的共享池。
+
+这对 ChatArch 很重要：**接入新供应方时，先做专属 Key + 专属账号 + 最小 smoke，再考虑共享池。** 这样可以避免一个新账号的 401、429、模型不兼容或 Credits 策略影响整个 CRS 用户池。
+
+## 现有 CRS 生态的缺口：服务支持，运维 CLI 还不完整
+
+只读检查显示，已有 CRS 服务本身支持 `OpenAI-Responses` 账号，也有 Admin API：
+
+```text
+GET/POST /admin/openai-responses-accounts
+POST /admin/openai-responses-accounts/:id/test
+API Key openaiAccountId = responses:<accountId>
+```
+
+但当前安装的 ChatCRS 运维 CLI 仍停留在健康检查、调试、verify、cutover 等命令面，没有稳定的：
+
+```text
+chatcrs admin openai-responses account add --dry-run/--execute
+chatcrs key bind-openai-responses --dry-run/--execute
+chatcrs account test --model qwen3.8-max
+```
+
+所以本文的接入结论分两层：
+
+1. **CRS runtime 层：可接入。** 千问 Token Plan 能作为 OpenAI-Responses API-key 账号新增。
+2. **ChatCRS 运维生态层：建议补 CLI。** 否则新增账号仍要手动走 Web/Admin API，不够 ChatArch-contained，也不够可审计。
+
+最低风险的接入顺序应该是：
+
+```text
+1. 轮换/准备一把专用于 CRS 的千问 Token Plan Key
+2. Admin API dry-run：校验 baseApi、providerEndpoint、账号名、启用状态
+3. 创建 OpenAI-Responses 账号，但 isActive=false / schedulable=false
+4. 用 Admin API 自带 test endpoint 做 qwen3.8-max 最小测试
+5. 创建临时 CRS API Key，绑定 openaiAccountId=responses:<accountId>
+6. 通过 /openai/v1/responses 做一次确定性 smoke
+7. 删除临时 Key，保留或启用账号
+8. 再决定是否加入共享池、限额、并发和模型策略
+```
+
+## Credits 管理：接入以后最容易踩的坑
+
+Token Plan 的计量单位是 Credits，但 CRS 生态里常见的是 tokens、requests、cost、daily limit 和 account health。这两套东西要对齐，否则接入后很容易出现“CRS 看起来没超限，但千问控制台窗口已经触顶”的情况。
+
+建议把千问账号管理成一个独立 Provider profile：
+
+| CRS 侧要记录 | 原因 |
+| --- | --- |
+| 套餐档位 / 席位类型 | Lite/Standard/Pro/团队席位决定周期额度和并发预期 |
+| 5 小时窗口与 7 天窗口 | 个人版不是单纯月额度 |
+| Base URL 与模型白名单 | 防止把 Token Plan Key 发到 DashScope 或不支持的模型 |
+| `providerEndpoint=responses` | 防止 chat/completions 与 responses payload 误配 |
+| CRS API Key 绑定关系 | 先专属、后共享，避免影响其他调用 |
+| 控制台用量回读 | CRS 本地 cost 不能替代千问官方 Credits 账单 |
+
+如果后续要产品化，我倾向于把它做成 ChatCRS 里的一个明确 Provider 类型：`qwen-token-plan`。底层仍用 OpenAI-Responses relay，但运维界面和报告层显示“千问 Token Plan”，并要求填套餐档位、窗口额度和启用策略。
+
+## 最终判断
+
+千问 Token Plan 对 ChatArch 的价值，不是“又多一个便宜模型源”，而是它刚好卡在 coding agent 生态最需要的位置：
+
+- 对个人，它能让 Codex/Cursor/Qwen Code 这类工具获得一个人民币订阅制入口；
+- 对团队，它提供按席位管理、用量分析和更清楚的数据训练边界；
+- 对 CRS，它可以作为 OpenAI-compatible Responses API provider，纳入统一 Key、统一路由和统一审计；
+- 对 ChatCRS，它暴露出一个需要补齐的运维面：API-key provider 账号的 dry-run、创建、测试、绑定、限额和回读。
+
+所以，我会把下一步拆成两个 PR：
+
+1. **ChatCRS Provider 管理 PR**：新增 `qwen-token-plan` / `openai-responses` 账号管理命令，全部 plan-by-default，写入必须 `--execute`，审计输出脱敏。
+2. **CRS 接入实践 PR/任务**：用轮换后的专用 Key 在非共享路径上创建账号，绑定临时 CRS Key，跑最小 Responses smoke，再决定是否启用共享池。
+
+只有这两步都完成，才算真正把千问 Token Plan 接进 ChatArch 的 CRS 生态，而不是只在某台机器上手工保存了一把 Key。
