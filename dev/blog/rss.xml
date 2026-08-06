@@ -4,10 +4,128 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Wed, 05 Aug 2026 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 06 Aug 2026 03:20:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[王虹的菲尔兹奖：从波的平滑到三维 Kakeya]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya</guid>
+            <pubDate>Thu, 06 Aug 2026 03:20:00 GMT</pubDate>
+            <description><![CDATA[介绍 Hong Wang（王虹）获得 2026 年菲尔兹奖的核心工作：local smoothing、Fourier restriction、Falconer distance、Furstenberg sets 与三维 Kakeya 问题，以及多尺度、decoupling 和几何测度论方法如何把这些问题连成一张图。]]></description>
+            <content:encoded><![CDATA[<p>2026 年 ICM 公布菲尔兹奖名单时，Hong Wang（王虹）的官方 citation 看起来像一串专业名词：harmonic analysis、geometric measure theory、multiscale、decoupling、local smoothing、Fourier restriction、Falconer distance sets、Furstenberg sets、Kakeya problem。</p>
+<p>如果只把它翻译成“调和分析与几何测度论”，读者很难知道她到底做了什么。</p>
+<p>更好的理解方式是：王虹的工作解释了<strong>波、频率、分形和细长管子之间隐藏的同一套几何结构</strong>。一个函数的频率如果集中在曲面附近，它在空间里会像很多细长的波包或管子一样传播；而这些管子如何相交、如何覆盖空间、如何在不同尺度上聚集，正是 Fourier restriction、波方程 local smoothing、Falconer 距离问题、Furstenberg 集和 Kakeya 猜想共同关心的核心。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话总结</div><div class="admonitionContent_BuS1"><p>王虹的菲尔兹奖工作不是“解决了一个孤立题目”，而是在调和分析与几何测度论交界处推进了一整组长期问题：她用多尺度、decoupling、polynomial partitioning、wave packet / tube geometry 等工具，把波方程的平滑性、曲面 Fourier 限制、分形距离集、方向分形和三维 Kakeya 问题放进同一套可操作的几何框架里。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>资料边界</div><div class="admonitionContent_BuS1"><p>本文基于 <a href="https://www.mathunion.org/imu-awards/fields-medal/fields-medals-2026" target="_blank" rel="noopener noreferrer" class="">IMU 2026 Fields Medal 页面</a>、<a href="https://www.mathunion.org/fileadmin/documents/2026-07/Hong_Wang_Citations.pdf" target="_blank" rel="noopener noreferrer" class="">Hong Wang 官方 citation PDF</a>、<a href="https://www.icm2026.org/" target="_blank" rel="noopener noreferrer" class="">ICM 2026 首页</a>、<a href="https://sites.google.com/view/hongwang/home" target="_blank" rel="noopener noreferrer" class="">王虹个人主页</a> 以及相关 arXiv 论文。对尚处预印本阶段的结果，本文会区分“论文摘要中的证明声明”和“官方 citation 的保守表述”。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="官方到底奖励了什么">官方到底奖励了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E5%AE%98%E6%96%B9%E5%88%B0%E5%BA%95%E5%A5%96%E5%8A%B1%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="官方到底奖励了什么的直接链接" title="官方到底奖励了什么的直接链接" translate="no">​</a></h2>
+<p>IMU 的短 citation 写得很明确：王虹因其在 harmonic analysis 和 geometric measure theory 中的工作获奖，包括把 multiscale 与 decoupling 技术用于平面波方程 local smoothing 猜想，并在 Fourier restriction、Falconer distance sets、平面 Furstenberg sets、三维 Kakeya 问题上取得重大进展。</p>
+<p>长 citation 进一步强调三点：</p>
+<ol>
+<li class="">她把现代调和分析和几何测度论中的技术延伸、精炼，并在中心问题上取得一系列突破；</li>
+<li class="">她与 Larry Guth、Ruixiang Zhang 引入强有力的 decoupling 与多尺度论证，解决了平面波方程的 local smoothing conjecture；</li>
+<li class="">她与合作者推进了 Falconer、Furstenberg 和三维 Kakeya 等几何测度论问题，并发展出影响当代调和分析的新方法。</li>
+</ol>
+<p>这说明菲尔兹奖看重的不是单篇论文，而是一条连续主线：<strong>从 Fourier 分析中的曲面和波，到几何测度论里的分形、方向和管子结构。</strong></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么这些问题会连在一起">为什么这些问题会连在一起<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E4%BA%9B%E9%97%AE%E9%A2%98%E4%BC%9A%E8%BF%9E%E5%9C%A8%E4%B8%80%E8%B5%B7" class="hash-link" aria-label="为什么这些问题会连在一起的直接链接" title="为什么这些问题会连在一起的直接链接" translate="no">​</a></h2>
+<p>王虹个人主页上对研究兴趣有一个很好的非正式描述：如果一个函数的 Fourier transform 支持在球面、曲面或某种“弯曲”的离散点集附近，我们能对这个函数说什么？如何把函数分解成有意义的小块？这些问题与 decoupling theory、Falconer distance problem 和 incidence geometry 相关。</p>
+<p>这段话其实就是一张地图。</p>
+<p>在 Fourier 分析里，频率支撑在曲面附近的函数可以分解成很多 wave packets。每个 wave packet 在空间中像一根细长的管子：它有方向、有尺度、会和其他管子相交，也可能在某些区域高度聚集。</p>
+<p>于是分析问题变成几何问题：</p>
+<table><thead><tr><th>分析语言</th><th>几何语言</th><th>相关问题</th></tr></thead><tbody><tr><td>Fourier transform 支撑在曲面上</td><td>空间中的波包沿方向传播</td><td>Fourier restriction、decoupling</td></tr><tr><td>波方程随时间演化</td><td>cone 上的频率与空间-时间管子</td><td>local smoothing</td></tr><tr><td>分形测度的 Fourier decay</td><td>分形集合能决定多少距离</td><td>Falconer distance problem</td></tr><tr><td>每个方向都有一条分形截线</td><td>方向、投影、incidence 约束</td><td>Furstenberg sets</td></tr><tr><td>每个方向都有单位线段</td><td>细管覆盖与满维性</td><td>Kakeya problem</td></tr></tbody></table>
+<p>这也是为什么王虹的论文题目看似分散，实际却高度统一：restriction、Falconer、Furstenberg、Kakeya 都在问“同一批方向性结构能否过度集中”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一条线local-smoothing波为什么会多一点平滑">第一条线：local smoothing，波为什么会多一点平滑<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E7%AC%AC%E4%B8%80%E6%9D%A1%E7%BA%BFlocal-smoothing%E6%B3%A2%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E5%A4%9A%E4%B8%80%E7%82%B9%E5%B9%B3%E6%BB%91" class="hash-link" aria-label="第一条线：local smoothing，波为什么会多一点平滑的直接链接" title="第一条线：local smoothing，波为什么会多一点平滑的直接链接" translate="no">​</a></h2>
+<p>波方程描述声波、光波或更抽象的传播现象。一般来说，波不会凭空变得更光滑；但如果我们把波在时间方向上做平均，是否能得到一点额外 regularity？这就是 local smoothing 问题的直觉。</p>
+<p>王虹与 Larry Guth、Ruixiang Zhang 的论文 <a href="https://arxiv.org/abs/1909.10693" target="_blank" rel="noopener noreferrer" class="">A sharp square function estimate for the cone in R^3</a> 证明了三维 cone 的 sharp square function estimate，并由此推出 2+1 维波方程的 local smoothing conjecture。</p>
+<p>这里的 cone 不是装饰性的几何对象。波方程的 Fourier 支撑自然落在 cone 上；对 cone 的 square function estimate 正是控制波包如何叠加和相互干涉的关键。</p>
+<p>这篇论文的重要性在于：它把 decoupling、多尺度分析和 wave packet 几何推进到可以解决长期猜想的精度。它也是官方 citation 中 “applications of multiscale and decoupling techniques to the local smoothing conjecture for the planar wave equation” 这一句的核心来源。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第二条线fourier-restriction曲面上的频率如何控制空间中的函数">第二条线：Fourier restriction，曲面上的频率如何控制空间中的函数<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E7%AC%AC%E4%BA%8C%E6%9D%A1%E7%BA%BFfourier-restriction%E6%9B%B2%E9%9D%A2%E4%B8%8A%E7%9A%84%E9%A2%91%E7%8E%87%E5%A6%82%E4%BD%95%E6%8E%A7%E5%88%B6%E7%A9%BA%E9%97%B4%E4%B8%AD%E7%9A%84%E5%87%BD%E6%95%B0" class="hash-link" aria-label="第二条线：Fourier restriction，曲面上的频率如何控制空间中的函数的直接链接" title="第二条线：Fourier restriction，曲面上的频率如何控制空间中的函数的直接链接" translate="no">​</a></h2>
+<p>Fourier restriction 问题问的是：如果一个函数的频率集中在曲面上，能否由曲面上的数据控制空间里的函数大小？这听起来抽象，但它是现代调和分析的核心问题之一，连接 PDE、振荡积分、几何组合和数论。</p>
+<p>王虹早期就在 restriction 上取得关键推进。</p>
+<p>她的单作者论文 <a href="https://arxiv.org/abs/1802.04312" target="_blank" rel="noopener noreferrer" class="">A restriction estimate in R^3 using brooms</a> 把 Wolff 的 two-ends argument 与 polynomial partitioning 结合起来，改进三维 paraboloid restriction estimate，并分析了 wave packets 的几何结构。题目中的 “brooms” 可以理解为一簇方向相近、位置相关的波包结构；控制这些结构，就是控制函数大值集的重要一步。</p>
+<p>她与 Yumeng Ou 的 <a href="https://arxiv.org/abs/1704.05485" target="_blank" rel="noopener noreferrer" class="">A cone restriction estimate using polynomial partitioning</a> 则用 polynomial partitioning 改进 truncated cone 的 Fourier restriction estimate，特别解决 <code>n=5</code> 的 cone restriction conjecture，并恢复 <code>3≤n≤4</code> 的 sharp range。</p>
+<p>后续她与 Shukun Wu 在 <a href="https://arxiv.org/abs/2210.03878" target="_blank" rel="noopener noreferrer" class="">An improved restriction estimate in R^3</a> 和 <a href="https://arxiv.org/abs/2411.08871" target="_blank" rel="noopener noreferrer" class="">Restriction estimates using decoupling theorems and two-ends Furstenberg inequalities</a> 中继续推进 restriction 路线。后一篇尤其有代表性：它把 restriction conjecture 与 two-ends Furstenberg inequalities 联系起来，显示王虹的工作不是把分析和几何并列摆放，而是在技术上把二者真正互相转化。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第三条线falconer-distance-problem分形集合能决定多少距离">第三条线：Falconer distance problem，分形集合能决定多少距离<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E7%AC%AC%E4%B8%89%E6%9D%A1%E7%BA%BFfalconer-distance-problem%E5%88%86%E5%BD%A2%E9%9B%86%E5%90%88%E8%83%BD%E5%86%B3%E5%AE%9A%E5%A4%9A%E5%B0%91%E8%B7%9D%E7%A6%BB" class="hash-link" aria-label="第三条线：Falconer distance problem，分形集合能决定多少距离的直接链接" title="第三条线：Falconer distance problem，分形集合能决定多少距离的直接链接" translate="no">​</a></h2>
+<p>Falconer distance problem 的直觉很简单：如果平面或高维空间中有一个分形集合，它的维数足够大，那么点与点之间的距离集合应该也足够大，甚至有正 Lebesgue 测度。</p>
+<p>难点在于，“维数大”并不意味着集合分布均匀。分形可以在许多尺度上高度不均匀，距离也可能因为结构性排列而异常少。</p>
+<p>王虹参与的多篇论文把 Fourier restriction、weighted estimates 和 refined Strichartz 方法用于 Falconer 问题。</p>
+<p>例如 <a href="https://arxiv.org/abs/1802.10186" target="_blank" rel="noopener noreferrer" class="">Weighted restriction estimates and application to Falconer distance set problem</a> 通过 polynomial partitioning 和 refined Strichartz 证明 weighted Fourier restriction estimates，并改进三维及更高维 Falconer distance set conjecture 的结果。</p>
+<p>在平面情形，<a href="https://arxiv.org/abs/1808.09346" target="_blank" rel="noopener noreferrer" class="">On Falconer's distance set problem in the plane</a> 证明：如果紧集 <code>E ⊂ R^2</code> 的 Hausdorff 维数大于 <code>5/4</code>，则存在一点 <code>x ∈ E</code>，使 pinned distance set <code>{|x-y| : y ∈ E}</code> 有正 Lebesgue 测度。</p>
+<p>在偶数维，<a href="https://arxiv.org/abs/2006.06833" target="_blank" rel="noopener noreferrer" class="">An improved result for Falconer's distance set problem in even dimensions</a> 证明：当 <code>d≥4</code> 为偶数，若 <code>dim_H(E) &gt; d/2 + 1/4</code>，则距离集有正 Lebesgue 测度。</p>
+<p>这些结果共同说明：Falconer 不是孤立的分形问题，它可以通过 Fourier decay、restriction 和波包几何来推进。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第四条线furstenberg-sets方向分形的维数下界">第四条线：Furstenberg sets，方向分形的维数下界<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E7%AC%AC%E5%9B%9B%E6%9D%A1%E7%BA%BFfurstenberg-sets%E6%96%B9%E5%90%91%E5%88%86%E5%BD%A2%E7%9A%84%E7%BB%B4%E6%95%B0%E4%B8%8B%E7%95%8C" class="hash-link" aria-label="第四条线：Furstenberg sets，方向分形的维数下界的直接链接" title="第四条线：Furstenberg sets，方向分形的维数下界的直接链接" translate="no">​</a></h2>
+<p>Furstenberg sets 关心另一种方向性分形：一个集合如果在很多方向上都含有一定维数的线段片段，那么这个集合本身必须有多大？</p>
+<p>这个问题把 projection theorem、sum-product、incidence geometry 和 fractal geometry 绑在一起。它也是理解 Kakeya 的一个中间层：Kakeya 要求每个方向都有完整线段，Furstenberg sets 则允许每个方向上只有分形片段。</p>
+<p>王虹与 Pablo Shmerkin 的 <a href="https://arxiv.org/abs/2211.13363" target="_blank" rel="noopener noreferrer" class="">Dimensions of Furstenberg sets and an extension of Bourgain's projection theorem</a> 改进了 Furstenberg 集的维数下界，并扩展 Bourgain 的 discretized projection / sum-product 型结果。</p>
+<p>随后 Kevin Ren 与 Hong Wang 的 <a href="https://arxiv.org/abs/2308.08819" target="_blank" rel="noopener noreferrer" class="">Furstenberg sets estimate in the plane</a> 摘要称完全解决平面 <code>(s,t)</code>-Furstenberg set conjecture，证明其 Hausdorff 维数至少为</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">min(s+t, (3s+t)/2, s+1)</span><br></div></code></pre></div></div>
+<p>并得到离散 sum-product 和投影问题的应用。</p>
+<p>这条线的重要性在于：它提供了把“每个方向上有结构”转化为“整体集合必须足够大”的锐利工具。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第五条线三维-kakeya所有方向的线段能挤进多小的集合">第五条线：三维 Kakeya，所有方向的线段能挤进多小的集合<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E7%AC%AC%E4%BA%94%E6%9D%A1%E7%BA%BF%E4%B8%89%E7%BB%B4-kakeya%E6%89%80%E6%9C%89%E6%96%B9%E5%90%91%E7%9A%84%E7%BA%BF%E6%AE%B5%E8%83%BD%E6%8C%A4%E8%BF%9B%E5%A4%9A%E5%B0%8F%E7%9A%84%E9%9B%86%E5%90%88" class="hash-link" aria-label="第五条线：三维 Kakeya，所有方向的线段能挤进多小的集合的直接链接" title="第五条线：三维 Kakeya，所有方向的线段能挤进多小的集合的直接链接" translate="no">​</a></h2>
+<p>Kakeya 问题是这组问题里最容易画图、也最难证明的一类。</p>
+<p>一个 Kakeya 集包含每个方向的一条单位线段。直觉上，它应该很大；但 Besicovitch 的构造告诉我们，在平面中可以有 Lebesgue 测度为零的 Kakeya 集。于是正确的问题变成：它的 Hausdorff 维数、Minkowski 维数是否仍然必须是满维？</p>
+<p>王虹与 Joshua Zahl 在三维 Kakeya 上形成了一条连续推进。</p>
+<p>第一步是 <a href="https://arxiv.org/abs/2210.09581" target="_blank" rel="noopener noreferrer" class="">Sticky Kakeya sets and the sticky Kakeya conjecture</a>。这篇论文研究一种具有近似多尺度自相似结构的 sticky Kakeya sets，并证明三维 sticky Kakeya conjecture。arXiv 页面注明该文将发表于 JAMS。</p>
+<p>第二步是 <a href="https://arxiv.org/abs/2401.12337" target="_blank" rel="noopener noreferrer" class="">The Assouad dimension of Kakeya sets in R^3</a>。论文证明每个三维 Kakeya 集的 Assouad dimension 为 3，并对 Ahlfors-David regular Kakeya sets 和若干稳定维数条件下的 Kakeya sets 得到满 Hausdorff 维数结论。</p>
+<p>第三步是 2025 年的 <a href="https://arxiv.org/abs/2502.17655" target="_blank" rel="noopener noreferrer" class="">Volume estimates for unions of convex sets, and the Kakeya set conjecture in three dimensions</a>。这篇 127 页预印本摘要称：通过研究三维中满足凸集 packing 条件的 <code>δ</code>-tubes 并证明其并集具有几乎最大体积，作者证明每个三维 Kakeya 集的 Minkowski 和 Hausdorff 维数都是 3。</p>
+<p>这里要保守一点：IMU 官方 citation 没有直接写“完全解决 Kakeya conjecture in R^3”，而是写 “major advances in ... the Kakeya problem in three dimensions”。因此在公共写作里，最稳妥的说法是：<strong>王虹与 Zahl 的预印本宣称证明三维 Kakeya 集满维；官方 citation 将其概括为三维 Kakeya 问题的重大进展。</strong></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="方法层她不是只会解题而是在重塑工具箱">方法层：她不是只会解题，而是在重塑工具箱<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E6%96%B9%E6%B3%95%E5%B1%82%E5%A5%B9%E4%B8%8D%E6%98%AF%E5%8F%AA%E4%BC%9A%E8%A7%A3%E9%A2%98%E8%80%8C%E6%98%AF%E5%9C%A8%E9%87%8D%E5%A1%91%E5%B7%A5%E5%85%B7%E7%AE%B1" class="hash-link" aria-label="方法层：她不是只会解题，而是在重塑工具箱的直接链接" title="方法层：她不是只会解题，而是在重塑工具箱的直接链接" translate="no">​</a></h2>
+<p>把这些问题放在一起看，王虹的贡献更像是一套方法论的重塑。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-wave-packets把函数看成很多管子">1. Wave packets：把函数看成很多管子<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#1-wave-packets%E6%8A%8A%E5%87%BD%E6%95%B0%E7%9C%8B%E6%88%90%E5%BE%88%E5%A4%9A%E7%AE%A1%E5%AD%90" class="hash-link" aria-label="1. Wave packets：把函数看成很多管子的直接链接" title="1. Wave packets：把函数看成很多管子的直接链接" translate="no">​</a></h3>
+<p>Fourier 支撑在曲面附近的函数，可以分解成沿不同方向传播的 wave packets。这让分析问题获得几何形状：管子、方向、尺度、相交、聚集。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-multiscale每个尺度都要同时控制">2. Multiscale：每个尺度都要同时控制<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#2-multiscale%E6%AF%8F%E4%B8%AA%E5%B0%BA%E5%BA%A6%E9%83%BD%E8%A6%81%E5%90%8C%E6%97%B6%E6%8E%A7%E5%88%B6" class="hash-link" aria-label="2. Multiscale：每个尺度都要同时控制的直接链接" title="2. Multiscale：每个尺度都要同时控制的直接链接" translate="no">​</a></h3>
+<p>这些问题很少能在单一尺度解决。分形集合、Kakeya tubes 和 wave packets 都会在大尺度、小尺度之间传递信息。多尺度论证的关键是：局部结构不能在层层放大后逃避全局限制。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-decoupling把整体拆成可控的小块">3. Decoupling：把整体拆成可控的小块<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#3-decoupling%E6%8A%8A%E6%95%B4%E4%BD%93%E6%8B%86%E6%88%90%E5%8F%AF%E6%8E%A7%E7%9A%84%E5%B0%8F%E5%9D%97" class="hash-link" aria-label="3. Decoupling：把整体拆成可控的小块的直接链接" title="3. Decoupling：把整体拆成可控的小块的直接链接" translate="no">​</a></h3>
+<p>Decoupling theory 研究如何把曲面频率支撑的函数拆成小频率块，并估计这些小块重新叠加后的大小。local smoothing 和 restriction 中的许多进展，都依赖这种“拆开后再精确控制”的能力。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-polynomial-partitioning用代数曲面切开空间">4. Polynomial partitioning：用代数曲面切开空间<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#4-polynomial-partitioning%E7%94%A8%E4%BB%A3%E6%95%B0%E6%9B%B2%E9%9D%A2%E5%88%87%E5%BC%80%E7%A9%BA%E9%97%B4" class="hash-link" aria-label="4. Polynomial partitioning：用代数曲面切开空间的直接链接" title="4. Polynomial partitioning：用代数曲面切开空间的直接链接" translate="no">​</a></h3>
+<p>Polynomial partitioning 用多项式零集把空间切成许多区域，迫使波包要么横穿许多 cell，要么贴近低维代数结构。它把连续分析问题转成几何组合问题，是 Guth 以来这条路线的关键技术之一。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-incidence-geometry数管子数交点数方向">5. Incidence geometry：数管子、数交点、数方向<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#5-incidence-geometry%E6%95%B0%E7%AE%A1%E5%AD%90%E6%95%B0%E4%BA%A4%E7%82%B9%E6%95%B0%E6%96%B9%E5%90%91" class="hash-link" aria-label="5. Incidence geometry：数管子、数交点、数方向的直接链接" title="5. Incidence geometry：数管子、数交点、数方向的直接链接" translate="no">​</a></h3>
+<p>Furstenberg、Falconer、Kakeya 和 restriction 最后都会遇到 incidence 问题：多少管子可以穿过多少球？多少方向可以共享同一块空间？多少分形片段可以同时高度重合？王虹的多篇论文都在推进这种计数几何的极限。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一张阅读路线图">一张阅读路线图<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E4%B8%80%E5%BC%A0%E9%98%85%E8%AF%BB%E8%B7%AF%E7%BA%BF%E5%9B%BE" class="hash-link" aria-label="一张阅读路线图的直接链接" title="一张阅读路线图的直接链接" translate="no">​</a></h2>
+<p>如果想从零开始读这条主线，可以按下面顺序：</p>
+<ol>
+<li class="">先读 IMU 的 <a href="https://www.mathunion.org/imu-awards/fields-medal/fields-medals-2026" target="_blank" rel="noopener noreferrer" class="">Fields Medals 2026 页面</a> 和 <a href="https://www.mathunion.org/fileadmin/documents/2026-07/Hong_Wang_Citations.pdf" target="_blank" rel="noopener noreferrer" class="">Hong Wang citation PDF</a>，获得官方五条线。</li>
+<li class="">读王虹个人主页的研究兴趣段落，理解她如何把 Fourier analysis、decoupling、Falconer 和 incidence geometry 连在一起。</li>
+<li class="">读 <a href="https://arxiv.org/abs/1909.10693" target="_blank" rel="noopener noreferrer" class="">A sharp square function estimate for the cone in R^3</a>，把 local smoothing 主线立住。</li>
+<li class="">读 <a href="https://arxiv.org/abs/1802.04312" target="_blank" rel="noopener noreferrer" class="">A restriction estimate in R^3 using brooms</a> 和 <a href="https://arxiv.org/abs/1704.05485" target="_blank" rel="noopener noreferrer" class="">A cone restriction estimate using polynomial partitioning</a>，看 restriction 与 polynomial partitioning 如何结合。</li>
+<li class="">读 <a href="https://arxiv.org/abs/2308.08819" target="_blank" rel="noopener noreferrer" class="">Furstenberg sets estimate in the plane</a>，理解方向分形为什么能反过来影响 restriction 和 Kakeya。</li>
+<li class="">最后读 Wang–Zahl 的 <a href="https://arxiv.org/abs/2210.09581" target="_blank" rel="noopener noreferrer" class="">Sticky Kakeya sets</a>、<a href="https://arxiv.org/abs/2401.12337" target="_blank" rel="noopener noreferrer" class="">Assouad dimension of Kakeya sets in R^3</a> 和 <a href="https://arxiv.org/abs/2502.17655" target="_blank" rel="noopener noreferrer" class="">Volume estimates for unions of convex sets</a>，看三维 Kakeya 路线如何从结构定理走向满维结论。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="和我们已有-chatblog-的关系">和我们已有 ChatBlog 的关系<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E5%92%8C%E6%88%91%E4%BB%AC%E5%B7%B2%E6%9C%89-chatblog-%E7%9A%84%E5%85%B3%E7%B3%BB" class="hash-link" aria-label="和我们已有 ChatBlog 的关系的直接链接" title="和我们已有 ChatBlog 的关系的直接链接" translate="no">​</a></h2>
+<p>目前 ChatBlog 里没有直接介绍王虹、菲尔兹奖或这组调和分析工作的文章。最接近的是几篇 AI 数学文章：</p>
+<ul>
+<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026">AI 数学进入开放问题时代了吗：ICM 2026 后的数据集、系统与真实进展</a> 提到 ICM 2026、开放猜想和 AlphaEvolve 中的 Kakeya/Nikodym 构造；</li>
+<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances">OpenAI Astra 真的解决了十道数学难题吗？</a> 和 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-problems-guide">OpenAI Astra 的十个数学问题到底在研究什么？</a> 在球堆积与编码界中介绍过 Fourier 方法的另一个现代应用。</li>
+</ul>
+<p>这篇文章的定位不同：它不是 AI 数学新闻，而是一篇人类数学突破的解释性文章。它可以补上 ChatBlog 里目前缺少的“ICM 2026 / Fields Medal / 调和分析与几何测度论”板块，也能为后续讨论 AI 是否能参与研究级数学提供一个真实的人类前沿参照。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要资料来源">主要资料来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E4%B8%BB%E8%A6%81%E8%B5%84%E6%96%99%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要资料来源的直接链接" title="主要资料来源的直接链接" translate="no">​</a></h2>
+<ul>
+<li class="">IMU： <a href="https://www.mathunion.org/imu-awards/fields-medal/fields-medals-2026" target="_blank" rel="noopener noreferrer" class="">Fields Medals 2026</a></li>
+<li class="">IMU： <a href="https://www.mathunion.org/fileadmin/documents/2026-07/Hong_Wang_Citations.pdf" target="_blank" rel="noopener noreferrer" class="">Hong Wang citation PDF</a></li>
+<li class="">ICM 2026： <a href="https://www.icm2026.org/" target="_blank" rel="noopener noreferrer" class="">大会首页</a></li>
+<li class="">Hong Wang： <a href="https://sites.google.com/view/hongwang/home" target="_blank" rel="noopener noreferrer" class="">个人主页</a></li>
+<li class="">Guth–Wang–Zhang： <a href="https://arxiv.org/abs/1909.10693" target="_blank" rel="noopener noreferrer" class="">A sharp square function estimate for the cone in R^3</a></li>
+<li class="">Wang： <a href="https://arxiv.org/abs/1802.04312" target="_blank" rel="noopener noreferrer" class="">A restriction estimate in R^3 using brooms</a></li>
+<li class="">Ou–Wang： <a href="https://arxiv.org/abs/1704.05485" target="_blank" rel="noopener noreferrer" class="">A cone restriction estimate using polynomial partitioning</a></li>
+<li class="">Ren–Wang： <a href="https://arxiv.org/abs/2308.08819" target="_blank" rel="noopener noreferrer" class="">Furstenberg sets estimate in the plane</a></li>
+<li class="">Wang–Zahl： <a href="https://arxiv.org/abs/2210.09581" target="_blank" rel="noopener noreferrer" class="">Sticky Kakeya sets and the sticky Kakeya conjecture</a>、<a href="https://arxiv.org/abs/2401.12337" target="_blank" rel="noopener noreferrer" class="">The Assouad dimension of Kakeya sets in R^3</a>、<a href="https://arxiv.org/abs/2502.17655" target="_blank" rel="noopener noreferrer" class="">Volume estimates for unions of convex sets, and the Kakeya set conjecture in three dimensions</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最后为什么这是一枚很现代的菲尔兹奖">最后：为什么这是一枚很“现代”的菲尔兹奖<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya#%E6%9C%80%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E6%98%AF%E4%B8%80%E6%9E%9A%E5%BE%88%E7%8E%B0%E4%BB%A3%E7%9A%84%E8%8F%B2%E5%B0%94%E5%85%B9%E5%A5%96" class="hash-link" aria-label="最后：为什么这是一枚很“现代”的菲尔兹奖的直接链接" title="最后：为什么这是一枚很“现代”的菲尔兹奖的直接链接" translate="no">​</a></h2>
+<p>有些菲尔兹奖工作可以用一个漂亮对象概括：某个方程、某个空间、某个分类定理。</p>
+<p>王虹的工作更像现代数学的另一种形态：一个问题网络、一组尺度工具、一条跨领域技术链。</p>
+<p>她研究的不是单独一根线段、一个距离或一束波，而是这些对象在所有尺度、所有方向、所有可能聚集方式下还能否被控制。</p>
+<p>这就是为什么 local smoothing、restriction、Falconer、Furstenberg、Kakeya 会同时出现在同一段 citation 里。它们表面上属于不同问题，底层却共享同一个疑问：</p>
+<blockquote>
+<p>当方向性结构试图在空间里过度集中时，数学能否证明它最终必须展开？</p>
+</blockquote>
+<p>王虹的工作给出了许多此前做不到的回答，也把调和分析和几何测度论的共同工具箱向前推进了一大步。</p>]]></content:encoded>
+            <category>mathematics</category>
+            <category>fields-medal</category>
+            <category>harmonic-analysis</category>
+            <category>geometric-measure-theory</category>
+            <category>kakeya</category>
+        </item>
         <item>
             <title><![CDATA[Discourse AI 实践指南：把论坛变成 Agent 社区的 AI 工作台]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide</link>
@@ -4106,145 +4224,6 @@
             <category>docker</category>
             <category>homelab</category>
             <category>open-source</category>
-        </item>
-        <item>
-            <title><![CDATA[Discord 是什么？以及我们为什么部署了 Revolt / Stoat]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro</guid>
-            <pubDate>Tue, 28 Jul 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[这篇文章回答一个很容易混淆的问题：Discord 能不能像 Discourse 一样自建？如果不能，我们刚刚部署的 Revolt / Stoat 又是什么？]]></description>
-            <content:encoded><![CDATA[<p>这篇文章回答一个很容易混淆的问题：<strong>Discord 能不能像 Discourse 一样自建？如果不能，我们刚刚部署的 Revolt / Stoat 又是什么？</strong></p>
-<p>结论先说：官方 Discord 不能自建。它是 Discord 公司运营的 SaaS。我们能自建的是 Discord-like 替代品，例如 Stoat / Revolt、Mattermost、Rocket.Chat、Zulip、Matrix / Element 等。为了直观看一下 Discord-like 产品形态，我们在 ChatArch 服务器上部署了一个 Stoat / Revolt demo。</p>
-<p>当前 demo 入口：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://revolt.public.wzhecnu.cn/</span><br></div></code></pre></div></div>
-<p><img decoding="async" loading="lazy" alt="Stoat / Revolt landing page" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/stoat-home-e07bd4d21677effd6575aa76c978b0f2.png" width="1280" height="633" class="img_ev3q"></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把名字分开">先把名字分开<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#%E5%85%88%E6%8A%8A%E5%90%8D%E5%AD%97%E5%88%86%E5%BC%80" class="hash-link" aria-label="先把名字分开的直接链接" title="先把名字分开的直接链接" translate="no">​</a></h2>
-<p>我们最近同时讨论了几个名字很像的平台：</p>
-<table><thead><tr><th>名称</th><th>是什么</th><th>能否自托管</th><th>在 Agent 社区里的位置</th></tr></thead><tbody><tr><td>Discourse</td><td>论坛 / topic / comment 社区</td><td>可以</td><td>当前主社区，长期 discussion 和任务沉淀</td></tr><tr><td>Discord</td><td>实时聊天 / 语音 / 社群频道 SaaS</td><td>官方不能</td><td>未来可作为外部实时入口</td></tr><tr><td>Revolt / Stoat</td><td>Discord-like 开源/自托管替代方向</td><td>可以</td><td>用来观察 Discord-like 交互和频道形态</td></tr></tbody></table>
-<p>所以我们当前已经正式部署和使用的是 <strong>Discourse</strong>。本文介绍的 <strong>Revolt / Stoat</strong> 是另一个 demo，用来理解 Discord-like 产品长什么样。</p>
-<p><img decoding="async" loading="lazy" alt="Agent community platform map" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNDQwIiBoZWlnaHQ9IjgyMCIgdmlld0JveD0iMCAwIDE0NDAgODIwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+RGlzY291cnNlLCBEaXNjb3JkLCBhbmQgU3RvYXQgcGxhdGZvcm0gbWFwPC90aXRsZT4KICA8ZGVzYyBpZD0iZGVzYyI+QSBjb21wYXJpc29uIGFuZCBpbnRlZ3JhdGlvbiBtYXAgZm9yIERpc2NvdXJzZSwgRGlzY29yZCwgYW5kIHNlbGYtaG9zdGVkIERpc2NvcmQtbGlrZSBTdG9hdC9SZXZvbHQuPC9kZXNjPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmOGVmZTIiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjU4IiBzdG9wLWNvbG9yPSIjZGZlZmYwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2VkZThkNiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9InNoYWRvdyIgeD0iLTIwJSIgeT0iLTIwJSIgd2lkdGg9IjE0MCUiIGhlaWdodD0iMTQwJSI+CiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAiIGR5PSIxNiIgc3RkRGV2aWF0aW9uPSIxOCIgZmxvb2QtY29sb3I9IiMyMzMiIGZsb29kLW9wYWNpdHk9IjAuMTYiLz4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTQ0MCIgaGVpZ2h0PSI4MjAiIHJ4PSIzNiIgZmlsbD0idXJsKCNiZykiLz4KICA8Y2lyY2xlIGN4PSIxMjIwIiBjeT0iMTIwIiByPSIxNTAiIGZpbGw9IiNmMmM0NWEiIG9wYWNpdHk9IjAuMzYiLz4KICA8Y2lyY2xlIGN4PSIxODUiIGN5PSI2ODAiIHI9IjE3MCIgZmlsbD0iI2U5NzE0YyIgb3BhY2l0eT0iMC4xOCIvPgogIDx0ZXh0IHg9Ijg2IiB5PSI4OCIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsICdUaW1lcyBOZXcgUm9tYW4nLCBzZXJpZiIgZm9udC1zaXplPSI1NCIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzFjMjYyOSI+QWdlbnQg56S+5Yy655qE5LiJ5bGC5YWl5Y+jPC90ZXh0PgogIDx0ZXh0IHg9Ijg4IiB5PSIxMzAiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM0NjU2NWEiPkRpc2NvdXJzZSDmmK/plb/mnJ8gdG9waWPvvIxEaXNjb3JkIOaYr+WklumDqOWunuaXtuiBiuWkqe+8jFN0b2F0L1Jldm9sdCDmmK/lj6/oh6rmiZjnrqHnmoQgRGlzY29yZC1saWtlIOS9k+mqjOOAgjwvdGV4dD4KCiAgPGcgZmlsdGVyPSJ1cmwoI3NoYWRvdykiPgogICAgPHJlY3QgeD0iNzYiIHk9IjE5OCIgd2lkdGg9IjM4MCIgaGVpZ2h0PSIzMDAiIHJ4PSIyOCIgZmlsbD0iI2ZmZmFmMCIvPgogICAgPHJlY3QgeD0iNTMwIiB5PSIxOTgiIHdpZHRoPSIzODAiIGhlaWdodD0iMzAwIiByeD0iMjgiIGZpbGw9IiNmOWZiZmYiLz4KICAgIDxyZWN0IHg9Ijk4NCIgeT0iMTk4IiB3aWR0aD0iMzgwIiBoZWlnaHQ9IjMwMCIgcng9IjI4IiBmaWxsPSIjZjRmZmY4Ii8+CiAgPC9nPgoKICA8dGV4dCB4PSIxMTYiIHk9IjI2MCIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsICdUaW1lcyBOZXcgUm9tYW4nLCBzZXJpZiIgZm9udC1zaXplPSIzOCIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzIwMzAzNSI+RGlzY291cnNlPC90ZXh0PgogIDx0ZXh0IHg9IjExNiIgeT0iMzAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjIiIGZpbGw9IiM1MzYyNjYiPuiHquaJmOeuoee7k+aehOWMluiuqOiuuuekvuWMujwvdGV4dD4KICA8dGV4dCB4PSIxMTYiIHk9IjM1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMjAzMDM1Ij7igKIgVG9waWMgLyBQb3N0IC8gQ2F0ZWdvcnk8L3RleHQ+CiAgPHRleHQgeD0iMTE2IiB5PSIzOTIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzIwMzAzNSI+4oCiIOWGs+etluayiea3gOOAgeaQnOe0ouOAgeWFrOW8gOefpeivhuW6kzwvdGV4dD4KICA8dGV4dCB4PSIxMTYiIHk9IjQzNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMjAzMDM1Ij7igKIg5b2T5YmNIEFnZW50IOekvuWMuiBjYW5vbmljYWwgc3BhY2U8L3RleHQ+CgogIDx0ZXh0IHg9IjU3MCIgeT0iMjYwIiBmb250LWZhbWlseT0iR2VvcmdpYSwgJ1RpbWVzIE5ldyBSb21hbicsIHNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjMjAzMDM1Ij5EaXNjb3JkPC90ZXh0PgogIDx0ZXh0IHg9IjU3MCIgeT0iMzAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjIiIGZpbGw9IiM1MzYyNjYiPuWumOaWuSBTYWFT77yM5LiN6IO96Ieq5omY566hPC90ZXh0PgogIDx0ZXh0IHg9IjU3MCIgeT0iMzUwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMyMDMwMzUiPuKAoiBTZXJ2ZXIgLyBDaGFubmVsIC8gVGhyZWFkPC90ZXh0PgogIDx0ZXh0IHg9IjU3MCIgeT0iMzkyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMyMDMwMzUiPuKAoiDlrp7ml7bogYrlpKnjgIHor63pn7PjgIFib3TjgIFzbGFzaCBjb21tYW5kPC90ZXh0PgogIDx0ZXh0IHg9IjU3MCIgeT0iNDM0IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMyMDMwMzUiPuKAoiDlj6/kvZzkuLrlpJbpg6ggcmVhbHRpbWUgY2hhbm5lbDwvdGV4dD4KCiAgPHRleHQgeD0iMTAyNCIgeT0iMjYwIiBmb250LWZhbWlseT0iR2VvcmdpYSwgJ1RpbWVzIE5ldyBSb21hbicsIHNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjMjAzMDM1Ij5TdG9hdCAvIFJldm9sdDwvdGV4dD4KICA8dGV4dCB4PSIxMDI0IiB5PSIzMDAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMiIgZmlsbD0iIzUzNjI2NiI+RGlzY29yZC1saWtlIOiHquaJmOeuoeabv+S7oyBkZW1vPC90ZXh0PgogIDx0ZXh0IHg9IjEwMjQiIHk9IjM1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMjAzMDM1Ij7igKIgRG9ja2VyIENvbXBvc2Ug5aSa5pyN5Yqh5qCIPC90ZXh0PgogIDx0ZXh0IHg9IjEwMjQiIHk9IjM5MiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMjAzMDM1Ij7igKIgV2ViIC8gQVBJIC8gRXZlbnRzIC8gTWVkaWEgLyBEQiAvIFF1ZXVlPC90ZXh0PgogIDx0ZXh0IHg9IjEwMjQiIHk9IjQzNCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMjAzMDM1Ij7igKIg6YCC5ZCI6KeC5a+fIERpc2NvcmQtbGlrZSDkuqTkupI8L3RleHQ+CgogIDxwYXRoIGQ9Ik0yNzAgNTQ1IEM0MjAgNjIwLCA1MjAgNjIwLCA2OTAgNTY1IiBzdHJva2U9IiM0NTYiIHN0cm9rZS13aWR0aD0iNSIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTExNzAgNTQ1IEMxMDEwIDYyMCwgOTAwIDYyMCwgNzUwIDU2NSIgc3Ryb2tlPSIjNDU2IiBzdHJva2Utd2lkdGg9IjUiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxyZWN0IHg9IjQ4NiIgeT0iNTQ4IiB3aWR0aD0iNDY4IiBoZWlnaHQ9IjE1NCIgcng9IjI4IiBmaWxsPSIjMWQyZDJmIiBvcGFjaXR5PSIwLjk0IiBmaWx0ZXI9InVybCgjc2hhZG93KSIvPgogIDx0ZXh0IHg9IjU0OCIgeT0iNjA2IiBmb250LWZhbWlseT0iR2VvcmdpYSwgJ1RpbWVzIE5ldyBSb21hbicsIHNlcmlmIiBmb250LXNpemU9IjM0IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjZmZmNWU3Ij5BZ2VudCBSb3V0ZXI8L3RleHQ+CiAgPHRleHQgeD0iNTQ4IiB5PSI2NDgiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMiIgZmlsbD0iI2U1ZjFlZiI+5oqKIHRvcGlj44CBbWVzc2FnZeOAgW1lbnRpb27jgIF3ZWJob29rPC90ZXh0PgogIDx0ZXh0IHg9IjU0OCIgeT0iNjgyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjIiIGZpbGw9IiNlNWYxZWYiPui3r+eUseWIsCBIZXJtZXMgLyBDb2RleCAvIENDIENvbm5lY3Q8L3RleHQ+CgogIDx0ZXh0IHg9Ijg2IiB5PSI3NjQiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMiIgZmlsbD0iIzQ2NTY1YSI+6YOo572y6YCJ5oup77ya5b2T5YmN5Li756S+5Yy65pivIERpc2NvdXJzZe+8m1N0b2F0L1Jldm9sdCDlj6rmmK8gRGlzY29yZC1saWtlIOinguWvn+erme+8m+WumOaWuSBEaXNjb3JkIOacrOi6q+S4jeiDvemDqOe9suWIsOiHquW3seeahOacjeWKoeWZqOOAgjwvdGV4dD4KPC9zdmc+Cg==" width="1440" height="820" class="img_ev3q"></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="discord-是什么">Discord 是什么？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#discord-%E6%98%AF%E4%BB%80%E4%B9%88" class="hash-link" aria-label="Discord 是什么？的直接链接" title="Discord 是什么？的直接链接" translate="no">​</a></h2>
-<p>如果没怎么用过 Discord，可以先把它理解成：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">实时社区大厅 + 频道化群聊 + 语音房间 + bot 操作入口</span><br></div></code></pre></div></div>
-<p>它最早从游戏社区和语音聊天起家，后来扩展到开源项目、AI 产品社区、创作者社区、课程社群、模型工具社区等。Midjourney 早期就主要通过 Discord 提供交互，所以很多人第一次接触 Discord 是在一个很热闹、滚动很快的 prompt / image 频道里。</p>
-<p>一个典型 Discord server 大概由这些对象组成：</p>
-<ul>
-<li class=""><strong>Server</strong>：一个社区或组织空间。</li>
-<li class=""><strong>Category</strong>：频道分组，比如 Announcements、General、Support、Bots。</li>
-<li class=""><strong>Text Channel</strong>：文字频道，比如 <code>#general</code>、<code>#support</code>。</li>
-<li class=""><strong>Voice Channel</strong>：语音频道。</li>
-<li class=""><strong>Forum Channel</strong>：轻量帖子区，但仍在 Discord 体验内。</li>
-<li class=""><strong>Thread</strong>：从某条消息展开的局部讨论。</li>
-<li class=""><strong>Role</strong>：成员身份和权限。</li>
-<li class=""><strong>Bot</strong>：机器人用户，可以被 <code>@mention</code>，也可以提供 slash commands。</li>
-</ul>
-<p>它的典型界面是多栏的：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">最左侧：server 列表</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">左侧：当前 server 的 channel 列表</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">中间：当前 channel 的实时消息流</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">右侧：成员列表、在线状态、角色</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">底部：输入框、附件、表情、slash command</span><br></div></code></pre></div></div>
-<p>这和 Discourse 很不一样。Discourse 更像长期论坛：topic-first、搜索友好、适合沉淀结论；Discord 更像实时聊天空间：适合快速问、快速响应、语音、bot 命令和群内互动。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="discord-能自建吗">Discord 能自建吗？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#discord-%E8%83%BD%E8%87%AA%E5%BB%BA%E5%90%97" class="hash-link" aria-label="Discord 能自建吗？的直接链接" title="Discord 能自建吗？的直接链接" translate="no">​</a></h2>
-<p>官方 Discord 不能自建。</p>
-<p>更精确地说：</p>
-<ul>
-<li class="">你可以创建 Discord server。</li>
-<li class="">你可以写 Discord bot。</li>
-<li class="">你可以用 Discord webhook / Gateway / slash command 做自动化。</li>
-<li class="">但你不能把官方 Discord 服务端软件部署到自己的机器上。</li>
-</ul>
-<p>所以如果目标是“我想要一个能自己部署的 Discord-like 社区”，就要看替代品，而不是 Discord 本身。</p>
-<p>常见替代品：</p>
-<table><thead><tr><th>平台</th><th>更接近什么</th><th>备注</th></tr></thead><tbody><tr><td>Stoat / Revolt</td><td>Discord-like 实时社区</td><td>UI 和 server/channel/bot 体验更接近 Discord</td></tr><tr><td>Mattermost</td><td>Slack-like 团队聊天</td><td>企业团队协作比较成熟</td></tr><tr><td>Rocket.Chat</td><td>团队聊天 / omnichannel</td><td>功能多，运维也更重</td></tr><tr><td>Zulip</td><td>topic-threaded chat</td><td>topic 模型很好，适合工程讨论</td></tr><tr><td>Matrix + Element</td><td>去中心化聊天协议和客户端</td><td>更开放，但部署和体验更复杂</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我们部署了什么">我们部署了什么？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#%E6%88%91%E4%BB%AC%E9%83%A8%E7%BD%B2%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="我们部署了什么？的直接链接" title="我们部署了什么？的直接链接" translate="no">​</a></h2>
-<p>这次部署的是 Stoat self-hosted。GitHub 上原来的 Revolt self-hosted 路径现在观察到会转到 Stoat 相关仓库，所以文章里用 <strong>Revolt / Stoat</strong> 一起称呼这个方向。</p>
-<p>服务目录：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">/home/zhihong/.chatarch/revolt/</span><br></div></code></pre></div></div>
-<p>配置目录：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">/home/zhihong/.chatarch/revolt/self-hosted/</span><br></div></code></pre></div></div>
-<p>访问入口：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://revolt.public.wzhecnu.cn/</span><br></div></code></pre></div></div>
-<p>本机接入方式和 Discourse 一样遵循 ChatArch 的 local/public 规则：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">revolt.local.wzhecnu.cn  -&gt; 本机 Nginx local vhost -&gt; 127.0.0.1:8880</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">revolt.public.wzhecnu.cn -&gt; 既有 public-entry -&gt; local vhost -&gt; 127.0.0.1:8880</span><br></div></code></pre></div></div>
-<p>没有给本机 Nginx 加 <code>revolt.public.wzhecnu.cn</code>，也没有改 DNS / FRP / public tunnel。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么这类系统这么重">为什么这类系统这么重？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E7%B1%BB%E7%B3%BB%E7%BB%9F%E8%BF%99%E4%B9%88%E9%87%8D" class="hash-link" aria-label="为什么这类系统这么重？的直接链接" title="为什么这类系统这么重？的直接链接" translate="no">​</a></h2>
-<p>这也是这次部署最直观的感受：Discord-like 自托管产品通常比 Discourse 更像一整套 realtime application stack。</p>
-<p>Stoat / Revolt self-hosted 不是一个单进程服务，而是一组容器：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">web</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">api</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">events</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">database / MongoDB</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">redis / KeyDB</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">rabbit / RabbitMQ</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">minio</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">autumn 文件服务</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">january metadata/image proxy</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">gifbox</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">pushd</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">crond</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">voice-ingress</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">livekit</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">caddy</span><br></div></code></pre></div></div>
-<p>这说明它要同时处理：</p>
-<ul>
-<li class="">前端 Web App</li>
-<li class="">API</li>
-<li class="">WebSocket events</li>
-<li class="">文件和头像上传</li>
-<li class="">图片/metadata proxy</li>
-<li class="">推送通知</li>
-<li class="">定时任务</li>
-<li class="">数据库</li>
-<li class="">缓存</li>
-<li class="">消息队列</li>
-<li class="">语音/视频能力</li>
-<li class="">内部反向代理</li>
-</ul>
-<p>所以如果只是想做长期 topic、任务、决策和文档沉淀，Discourse 更简单直接；如果想体验 Discord 那种 server/channel/message/bot 的实时空间，Stoat / Revolt 更像。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="内部-caddy-和主机-nginx-的关系">内部 Caddy 和主机 Nginx 的关系<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#%E5%86%85%E9%83%A8-caddy-%E5%92%8C%E4%B8%BB%E6%9C%BA-nginx-%E7%9A%84%E5%85%B3%E7%B3%BB" class="hash-link" aria-label="内部 Caddy 和主机 Nginx 的关系的直接链接" title="内部 Caddy 和主机 Nginx 的关系的直接链接" translate="no">​</a></h2>
-<p>Stoat self-hosted 默认带一个 Caddy。这个 Caddy 不是替代服务器上的主 Nginx，而是 Stoat 内部用来聚合多服务路由的网关：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">/        -&gt; web</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">/api     -&gt; api</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">/ws      -&gt; events websocket</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">/autumn  -&gt; file server</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">/january -&gt; metadata/image proxy</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">/gifbox  -&gt; gifbox</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">/livekit -&gt; voice/video</span><br></div></code></pre></div></div>
-<p>为了不影响服务器上已有的 Discourse、Gitea、Open WebUI 等服务，我们没有让 Stoat Caddy 绑定主机的 <code>80/443</code>。最终只暴露：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">127.0.0.1:8880 -&gt; Stoat Caddy :80</span><br></div></code></pre></div></div>
-<p>再由主机 Nginx 代理：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">revolt.local.wzhecnu.cn -&gt; 127.0.0.1:8880</span><br></div></code></pre></div></div>
-<p>这样做的好处是：Stoat 内部还是按官方 self-hosted 结构运行；外部入口仍然统一走 ChatArch 已有的 Nginx + local/public 机制。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这个站有默认账号密码吗">这个站有默认账号密码吗？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#%E8%BF%99%E4%B8%AA%E7%AB%99%E6%9C%89%E9%BB%98%E8%AE%A4%E8%B4%A6%E5%8F%B7%E5%AF%86%E7%A0%81%E5%90%97" class="hash-link" aria-label="这个站有默认账号密码吗？的直接链接" title="这个站有默认账号密码吗？的直接链接" translate="no">​</a></h2>
-<p>没有。</p>
-<p>Stoat / Revolt self-hosted 初始化之后不会自动创建一个默认 admin 用户，也没有类似 <code>admin/admin</code> 的默认账号密码。</p>
-<p>当前这个 demo 也没有公开默认账号。API 当前状态是：</p>
-<div class="language-json codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-json codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token punctuation" style="color:#393A34">{</span><span class="token property" style="color:#36acaa">"revolt"</span><span class="token operator" style="color:#393A34">:</span><span class="token string" style="color:#e3116c">"0.13.7"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token property" style="color:#36acaa">"invite_only"</span><span class="token operator" style="color:#393A34">:</span><span class="token boolean" style="color:#36acaa">true</span><span class="token punctuation" style="color:#393A34">,</span><span class="token property" style="color:#36acaa">"email"</span><span class="token operator" style="color:#393A34">:</span><span class="token boolean" style="color:#36acaa">false</span><span class="token punctuation" style="color:#393A34">}</span><br></div></code></pre></div></div>
-<p>这意味着：</p>
-<ul>
-<li class="">站点能打开。</li>
-<li class="">注册入口可见。</li>
-<li class="">但注册需要 invite code。</li>
-<li class="">邮件系统还没配置。</li>
-<li class="">没有默认账号密码可以直接登录。</li>
-</ul>
-<p>注册页能看到 <code>Invite Code</code> 字段：</p>
-<p><img decoding="async" loading="lazy" alt="Stoat / Revolt signup page" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/stoat-signup-e0575a7cd02ea0c1dac74098b6ad2344.png" width="1280" height="633" class="img_ev3q"></p>
-<p>如果只是想看界面，可以先看 landing page 和注册页。如果要进入真正的 server/channel/chat 页面，需要手动生成一个 invite code，再创建第一个测试账号。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="它和我们的-agent-社区有什么关系">它和我们的 Agent 社区有什么关系？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#%E5%AE%83%E5%92%8C%E6%88%91%E4%BB%AC%E7%9A%84-agent-%E7%A4%BE%E5%8C%BA%E6%9C%89%E4%BB%80%E4%B9%88%E5%85%B3%E7%B3%BB" class="hash-link" aria-label="它和我们的 Agent 社区有什么关系？的直接链接" title="它和我们的 Agent 社区有什么关系？的直接链接" translate="no">​</a></h2>
-<p>目前我们的主线仍然是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Discourse = 正式 topic、任务上下文、结论沉淀、公开知识库</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Discord / Stoat / Revolt = 可选实时聊天入口</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Agent Router = 把实时消息和结构化 topic 关联起来</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Hermes / Codex / CC Connect = 执行任务的 runtime / gateway</span><br></div></code></pre></div></div>
-<p>也就是说，Stoat / Revolt 不会替代 Discourse。它更适合用来回答：</p>
-<ul>
-<li class="">Discord-like 的 server/channel/thread 体验是什么？</li>
-<li class="">如果未来想要实时 <code>@bot</code>，应该长什么样？</li>
-<li class="">Agent 是否应该出现在一个聊天频道里？</li>
-<li class="">聊天结果如何回写到 Discourse topic？</li>
-</ul>
-<p>长期看，更合理的组合是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Discourse topic 负责长期记忆</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Stoat / Discord 负责实时入口</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Agent Router 负责事件分发</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Agent Runtime 负责执行任务</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Git / ChatBoard / Blog 负责产物沉淀</span><br></div></code></pre></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="当前-demo-的边界">当前 demo 的边界<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#%E5%BD%93%E5%89%8D-demo-%E7%9A%84%E8%BE%B9%E7%95%8C" class="hash-link" aria-label="当前 demo 的边界的直接链接" title="当前 demo 的边界的直接链接" translate="no">​</a></h2>
-<p>这个 Stoat / Revolt 只是 inspection demo，还不是生产社区：</p>
-<ul>
-<li class="">没有配置 SMTP。</li>
-<li class="">没有配置 captcha。</li>
-<li class="">已开启 invite-only，避免公网开放注册。</li>
-<li class="">没有公开 invite code。</li>
-<li class="">没有创建默认 admin/user。</li>
-<li class="">语音/视频 RTC 端口没有对外开放。</li>
-<li class="">备份和升级策略还没写。</li>
-</ul>
-<p>所以它适合“看一眼 Discord-like 产品是什么样”，不适合作为现在的正式 Agent 社区主入口。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="小结">小结<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discord-revolt-stoat-self-hosted-intro#%E5%B0%8F%E7%BB%93" class="hash-link" aria-label="小结的直接链接" title="小结的直接链接" translate="no">​</a></h2>
-<p>如果把几个平台放在一起看：</p>
-<ul>
-<li class=""><strong>Discourse</strong>：适合做当前 Agent 社区的长期讨论和任务沉淀。</li>
-<li class=""><strong>Discord</strong>：官方不能自建，但适合作为外部 realtime channel。</li>
-<li class=""><strong>Stoat / Revolt</strong>：可以自建，用来观察 Discord-like server/channel/chat 体验。</li>
-<li class=""><strong>Agent Router</strong>：未来把这些入口统一起来，让 <code>@researcher</code>、<code>@scribe</code>、<code>@engineer</code> 等 Agent 能跨平台响应。</li>
-</ul>
-<p>这次部署 Stoat / Revolt 的价值，不是要马上替代 Discourse，而是帮助我们把“实时聊天入口”和“长期结构化社区”这两个产品层分开看。</p>]]></content:encoded>
-            <category>community</category>
-            <category>discord</category>
-            <category>revolt</category>
-            <category>self-hosted</category>
         </item>
     </channel>
 </rss>
