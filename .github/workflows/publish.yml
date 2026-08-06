@@ -8,14 +8,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: chatblog-docs-production
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,32 +30,31 @@ jobs:
         env:
           CHATBLOG_SITE_URL: https://arch.gh.wzhecnu.cn
           CHATBLOG_BASE_URL: /ChatBlog/
-      - name: Deploy to gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare Pages artifact
         run: |
           set -euo pipefail
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p _site
 
-          pages_dir="$(mktemp -d)"
-          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          if ! git clone --depth=1 --branch gh-pages "$repo_url" "$pages_dir"; then
-            rm -rf "$pages_dir"
-            pages_dir="$(mktemp -d)"
-            git clone --no-checkout "$repo_url" "$pages_dir"
-            git -C "$pages_dir" checkout --orphan gh-pages
-            git -C "$pages_dir" rm -rf . || true
+          # Keep the PR preview tree if it already exists on gh-pages.
+          if git fetch origin gh-pages --depth=1; then
+            if git ls-tree -d --name-only FETCH_HEAD dev | grep -qx dev; then
+              git archive FETCH_HEAD dev | tar -x -C _site
+            fi
           fi
 
-          find "$pages_dir" -mindepth 1 -maxdepth 1 ! -name ".git" ! -name "dev" -exec rm -rf {} +
-          cp -R build/. "$pages_dir/"
-          touch "$pages_dir/.nojekyll"
+          cp -R build/. _site/
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
 
-          git -C "$pages_dir" add -A
-          if git -C "$pages_dir" diff --cached --quiet; then
-            echo "No production docs changes to deploy."
-          else
-            git -C "$pages_dir" commit -m "Deploy ChatBlog docs from ${GITHUB_SHA}"
-            git -C "$pages_dir" push origin gh-pages
-          fi
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
