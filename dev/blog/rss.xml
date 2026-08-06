@@ -4,10 +4,177 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Thu, 06 Aug 2026 03:20:00 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 07 Aug 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source</guid>
+            <pubDate>Fri, 07 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[静态调研 GitHub 上适合自建录音转写、在线会议实时转写和会议纪要的开源项目，区分会议 bot/API、录音文件后台、字幕媒体套件、团队媒体库与底层 ASR pipeline。]]></description>
+            <content:encoded><![CDATA[<p>录音转写看起来像一个单点能力：给一段音频，返回文字。真的要自建时，它会很快拆成几个完全不同的问题：谁负责录音或进会？是实时字幕还是会后处理？要不要说话人？要不要摘要、行动项和问答？要不要 API、权限、队列和搜索？</p>
+<p>如果不先把这些产品形态分开，就很容易把 <code>openai/whisper</code>、<code>faster-whisper</code>、<code>WhisperX</code>、一个 Gradio WebUI、一个会议 bot、一个媒体库平台放进同一张表里比较，最后得到一堆“都能转写”的无效结论。</p>
+<p>这篇只做静态调研，关注 GitHub 上可自建、可部署或可封装的项目，重点场景是录音转写、会议笔记和后续 ChatArch/Agent 工作流集成。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>如果要自动进入在线会议并实时拿 transcript，先看 <strong>Vexa</strong>；如果已有录音/录屏要进一个自托管后台，先看 <strong>Scriberr</strong>；如果主线是字幕、翻译和媒体转写，先看 <strong>Whishper</strong>；如果要团队级媒体库、speaker profile、搜索和协作，观察 <strong>OpenTranscribe</strong>；如果只是缺一个 STT API 或实时流式底座，才看 <strong>docker-whisper / WhisperLive / WhisperX / faster-whisper / whisper.cpp</strong>。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>本文快照日期为 <strong>2026-08-07</strong>。候选来自 GitHub 仓库、README、官方文档、release/license 状态和项目官方截图/架构图。本文没有在本机安装、构建、启动容器、下载模型或做统一 benchmark；运行实践属于 shortlist 之后的独立任务。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把转写拆成五类产品">先把“转写”拆成五类产品<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E5%85%88%E6%8A%8A%E8%BD%AC%E5%86%99%E6%8B%86%E6%88%90%E4%BA%94%E7%B1%BB%E4%BA%A7%E5%93%81" class="hash-link" aria-label="先把“转写”拆成五类产品的直接链接" title="先把“转写”拆成五类产品的直接链接" translate="no">​</a></h2>
+<p>录音转写至少有五条路线。它们都可能用 Whisper 或类似模型，但交付物完全不同。</p>
+<table><thead><tr><th>产品形态</th><th>典型输入</th><th>典型输出</th><th>最容易踩的坑</th></tr></thead><tbody><tr><td>会议 bot / transcription API</td><td>Google Meet、Teams、Zoom、Jitsi 等会议 URL</td><td>实时 speaker-attributed transcript、API/WebSocket</td><td>入会、音频捕获、平台限制比 ASR 本身更难</td></tr><tr><td>录音文件后台</td><td>音频、视频、会议录屏、文件夹 watcher</td><td>转写、说话人、摘要、问答、归档</td><td>不负责自动进会，实时性有限</td></tr><tr><td>字幕/媒体转写 WebUI</td><td>本地文件、URL、YouTube/yt-dlp</td><td>TXT、JSON、SRT、VTT、字幕编辑/翻译</td><td>适合媒体处理，不等于会议纪要系统</td></tr><tr><td>团队媒体库/分析平台</td><td>大量音视频、S3/SMB/watch sources</td><td>搜索、speaker profiles、RBAC、集合、AI 分析</td><td>功能重，成熟度与权限边界必须深审</td></tr><tr><td>ASR / diarization 底座</td><td>音频流或文件</td><td>文字、word timestamp、speaker label</td><td>只是 pipeline，不提供产品、权限、存储和 UI</td></tr></tbody></table>
+<p>这个分类比 stars 更重要。会议笔记需求一旦包含“自动进入会议”，普通上传转写 WebUI 就不在同一赛道；如果只是“录音文件进后台”，会议 bot 反而太重。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="vexa会议-bot-和实时-transcription-api">Vexa：会议 bot 和实时 transcription API<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#vexa%E4%BC%9A%E8%AE%AE-bot-%E5%92%8C%E5%AE%9E%E6%97%B6-transcription-api" class="hash-link" aria-label="Vexa：会议 bot 和实时 transcription API的直接链接" title="Vexa：会议 bot 和实时 transcription API的直接链接" translate="no">​</a></h2>
+<p>Repo: <a href="https://github.com/Vexa-ai/vexa" target="_blank" rel="noopener noreferrer" class="">Vexa-ai/vexa</a></p>
+<p>Vexa 是本轮最贴近“在线会议实时转写服务”的项目。它的 README 明确定位为 open-source、self-hosted meeting bot &amp; transcription API：bot 加入 Google Meet、Microsoft Teams、Zoom、Jitsi，然后通过你自托管的 API 输出 speaker-attributed transcripts。README 还特别说明，如果只需要 transcription API，可以忽略 agent lane，把它当独立产品使用。</p>
+<p><img decoding="async" loading="lazy" alt="Vexa official architecture" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MjAgNjEwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idCBkIiBmb250LWZhbWlseT0iLWFwcGxlLXN5c3RlbSxCbGlua01hY1N5c3RlbUZvbnQsJ1NlZ29lIFVJJyxSb2JvdG8sSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiPgogIDx0aXRsZSBpZD0idCI+VmV4YSBhcmNoaXRlY3R1cmU8L3RpdGxlPgogIDxkZXNjIGlkPSJkIj5PbmUgQVBJIGdhdGV3YXkgcm91dGVzIHRvIHR3byBkb21haW5zIOKAlCBNZWV0aW5ncyBhbmQgQWdlbnRzIOKAlCBib3RoIHJ1bm5pbmcgb24gb25lIHJ1bnRpbWUgdGhhdCBzcGF3bnMgZWFjaCBib3QgYW5kIGFnZW50IGluIGl0cyBvd24gc2FuZGJveGVkIGNvbnRhaW5lciBvbiBEb2NrZXIsIEt1YmVybmV0ZXMsIG9yIFByb2Nlc3MuPC9kZXNjPgoKICA8ZGVmcz4KICAgIDxtYXJrZXIgaWQ9ImFycm93IiB2aWV3Qm94PSIwIDAgMTAgMTAiIHJlZlg9IjgiIHJlZlk9IjUiIG1hcmtlcldpZHRoPSI3IiBtYXJrZXJIZWlnaHQ9IjciIG9yaWVudD0iYXV0by1zdGFydC1yZXZlcnNlIj4KICAgICAgPHBhdGggZD0iTTAsMCBMMTAsNSBMMCwxMCB6IiBmaWxsPSIjNjQ3NDhiIi8+CiAgICA8L21hcmtlcj4KICAgIDxzdHlsZT4KICAgICAgLm1vbm8geyBmb250LWZhbWlseTogdWktbW9ub3NwYWNlLCdTRiBNb25vJywnTWVubG8nLCdDb25zb2xhcycsbW9ub3NwYWNlOyB9CiAgICAgIC5lZGdlIHsgc3Ryb2tlOiAjNjQ3NDhiOyBzdHJva2Utd2lkdGg6IDEuODsgZmlsbDogbm9uZTsgfQogICAgICAubGJsICB7IGZpbGw6ICM2NDc0OGI7IH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgoKICA8IS0tIGRvbWFpbiBwYW5lbHMgLS0+CiAgPHJlY3QgeD0iMzYiICB5PSI4OCIgd2lkdGg9IjM4OCIgaGVpZ2h0PSI0ODYiIHJ4PSIxOCIgZmlsbD0iIzBlYTVlOSIgb3BhY2l0eT0iMC4wNyIvPgogIDxyZWN0IHg9IjQ5NiIgeT0iODgiIHdpZHRoPSIzODgiIGhlaWdodD0iNDg2IiByeD0iMTgiIGZpbGw9IiM4YjVjZjYiIG9wYWNpdHk9IjAuMDciLz4KCiAgPCEtLSBjb2x1bW4gaGVhZGVycyAtLT4KICA8dGV4dCB4PSIxNjAiIHk9IjExMiIgZmlsbD0iIzBlYTVlOSIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9IjcwMCIgbGV0dGVyLXNwYWNpbmc9IjMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk1FRVRJTkdTPC90ZXh0PgogIDx0ZXh0IHg9Ijc2MCIgeT0iMTEyIiBmaWxsPSIjOGI1Y2Y2IiBmb250LXNpemU9IjEzIiBmb250LXdlaWdodD0iNzAwIiBsZXR0ZXItc3BhY2luZz0iMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QUdFTlRTPC90ZXh0PgoKICA8IS0tIGdhdGV3YXkgLS0+CiAgPHJlY3QgeD0iMjg1IiB5PSIzMCIgd2lkdGg9IjM1MCIgaGVpZ2h0PSI0NiIgcng9IjEwIiBmaWxsPSIjNjM2NmYxIi8+CiAgPHRleHQgeD0iNDYwIiB5PSI1OCIgZmlsbD0iI2ZmZmZmZiIgZm9udC1zaXplPSIxNi41IiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5BUEkgZ2F0ZXdheSDCtyBYLUFQSS1LZXk8L3RleHQ+CgogIDwhLS0gZ2F0ZXdheSAtPiBhcGlzIC0tPgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzUwIiB5MT0iNzYiIHgyPSIxNjgiIHkyPSIxNTAiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSI1NzAiIHkxPSI3NiIgeDI9Ijc1MiIgeTI9IjE1MCIgbWFya2VyLWVuZD0idXJsKCNhcnJvdykiLz4KICA8dGV4dCBjbGFzcz0ibW9ubyIgeD0iMzAwIiB5PSIxMjAiIGZpbGw9IiMwZWE1ZTkiIGZvbnQtc2l6ZT0iMTEiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBPU1QgL2JvdHM8L3RleHQ+CiAgPHRleHQgY2xhc3M9Im1vbm8iIHg9IjYyMCIgeT0iMTIwIiBmaWxsPSIjOGI1Y2Y2IiBmb250LXNpemU9IjExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QT1NUIC9hZ2VudC8qPC90ZXh0PgoKICA8IS0tIG1lZXRpbmctYXBpIC8gYWdlbnQtYXBpIC0tPgogIDxyZWN0IHg9Ijc1IiAgeT0iMTUyIiB3aWR0aD0iMTc1IiBoZWlnaHQ9IjU2IiByeD0iMTAiIGZpbGw9IiMwZWE1ZTkiLz4KICA8dGV4dCB4PSIxNjIiIHk9IjE3OCIgZmlsbD0iI2ZmZmZmZiIgZm9udC1zaXplPSIxNSIgZm9udC13ZWlnaHQ9IjYwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+bWVldGluZy1hcGk8L3RleHQ+CiAgPHRleHQgeD0iMTYyIiB5PSIxOTciIGZpbGw9IiNlMGYyZmUiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Ym90cyDCtyB0cmFuc2NyaXB0cyDCtyByZWNvcmRpbmdzPC90ZXh0PgoKICA8cmVjdCB4PSI2NzAiIHk9IjE1MiIgd2lkdGg9IjE3NSIgaGVpZ2h0PSI1NiIgcng9IjEwIiBmaWxsPSIjOGI1Y2Y2Ii8+CiAgPHRleHQgeD0iNzU3IiB5PSIxNzgiIGZpbGw9IiNmZmZmZmYiIGZvbnQtc2l6ZT0iMTUiIGZvbnQtd2VpZ2h0PSI2MDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPmFnZW50LWFwaTwvdGV4dD4KICA8dGV4dCB4PSI3NTciIHk9IjE5NyIgZmlsbD0iI2VkZTlmZSIgZm9udC1zaXplPSIxMC41IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5jaGF0IMK3IHJvdXRpbmVzIMK3IGV2ZW50czwvdGV4dD4KCiAgPCEtLSBhcGlzIC0+IHJ1bnRpbWUgLS0+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSIyNTAiIHkxPSIxODIiIHgyPSIzNDYiIHkyPSIyNzYiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSI2NzAiIHkxPSIxODIiIHgyPSI1NzQiIHkyPSIyNzYiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPHRleHQgY2xhc3M9ImxibCIgeD0iMjg0IiB5PSIyMjAiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+ZGlzcGF0Y2g8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImxibCIgeD0iNjM2IiB5PSIyMjAiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+ZGlzcGF0Y2g8L3RleHQ+CgogIDwhLS0gcnVudGltZSAtLT4KICA8cmVjdCB4PSIzNTAiIHk9IjI0OCIgd2lkdGg9IjIyMCIgaGVpZ2h0PSI5OCIgcng9IjE2IiBmaWxsPSIjMGYxNzJhIiBzdHJva2U9IiMzNGQzOTkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDx0ZXh0IHg9IjQ2MCIgeT0iMjg2IiBmaWxsPSIjZmZmZmZmIiBmb250LXNpemU9IjIxIiBmb250LXdlaWdodD0iNzAwIiBsZXR0ZXItc3BhY2luZz0iMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UlVOVElNRTwvdGV4dD4KICA8dGV4dCB4PSI0NjAiIHk9IjMwOCIgZmlsbD0iIzk0YTNiOCIgZm9udC1zaXplPSIxMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+aXNvbGF0ZWQgwrcgZXBoZW1lcmFsIMK3IHJlYXBlZCBvbiBpZGxlPC90ZXh0PgogIDx0ZXh0IHg9IjQ2MCIgeT0iMzI4IiBmaWxsPSIjMzRkMzk5IiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Eb2NrZXIgwrcgS3ViZXJuZXRlcyDCtyBQcm9jZXNzPC90ZXh0PgoKICA8IS0tIHJ1bnRpbWUgLT4gY29udGFpbmVycyAtLT4KICA8dGV4dCBjbGFzcz0ibGJsIiB4PSI0NjAiIHk9IjM3OCIgZm9udC1zaXplPSIxMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+c3Bhd25zIG9uZSBjb250YWluZXIgcGVyIHdvcmtsb2FkPC90ZXh0PgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iNDE1IiB5MT0iMzQ2IiB4Mj0iMjYwIiB5Mj0iNDI2IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iNTA1IiB5MT0iMzQ2IiB4Mj0iNjYwIiB5Mj0iNDI2IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPgoKICA8IS0tIGNvbnRhaW5lcnMgLS0+CiAgPHJlY3QgeD0iOTUiIHk9IjQzMCIgd2lkdGg9IjMxMCIgaGVpZ2h0PSIxMjgiIHJ4PSIxNCIgZmlsbD0iIzFlMjkzYiIgc3Ryb2tlPSIjMGVhNWU5IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDx0ZXh0IHg9IjI1MCIgeT0iNDYwIiBmaWxsPSIjZmZmZmZmIiBmb250LXNpemU9IjE1IiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj52ZXhhLWJvdCBjb250YWluZXI8L3RleHQ+CiAgPHRleHQgeD0iMjUwIiB5PSI0ODciIGZpbGw9IiNjYmQ1ZTEiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+am9pbnMgdGhlIGNhbGwg4oaSIGNhcHR1cmVzIGF1ZGlvPC90ZXh0PgogIDx0ZXh0IHg9IjI1MCIgeT0iNTA5IiBmaWxsPSIjY2JkNWUxIiBmb250LXNpemU9IjExLjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPldoaXNwZXIg4oaSIHRyYW5zY3JpcHQudjE8L3RleHQ+CiAgPHRleHQgeD0iMjUwIiB5PSI1MzEiIGZpbGw9IiMzOGJkZjgiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+4oaSIFJlZGlzIHN0cmVhbSDihpIgeW91ciBBUEk8L3RleHQ+CgogIDxyZWN0IHg9IjUxNSIgeT0iNDMwIiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjEyOCIgcng9IjE0IiBmaWxsPSIjMWUyOTNiIiBzdHJva2U9IiM4YjVjZjYiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHRleHQgeD0iNjcwIiB5PSI0NjAiIGZpbGw9IiNmZmZmZmYiIGZvbnQtc2l6ZT0iMTUiIGZvbnQtd2VpZ2h0PSI2MDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPmFnZW50IGNvbnRhaW5lcjwvdGV4dD4KICA8dGV4dCB4PSI2NzAiIHk9IjQ4NyIgZmlsbD0iI2NiZDVlMSIgZm9udC1zaXplPSIxMS41IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5tb3VudHMgL3dvcmtzcGFjZSAoZ2l0IE1hcmtkb3duIMK3IE9LRik8L3RleHQ+CiAgPHRleHQgeD0iNjcwIiB5PSI1MDkiIGZpbGw9IiNjYmQ1ZTEiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+cmVhZHMgwrcgd3JpdGVzIMK3IGNvbW1pdHM8L3RleHQ+CiAgPHRleHQgeD0iNjcwIiB5PSI1MzEiIGZpbGw9IiNjNGI1ZmQiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+4oaSIHN0cmVhbXMgU1NFIChtZXNzYWdlLWRlbHRhIMK3IGNvbW1pdCk8L3RleHQ+CgogIDwhLS0gY2FwdGlvbiAtLT4KICA8dGV4dCB4PSI0NjAiIHk9IjU5MCIgZmlsbD0iIzY0NzQ4YiIgZm9udC1zaXplPSIxMS41IiBmb250LXN0eWxlPSJpdGFsaWMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkEgYm90IGFuZCBhbiBhZ2VudCBhcmUgdGhlIHNhbWUgcnVudGltZS52MSB3b3JrbG9hZC48L3RleHQ+Cjwvc3ZnPgo=" width="920" height="610" class="img_ev3q"></p>
+<p><em>Vexa 官方架构图：同一个 runtime 调度 meeting bot 和 agent workload；会议侧重点是 bot 入会、捕获音频、产生 transcript stream。来源：Vexa 官方仓库。</em></p>
+<p>Vexa 的价值在于把“入会”这件最容易低估的工程工作产品化了：</p>
+<ul>
+<li class="">会议 URL 进入 <code>POST /bots</code>；</li>
+<li class="">bot 作为参会者进入会议；</li>
+<li class="">meeting-api 管理 bots、transcripts、recordings；</li>
+<li class="">transcript 可以被实时读取；</li>
+<li class="">后续 agent/workspace 只是它扩展出来的一条路线。</li>
+</ul>
+<p>它也有清晰的代价。README 标注 full Docker Compose stack 至少需要 8 vCPU / 16GB RAM；更小机器可以用 lighter path，但完整自托管仍不是“一个 Python 包跑起来”。默认 transcription 可以接 Vexa token；要完全 air-gap，需要把 GPU transcription unit 也自托管。</p>
+<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>在线会议实时转写、会议 bot API、后续接知识库/Agent</td></tr><tr><td>不适合</td><td>只是本地录音文件批量转写；只想要极简单容器 STT</td></tr><tr><td>API/集成</td><td>强，项目本身就是 API-first</td></tr><tr><td>运维面</td><td>中到高，完整栈和 bot fleet 是核心复杂度</td></tr><tr><td>初步结论</td><td><strong>如果目标是“会中自动获取 transcript”，第一优先级</strong></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="scriberr自托管录音视频转写后台">Scriberr：自托管录音/视频转写后台<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#scriberr%E8%87%AA%E6%89%98%E7%AE%A1%E5%BD%95%E9%9F%B3%E8%A7%86%E9%A2%91%E8%BD%AC%E5%86%99%E5%90%8E%E5%8F%B0" class="hash-link" aria-label="Scriberr：自托管录音/视频转写后台的直接链接" title="Scriberr：自托管录音/视频转写后台的直接链接" translate="no">​</a></h2>
+<p>Repo: <a href="https://github.com/rishikanthc/Scriberr" target="_blank" rel="noopener noreferrer" class="">rishikanthc/Scriberr</a></p>
+<p>Scriberr 更像“把录音文件丢进去，它负责后续处理”的后台产品。README 说它可以本地转写 audio/video，支持 NVIDIA Parakeet、Canary 和 Whisper 模型，并提供 diarization、chat with audio、API、folder watcher、PWA、录音和笔记等能力。</p>
+<p><img decoding="async" loading="lazy" alt="Scriberr official recording library screenshot" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/scriberr-hero-f0b23f73bbe7cb2f9153ac3fb7fd927b.png" width="1404" height="1226" class="img_ev3q"></p>
+<p><em>官方截图展示了 Scriberr 的录音列表和移动端 PWA 体验。图片中是演示录音名，没有账号、token 或主机信息。来源：Scriberr 官方仓库。</em></p>
+<p><img decoding="async" loading="lazy" alt="Scriberr official chat screenshot" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/scriberr-chat-65569914faae04c1d8c4410427999b74.png" width="4220" height="1218" class="img_ev3q"></p>
+<p><em>Scriberr 官方截图里的 Chat with Audio：用户可以对转写内容提问并生成摘要。来源：Scriberr 官方仓库。</em></p>
+<p>Scriberr 的优势不是“最底层 ASR 性能”，而是它已经把会议文件处理常见的产品层补了很多：</p>
+<ul>
+<li class="">上传/管理录音；</li>
+<li class="">transcript reader、播放跟随和文本定位；</li>
+<li class="">speaker detection；</li>
+<li class="">notes/highlights；</li>
+<li class="">AI summary；</li>
+<li class="">chat with audio；</li>
+<li class="">folder watcher，方便接 n8n 或文件自动化；</li>
+<li class="">API 文档。</li>
+</ul>
+<p>这让它很适合做 ChatArch 里的“录音进入知识工作流”的第一版：先不解决自动入会，只解决文件进入、转写、总结、归档和后续问答。</p>
+<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>录音文件、会议录屏、语音备忘录进入自托管后台</td></tr><tr><td>不适合</td><td>自动加入 Zoom/Meet/Teams 获取实时 transcript</td></tr><tr><td>API/集成</td><td>中到高，有 API 和 folder watcher</td></tr><tr><td>运维面</td><td>中，模型环境和 diarization/LLM provider 仍需配置</td></tr><tr><td>初步结论</td><td><strong>如果第一版是“录音文件进来→转写→摘要/问答→归档”，第一优先级</strong></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="whishper自托管媒体转写和字幕套件">Whishper：自托管媒体转写和字幕套件<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#whishper%E8%87%AA%E6%89%98%E7%AE%A1%E5%AA%92%E4%BD%93%E8%BD%AC%E5%86%99%E5%92%8C%E5%AD%97%E5%B9%95%E5%A5%97%E4%BB%B6" class="hash-link" aria-label="Whishper：自托管媒体转写和字幕套件的直接链接" title="Whishper：自托管媒体转写和字幕套件的直接链接" translate="no">​</a></h2>
+<p>Repo: <a href="https://github.com/pluja/whishper" target="_blank" rel="noopener noreferrer" class="">pluja/whishper</a></p>
+<p>Whishper 是 100% local 的 audio transcription and subtitling suite，主线是上传或 URL 导入媒体，转写、翻译、下载 TXT/JSON/VTT/SRT，并在 Web UI 里编辑字幕。它使用 FasterWhisper，支持 CPU/GPU，也用 LibreTranslate 做文本翻译。</p>
+<p><img decoding="async" loading="lazy" alt="Whishper official banner" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/whishper-banner-a63f30d78a60d67f85363e1b207599b8.png" width="1640" height="664" class="img_ev3q"></p>
+<p><em>Whishper 官方图：它把产品关键词直接写成 transcribe / translate / subtitle。来源：Whishper 官方仓库。</em></p>
+<p>Whishper 的“字幕产品”气质很强：</p>
+<ul>
+<li class="">URL / yt-dlp 输入；</li>
+<li class="">上传文件转写；</li>
+<li class="">SRT/VTT 等字幕导出；</li>
+<li class="">翻译；</li>
+<li class="">字幕编辑器；</li>
+<li class="">Nginx/MongoDB/LibreTranslate 等 compose 式结构。</li>
+</ul>
+<p>所以它很适合媒体工作流、视频字幕、课程/访谈整理；但会议纪要系统常见的行动项、参会人、任务抽取、会议空间归档不是它的主线。</p>
+<p>还要注意一个维护信号：README 顶部说明作者正在做 v4 完整重写，当前分支不会继续发新 release 或 update。不是不能选，而是不能把当前分支当长期稳定接口来深度耦合。</p>
+<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>媒体转写、字幕、翻译、人工编辑</td></tr><tr><td>不适合</td><td>会议 bot、团队会议知识库、行动项系统</td></tr><tr><td>API/集成</td><td>中，组件化但产品主线不是 API-first</td></tr><tr><td>运维面</td><td>中，MongoDB/LibreTranslate/Nginx/转写 API 组合</td></tr><tr><td>初步结论</td><td><strong>第二优先级：字幕/媒体工作流强，会议笔记要另补</strong></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="opentranscribe团队媒体库方向功能很全但要深审">OpenTranscribe：团队媒体库方向，功能很全但要深审<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#opentranscribe%E5%9B%A2%E9%98%9F%E5%AA%92%E4%BD%93%E5%BA%93%E6%96%B9%E5%90%91%E5%8A%9F%E8%83%BD%E5%BE%88%E5%85%A8%E4%BD%86%E8%A6%81%E6%B7%B1%E5%AE%A1" class="hash-link" aria-label="OpenTranscribe：团队媒体库方向，功能很全但要深审的直接链接" title="OpenTranscribe：团队媒体库方向，功能很全但要深审的直接链接" translate="no">​</a></h2>
+<p>Repo: <a href="https://github.com/attevon-llc/OpenTranscribe" target="_blank" rel="noopener noreferrer" class="">attevon-llc/OpenTranscribe</a></p>
+<p>OpenTranscribe 是这批候选里功能面最宽的：README 定位为 containerized web application，基于 WhisperX + faster-whisper 做音视频转写，列出 PyAnnote diarization、speaker profiles、cross-video speaker recognition、S3/SMB/watch sources、搜索、RBAC、collection sharing、custom prompt summary、多 provider LLM 等能力。</p>
+<p><img decoding="async" loading="lazy" alt="OpenTranscribe official workflow" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/opentranscribe-workflow-7280f60b91ea8cd78a9b7a05ee4f5148.gif" width="1280" height="783" class="img_ev3q"></p>
+<p><em>OpenTranscribe 官方 workflow GIF：展示从 login、upload、process、transcribe 到 speaker identification 和 AI tags/collections 的完整链路。来源：OpenTranscribe 官方仓库。</em></p>
+<p>如果这些能力都稳定可用，它会非常接近“团队录音资产库”：</p>
+<ul>
+<li class="">多来源自动导入：local folders、S3、SMB；</li>
+<li class="">去重、分段合并、批量处理；</li>
+<li class="">speaker profile 和跨文件说话人识别；</li>
+<li class="">搜索、标签、collection；</li>
+<li class="">RBAC 与共享；</li>
+<li class="">custom JSON summary prompt；</li>
+<li class="">OpenAI/Ollama/Claude/OpenRouter/local vLLM 等 LLM provider。</li>
+</ul>
+<p>但它现在不应该直接被当成“成熟首选”。原因不是功能少，而是功能太多、社区规模还小，且 README 自述 99.9% written by AI using frontier models。对生产环境来说，权限模型、文件隔离、上传处理、队列恢复、prompt/LLM key 存储、OpenSearch/数据库配置、安全更新都需要代码级深审。</p>
+<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>团队级媒体库、跨会议 speaker profile、搜索协作</td></tr><tr><td>不适合</td><td>想快速上线一个低运维转写服务</td></tr><tr><td>API/集成</td><td>中，偏平台内部能力，需继续深读 API/权限</td></tr><tr><td>运维面</td><td>高，组件多、权限面大</td></tr><tr><td>初步结论</td><td><strong>观察/深审候选：功能形态很对，但不能凭 README 上生产</strong></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="docker-whisper-与-whisperlive当你只缺-stt-服务">docker-whisper 与 WhisperLive：当你只缺 STT 服务<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#docker-whisper-%E4%B8%8E-whisperlive%E5%BD%93%E4%BD%A0%E5%8F%AA%E7%BC%BA-stt-%E6%9C%8D%E5%8A%A1" class="hash-link" aria-label="docker-whisper 与 WhisperLive：当你只缺 STT 服务的直接链接" title="docker-whisper 与 WhisperLive：当你只缺 STT 服务的直接链接" translate="no">​</a></h2>
+<p>Repo: <a href="https://github.com/hwdsl2/docker-whisper" target="_blank" rel="noopener noreferrer" class="">hwdsl2/docker-whisper</a>、<a href="https://github.com/hwdsl2/docker-whisper-live" target="_blank" rel="noopener noreferrer" class="">hwdsl2/docker-whisper-live</a>、<a href="https://github.com/collabora/WhisperLive" target="_blank" rel="noopener noreferrer" class="">collabora/WhisperLive</a></p>
+<p>这组更适合作为“服务底座”而不是会议笔记产品。</p>
+<p><code>docker-whisper</code> 把 faster-whisper 包成 OpenAI-compatible API，提供 <code>/v1/audio/transcriptions</code> 和 <code>/v1/audio/translations</code>，支持 JSON/text/verbose JSON/SRT/VTT、SSE streaming、CUDA image、air-gapped mode 和持久模型 cache。</p>
+<p><code>docker-whisper-live</code> 把 WhisperLive 包成实时 STT server，提供 WebSocket live transcription 和 OpenAI-compatible REST。WhisperLive 本体则是 nearly-live implementation，支持 live microphone、预录音频、faster-whisper/TensorRT/OpenVINO backend、word timestamp、hotwords、speaker diarization 等高级路径。</p>
+<p>它们适合两种情况：</p>
+<ol>
+<li class="">已经有自己的录音入口、任务队列、对象存储、权限和摘要服务，只缺一个可替换 OpenAI Whisper API 的自建 STT；</li>
+<li class="">想给浏览器捕获、直播字幕或内部实时音频流接一个 WebSocket 转写服务。</li>
+</ol>
+<table><thead><tr><th>维度</th><th>docker-whisper</th><th>WhisperLive / docker-whisper-live</th></tr></thead><tbody><tr><td>输入</td><td>完整音频文件</td><td>麦克风/流式音频/文件</td></tr><tr><td>协议</td><td>HTTP REST，OpenAI-compatible</td><td>WebSocket + REST</td></tr><tr><td>适合</td><td>会后录音批处理、替换 Whisper API</td><td>实时字幕、浏览器/流媒体接入</td></tr><tr><td>缺口</td><td>UI、会议 bot、权限、摘要、归档</td><td>UI、会议 bot、权限、摘要、归档</td></tr><tr><td>初步结论</td><td><strong>可作为 STT microservice</strong></td><td><strong>可作为 live STT 底座</strong></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="whisperxfaster-whisperwhispercpp底座不是产品">WhisperX、faster-whisper、whisper.cpp：底座不是产品<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#whisperxfaster-whisperwhispercpp%E5%BA%95%E5%BA%A7%E4%B8%8D%E6%98%AF%E4%BA%A7%E5%93%81" class="hash-link" aria-label="WhisperX、faster-whisper、whisper.cpp：底座不是产品的直接链接" title="WhisperX、faster-whisper、whisper.cpp：底座不是产品的直接链接" translate="no">​</a></h2>
+<p>Repo: <a href="https://github.com/m-bain/whisperX" target="_blank" rel="noopener noreferrer" class="">m-bain/whisperX</a>、<a href="https://github.com/SYSTRAN/faster-whisper" target="_blank" rel="noopener noreferrer" class="">SYSTRAN/faster-whisper</a>、<a href="https://github.com/ggml-org/whisper.cpp" target="_blank" rel="noopener noreferrer" class="">ggml-org/whisper.cpp</a>、<a href="https://github.com/openai/whisper" target="_blank" rel="noopener noreferrer" class="">openai/whisper</a></p>
+<p>这些项目非常重要，但不要把它们错当成“现成会议笔记服务”。</p>
+<ul>
+<li class=""><strong>WhisperX</strong>：提供 fast ASR、word-level timestamps、wav2vec2 alignment、VAD batching 和 pyannote diarization。它适合做高质量 pipeline 的核心。</li>
+<li class=""><strong>faster-whisper</strong>：CTranslate2 reimplementation，README 说明同等精度下可比 openai/whisper 更快、更省内存，并支持 int8、batch 等路径。很多 Web app 和服务都用它做底层转写。</li>
+<li class=""><strong>whisper.cpp</strong>：C/C++ 高性能端侧实现，支持 Apple Silicon、CPU、Vulkan、C API、Docker、多平台。它更适合边缘端、桌面本地化和嵌入式场景。</li>
+<li class=""><strong>openai/whisper</strong>：原始模型和 CLI，是生态基准，但生产服务化、队列、权限、diarization、摘要都需要另建。</li>
+</ul>
+<p>如果我们准备自研，比较自然的底座组合是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">入口层：上传 / 会议 bot / 浏览器音频捕获</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">队列层：任务调度、重试、进度、资源隔离</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ASR 层：faster-whisper 或 whisper.cpp</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">对齐/说话人：WhisperX + pyannote/sherpa-onnx 等</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">LLM 层：摘要、行动项、问答、标题、章节</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">知识层：Markdown / 文档 / 搜索 / 向量索引 / ChatArch workspace</span><br></div></code></pre></div></div>
+<p>但这已经是工程项目，不是“拿一个现成服务适配”。如果有 Vexa/Scriberr/Whishper 能覆盖 70% 需求，应该先复用产品，再把底座作为替换点。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="其他项目怎么放">其他项目怎么放<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E5%85%B6%E4%BB%96%E9%A1%B9%E7%9B%AE%E6%80%8E%E4%B9%88%E6%94%BE" class="hash-link" aria-label="其他项目怎么放的直接链接" title="其他项目怎么放的直接链接" translate="no">​</a></h2>
+<p>本轮还看了几个不是主线但有参考价值的项目。</p>
+<table><thead><tr><th>项目</th><th>价值</th><th>不作为主线原因</th></tr></thead><tbody><tr><td><a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" rel="noopener noreferrer" class="">Meetily</a></td><td>本地 privacy-first AI meeting assistant，实时转写、摘要、Ollama/OpenAI-compatible provider</td><td>更像桌面/本地 app，中心 API/后台服务不是第一定位</td></tr><tr><td><a href="https://github.com/chidiwilliams/buzz" target="_blank" rel="noopener noreferrer" class="">Buzz</a></td><td>成熟桌面转写/字幕工具，离线、live mic、speaker identification、CLI/watch folder/plugin</td><td>适合个人工作站，不是自建后台</td></tr><tr><td><a href="https://github.com/jhj0517/Whisper-WebUI" target="_blank" rel="noopener noreferrer" class="">Whisper-WebUI</a></td><td>Gradio 字幕/转写 WebUI，支持多后端、YouTube/mic、VAD、pyannote</td><td>实验/字幕 UI 好，团队服务化弱</td></tr><tr><td><a href="https://github.com/joinly-ai/joinly" target="_blank" rel="noopener noreferrer" class="">joinly</a></td><td>让 AI agent 加入会议，STT/TTS 模块化</td><td>重点是 agent 参会和交互，不是单纯录音转写</td></tr><tr><td><a href="https://github.com/zoom/arlo" target="_blank" rel="noopener noreferrer" class="">zoom/arlo</a></td><td>Zoom RTMS reference，无 bot live transcript 路线</td><td>Zoom-only 参考实现，不是通用产品</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="推荐路线先选产品形态再做-runtime-实践">推荐路线：先选产品形态，再做 runtime 实践<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E6%8E%A8%E8%8D%90%E8%B7%AF%E7%BA%BF%E5%85%88%E9%80%89%E4%BA%A7%E5%93%81%E5%BD%A2%E6%80%81%E5%86%8D%E5%81%9A-runtime-%E5%AE%9E%E8%B7%B5" class="hash-link" aria-label="推荐路线：先选产品形态，再做 runtime 实践的直接链接" title="推荐路线：先选产品形态，再做 runtime 实践的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-a会议实时-transcript">路线 A：会议实时 transcript<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-a%E4%BC%9A%E8%AE%AE%E5%AE%9E%E6%97%B6-transcript" class="hash-link" aria-label="路线 A：会议实时 transcript的直接链接" title="路线 A：会议实时 transcript的直接链接" translate="no">​</a></h3>
+<p>如果第一需求是“把会议链接给系统，系统自动入会并实时输出文字”，优先看 Vexa。这个问题的难点不只是模型，而是：</p>
+<ul>
+<li class="">各会议平台的加入流程；</li>
+<li class="">音频捕获和稳定性；</li>
+<li class="">实时 transcript stream；</li>
+<li class="">bot 权限、命名和合规提示；</li>
+<li class="">会后录音、转写和知识库归档。</li>
+</ul>
+<p>Vexa 至少把这些问题放在同一个产品边界里了。后续实践应该只问具体问题：目标平台能否稳定加入？Transcript 延迟和 speaker attribution 是否满足需求？API 能否接到 ChatArch 文档/任务/知识库？</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-b已有录音录屏处理后台">路线 B：已有录音/录屏处理后台<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-b%E5%B7%B2%E6%9C%89%E5%BD%95%E9%9F%B3%E5%BD%95%E5%B1%8F%E5%A4%84%E7%90%86%E5%90%8E%E5%8F%B0" class="hash-link" aria-label="路线 B：已有录音/录屏处理后台的直接链接" title="路线 B：已有录音/录屏处理后台的直接链接" translate="no">​</a></h3>
+<p>如果第一需求是“录音文件进来，系统自动转写、总结、问答、归档”，优先看 Scriberr。</p>
+<p>这条路线对 ChatArch 更容易快速落地：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">录音文件 / 会议录屏</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → Scriberr folder watcher / API</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → transcript + summary + notes</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → ChatArch 文档 / Feishu / Git-backed meeting notes</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → 后续由 Agent 检索、问答、拆任务</span><br></div></code></pre></div></div>
+<p>它不解决自动进会，但把会后处理链路补得更完整。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-c媒体字幕和内容生产">路线 C：媒体字幕和内容生产<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-c%E5%AA%92%E4%BD%93%E5%AD%97%E5%B9%95%E5%92%8C%E5%86%85%E5%AE%B9%E7%94%9F%E4%BA%A7" class="hash-link" aria-label="路线 C：媒体字幕和内容生产的直接链接" title="路线 C：媒体字幕和内容生产的直接链接" translate="no">​</a></h3>
+<p>如果大量输入是视频、播客、课程、访谈、YouTube URL，Whishper 更自然。它的强项是字幕、翻译和编辑，而不是会议任务系统。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-d团队媒体资产库">路线 D：团队媒体资产库<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-d%E5%9B%A2%E9%98%9F%E5%AA%92%E4%BD%93%E8%B5%84%E4%BA%A7%E5%BA%93" class="hash-link" aria-label="路线 D：团队媒体资产库的直接链接" title="路线 D：团队媒体资产库的直接链接" translate="no">​</a></h3>
+<p>如果目标是把所有会议、访谈、音视频资料变成可搜索、可标注、可共享、可跨文件识别 speaker 的团队资产，OpenTranscribe 值得深读。但它应该先过安全/代码质量/部署复杂度审查，再做实践。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-e自己做最小服务">路线 E：自己做最小服务<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-e%E8%87%AA%E5%B7%B1%E5%81%9A%E6%9C%80%E5%B0%8F%E6%9C%8D%E5%8A%A1" class="hash-link" aria-label="路线 E：自己做最小服务的直接链接" title="路线 E：自己做最小服务的直接链接" translate="no">​</a></h3>
+<p>如果现成产品都太重，最小自研可以从 docker-whisper 或 WhisperLive 开始，而不是直接从模型代码开始。这样至少保留一个稳定的 HTTP/WebSocket 边界。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一轮-shortlist">第一轮 shortlist<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E7%AC%AC%E4%B8%80%E8%BD%AE-shortlist" class="hash-link" aria-label="第一轮 shortlist的直接链接" title="第一轮 shortlist的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>场景</th><th>第一候选</th><th>第二候选</th><th>暂不选原因</th></tr></thead><tbody><tr><td>自动入会 + 实时 transcript API</td><td><strong>Vexa</strong></td><td>joinly / Zoom Arlo 作参考</td><td>普通 WebUI 不负责进会</td></tr><tr><td>上传录音/录屏 + 摘要/问答</td><td><strong>Scriberr</strong></td><td>OpenTranscribe</td><td>Vexa 太重，Whishper 偏字幕</td></tr><tr><td>字幕/翻译/媒体处理</td><td><strong>Whishper</strong></td><td>Whisper-WebUI / Buzz</td><td>会议纪要要另补</td></tr><tr><td>团队媒体库 + speaker profile</td><td><strong>OpenTranscribe（观察）</strong></td><td>Scriberr</td><td>需要代码和安全深审</td></tr><tr><td>自建 STT API</td><td><strong>docker-whisper</strong></td><td>faster-whisper 自封装</td><td>不是会议产品</td></tr><tr><td>实时流式 STT</td><td><strong>WhisperLive / docker-whisper-live</strong></td><td>Vexa 的会议 API</td><td>没有会议文档层</td></tr><tr><td>自研 pipeline</td><td><strong>WhisperX + faster-whisper</strong></td><td>whisper.cpp</td><td>需要自己做产品层</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="下一步实践不要一次跑完所有项目">下一步实践不要一次跑完所有项目<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%B8%8B%E4%B8%80%E6%AD%A5%E5%AE%9E%E8%B7%B5%E4%B8%8D%E8%A6%81%E4%B8%80%E6%AC%A1%E8%B7%91%E5%AE%8C%E6%89%80%E6%9C%89%E9%A1%B9%E7%9B%AE" class="hash-link" aria-label="下一步实践不要一次跑完所有项目的直接链接" title="下一步实践不要一次跑完所有项目的直接链接" translate="no">​</a></h2>
+<p>静态调研已经足够把候选压到两个主线：<strong>Vexa</strong> 和 <strong>Scriberr</strong>。</p>
+<p>下一步如果要实践，建议拆成两个受控任务，而不是在本机把所有项目都启动一遍：</p>
+<ol>
+<li class=""><strong>Vexa 实时会议 transcript smoke</strong>：指定一台有足够资源的 Linux 主机，定义一个测试会议平台、一个会议链接、一个最长运行时间、一个 API readback 标准和清理方式。</li>
+<li class=""><strong>Scriberr 录音文件后台 smoke</strong>：准备一段公开/自有测试音频，验证上传/转写/diarization/summary/API/folder watcher 中最关键的一条链路。</li>
+</ol>
+<p>只有当这两个都不能满足需求，才进入自研 pipeline：docker-whisper / WhisperLive / WhisperX / faster-whisper / whisper.cpp 的组合工程化。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要一手来源">主要一手来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%B8%BB%E8%A6%81%E4%B8%80%E6%89%8B%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要一手来源的直接链接" title="主要一手来源的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://github.com/Vexa-ai/vexa" target="_blank" rel="noopener noreferrer" class="">Vexa</a></li>
+<li class=""><a href="https://github.com/rishikanthc/Scriberr" target="_blank" rel="noopener noreferrer" class="">Scriberr</a></li>
+<li class=""><a href="https://github.com/pluja/whishper" target="_blank" rel="noopener noreferrer" class="">Whishper</a></li>
+<li class=""><a href="https://github.com/attevon-llc/OpenTranscribe" target="_blank" rel="noopener noreferrer" class="">OpenTranscribe</a></li>
+<li class=""><a href="https://github.com/hwdsl2/docker-whisper" target="_blank" rel="noopener noreferrer" class="">docker-whisper</a></li>
+<li class=""><a href="https://github.com/hwdsl2/docker-whisper-live" target="_blank" rel="noopener noreferrer" class="">docker-whisper-live</a></li>
+<li class=""><a href="https://github.com/collabora/WhisperLive" target="_blank" rel="noopener noreferrer" class="">WhisperLive</a></li>
+<li class=""><a href="https://github.com/m-bain/whisperX" target="_blank" rel="noopener noreferrer" class="">WhisperX</a></li>
+<li class=""><a href="https://github.com/SYSTRAN/faster-whisper" target="_blank" rel="noopener noreferrer" class="">faster-whisper</a></li>
+<li class=""><a href="https://github.com/ggml-org/whisper.cpp" target="_blank" rel="noopener noreferrer" class="">whisper.cpp</a></li>
+<li class=""><a href="https://github.com/openai/whisper" target="_blank" rel="noopener noreferrer" class="">openai/whisper</a></li>
+<li class=""><a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" rel="noopener noreferrer" class="">Meetily</a></li>
+<li class=""><a href="https://github.com/chidiwilliams/buzz" target="_blank" rel="noopener noreferrer" class="">Buzz</a></li>
+<li class=""><a href="https://github.com/jhj0517/Whisper-WebUI" target="_blank" rel="noopener noreferrer" class="">Whisper-WebUI</a></li>
+<li class=""><a href="https://github.com/joinly-ai/joinly" target="_blank" rel="noopener noreferrer" class="">joinly</a></li>
+<li class=""><a href="https://github.com/zoom/arlo" target="_blank" rel="noopener noreferrer" class="">zoom/arlo</a></li>
+</ul>]]></content:encoded>
+            <category>transcription</category>
+            <category>meeting-notes</category>
+            <category>self-hosted</category>
+            <category>whisper</category>
+            <category>open-source</category>
+        </item>
         <item>
             <title><![CDATA[王虹的菲尔兹奖：从波的平滑到三维 Kakeya]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hong-wang-fields-medal-harmonic-analysis-kakeya</link>
@@ -3781,352 +3948,6 @@
             <category>research-agent</category>
             <category>machine-learning</category>
             <category>open-source</category>
-        </item>
-        <item>
-            <title><![CDATA[AI 数学进入开放问题时代了吗：ICM 2026 后的数据集、系统与真实进展]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026</guid>
-            <pubDate>Fri, 31 Jul 2026 04:30:00 GMT</pubDate>
-            <description><![CDATA[核验 2025–2026 年 AI 数学数据集、形式化证明基准、研究 Agent 与开放猜想案例，区分奥赛成绩、形式化验证、界的改进和真正的新数学结果。]]></description>
-            <content:encoded><![CDATA[<p>2026 年 7 月，ICM 在费城开会时，AI 已经不再只是数学大会外围的技术展示。Terence Tao 谈“AI 时代的数学”，Alex Kontorovich 谈数学的未来形态，会场还把 <code>Mathematics for AI</code> 和 <code>AI for Mathematics</code> 拆成两场方向相反的圆桌。</p>
-<p>几乎在同一时间，另一批更具体的变化正在发生：开放猜想被整理成 Lean 语句，真实数学仓库中的 <code>sorry</code> 被做成动态 benchmark，最新 arXiv 论文里的 lemma 被实时抽取，模型也开始参与形成研究预印本。</p>
-<p>但“AI 已经开始解决开放猜想”这句话仍然需要拆开。它可能指奥赛题，可能指把已知证明翻译成 Lean，可能指找到一个更好的有限构造，也可能真的指一个此前未知的数学结论。这四件事的证据强度完全不同。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>2025–2026 年最重要的变化，不是某个模型单枪匹马攻克了重大猜想，而是数学研究开始形成一条可运行的机器协作链：<strong>开放问题库 → 候选生成 → 程序或 Lean 验证 → 专家检查语义与新颖性 → 论文和 proof artifact</strong>。真实的新结果已经出现，但截至 2026-07-31，仍没有可信证据表明 AI 已自主完成里程碑级开放猜想。</p></div></div>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>调研口径</div><div class="admonitionContent_BuS1"><p>本文只重点覆盖 2025–2026 年，动态数据核验日为 2026-07-31。较早工作只在解释技术谱系时出现。项目规模、排行榜和“已解决”状态会继续变化，文中均尽量标明这是论文结果、项目方自报、程序验证还是人类确认。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先看-icm-2026数学界真正接受了什么">先看 ICM 2026：数学界真正接受了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E5%85%88%E7%9C%8B-icm-2026%E6%95%B0%E5%AD%A6%E7%95%8C%E7%9C%9F%E6%AD%A3%E6%8E%A5%E5%8F%97%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="先看 ICM 2026：数学界真正接受了什么的直接链接" title="先看 ICM 2026：数学界真正接受了什么的直接链接" translate="no">​</a></h2>
-<p><a href="https://www.icm2026.org/" target="_blank" rel="noopener noreferrer" class="">ICM 2026</a> 于 7 月 23–30 日举行。它没有发布一个统一的“ICM 数学数据集”，但<a href="https://www.icm2026.org/event/ac193975-5d24-4628-8c30-ddb23de19a8b/Invited-Lectures-and-Panel" target="_blank" rel="noopener noreferrer" class="">科学议程</a>把 AI 数学放进了主会场：</p>
-<ul>
-<li class=""><strong>Terence Tao，Mathematics in the Age of AI</strong>：讨论 AI、形式验证和大规模协作，同时明确说当前工具对单个极难数学问题仍只有有限影响。</li>
-<li class=""><strong>Alex Kontorovich，The Shape of Math to Come</strong>：把计算工具、形式验证和 AI 放到未来研究数学的整体图景里。</li>
-<li class=""><strong>Geordie Williamson，AI and Humanity's Long Conversation</strong>：讨论机器如何进入人类长期积累的数学对话。</li>
-<li class=""><strong>Mathematics for AI / AI for Mathematics</strong>：前者关注数学如何支撑 AI，后者关注 AI 如何改变证明、论文、审稿和数学训练。</li>
-<li class="">另有 AI in College Math Education、AI-assisted asymptotic analysis、Lean 生态等活动。</li>
-</ul>
-<p><a href="https://www.simonsfoundation.org/2026/05/04/ai-will-be-top-of-mind-at-icm-maths-biggest-conference/" target="_blank" rel="noopener noreferrer" class="">Simons Foundation 会前综述</a>很好地概括了会场氛围：数学家已经把 AI 当作研究工作流的一部分，但并没有形成“模型即将自动解决所有难题”的共识。</p>
-<p>ICM 2026 真正确认的是两件事：</p>
-<ol>
-<li class=""><strong>形式化证明成为公共基础设施</strong>。自然语言模型可以提出想法，Lean、Coq、Isabelle 一类系统负责压缩信任边界。</li>
-<li class=""><strong>研究过程本身成为数据</strong>。不只收集题目和答案，还收集引理、失败轨迹、讨论链、验证器、仓库依赖和人类修订。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一张图看懂-2026-年的-ai-数学链条">一张图看懂 2026 年的 AI 数学链条<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E4%B8%80%E5%BC%A0%E5%9B%BE%E7%9C%8B%E6%87%82-2026-%E5%B9%B4%E7%9A%84-ai-%E6%95%B0%E5%AD%A6%E9%93%BE%E6%9D%A1" class="hash-link" aria-label="一张图看懂 2026 年的 AI 数学链条的直接链接" title="一张图看懂 2026 年的 AI 数学链条的直接链接" translate="no">​</a></h2>
-<!-- -->
-<p>这条链里任何一环缺失，新闻标题都可能夸大结果：</p>
-<ul>
-<li class="">只有自然语言答案，可能是“看起来像证明”。</li>
-<li class="">只有 Lean 通过，可能形式化错了原问题。</li>
-<li class="">只有程序找到更好构造，只证明了一个方向的界。</li>
-<li class="">只有数据库写着 <code>Open</code>，可能旧文献早已解决。</li>
-<li class="">只有模型厂商给出 benchmark 分数，可能计算预算和提示条件完全不同。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="证据阶梯不要把五类成果写成一类">证据阶梯：不要把五类成果写成一类<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E8%AF%81%E6%8D%AE%E9%98%B6%E6%A2%AF%E4%B8%8D%E8%A6%81%E6%8A%8A%E4%BA%94%E7%B1%BB%E6%88%90%E6%9E%9C%E5%86%99%E6%88%90%E4%B8%80%E7%B1%BB" class="hash-link" aria-label="证据阶梯：不要把五类成果写成一类的直接链接" title="证据阶梯：不要把五类成果写成一类的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>层级</th><th>典型成果</th><th>证明了什么</th><th>没有证明什么</th></tr></thead><tbody><tr><td>L0：训练与静态 benchmark</td><td>MATH、miniF2F、旧竞赛题</td><td>模型能复现已知解或完成形式证明</td><td>不代表发现新数学</td></tr><tr><td>L1：最新竞赛和动态评测</td><td>IMO 2025、USAMO 2026、MathArena</td><td>降低数据污染，测新题泛化</td><td>题目仍有人类命题和可解性保证</td></tr><tr><td>L2：已知研究定理的形式化</td><td>RLMEval、论文到 Lean</td><td>能处理研究级定义、依赖和 proof engineering</td><td>定理和证明思路可能已经存在</td></tr><tr><td>L3：新构造、新界、反例</td><td>AlphaEvolve、FrontierMath constructions</td><td>产生此前未知、可验证的数学对象</td><td>不一定解决完整猜想，也不一定证明最优</td></tr><tr><td>L4：真正开放问题的新证明</td><td>Erdős #1196/#1217、部分 Aletheia 案例</td><td>对此前未知问题形成新结果</td><td>仍要审查人类参与、文献新颖性和同行评议</td></tr><tr><td>L5：重大或里程碑猜想</td><td>尚无可信案例</td><td>会改变一个成熟领域的核心理论</td><td>不能用普通“open problem solved”标题替代</td></tr></tbody></table>
-<p>Google DeepMind 在 <a href="https://arxiv.org/abs/2602.10177" target="_blank" rel="noopener noreferrer" class="">Towards Autonomous Mathematics Research</a> 中也提出了类似的自主性和新颖性分级。其 2026 年公开总结明确表示，目前没有 Level 3“重大进展”或 Level 4“里程碑突破”。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一类数据直接面向开放问题和研究数学">第一类数据：直接面向开放问题和研究数学<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E7%AC%AC%E4%B8%80%E7%B1%BB%E6%95%B0%E6%8D%AE%E7%9B%B4%E6%8E%A5%E9%9D%A2%E5%90%91%E5%BC%80%E6%94%BE%E9%97%AE%E9%A2%98%E5%92%8C%E7%A0%94%E7%A9%B6%E6%95%B0%E5%AD%A6" class="hash-link" aria-label="第一类数据：直接面向开放问题和研究数学的直接链接" title="第一类数据：直接面向开放问题和研究数学的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="formal-conjectures当前最重要的开放猜想形式化库">Formal Conjectures：当前最重要的开放猜想形式化库<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#formal-conjectures%E5%BD%93%E5%89%8D%E6%9C%80%E9%87%8D%E8%A6%81%E7%9A%84%E5%BC%80%E6%94%BE%E7%8C%9C%E6%83%B3%E5%BD%A2%E5%BC%8F%E5%8C%96%E5%BA%93" class="hash-link" aria-label="Formal Conjectures：当前最重要的开放猜想形式化库的直接链接" title="Formal Conjectures：当前最重要的开放猜想形式化库的直接链接" translate="no">​</a></h3>
-<p><a href="https://github.com/google-deepmind/formal-conjectures" target="_blank" rel="noopener noreferrer" class="">Formal Conjectures</a> 把数学开放问题写成 Lean 4，并通过持续集成保持可编译。<a href="https://arxiv.org/abs/2605.13171" target="_blank" rel="noopener noreferrer" class="">2026 年论文</a>的快照包含：</p>
-<ul>
-<li class="">2,615 个形式陈述；</li>
-<li class="">1,029 个研究级开放猜想；</li>
-<li class="">836 个研究级已解决问题；</li>
-<li class="">来源包括 Erdős Problems、Kourovka Notebook、开放量子问题、定理网站和研究者贡献；</li>
-<li class="">两个冻结的 100 题子集，用于比较 theorem prover。</li>
-</ul>
-<p>它的价值不只是规模，而是把“开放”状态、来源、Lean 版本和修复历史一起保存。论文基线在开放子集上几乎没有进展，说明奥赛榜接近饱和并不等于研究数学已经饱和。</p>
-<p>它也暴露了形式化最核心的风险：<strong>kernel 能证明 Lean statement，但不能保证这个 statement 忠实表达了原始自然语言猜想。</strong> 项目已经修复过数百个形式化问题，因此任何声称“解决”的提交都还需要数学家做 semantic audit。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="frontiermath-open-problems公开题目付费验证器">FrontierMath Open Problems：公开题目，付费验证器<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#frontiermath-open-problems%E5%85%AC%E5%BC%80%E9%A2%98%E7%9B%AE%E4%BB%98%E8%B4%B9%E9%AA%8C%E8%AF%81%E5%99%A8" class="hash-link" aria-label="FrontierMath Open Problems：公开题目，付费验证器的直接链接" title="FrontierMath Open Problems：公开题目，付费验证器的直接链接" translate="no">​</a></h3>
-<p><a href="https://epoch.ai/frontiermath/open-problems" target="_blank" rel="noopener noreferrer" class="">FrontierMath: Open Problems</a> 不是原来那套封闭测试题的简单升级，而是一批真正未解决、数学家已经认真尝试过、又能设计自动 verifier 的问题。</p>
-<p><a href="https://epoch.ai/frontiermath/open-problems/about" target="_blank" rel="noopener noreferrer" class="">项目说明</a>列出的设计原则是：</p>
-<ul>
-<li class="">真正开放而不是把答案暂时藏起来；</li>
-<li class="">专业数学家判断其有研究价值；</li>
-<li class="">候选答案可由程序验证；</li>
-<li class="">模型不能访问 verifier，只能提交答案；</li>
-<li class="">验证器访问需要付费，以支持命题者和人工核查。</li>
-</ul>
-<p>项目 2026 年 1 月启动时有 14 题；截至 7 月 31 日主页显示 15 题，其中 2 题标记为 solved。它比传统 benchmark 更接近“开放问题竞技场”，但验证器不完全开放也意味着外部团队无法完整复现排行榜。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="acd-repo把猜想生成变成机器学习任务">ACD Repo：把猜想生成变成机器学习任务<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#acd-repo%E6%8A%8A%E7%8C%9C%E6%83%B3%E7%94%9F%E6%88%90%E5%8F%98%E6%88%90%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E4%BB%BB%E5%8A%A1" class="hash-link" aria-label="ACD Repo：把猜想生成变成机器学习任务的直接链接" title="ACD Repo：把猜想生成变成机器学习任务的直接链接" translate="no">​</a></h3>
-<p><a href="https://arxiv.org/abs/2503.06366" target="_blank" rel="noopener noreferrer" class="">Machine Learning meets Algebraic Combinatorics</a> 在 ICML 2025 获 oral，并发布了 <a href="https://github.com/pnnl/ML4AlgComb" target="_blank" rel="noopener noreferrer" class="">Algebraic Combinatorics Dataset Repository</a>。仓库包含 9 组数据，部分规模达到约一千万样本，覆盖：</p>
-<ul>
-<li class="">cluster algebra 与 quiver mutation；</li>
-<li class="">Kazhdan–Lusztig polynomial；</li>
-<li class="">Schubert 结构常数；</li>
-<li class="">Littlewood–Richardson coefficient；</li>
-<li class="">braid、link 和相关组合结构。</li>
-</ul>
-<p>它与“给一道题，输出答案”的 benchmark 不同：模型从大量有限对象中寻找规律，再由数学家提炼猜想。2026 年 1 月，作者还专门修复过可能让模型利用数据捷径的问题。对 conjecture generation 来说，这种数据卫生比单纯扩大样本量更重要。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="alphaevolve-的-67-题仓库开放-evaluator不开放核心-agent">AlphaEvolve 的 67 题仓库：开放 evaluator，不开放核心 Agent<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#alphaevolve-%E7%9A%84-67-%E9%A2%98%E4%BB%93%E5%BA%93%E5%BC%80%E6%94%BE-evaluator%E4%B8%8D%E5%BC%80%E6%94%BE%E6%A0%B8%E5%BF%83-agent" class="hash-link" aria-label="AlphaEvolve 的 67 题仓库：开放 evaluator，不开放核心 Agent的直接链接" title="AlphaEvolve 的 67 题仓库：开放 evaluator，不开放核心 Agent的直接链接" translate="no">​</a></h3>
-<p><a href="https://arxiv.org/abs/2511.02864" target="_blank" rel="noopener noreferrer" class="">Mathematical Exploration and Discovery at Scale</a> 把 67 个分析、组合、几何、数论问题交给 AlphaEvolve 式程序演化，并发布了<a href="https://github.com/google-deepmind/alphaevolve_repository_of_problems" target="_blank" rel="noopener noreferrer" class="">问题仓库</a>：</p>
-<ul>
-<li class="">问题说明和机器提示；</li>
-<li class="">evaluator 与 verifier；</li>
-<li class="">最终候选程序；</li>
-<li class="">部分 Colab 复验；</li>
-<li class="">包括成功、失败和“模型钻 evaluator 空子”的记录。</li>
-</ul>
-<p>核心 AlphaEvolve 服务没有开放，因此仓库更适合作为问题和验证器集合，而不是完整可复现系统。它仍是研究“可执行数学发现”最好的公开材料之一。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="researchmath-14k研究级训练材料不是答案库">ResearchMath-14K：研究级训练材料，不是答案库<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#researchmath-14k%E7%A0%94%E7%A9%B6%E7%BA%A7%E8%AE%AD%E7%BB%83%E6%9D%90%E6%96%99%E4%B8%8D%E6%98%AF%E7%AD%94%E6%A1%88%E5%BA%93" class="hash-link" aria-label="ResearchMath-14K：研究级训练材料，不是答案库的直接链接" title="ResearchMath-14K：研究级训练材料，不是答案库的直接链接" translate="no">​</a></h3>
-<p><a href="https://huggingface.co/datasets/amphora/ResearchMath-14k" target="_blank" rel="noopener noreferrer" class="">ResearchMath-14K</a> 收集 14,056 个研究级问题，并生成约 22 万条开放模型推理轨迹。<a href="https://arxiv.org/abs/2605.28003" target="_blank" rel="noopener noreferrer" class="">论文</a>把它定位为 research reasoning 数据，而不是全都带可靠标准答案的评测集。</p>
-<p>作者自己分析了几个重要失败模式：</p>
-<ul>
-<li class="">模型拒绝回答；</li>
-<li class="">给出貌似合理但错误的长论证；</li>
-<li class="">伪造论文、作者和引用；</li>
-<li class="">不知道某个问题是否已经在文献中解决。</li>
-</ul>
-<p>因此它适合训练研究行为、研究 verifier 或失败检测，不应该直接被当成“14K 个已解决研究题”。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="lemmabench-与-crowdmath开始记录研究过程">LemmaBench 与 CrowdMath：开始记录研究过程<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#lemmabench-%E4%B8%8E-crowdmath%E5%BC%80%E5%A7%8B%E8%AE%B0%E5%BD%95%E7%A0%94%E7%A9%B6%E8%BF%87%E7%A8%8B" class="hash-link" aria-label="LemmaBench 与 CrowdMath：开始记录研究过程的直接链接" title="LemmaBench 与 CrowdMath：开始记录研究过程的直接链接" translate="no">​</a></h3>
-<p><a href="https://github.com/ahayat16/LemmaBench" target="_blank" rel="noopener noreferrer" class="">LemmaBench</a> 动态抓取最新 arXiv 数学论文中的 lemma，让模型只看前置定义和结果、尝试重建证明。它没有固定规模，因此比静态 benchmark 更抗污染。<a href="https://arxiv.org/abs/2602.24173" target="_blank" rel="noopener noreferrer" class="">论文</a>报告前沿模型自然语言 Pass@1 约为 10–15%。局限是主要依赖 LLM judge，而不是 proof assistant 内核。</p>
-<p><a href="https://github.com/text-machine-lab/crowdmath" target="_blank" rel="noopener noreferrer" class="">CrowdMath</a> 则从 MIT PRIMES/AoPS 2016–2025 的开放问题讨论中整理出 164 条专家标注的“进展链”。每条链可能包含：</p>
-<ul>
-<li class="">一个部分引理；</li>
-<li class="">一个被指出的错误；</li>
-<li class="">修正后的构造；</li>
-<li class="">反例或更弱命题；</li>
-<li class="">最终形成论文的路径。</li>
-</ul>
-<p>它测的不是模型能否一次答对，而是模型能否理解“现在已经推进到哪里、下一步缺什么”。这比普通问答更接近真实协作数学。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第二类数据形式化证明从奥赛转向真实项目">第二类数据：形式化证明从奥赛转向真实项目<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E7%AC%AC%E4%BA%8C%E7%B1%BB%E6%95%B0%E6%8D%AE%E5%BD%A2%E5%BC%8F%E5%8C%96%E8%AF%81%E6%98%8E%E4%BB%8E%E5%A5%A5%E8%B5%9B%E8%BD%AC%E5%90%91%E7%9C%9F%E5%AE%9E%E9%A1%B9%E7%9B%AE" class="hash-link" aria-label="第二类数据：形式化证明从奥赛转向真实项目的直接链接" title="第二类数据：形式化证明从奥赛转向真实项目的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>数据集 / 基准</th><th style="text-align:right">2025–2026 规模</th><th>它真正测什么</th><th>主要限制</th></tr></thead><tbody><tr><td><a href="https://github.com/SorryDB/SorryDB" target="_blank" rel="noopener noreferrer" class="">SorryDB</a></td><td style="text-align:right">78 个真实 Lean 项目；<code>SorryDB-2601</code> 有 2,601 个 <code>sorry</code>，论文抽取 1,000 个评测</td><td>在完整仓库依赖中补真实证明；数据库每晚更新</td><td><code>sorry</code> 难度和质量不均，项目版本持续变化</td></tr><tr><td><a href="https://github.com/augustepoiroux/RLMEval" target="_blank" rel="noopener noreferrer" class="">RLMEval</a></td><td style="text-align:right">6 个 Lean Blueprint 研究项目，613 个定理</td><td>研究级 theorem proving 与 autoformalization</td><td>领域和项目数量仍有限</td></tr><tr><td><a href="https://github.com/frenzymath/FATE" target="_blank" rel="noopener noreferrer" class="">FATE</a></td><td style="text-align:right">FATE-M 150、H 100、X 100</td><td>本科到博士资格考试以上的代数证明</td><td>发布数月后已有模型大幅提升，需要持续升级</td></tr><tr><td><a href="https://github.com/liuchengwucn/discover-and-prove" target="_blank" rel="noopener noreferrer" class="">Discover and Prove</a></td><td style="text-align:right">MiniF2F 244 题中 197 题 Hard；FIMO 149 题中 70 题 Hard</td><td>先发现待求答案，再给 Lean 证明</td><td>仍以竞赛题为主，完整 pipeline 很重</td></tr><tr><td><a href="https://github.com/optpku/CAM-Bench" target="_blank" rel="noopener noreferrer" class="">CAM-Bench</a></td><td style="text-align:right">778 个练习、1,000 个 proof targets</td><td>优化、数值线代、数值分析和应用数学</td><td>2026 新基准，独立复现仍少</td></tr><tr><td><a href="https://huggingface.co/datasets/openbmb/MA-ProofBench" target="_blank" rel="noopener noreferrer" class="">MA-ProofBench</a></td><td style="text-align:right">200 个分析定理，本科 100、博士资格级 100</td><td>测度积分、复分析、泛函分析等高阶 Lean 证明</td><td>规模小，但难度高</td></tr><tr><td><a href="https://github.com/MoonshotAI/CombiBench" target="_blank" rel="noopener noreferrer" class="">CombiBench</a></td><td style="text-align:right">100 个 Lean 组合题</td><td>组合构造和长证明</td><td>仍是已知竞赛题，不是开放研究题</td></tr><tr><td><a href="https://github.com/eth-sri/matharena" target="_blank" rel="noopener noreferrer" class="">MathArena</a></td><td style="text-align:right">持续加入 AIME/USAMO 2026、IMO/Putnam 2025、ArXivMath、BrokenArxiv</td><td>最新竞赛、最新论文定理、错误命题识别</td><td>部分自然语言证明依赖人工或模型评分</td></tr></tbody></table>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="sorrydb-为什么比-minif2f-更有价值">SorryDB 为什么比 miniF2F 更有价值<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#sorrydb-%E4%B8%BA%E4%BB%80%E4%B9%88%E6%AF%94-minif2f-%E6%9B%B4%E6%9C%89%E4%BB%B7%E5%80%BC" class="hash-link" aria-label="SorryDB 为什么比 miniF2F 更有价值的直接链接" title="SorryDB 为什么比 miniF2F 更有价值的直接链接" translate="no">​</a></h3>
-<p>miniF2F 曾经是最常用的 Lean 数学榜，但到 2026 年已经接近饱和。它的问题短、环境统一，且长期出现在公开训练数据中。</p>
-<p><a href="https://arxiv.org/abs/2603.02668" target="_blank" rel="noopener noreferrer" class="">SorryDB 论文</a>的基准来自现实 GitHub 项目：概率论、分析、组合、形式逻辑、数学物理、密码学和代码验证。模型不只要看当前 goal，还要理解项目 import、局部定义和依赖版本。</p>
-<p>论文的 1,000 题快照上：</p>
-<ul>
-<li class="">最佳单个 agentic 方法约 30.3%；</li>
-<li class="">多种互补方法联合约 35.7%；</li>
-<li class="">通用 coding agent、专用 Lean 模型和普通 tactic 各自能解不同题。</li>
-</ul>
-<p>这揭示了一个重要反差：在 miniF2F 上接近 100% 的系统，进入真实仓库后仍会大量失败。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="discover-and-prove-修复了答案写在定理里的泄漏">Discover and Prove 修复了“答案写在定理里”的泄漏<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#discover-and-prove-%E4%BF%AE%E5%A4%8D%E4%BA%86%E7%AD%94%E6%A1%88%E5%86%99%E5%9C%A8%E5%AE%9A%E7%90%86%E9%87%8C%E7%9A%84%E6%B3%84%E6%BC%8F" class="hash-link" aria-label="Discover and Prove 修复了“答案写在定理里”的泄漏的直接链接" title="Discover and Prove 修复了“答案写在定理里”的泄漏的直接链接" translate="no">​</a></h3>
-<p>许多形式化竞赛题会写成：</p>
-<div class="language-lean codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-lean codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">example : requested_value = 42 := by</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  ...</span><br></div></code></pre></div></div>
-<p>模型并没有发现答案 <code>42</code>，只是在证明一个已经把答案暴露出来的命题。<a href="https://aclanthology.org/2026.acl-long.3/" target="_blank" rel="noopener noreferrer" class="">Discover and Prove</a>增加 Hard Mode，把待求值从 statement 中拿掉，系统必须先在自然语言或程序空间中找到结果，再生成可检查证明。</p>
-<p>这个设计对“AI 是否会做数学发现”比普通 proof completion 更有区分度。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="新基准正在快速老化">新基准正在快速老化<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E6%96%B0%E5%9F%BA%E5%87%86%E6%AD%A3%E5%9C%A8%E5%BF%AB%E9%80%9F%E8%80%81%E5%8C%96" class="hash-link" aria-label="新基准正在快速老化的直接链接" title="新基准正在快速老化的直接链接" translate="no">​</a></h3>
-<p>FATE 论文发布时，最强系统在 FATE-H 只有 3%，FATE-X 为 0%。到 2026 年 7 月，<a href="https://mistral.ai/news/leanstral-1-5/" target="_blank" rel="noopener noreferrer" class="">Leanstral 1.5</a>已经自报 FATE-H 87%、FATE-X 34%。</p>
-<p>这不一定表示抽象代数在几个月里“被解决了”。它也可能来自：</p>
-<ul>
-<li class="">更高的 test-time token 预算；</li>
-<li class="">agent 可以反复调用 Lean；</li>
-<li class="">更好的 mathlib retrieval；</li>
-<li class="">benchmark 公开后进入训练或调参流程；</li>
-<li class="">不同 Pass@k 口径。</li>
-</ul>
-<p>因此未来更值得建设 SorryDB、MathArena 和 LemmaBench 这类持续更新、带时间戳和版本的评测。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第三类数据训练语料不能冒充评测结果">第三类数据：训练语料不能冒充评测结果<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E7%AC%AC%E4%B8%89%E7%B1%BB%E6%95%B0%E6%8D%AE%E8%AE%AD%E7%BB%83%E8%AF%AD%E6%96%99%E4%B8%8D%E8%83%BD%E5%86%92%E5%85%85%E8%AF%84%E6%B5%8B%E7%BB%93%E6%9E%9C" class="hash-link" aria-label="第三类数据：训练语料不能冒充评测结果的直接链接" title="第三类数据：训练语料不能冒充评测结果的直接链接" translate="no">​</a></h2>
-<p>两个 2025 年的重要开放训练项目经常被和 benchmark 混在一起：</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="megamath">MegaMath<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#megamath" class="hash-link" aria-label="MegaMath的直接链接" title="MegaMath的直接链接" translate="no">​</a></h3>
-<p><a href="https://github.com/LLM360/MegaMath" target="_blank" rel="noopener noreferrer" class="">MegaMath</a> 提供约 370B tokens 的数学预训练语料，其中超过 80B 是合成数据，包含网页、数学代码、问答和文码混合数据。它适合预训练和持续训练，但其中的问题或文本不应再直接用于声称“模型在未见问题上取得突破”。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="openmathreasoning">OpenMathReasoning<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#openmathreasoning" class="hash-link" aria-label="OpenMathReasoning的直接链接" title="OpenMathReasoning的直接链接" translate="no">​</a></h3>
-<p><a href="https://huggingface.co/datasets/nvidia/OpenMathReasoning" target="_blank" rel="noopener noreferrer" class="">OpenMathReasoning</a>包含：</p>
-<ul>
-<li class="">约 306K 个独立数学问题；</li>
-<li class="">3.2M 条长 chain-of-thought；</li>
-<li class="">1.7M 条 tool-integrated reasoning 轨迹；</li>
-<li class="">566K 条 solution-selection 样本。</li>
-</ul>
-<p>它是 2025 年最重要的开放数学后训练集之一，也帮助开放模型在 AIMO 一类竞赛上取得进展。但它证明的是数据工程有效，不是训练后模型已经创造新定理。</p>
-<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>数据卫生底线</div><div class="admonitionContent_BuS1"><p>训练集、开发集、评测集和“真正未解问题”必须分开。最稳妥的组合是：MegaMath/OpenMathReasoning 用于训练，冻结版 Formal Conjectures 和 FATE 用于可比评测，SorryDB/MathArena 的未来时间切片用于抗污染评测，真正开放问题还要单独做专家与文献审查。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="20252026-主流系统谁开放谁只是发布结果">2025–2026 主流系统：谁开放，谁只是发布结果<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#20252026-%E4%B8%BB%E6%B5%81%E7%B3%BB%E7%BB%9F%E8%B0%81%E5%BC%80%E6%94%BE%E8%B0%81%E5%8F%AA%E6%98%AF%E5%8F%91%E5%B8%83%E7%BB%93%E6%9E%9C" class="hash-link" aria-label="2025–2026 主流系统：谁开放，谁只是发布结果的直接链接" title="2025–2026 主流系统：谁开放，谁只是发布结果的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>系统</th><th>核心路线与代表结果</th><th>可复现性判断</th></tr></thead><tbody><tr><td><a href="https://arxiv.org/abs/2602.10177" target="_blank" rel="noopener noreferrer" class="">Aletheia</a></td><td>Gemini Deep Think 驱动的生成、验证、修订与搜索 Agent；扫描 700 个 Erdős 问题并参与研究预印本</td><td>模型闭源；<a href="https://github.com/google-deepmind/superhuman/tree/main/aletheia" target="_blank" rel="noopener noreferrer" class="">提示和输出</a>开放</td></tr><tr><td><a href="https://mistral.ai/news/leanstral-1-5/" target="_blank" rel="noopener noreferrer" class="">Leanstral 1.5</a></td><td>119B 总参数、6B 激活；厂商自报 miniF2F 100%、PutnamBench 587/672、FATE-H 87%、FATE-X 34%</td><td><a href="https://huggingface.co/mistralai/Leanstral-1.5-119B-A6B" target="_blank" rel="noopener noreferrer" class="">Apache-2.0 权重</a>；高分使用很大的测试时预算</td></tr><tr><td><a href="https://arxiv.org/abs/2606.06468" target="_blank" rel="noopener noreferrer" class="">Goedel-Architect</a></td><td>先生成依赖图式 blueprint，再并行证明与全局修订；带自然语言引导时 PutnamBench 597/672</td><td>使用开放权重主干；论文称 pipeline 开源，但截至核验日未找到正式仓库链接</td></tr><tr><td><a href="https://github.com/project-numina/numina-lean-agent" target="_blank" rel="noopener noreferrer" class="">Numina-Lean-Agent</a></td><td>通用 coding agent 接 Lean、Leandex 和讨论工具；项目报告完成 Putnam 2025 全 12 题及论文级形式化</td><td>Agent 代码 MIT；依赖 Claude、Gemini、OpenAI 等闭源 API</td></tr><tr><td><a href="https://arxiv.org/abs/2510.01346" target="_blank" rel="noopener noreferrer" class="">Aristotle</a></td><td>非形式推理、Lean proof search 与专用几何组件组合，达到 IMO 2025 金牌等价成绩</td><td>核心闭源，有 <a href="https://aristotle.harmonic.fun/" target="_blank" rel="noopener noreferrer" class="">API</a>；<a href="https://github.com/harmonic-ai/IMO2025" target="_blank" rel="noopener noreferrer" class="">IMO proof artifact</a>和部分工具开放</td></tr><tr><td><a href="https://github.com/ByteDance-Seed/Seed-Prover" target="_blank" rel="noopener noreferrer" class="">Seed-Prover 1.5</a></td><td>Lean 反馈、引理分解和 agentic RL；项目自报 PutnamBench 约 88%、Putnam 2025 11/12</td><td>论文和 proof artifact 开放，完整训练系统和权重开放程度有限</td></tr><tr><td><a href="https://github.com/Goedel-LM/Goedel-Prover-V2" target="_blank" rel="noopener noreferrer" class="">Goedel-Prover-V2</a></td><td>8B/32B 开放模型，scaffolded synthesis 与 Lean 自纠错</td><td>Apache-2.0；模型、代码、数据较完整，是实用开放基线</td></tr><tr><td><a href="https://github.com/deepseek-ai/DeepSeek-Prover-V2" target="_blank" rel="noopener noreferrer" class="">DeepSeek-Prover-V2</a></td><td>7B/671B，递归子目标分解后强化学习，并发布 ProverBench</td><td>模型和数据开放，受 DeepSeek Model License 约束；已不是 2026 最新成绩</td></tr><tr><td><a href="https://github.com/kfdong/STP" target="_blank" rel="noopener noreferrer" class="">STP</a></td><td>“猜想者—证明者”自博弈，自动生成 Lean 命题和证明</td><td>代码、模型和数据开放；其 conjecture 主要是训练用合成命题，不等于研究开放猜想</td></tr><tr><td><a href="https://arxiv.org/abs/2506.13131" target="_blank" rel="noopener noreferrer" class="">AlphaEvolve</a></td><td>LLM 生成程序，evaluator 评分，进化搜索改进构造、算法和界</td><td>核心 Agent 闭源；问题、verifier 和大量输出开放</td></tr></tbody></table>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="leanstral-和-goedel-architect-代表了新的性能来源">Leanstral 和 Goedel-Architect 代表了新的性能来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#leanstral-%E5%92%8C-goedel-architect-%E4%BB%A3%E8%A1%A8%E4%BA%86%E6%96%B0%E7%9A%84%E6%80%A7%E8%83%BD%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="Leanstral 和 Goedel-Architect 代表了新的性能来源的直接链接" title="Leanstral 和 Goedel-Architect 代表了新的性能来源的直接链接" translate="no">​</a></h3>
-<p>2026 年形式化证明的进步，不只是“模型记住更多 tactic”。高分系统通常同时使用：</p>
-<ul>
-<li class="">自然语言证明或 proof sketch；</li>
-<li class="">mathlib 语义检索；</li>
-<li class="">多轮 Lean compiler 反馈；</li>
-<li class="">自动拆引理和依赖图；</li>
-<li class="">并行采样与自纠错；</li>
-<li class="">每题数十万到数百万 token 的 test-time compute。</li>
-</ul>
-<p>因此必须同时报告 <code>Pass@k</code>、每次尝试 token、Lean 调用次数、是否给官方自然语言解、总成本和 Lean/mathlib 版本。只报一个百分比已经不能公平比较系统。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="实用开放栈已经出现">实用开放栈已经出现<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E5%AE%9E%E7%94%A8%E5%BC%80%E6%94%BE%E6%A0%88%E5%B7%B2%E7%BB%8F%E5%87%BA%E7%8E%B0" class="hash-link" aria-label="实用开放栈已经出现的直接链接" title="实用开放栈已经出现的直接链接" translate="no">​</a></h3>
-<p>如果要搭一个可复现的研究原型，而不是只调用商业网页，可以组合：</p>
-<ul>
-<li class=""><a href="https://github.com/leanprover-community/mathlib4" target="_blank" rel="noopener noreferrer" class="">mathlib4</a>：形式化数学公共库；</li>
-<li class=""><a href="https://huggingface.co/mistralai/Leanstral-1.5-119B-A6B" target="_blank" rel="noopener noreferrer" class="">Leanstral 1.5</a> 或 <a href="https://github.com/Goedel-LM/Goedel-Prover-V2" target="_blank" rel="noopener noreferrer" class="">Goedel-Prover-V2</a>：开放 proof model；</li>
-<li class=""><a href="https://github.com/project-numina/numina-lean-agent" target="_blank" rel="noopener noreferrer" class="">Numina-Lean-Agent</a> 或 <a href="https://github.com/Axiomatic-AI/ax-prover-base" target="_blank" rel="noopener noreferrer" class="">AxProverBase</a>：agent scaffolding；</li>
-<li class=""><a href="https://github.com/project-numina/kimina-lean-server" target="_blank" rel="noopener noreferrer" class="">Kimina Lean Server</a>：批量编译和验证；</li>
-<li class=""><a href="https://leandex.projectnumina.ai/" target="_blank" rel="noopener noreferrer" class="">Leandex</a>：mathlib 语义检索；</li>
-<li class=""><a href="https://github.com/SorryDB/SorryDB" target="_blank" rel="noopener noreferrer" class="">SorryDB</a>：真实仓库评测；</li>
-<li class=""><a href="https://github.com/google-deepmind/formal-conjectures" target="_blank" rel="noopener noreferrer" class="">Formal Conjectures</a>：开放问题池。</li>
-</ul>
-<p>这套栈仍不能自动判断一个结果是否“有数学价值”或“文献中从未出现”，但至少能把 proof correctness 的大部分工作交给小型可信内核。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="逐案核查哪些开放问题真的有新结果">逐案核查：哪些开放问题真的有新结果<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E9%80%90%E6%A1%88%E6%A0%B8%E6%9F%A5%E5%93%AA%E4%BA%9B%E5%BC%80%E6%94%BE%E9%97%AE%E9%A2%98%E7%9C%9F%E7%9A%84%E6%9C%89%E6%96%B0%E7%BB%93%E6%9E%9C" class="hash-link" aria-label="逐案核查：哪些开放问题真的有新结果的直接链接" title="逐案核查：哪些开放问题真的有新结果的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="强证据erdős-1196-与-1217">强证据：Erdős #1196 与 #1217<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E5%BC%BA%E8%AF%81%E6%8D%AEerd%C5%91s-1196-%E4%B8%8E-1217" class="hash-link" aria-label="强证据：Erdős #1196 与 #1217的直接链接" title="强证据：Erdős #1196 与 #1217的直接链接" translate="no">​</a></h3>
-<p><a href="https://arxiv.org/abs/2605.00301" target="_blank" rel="noopener noreferrer" class="">Primitive sets and von Mangoldt chains</a>解决了两个 1966 年提出的 Erdős–Sárközy–Szemerédi 猜想：Erdős #1196 和 #1217。</p>
-<p>论文披露得相当具体：</p>
-<ul>
-<li class="">定理 1.1 的初始证明来自一次 GPT-5.4 Pro 自主运行；</li>
-<li class="">另一主定理由类似运行得到；</li>
-<li class="">人类作者检查、重写和扩展了最终论文；</li>
-<li class="">当前 <a href="https://github.com/plby/Erdos1196" target="_blank" rel="noopener noreferrer" class="">Erdos1196 Lean 仓库</a>已经形式化论文的顶层结果。</li>
-</ul>
-<p>这里同时具备“原问题此前开放、AI 给出关键初始论证、人类完成数学审查、机器可检查 artifact”四层证据，是目前最强的 AI 辅助开放问题案例之一。</p>
-<p>仍需保留两个限定：</p>
-<ol>
-<li class="">截至 7 月 31 日它仍是 arXiv preliminary version，不等于已完成同行评议。</li>
-<li class="">同文给出 Erdős primitive set conjecture #164 的新短证明，但该猜想此前已经由 Jared Duker Lichtman 解决，不能把短证明写成首次解决。</li>
-</ol>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="中强证据aletheia-扫描-700-个-erdős-问题">中强证据：Aletheia 扫描 700 个 Erdős 问题<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E4%B8%AD%E5%BC%BA%E8%AF%81%E6%8D%AEaletheia-%E6%89%AB%E6%8F%8F-700-%E4%B8%AA-erd%C5%91s-%E9%97%AE%E9%A2%98" class="hash-link" aria-label="中强证据：Aletheia 扫描 700 个 Erdős 问题的直接链接" title="中强证据：Aletheia 扫描 700 个 Erdős 问题的直接链接" translate="no">​</a></h3>
-<p><a href="https://arxiv.org/abs/2601.22401" target="_blank" rel="noopener noreferrer" class="">Semi-Autonomous Mathematics Discovery with Gemini</a>对 <a href="https://www.erdosproblems.com/" target="_blank" rel="noopener noreferrer" class="">Erdős Problems</a> 中 700 个标记为 <code>Open</code> 的问题做半自动扫描。</p>
-<p>预印本摘要报告处理了 13 个：</p>
-<ul>
-<li class="">8 个其实在既有文献中已有答案；</li>
-<li class="">5 个是“看起来新颖”的自主解。</li>
-</ul>
-<p>DeepMind 后续公开总结更保守地突出 4 个自主开放问题结果，包括 Erdős-1051。另有：</p>
-<ul>
-<li class=""><a href="https://arxiv.org/abs/2601.23245" target="_blank" rel="noopener noreferrer" class="">Eigenweights for arithmetic Hirzebruch Proportionality</a>，记录 Agent 对 arithmetic geometry 计算的贡献；</li>
-<li class=""><a href="https://arxiv.org/abs/2601.21442" target="_blank" rel="noopener noreferrer" class="">Irrationality of rapidly converging series</a>，原始问题由 Aletheia 自主解答，推广部分来自人机协作；</li>
-<li class=""><a href="https://arxiv.org/abs/2602.02450" target="_blank" rel="noopener noreferrer" class="">Lower bounds for multivariate independence polynomials</a>，关键技术步骤由研究 Agent 辅助获得。</li>
-</ul>
-<p>这些是实质研究材料，但“5 个看起来新颖”和后续“4 个被重点确认”之间的变化也说明：开放状态与 novelty 会在专家复核中继续收缩。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="一个已确认一个仍应保守表述frontiermath-open">一个已确认、一个仍应保守表述：FrontierMath Open<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E4%B8%80%E4%B8%AA%E5%B7%B2%E7%A1%AE%E8%AE%A4%E4%B8%80%E4%B8%AA%E4%BB%8D%E5%BA%94%E4%BF%9D%E5%AE%88%E8%A1%A8%E8%BF%B0frontiermath-open" class="hash-link" aria-label="一个已确认、一个仍应保守表述：FrontierMath Open的直接链接" title="一个已确认、一个仍应保守表述：FrontierMath Open的直接链接" translate="no">​</a></h3>
-<p>截至核验日，FrontierMath Open Problems 首页有两个 solved 标记。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="ramsey-style-hypergraphs">Ramsey-style Hypergraphs<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#ramsey-style-hypergraphs" class="hash-link" aria-label="Ramsey-style Hypergraphs的直接链接" title="Ramsey-style Hypergraphs的直接链接" translate="no">​</a></h4>
-<p><a href="https://epoch.ai/frontiermath/open-problems/ramsey-hypergraphs" target="_blank" rel="noopener noreferrer" class="">Ramsey-style Hypergraphs</a>最初由 GPT-5.4 Pro 给出方案，问题贡献者 Will Brian 确认，页面称计划整理投稿，并把数学价值评为“moderately interesting”。随后多种前沿模型也在部分采样中找到了相同方向。</p>
-<p>这是一个相对扎实的真实开放问题结果，但仍不是领域级重大猜想。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-adic-absolute-galois-group">2-adic Absolute Galois Group<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#2-adic-absolute-galois-group" class="hash-link" aria-label="2-adic Absolute Galois Group的直接链接" title="2-adic Absolute Galois Group的直接链接" translate="no">​</a></h4>
-<p><a href="https://epoch.ai/frontiermath/open-problems/q2-absolute-galois" target="_blank" rel="noopener noreferrer" class="">2-adic Absolute Galois Group</a>的 Claude Fable 5、GPT-5.5 Pro 输出被程序 verifier 接受。页面同时明确说，验证器只提供很强证据，不能替代完整证明；人类仍在检查。</p>
-<p>因此它应该被写成“高可信候选解”或“verifier-accepted solution”，而不是无条件宣布定理已经完全证明。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="真实改进但不是重大猜想突破alphaevolve">真实改进，但不是重大猜想突破：AlphaEvolve<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E7%9C%9F%E5%AE%9E%E6%94%B9%E8%BF%9B%E4%BD%86%E4%B8%8D%E6%98%AF%E9%87%8D%E5%A4%A7%E7%8C%9C%E6%83%B3%E7%AA%81%E7%A0%B4alphaevolve" class="hash-link" aria-label="真实改进，但不是重大猜想突破：AlphaEvolve的直接链接" title="真实改进，但不是重大猜想突破：AlphaEvolve的直接链接" translate="no">​</a></h3>
-<p>DeepMind 最初的 <a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/" target="_blank" rel="noopener noreferrer" class="">AlphaEvolve 公告</a>称，在 50 多个数学开放问题中，约 20% 改进了当时的最好结果。后续 67 题研究确实找到新的 packing、Kakeya/Nikodym 构造、算法和界。</p>
-<p>但 Terence Tao 在<a href="https://terrytao.wordpress.com/2025/11/05/mathematical-exploration-and-discovery-at-scale/" target="_blank" rel="noopener noreferrer" class="">项目说明</a>中同样写得很清楚：</p>
-<ul>
-<li class="">对 Sidorenko、Sendov、Crouzeix 等著名猜想，没有找到更强反例；</li>
-<li class="">没有推翻重大开放猜想；</li>
-<li class="">许多结果只改进一侧界，不能证明构造最优；</li>
-<li class="">程序可能利用 evaluator 漏洞得到无意义高分。</li>
-</ul>
-<p>最准确的描述是：AlphaEvolve 已能规模化产生<strong>新构造和更好界</strong>，但还不是通用定理发现器。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="形式验证贡献不是首次发现sidon--perfect-difference-set-案例">形式验证贡献，不是首次发现：Sidon / perfect difference set 案例<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E5%BD%A2%E5%BC%8F%E9%AA%8C%E8%AF%81%E8%B4%A1%E7%8C%AE%E4%B8%8D%E6%98%AF%E9%A6%96%E6%AC%A1%E5%8F%91%E7%8E%B0sidon--perfect-difference-set-%E6%A1%88%E4%BE%8B" class="hash-link" aria-label="形式验证贡献，不是首次发现：Sidon / perfect difference set 案例的直接链接" title="形式验证贡献，不是首次发现：Sidon / perfect difference set 案例的直接链接" translate="no">​</a></h3>
-<p><a href="https://arxiv.org/abs/2510.19804" target="_blank" rel="noopener noreferrer" class="">Forbidden Sidon subsets of perfect difference sets</a>中，ChatGPT 生成了六千多行 Lean 形式证明。这看起来像一个“AI 反驳长期猜想”的故事，但人类后来发现 Marshall Hall 早在 1947 年已经给出过另一反例，时间早于 Erdős 正式提出该猜想。</p>
-<p>AI 的突出贡献是大规模形式验证，而不是首次发现数学事实。更值得警惕的是，模型的文献检索也没发现 Hall 的旧结果。</p>
-<p>这个案例说明：</p>
-<blockquote>
-<p>proof checker 解决 correctness，文献审查解决 novelty；两者任何一个都不能替代另一个。</p>
-</blockquote>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么目前的成功集中在组合与可执行数学">为什么目前的成功集中在组合与可执行数学<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%9B%AE%E5%89%8D%E7%9A%84%E6%88%90%E5%8A%9F%E9%9B%86%E4%B8%AD%E5%9C%A8%E7%BB%84%E5%90%88%E4%B8%8E%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%95%B0%E5%AD%A6" class="hash-link" aria-label="为什么目前的成功集中在组合与可执行数学的直接链接" title="为什么目前的成功集中在组合与可执行数学的直接链接" translate="no">​</a></h2>
-<p>成功案例有一个共同特征：<strong>verification leverage 很高</strong>。找到答案很难，但检查答案相对便宜。</p>
-<p>典型场景包括：</p>
-<ul>
-<li class="">有限图、超图和组合设计；</li>
-<li class="">packing、covering、矩阵乘法和调度算法；</li>
-<li class="">明确整数、序列或多项式的构造；</li>
-<li class="">可以写成 SAT、MIP、动态规划或短程序的优化问题；</li>
-<li class="">能由 Lean 在已有 mathlib 基础上检查的代数、数论和不等式。</li>
-</ul>
-<p>更困难的仍然是：</p>
-<ul>
-<li class="">需要建立多年新定义和理论框架的领域；</li>
-<li class="">缺少成熟形式库的高阶几何与分析；</li>
-<li class="">很难写出自动 verifier 的结构性问题；</li>
-<li class="">证明正确但无法自动确认“这是有价值的新视角”；</li>
-<li class="">需要搜索海量旧文献才能确认 novelty 的问题。</li>
-</ul>
-<p>所以“开放问题”这个标签本身并不能预测难度。一个数据库中长期无人注意、但有短证明的问题，可能比一个已知最佳构造只差一点的优化题更容易被模型推进。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="看排行榜时必须同时问的七个问题">看排行榜时必须同时问的七个问题<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E7%9C%8B%E6%8E%92%E8%A1%8C%E6%A6%9C%E6%97%B6%E5%BF%85%E9%A1%BB%E5%90%8C%E6%97%B6%E9%97%AE%E7%9A%84%E4%B8%83%E4%B8%AA%E9%97%AE%E9%A2%98" class="hash-link" aria-label="看排行榜时必须同时问的七个问题的直接链接" title="看排行榜时必须同时问的七个问题的直接链接" translate="no">​</a></h2>
-<ol>
-<li class=""><strong>题目何时公开？</strong> 是否早于模型训练截止时间？</li>
-<li class=""><strong>statement 是否泄漏答案？</strong> 模型是在 discover，还是只在 prove？</li>
-<li class=""><strong>Pass@k 是多少？</strong> 一次尝试还是数千次采样？</li>
-<li class=""><strong>每题预算是多少？</strong> token、Lean calls、wall-clock 和美元成本是多少？</li>
-<li class=""><strong>是否给了官方自然语言解？</strong> 有 proof sketch 和从零解决不是一回事。</li>
-<li class=""><strong>谁验证结果？</strong> Lean kernel、独立 checker、程序 verifier、LLM judge 还是人类？</li>
-<li class=""><strong>谁确认 novelty？</strong> 数据库状态、作者自查、领域专家还是同行评议？</li>
-</ol>
-<p>PutnamBench 本身还出现过 660、658、672 等不同统计口径；Lean 和 mathlib 版本也会改变可用定理。没有版本、预算和 proof artifact 的百分比，长期价值很低。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="如果现在要做项目应该从哪里开始">如果现在要做项目，应该从哪里开始<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E5%A6%82%E6%9E%9C%E7%8E%B0%E5%9C%A8%E8%A6%81%E5%81%9A%E9%A1%B9%E7%9B%AE%E5%BA%94%E8%AF%A5%E4%BB%8E%E5%93%AA%E9%87%8C%E5%BC%80%E5%A7%8B" class="hash-link" aria-label="如果现在要做项目，应该从哪里开始的直接链接" title="如果现在要做项目，应该从哪里开始的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线一做开放猜想发现">路线一：做开放猜想发现<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E8%B7%AF%E7%BA%BF%E4%B8%80%E5%81%9A%E5%BC%80%E6%94%BE%E7%8C%9C%E6%83%B3%E5%8F%91%E7%8E%B0" class="hash-link" aria-label="路线一：做开放猜想发现的直接链接" title="路线一：做开放猜想发现的直接链接" translate="no">​</a></h3>
-<p>推荐组合：</p>
-<ol>
-<li class="">从 Formal Conjectures、ACD Repo 或 Erdős Problems 选问题；</li>
-<li class="">优先选择有便宜 verifier 的组合、数论或优化问题；</li>
-<li class="">让模型生成程序、构造、反例和中间引理，而不是直接写一篇长证明；</li>
-<li class="">用 Python、CAS、SAT/MIP 做第一层过滤；</li>
-<li class="">把稳定 conjecture 和 proof obligation 写入 Lean；</li>
-<li class="">由领域专家检查语义和文献新颖性；</li>
-<li class="">发布 prompt、日志、失败候选、verifier、最终代码和 proof artifact。</li>
-</ol>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线二做形式化证明-agent">路线二：做形式化证明 Agent<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E8%B7%AF%E7%BA%BF%E4%BA%8C%E5%81%9A%E5%BD%A2%E5%BC%8F%E5%8C%96%E8%AF%81%E6%98%8E-agent" class="hash-link" aria-label="路线二：做形式化证明 Agent的直接链接" title="路线二：做形式化证明 Agent的直接链接" translate="no">​</a></h3>
-<p>推荐组合：</p>
-<ul>
-<li class="">训练：OpenMathReasoning、MegaMath、公开 Lean 数据；</li>
-<li class="">模型：Leanstral 1.5、Goedel-Prover-V2；</li>
-<li class="">Agent：Numina-Lean-Agent 或 AxProverBase；</li>
-<li class="">编译：Kimina Lean Server；</li>
-<li class="">检索：Leandex；</li>
-<li class="">静态评测：FATE、MA-ProofBench、Discover and Prove；</li>
-<li class="">真实评测：SorryDB 的未来快照；</li>
-<li class="">开放研究：Formal Conjectures 冻结子集。</li>
-</ul>
-<p>不要只在 miniF2F 上继续做小数点后的提升。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线三做持续观测网站">路线三：做持续观测网站<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E8%B7%AF%E7%BA%BF%E4%B8%89%E5%81%9A%E6%8C%81%E7%BB%AD%E8%A7%82%E6%B5%8B%E7%BD%91%E7%AB%99" class="hash-link" aria-label="路线三：做持续观测网站的直接链接" title="路线三：做持续观测网站的直接链接" translate="no">​</a></h3>
-<p>最值得监控的入口是：</p>
-<ul>
-<li class=""><a href="https://google-deepmind.github.io/formal-conjectures/" target="_blank" rel="noopener noreferrer" class="">Formal Conjectures docs</a></li>
-<li class=""><a href="https://epoch.ai/frontiermath/open-problems" target="_blank" rel="noopener noreferrer" class="">FrontierMath Open Problems</a></li>
-<li class=""><a href="https://matharena.ai/" target="_blank" rel="noopener noreferrer" class="">MathArena</a></li>
-<li class=""><a href="https://www.erdosproblems.com/" target="_blank" rel="noopener noreferrer" class="">Erdős Problems</a></li>
-<li class=""><a href="https://github.com/SorryDB/sorrydb-data" target="_blank" rel="noopener noreferrer" class="">SorryDB nightly data</a></li>
-<li class=""><a href="https://github.com/google-deepmind/superhuman/tree/main/aletheia" target="_blank" rel="noopener noreferrer" class="">Aletheia outputs</a></li>
-<li class=""><a href="https://github.com/google-deepmind/alphaevolve_repository_of_problems" target="_blank" rel="noopener noreferrer" class="">AlphaEvolve problem repository</a></li>
-<li class=""><a href="https://github.com/leanprover-community/mathlib4" target="_blank" rel="noopener noreferrer" class="">Lean mathlib</a></li>
-</ul>
-<p>一个有价值的 dashboard 不应只显示“解了多少题”，还应显示：状态变化、验证方式、模型版本、计算预算、是否公开 artifact、是否经专家确认、是否有同行评议。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="20252026-时间线">2025–2026 时间线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#20252026-%E6%97%B6%E9%97%B4%E7%BA%BF" class="hash-link" aria-label="2025–2026 时间线的直接链接" title="2025–2026 时间线的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>时间</th><th>事件</th><th>意义</th></tr></thead><tbody><tr><td>2025-03</td><td>ACD Repo / ML meets Algebraic Combinatorics</td><td>猜想生成进入标准 ML 数据集形态</td></tr><tr><td>2025-04 至 08</td><td>DeepSeek-Prover-V2、Goedel-Prover-V2、Kimina 等</td><td>开放 Lean 模型快速扩张</td></tr><tr><td>2025-05</td><td>CombiBench、MathArena、Formal Conjectures 仓库</td><td>从旧奥赛题转向新题和研究问题</td></tr><tr><td>2025-07</td><td>Gemini Deep Think、Aristotle、Seed-Prover 报告 IMO 金牌级结果</td><td>自然语言与形式化两条路线同时跨过奥赛门槛</td></tr><tr><td>2025-11 至 12</td><td>AlphaEvolve 67 题研究、FATE、Seed-Prover 1.5</td><td>新构造、抽象代数和 agentic proof 成为重点</td></tr><tr><td>2026-01 至 02</td><td>Aletheia、Erdős 700 题扫描、LemmaBench、FrontierMath Open</td><td>研究级数学和真正开放问题进入公开评测</td></tr><tr><td>2026-03</td><td>SorryDB</td><td>真实 Lean 仓库取代人工小题作为主要压力测试</td></tr><tr><td>2026-05 至 06</td><td>Formal Conjectures 论文、ResearchMath-14K、CAM、MA-ProofBench、CrowdMath、Goedel-Architect</td><td>数据、Agent、研究过程与高阶数学基准同时成熟</td></tr><tr><td>2026-07</td><td>Leanstral 1.5、Erdős #1196 Lean 形式化、ICM 2026</td><td>开放权重 proof model 与人机研究成果进入数学界主议程</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最终判断">最终判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E6%9C%80%E7%BB%88%E5%88%A4%E6%96%AD" class="hash-link" aria-label="最终判断的直接链接" title="最终判断的直接链接" translate="no">​</a></h2>
-<p>如果把“AI 解开放猜想”理解为“无需人类、无需验证器、直接攻克黎曼猜想或 P vs NP”，答案仍然是否定的。</p>
-<p>如果把它理解为“AI 已能在精心选择、可验证的研究问题上提出新构造、新引理甚至完整初始证明，并与人类共同形成论文”，答案已经是肯定的。</p>
-<p>当前最可靠的表述是：</p>
-<ul>
-<li class=""><strong>奥赛级数学推理已经成为工程能力，而不是终点。</strong></li>
-<li class=""><strong>形式化 proof engineering 正在快速接近真实项目，但远未完全解决。</strong></li>
-<li class=""><strong>新数学结果已经出现，主要集中在 verification leverage 高的窄领域。</strong></li>
-<li class=""><strong>重大猜想和理论级创新仍没有可靠自主突破。</strong></li>
-<li class=""><strong>未来竞争的核心不是谁写出最长的“证明”，而是谁能建立最可信的问题、验证、文献和审计闭环。</strong></li>
-</ul>
-<p>这也与 ICM 2026 的信号一致：AI 正在改变数学家如何探索、协作和检查，而不是替代数学家对问题意义、证明结构和新颖性的最终判断。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="核心论文与项目索引">核心论文与项目索引<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E6%A0%B8%E5%BF%83%E8%AE%BA%E6%96%87%E4%B8%8E%E9%A1%B9%E7%9B%AE%E7%B4%A2%E5%BC%95" class="hash-link" aria-label="核心论文与项目索引的直接链接" title="核心论文与项目索引的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="开放问题与研究过程">开放问题与研究过程<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E5%BC%80%E6%94%BE%E9%97%AE%E9%A2%98%E4%B8%8E%E7%A0%94%E7%A9%B6%E8%BF%87%E7%A8%8B" class="hash-link" aria-label="开放问题与研究过程的直接链接" title="开放问题与研究过程的直接链接" translate="no">​</a></h3>
-<ul>
-<li class=""><a href="https://arxiv.org/abs/2605.13171" target="_blank" rel="noopener noreferrer" class="">Formal Conjectures: A Benchmark for the Next Generation of Mathematical Reasoning Models</a></li>
-<li class=""><a href="https://arxiv.org/abs/2602.10177" target="_blank" rel="noopener noreferrer" class="">Towards Autonomous Mathematics Research</a></li>
-<li class=""><a href="https://arxiv.org/abs/2601.22401" target="_blank" rel="noopener noreferrer" class="">Semi-Autonomous Mathematics Discovery with Gemini</a></li>
-<li class=""><a href="https://arxiv.org/abs/2511.02864" target="_blank" rel="noopener noreferrer" class="">Mathematical Exploration and Discovery at Scale</a></li>
-<li class=""><a href="https://arxiv.org/abs/2503.06366" target="_blank" rel="noopener noreferrer" class="">Machine Learning meets Algebraic Combinatorics</a></li>
-<li class=""><a href="https://arxiv.org/abs/2605.28003" target="_blank" rel="noopener noreferrer" class="">ResearchMath-14K</a></li>
-<li class=""><a href="https://arxiv.org/abs/2602.24173" target="_blank" rel="noopener noreferrer" class="">LemmaBench</a></li>
-<li class=""><a href="https://arxiv.org/abs/2606.06526" target="_blank" rel="noopener noreferrer" class="">CrowdMath</a></li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="形式化证明与评测">形式化证明与评测<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E5%BD%A2%E5%BC%8F%E5%8C%96%E8%AF%81%E6%98%8E%E4%B8%8E%E8%AF%84%E6%B5%8B" class="hash-link" aria-label="形式化证明与评测的直接链接" title="形式化证明与评测的直接链接" translate="no">​</a></h3>
-<ul>
-<li class=""><a href="https://arxiv.org/abs/2603.02668" target="_blank" rel="noopener noreferrer" class="">SorryDB</a></li>
-<li class=""><a href="https://arxiv.org/abs/2510.25427" target="_blank" rel="noopener noreferrer" class="">RLMEval</a></li>
-<li class=""><a href="https://arxiv.org/abs/2511.02872" target="_blank" rel="noopener noreferrer" class="">FATE</a></li>
-<li class=""><a href="https://aclanthology.org/2026.acl-long.3/" target="_blank" rel="noopener noreferrer" class="">Discover and Prove</a></li>
-<li class=""><a href="https://arxiv.org/abs/2605.17255" target="_blank" rel="noopener noreferrer" class="">CAM-Bench</a></li>
-<li class=""><a href="https://arxiv.org/abs/2606.13782" target="_blank" rel="noopener noreferrer" class="">MA-ProofBench</a></li>
-<li class=""><a href="https://arxiv.org/abs/2505.03171" target="_blank" rel="noopener noreferrer" class="">CombiBench</a></li>
-<li class=""><a href="https://arxiv.org/abs/2605.00674" target="_blank" rel="noopener noreferrer" class="">Beyond Benchmarks: MathArena</a></li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="真实结果与案例审计">真实结果与案例审计<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026#%E7%9C%9F%E5%AE%9E%E7%BB%93%E6%9E%9C%E4%B8%8E%E6%A1%88%E4%BE%8B%E5%AE%A1%E8%AE%A1" class="hash-link" aria-label="真实结果与案例审计的直接链接" title="真实结果与案例审计的直接链接" translate="no">​</a></h3>
-<ul>
-<li class=""><a href="https://arxiv.org/abs/2605.00301" target="_blank" rel="noopener noreferrer" class="">Primitive sets and von Mangoldt chains</a></li>
-<li class=""><a href="https://github.com/plby/Erdos1196" target="_blank" rel="noopener noreferrer" class="">Erdos1196 Lean formalization</a></li>
-<li class=""><a href="https://arxiv.org/abs/2601.23245" target="_blank" rel="noopener noreferrer" class="">Eigenweights for arithmetic Hirzebruch Proportionality</a></li>
-<li class=""><a href="https://arxiv.org/abs/2601.21442" target="_blank" rel="noopener noreferrer" class="">Irrationality of rapidly converging series</a></li>
-<li class=""><a href="https://arxiv.org/abs/2602.02450" target="_blank" rel="noopener noreferrer" class="">Lower bounds for multivariate independence polynomials</a></li>
-<li class=""><a href="https://arxiv.org/abs/2510.19804" target="_blank" rel="noopener noreferrer" class="">Forbidden Sidon subsets of perfect difference sets</a></li>
-</ul>]]></content:encoded>
-            <category>ai-math</category>
-            <category>theorem-proving</category>
-            <category>lean</category>
-            <category>open-problems</category>
-            <category>datasets</category>
-            <category>icm</category>
         </item>
     </channel>
 </rss>
