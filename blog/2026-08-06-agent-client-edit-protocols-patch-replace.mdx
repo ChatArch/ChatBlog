@@ -1,0 +1,172 @@
+---
+title: "Agent 写文件到底用 patch 还是 replace：Codex、Claude Code、Qwen Code 的工具协议拆解"
+date: 2026-08-06
+slug: agent-client-edit-protocols-patch-replace
+tags: [agent, codex, claude-code, qwen, tooling]
+description: 拆解 OpenAI Responses、Anthropic Messages、千问 OpenAI-compatible 与常见 agent client 的三层关系，比较 Codex、Claude Code、Qwen Code、Gemini CLI、OpenCode、Aider、Roo、Cline、Cursor 在文件编辑时到底偏 patch、replace、write_file 还是多工具并存。
+---
+
+# Agent 写文件到底用 patch 还是 replace：Codex、Claude Code、Qwen Code 的工具协议拆解
+
+上一篇 [千问 Token Plan 调研](/blog/qwen-token-plan-coding-crs) 解决的是“千问 Token Plan 怎么接进 Codex、Hermes 和 CRS”。但接完以后还有一个更容易混淆的问题：**模型 API 是 OpenAI-compatible，并不代表 agent 改文件也按 OpenAI Codex 的 patch 方式来。**
+
+这篇文章专门拆开这个问题：OpenAI、Anthropic、Qwen、Gemini 这些 provider 的 wire API 是一层；Codex、Claude Code、Qwen Code、Gemini CLI、OpenCode、Aider、Roo Code、Cline、Cursor 这些 agent client 暴露给模型的文件工具是另一层；最后 client 在本地到底怎么落盘，又是第三层。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+**OpenAI API 本身不规定“写文件=patch 还是 replace”；OpenAI Codex CLI 是 patch 派；Anthropic 官方 text editor tool 是 string replace 派；Qwen Code 继承/同构的是 Gemini CLI 的 `replace + write_file` 派。**
+:::
+
+## 先分清三层，不然一定会说错
+
+讨论“它写文件用 patch 还是 replace”时，至少要拆成三层：
+
+| 层 | 问题 | 例子 |
+| --- | --- | --- |
+| Provider wire API | 请求发给谁、用什么模型协议？ | OpenAI Responses、Anthropic Messages、Gemini API、Qwen OpenAI-compatible |
+| Agent client tool schema | 模型在对话里看到什么工具？ | `apply_patch`、`Edit`、`replace`、`write_file`、`search_replace` |
+| Local apply implementation | client 在本地怎么改文件？ | 解析 patch、old/new string replace、whole-file overwrite、diff/fuzzy patch、shell 命令 |
+
+所以，不能说“千问走 OpenAI-compatible，因此写文件就是 OpenAI patch”。OpenAI-compatible 只说明 HTTP/JSON 调用协议像 OpenAI；文件怎么改，取决于你用的是 Codex、Qwen Code、Hermes、Cline 还是别的 client。
+
+## OpenAI：API 层不固定，Codex client 是 patch-first
+
+OpenAI 的 Responses / function calling 文档讲的是通用工具调用流程：应用把工具定义发给模型，模型返回 tool call，应用侧执行，再把结果回传。这个机制本身没有规定“本地写文件工具”必须叫 `patch`、`replace` 或 `write_file`。
+
+但如果问的是 **OpenAI 官方 Codex CLI / Codex client**，结论就很明确：它是 **patch-first**。
+
+公开源码里可以看到 Codex 有 `apply_patch` 解析与审批路径；patch action 覆盖新增、删除、更新文件。也就是说，Codex 这类 coding client 倾向让模型产出结构化补丁，再由 client 解析、校验、展示 diff、申请批准和落盘。
+
+同时，Codex 的 app-server protocol 里也有类似 `FsWriteFileParams { filePath, content }` 的 whole-file write 参数。这说明它不是“永远只有 patch”。但从 coding agent 的核心编辑原语看，Codex 明显属于 patch 派。
+
+## Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族
+
+Anthropic 也要分 API 层和产品层。
+
+在 Anthropic Messages API 的通用 tool use 里，工具可以由应用自己定义，执行也发生在应用或环境侧。因此通用 API 层同样不固定。
+
+不过 Anthropic 官方文档现在有一个明确的 text editor tool：
+
+```text
+type: text_editor_20250728
+name: str_replace_based_edit_tool
+```
+
+它支持 `view`、`str_replace`、`create`、`insert`、`undo_edit` 等命令。核心编辑命令叫 `str_replace`，参数是 `old_str` 和 `new_str`。官方流程也写得很直白：从 Claude 的 tool use request 里取出文件路径、old text、新 text，然后在文件里执行文本替换。
+
+所以如果问 **Anthropic 官方 text editor tool**，答案是：**replace 派**。
+
+但如果问 **Claude Code**，公开文档能确认的是产品层工具名：`Read`、`Edit`、`MultiEdit`、`Write`、`Bash` 等。Claude Code 本身不是完整开源项目，公开文档不足以严谨证明它每次 `Edit` 内部一定转成某种 unified diff 或某种 string replace。更稳妥的说法是：Claude Code 是 Anthropic / Claude 产品工具族，公开暴露的是 `Edit/MultiEdit/Write` 这套编辑能力。
+
+## Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file
+
+千问这里最容易混淆，因为有两个事实同时成立：
+
+1. **千问 Token Plan 接入 ChatArch / CRS / Hermes 时，推荐走 OpenAI-compatible / Responses。** 这是上一篇文章的结论，也是我们当前配置的 provider wire API。
+2. **Qwen Code 这个 agent client 的文件工具形态，更像 Gemini CLI。** 它的公开文档和源码里，文件编辑工具是 `replace` 和 `write_file`。
+
+Qwen Code 的 file-system tools 里，`replace` 使用 `old_string` / `new_string` 做精确替换；`write_file` 则写入完整文件内容，语义上就是 whole-file write / overwrite。
+
+这意味着：
+
+| 场景 | 判断 |
+| --- | --- |
+| Hermes / CRS 里接千问 Token Plan | OpenAI-compatible / Responses provider |
+| 用 Codex 调千问模型 | Codex client 工具层仍是 patch-first |
+| 用 Qwen Code 调千问模型 | Qwen Code 工具层是 Gemini 式 `replace + write_file` |
+| 把千问硬说成 Anthropic-native | 不推荐，除非中间网关明确做 Anthropic schema 转换 |
+
+所以，“千问是 OpenAI 还是 Anthropic 派”这个问题要拆开答：**模型接口推荐 OpenAI-compatible；Qwen Code 工具协议是 Gemini CLI 派；不是 Claude Code / Anthropic-native 派。**
+
+## 常见 agent client 快速矩阵
+
+| Client | 默认/主要平台派系 | 文件编辑原语 | 判断 |
+| --- | --- | --- | --- |
+| OpenAI Codex CLI | OpenAI / ChatGPT / Responses | `apply_patch`；另有 whole-file write 参数 | **patch-first** |
+| Claude Code | Anthropic / Claude | `Edit`、`MultiEdit`、`Write`、`Read`、`Bash` | 产品工具族；内部细节公开不足 |
+| Anthropic text editor tool | Anthropic Messages API | `str_replace_based_edit_tool`，`str_replace(old_str,new_str)` | **replace 派** |
+| Gemini CLI | Google Gemini | `replace(old_string,new_string)`、`write_file(content)` | **replace + whole-file write** |
+| Qwen Code | Qwen / DashScope；Gemini CLI 工具形态 | `replace(old_string,new_string)`、`write_file(content)` | **Gemini/Qwen Code 派** |
+| OpenCode | 多 provider | `edit(oldString,newString)`、`write(content)` | **replace + whole-file write** |
+| Aider | 多 provider | whole-file、search/replace、unified diff 等 edit formats | **多格式** |
+| Roo Code | 多 provider / VS Code | `apply_patch`、`apply_diff`、`search_replace`、`write_to_file`、`edit_file` | **多原语并存** |
+| Cline | 多 provider / VS Code | `replace_in_file`、`write_to_file`、`apply_patch`；SDK `editor` 有 `old_text/new_text/insert_line` | **replace/write/patch 并存** |
+| Cursor Agent / Cursor CLI | Cursor 产品，多模型入口 | 公开文档没明确到底 patch 还是 replace | **底层编辑原语未公开到足够粒度** |
+| Hermes Agent | Hermes 自定义 agent，可接多 provider | `patch`、`write_file`、`read_file` 等宿主工具 | **由 Hermes 工具层决定，不由 provider 决定** |
+
+## 为什么这件事重要
+
+它不只是术语问题，而是会影响 agent 的可靠性和成本。
+
+### patch-first 的优点
+
+patch-first 的好处是 diff 明确、审阅友好、失败边界清楚。适合：
+
+- 跨文件但局部修改；
+- 需要人类 review 的代码改动；
+- 希望保留上下文、不让模型重写整文件；
+- 需要在 PR 里形成清晰补丁的工作流。
+
+Codex、Roo 的 `apply_patch`、Hermes 的 `patch` 都属于这类思路。
+
+### replace 派的优点和风险
+
+`old_string/new_string` replace 对模型来说直观，工具实现也简单。它适合小范围、唯一上下文明确的修改。
+
+风险是：
+
+- `old_string` 不唯一时可能误改；
+- `old_string` 和真实文件只差一点点时会失败；
+- 大段 replace 对上下文完整性要求高；
+- 如果 client 自动 fuzzy match，可能需要额外审阅。
+
+Anthropic text editor、Gemini CLI、Qwen Code、OpenCode、Cline SDK editor 都有明显的 replace 色彩。
+
+### write_file / whole-file overwrite 的风险最大
+
+`write_file(content)` 很适合新建文件或小文件重写，但对大文件风险最大：模型可能漏掉 imports、注释、边缘分支、配置项或格式细节。
+
+如果一个 client 暴露 `write_file`，系统提示和工具实现最好要求：
+
+- 先读文件；
+- 大文件避免整文件重写；
+- 重写后做 diff；
+- 运行格式/测试；
+- 明确失败时不要“猜一个完整文件”。
+
+## 对 ChatArch 的实践建议
+
+第一，**千问 Token Plan 继续按 OpenAI-compatible / Responses 接入 CRS/Hermes**。这是模型调用协议最稳的路径。
+
+第二，**不要为了“像 Claude Code”而把千问硬塞 Anthropic-native**。只有当某个 client 明确强依赖 Anthropic Messages 或 Anthropic text editor schema，并且中间网关真的能转换字段时，才值得这么做。
+
+第三，**评估新的 agent client 时，固定问三件事**：
+
+1. provider wire API 是谁？
+2. model-visible tools 是什么 schema？
+3. local apply 是 patch、replace、write_file、diff 还是 shell？
+
+第四，**在写适配文档时不要混用层级词**。比如：
+
+- “Qwen Token Plan 是 OpenAI-compatible provider”是对的；
+- “Qwen Code 因为用了千问所以是 OpenAI Codex patch 派”是错的；
+- “Claude Code 是 Anthropic 产品工具族”是对的；
+- “Anthropic 所有 coding client 都是 `str_replace_based_edit_tool`”则过度外推。
+
+## 参考入口
+
+- [OpenAI function calling](https://platform.openai.com/docs/guides/function-calling)
+- [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses)
+- [OpenAI Codex repository](https://github.com/openai/codex)
+- [Anthropic text editor tool](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/text-editor-tool)
+- [Anthropic tool use overview](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/overview)
+- [Claude Code settings](https://docs.anthropic.com/en/docs/claude-code/settings)
+- [Gemini CLI file-system tools](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/file-system.md)
+- [Qwen Code repository](https://github.com/QwenLM/qwen-code)
+- [Qwen Code file-system tools](https://github.com/QwenLM/qwen-code/blob/main/docs/developers/tools/file-system.md)
+- [OpenCode edit tool](https://github.com/sst/opencode/blob/dev/packages/opencode/src/tool/edit.ts)
+- [Aider edit formats](https://aider.chat/docs/more/edit-formats.html)
+- [Roo Code available tools](https://github.com/RooCodeInc/Roo-Code/tree/main/apps/docs/docs/advanced-usage/available-tools)
+- [Cline repository](https://github.com/cline/cline)
+- [Cursor CLI overview](https://docs.cursor.com/en/cli/overview)
