@@ -1,0 +1,306 @@
+---
+title: "录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座"
+date: 2026-08-07
+slug: audio-transcription-meeting-notes-open-source
+tags: [transcription, meeting-notes, self-hosted, whisper, open-source]
+description: 静态调研 GitHub 上适合自建录音转写、在线会议实时转写和会议纪要的开源项目，区分会议 bot/API、录音文件后台、字幕媒体套件、团队媒体库与底层 ASR pipeline。
+---
+
+# 录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座
+
+录音转写看起来像一个单点能力：给一段音频，返回文字。真的要自建时，它会很快拆成几个完全不同的问题：谁负责录音或进会？是实时字幕还是会后处理？要不要说话人？要不要摘要、行动项和问答？要不要 API、权限、队列和搜索？
+
+如果不先把这些产品形态分开，就很容易把 `openai/whisper`、`faster-whisper`、`WhisperX`、一个 Gradio WebUI、一个会议 bot、一个媒体库平台放进同一张表里比较，最后得到一堆“都能转写”的无效结论。
+
+这篇只做静态调研，关注 GitHub 上可自建、可部署或可封装的项目，重点场景是录音转写、会议笔记和后续 ChatArch/Agent 工作流集成。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+如果要自动进入在线会议并实时拿 transcript，先看 **Vexa**；如果已有录音/录屏要进一个自托管后台，先看 **Scriberr**；如果主线是字幕、翻译和媒体转写，先看 **Whishper**；如果要团队级媒体库、speaker profile、搜索和协作，观察 **OpenTranscribe**；如果只是缺一个 STT API 或实时流式底座，才看 **docker-whisper / WhisperLive / WhisperX / faster-whisper / whisper.cpp**。
+:::
+
+:::info 证据口径
+本文快照日期为 **2026-08-07**。候选来自 GitHub 仓库、README、官方文档、release/license 状态和项目官方截图/架构图。本文没有在本机安装、构建、启动容器、下载模型或做统一 benchmark；运行实践属于 shortlist 之后的独立任务。
+:::
+
+## 先把“转写”拆成五类产品
+
+录音转写至少有五条路线。它们都可能用 Whisper 或类似模型，但交付物完全不同。
+
+| 产品形态 | 典型输入 | 典型输出 | 最容易踩的坑 |
+| --- | --- | --- | --- |
+| 会议 bot / transcription API | Google Meet、Teams、Zoom、Jitsi 等会议 URL | 实时 speaker-attributed transcript、API/WebSocket | 入会、音频捕获、平台限制比 ASR 本身更难 |
+| 录音文件后台 | 音频、视频、会议录屏、文件夹 watcher | 转写、说话人、摘要、问答、归档 | 不负责自动进会，实时性有限 |
+| 字幕/媒体转写 WebUI | 本地文件、URL、YouTube/yt-dlp | TXT、JSON、SRT、VTT、字幕编辑/翻译 | 适合媒体处理，不等于会议纪要系统 |
+| 团队媒体库/分析平台 | 大量音视频、S3/SMB/watch sources | 搜索、speaker profiles、RBAC、集合、AI 分析 | 功能重，成熟度与权限边界必须深审 |
+| ASR / diarization 底座 | 音频流或文件 | 文字、word timestamp、speaker label | 只是 pipeline，不提供产品、权限、存储和 UI |
+
+这个分类比 stars 更重要。会议笔记需求一旦包含“自动进入会议”，普通上传转写 WebUI 就不在同一赛道；如果只是“录音文件进后台”，会议 bot 反而太重。
+
+## Vexa：会议 bot 和实时 transcription API
+
+Repo: [Vexa-ai/vexa](https://github.com/Vexa-ai/vexa)
+
+Vexa 是本轮最贴近“在线会议实时转写服务”的项目。它的 README 明确定位为 open-source、self-hosted meeting bot & transcription API：bot 加入 Google Meet、Microsoft Teams、Zoom、Jitsi，然后通过你自托管的 API 输出 speaker-attributed transcripts。README 还特别说明，如果只需要 transcription API，可以忽略 agent lane，把它当独立产品使用。
+
+![Vexa official architecture](/img/audio-transcription-meeting-notes/vexa-architecture.svg)
+
+*Vexa 官方架构图：同一个 runtime 调度 meeting bot 和 agent workload；会议侧重点是 bot 入会、捕获音频、产生 transcript stream。来源：Vexa 官方仓库。*
+
+Vexa 的价值在于把“入会”这件最容易低估的工程工作产品化了：
+
+- 会议 URL 进入 `POST /bots`；
+- bot 作为参会者进入会议；
+- meeting-api 管理 bots、transcripts、recordings；
+- transcript 可以被实时读取；
+- 后续 agent/workspace 只是它扩展出来的一条路线。
+
+它也有清晰的代价。README 标注 full Docker Compose stack 至少需要 8 vCPU / 16GB RAM；更小机器可以用 lighter path，但完整自托管仍不是“一个 Python 包跑起来”。默认 transcription 可以接 Vexa token；要完全 air-gap，需要把 GPU transcription unit 也自托管。
+
+| 维度 | 判断 |
+| --- | --- |
+| 最适合 | 在线会议实时转写、会议 bot API、后续接知识库/Agent |
+| 不适合 | 只是本地录音文件批量转写；只想要极简单容器 STT |
+| API/集成 | 强，项目本身就是 API-first |
+| 运维面 | 中到高，完整栈和 bot fleet 是核心复杂度 |
+| 初步结论 | **如果目标是“会中自动获取 transcript”，第一优先级** |
+
+## Scriberr：自托管录音/视频转写后台
+
+Repo: [rishikanthc/Scriberr](https://github.com/rishikanthc/Scriberr)
+
+Scriberr 更像“把录音文件丢进去，它负责后续处理”的后台产品。README 说它可以本地转写 audio/video，支持 NVIDIA Parakeet、Canary 和 Whisper 模型，并提供 diarization、chat with audio、API、folder watcher、PWA、录音和笔记等能力。
+
+![Scriberr official recording library screenshot](/img/audio-transcription-meeting-notes/scriberr-hero.png)
+
+*官方截图展示了 Scriberr 的录音列表和移动端 PWA 体验。图片中是演示录音名，没有账号、token 或主机信息。来源：Scriberr 官方仓库。*
+
+![Scriberr official chat screenshot](/img/audio-transcription-meeting-notes/scriberr-chat.png)
+
+*Scriberr 官方截图里的 Chat with Audio：用户可以对转写内容提问并生成摘要。来源：Scriberr 官方仓库。*
+
+Scriberr 的优势不是“最底层 ASR 性能”，而是它已经把会议文件处理常见的产品层补了很多：
+
+- 上传/管理录音；
+- transcript reader、播放跟随和文本定位；
+- speaker detection；
+- notes/highlights；
+- AI summary；
+- chat with audio；
+- folder watcher，方便接 n8n 或文件自动化；
+- API 文档。
+
+这让它很适合做 ChatArch 里的“录音进入知识工作流”的第一版：先不解决自动入会，只解决文件进入、转写、总结、归档和后续问答。
+
+| 维度 | 判断 |
+| --- | --- |
+| 最适合 | 录音文件、会议录屏、语音备忘录进入自托管后台 |
+| 不适合 | 自动加入 Zoom/Meet/Teams 获取实时 transcript |
+| API/集成 | 中到高，有 API 和 folder watcher |
+| 运维面 | 中，模型环境和 diarization/LLM provider 仍需配置 |
+| 初步结论 | **如果第一版是“录音文件进来→转写→摘要/问答→归档”，第一优先级** |
+
+## Whishper：自托管媒体转写和字幕套件
+
+Repo: [pluja/whishper](https://github.com/pluja/whishper)
+
+Whishper 是 100% local 的 audio transcription and subtitling suite，主线是上传或 URL 导入媒体，转写、翻译、下载 TXT/JSON/VTT/SRT，并在 Web UI 里编辑字幕。它使用 FasterWhisper，支持 CPU/GPU，也用 LibreTranslate 做文本翻译。
+
+![Whishper official banner](/img/audio-transcription-meeting-notes/whishper-banner.png)
+
+*Whishper 官方图：它把产品关键词直接写成 transcribe / translate / subtitle。来源：Whishper 官方仓库。*
+
+Whishper 的“字幕产品”气质很强：
+
+- URL / yt-dlp 输入；
+- 上传文件转写；
+- SRT/VTT 等字幕导出；
+- 翻译；
+- 字幕编辑器；
+- Nginx/MongoDB/LibreTranslate 等 compose 式结构。
+
+所以它很适合媒体工作流、视频字幕、课程/访谈整理；但会议纪要系统常见的行动项、参会人、任务抽取、会议空间归档不是它的主线。
+
+还要注意一个维护信号：README 顶部说明作者正在做 v4 完整重写，当前分支不会继续发新 release 或 update。不是不能选，而是不能把当前分支当长期稳定接口来深度耦合。
+
+| 维度 | 判断 |
+| --- | --- |
+| 最适合 | 媒体转写、字幕、翻译、人工编辑 |
+| 不适合 | 会议 bot、团队会议知识库、行动项系统 |
+| API/集成 | 中，组件化但产品主线不是 API-first |
+| 运维面 | 中，MongoDB/LibreTranslate/Nginx/转写 API 组合 |
+| 初步结论 | **第二优先级：字幕/媒体工作流强，会议笔记要另补** |
+
+## OpenTranscribe：团队媒体库方向，功能很全但要深审
+
+Repo: [attevon-llc/OpenTranscribe](https://github.com/attevon-llc/OpenTranscribe)
+
+OpenTranscribe 是这批候选里功能面最宽的：README 定位为 containerized web application，基于 WhisperX + faster-whisper 做音视频转写，列出 PyAnnote diarization、speaker profiles、cross-video speaker recognition、S3/SMB/watch sources、搜索、RBAC、collection sharing、custom prompt summary、多 provider LLM 等能力。
+
+![OpenTranscribe official workflow](/img/audio-transcription-meeting-notes/opentranscribe-workflow.gif)
+
+*OpenTranscribe 官方 workflow GIF：展示从 login、upload、process、transcribe 到 speaker identification 和 AI tags/collections 的完整链路。来源：OpenTranscribe 官方仓库。*
+
+如果这些能力都稳定可用，它会非常接近“团队录音资产库”：
+
+- 多来源自动导入：local folders、S3、SMB；
+- 去重、分段合并、批量处理；
+- speaker profile 和跨文件说话人识别；
+- 搜索、标签、collection；
+- RBAC 与共享；
+- custom JSON summary prompt；
+- OpenAI/Ollama/Claude/OpenRouter/local vLLM 等 LLM provider。
+
+但它现在不应该直接被当成“成熟首选”。原因不是功能少，而是功能太多、社区规模还小，且 README 自述 99.9% written by AI using frontier models。对生产环境来说，权限模型、文件隔离、上传处理、队列恢复、prompt/LLM key 存储、OpenSearch/数据库配置、安全更新都需要代码级深审。
+
+| 维度 | 判断 |
+| --- | --- |
+| 最适合 | 团队级媒体库、跨会议 speaker profile、搜索协作 |
+| 不适合 | 想快速上线一个低运维转写服务 |
+| API/集成 | 中，偏平台内部能力，需继续深读 API/权限 |
+| 运维面 | 高，组件多、权限面大 |
+| 初步结论 | **观察/深审候选：功能形态很对，但不能凭 README 上生产** |
+
+## docker-whisper 与 WhisperLive：当你只缺 STT 服务
+
+Repo: [hwdsl2/docker-whisper](https://github.com/hwdsl2/docker-whisper)、[hwdsl2/docker-whisper-live](https://github.com/hwdsl2/docker-whisper-live)、[collabora/WhisperLive](https://github.com/collabora/WhisperLive)
+
+这组更适合作为“服务底座”而不是会议笔记产品。
+
+`docker-whisper` 把 faster-whisper 包成 OpenAI-compatible API，提供 `/v1/audio/transcriptions` 和 `/v1/audio/translations`，支持 JSON/text/verbose JSON/SRT/VTT、SSE streaming、CUDA image、air-gapped mode 和持久模型 cache。
+
+`docker-whisper-live` 把 WhisperLive 包成实时 STT server，提供 WebSocket live transcription 和 OpenAI-compatible REST。WhisperLive 本体则是 nearly-live implementation，支持 live microphone、预录音频、faster-whisper/TensorRT/OpenVINO backend、word timestamp、hotwords、speaker diarization 等高级路径。
+
+它们适合两种情况：
+
+1. 已经有自己的录音入口、任务队列、对象存储、权限和摘要服务，只缺一个可替换 OpenAI Whisper API 的自建 STT；
+2. 想给浏览器捕获、直播字幕或内部实时音频流接一个 WebSocket 转写服务。
+
+| 维度 | docker-whisper | WhisperLive / docker-whisper-live |
+| --- | --- | --- |
+| 输入 | 完整音频文件 | 麦克风/流式音频/文件 |
+| 协议 | HTTP REST，OpenAI-compatible | WebSocket + REST |
+| 适合 | 会后录音批处理、替换 Whisper API | 实时字幕、浏览器/流媒体接入 |
+| 缺口 | UI、会议 bot、权限、摘要、归档 | UI、会议 bot、权限、摘要、归档 |
+| 初步结论 | **可作为 STT microservice** | **可作为 live STT 底座** |
+
+## WhisperX、faster-whisper、whisper.cpp：底座不是产品
+
+Repo: [m-bain/whisperX](https://github.com/m-bain/whisperX)、[SYSTRAN/faster-whisper](https://github.com/SYSTRAN/faster-whisper)、[ggml-org/whisper.cpp](https://github.com/ggml-org/whisper.cpp)、[openai/whisper](https://github.com/openai/whisper)
+
+这些项目非常重要，但不要把它们错当成“现成会议笔记服务”。
+
+- **WhisperX**：提供 fast ASR、word-level timestamps、wav2vec2 alignment、VAD batching 和 pyannote diarization。它适合做高质量 pipeline 的核心。
+- **faster-whisper**：CTranslate2 reimplementation，README 说明同等精度下可比 openai/whisper 更快、更省内存，并支持 int8、batch 等路径。很多 Web app 和服务都用它做底层转写。
+- **whisper.cpp**：C/C++ 高性能端侧实现，支持 Apple Silicon、CPU、Vulkan、C API、Docker、多平台。它更适合边缘端、桌面本地化和嵌入式场景。
+- **openai/whisper**：原始模型和 CLI，是生态基准，但生产服务化、队列、权限、diarization、摘要都需要另建。
+
+如果我们准备自研，比较自然的底座组合是：
+
+```text
+入口层：上传 / 会议 bot / 浏览器音频捕获
+队列层：任务调度、重试、进度、资源隔离
+ASR 层：faster-whisper 或 whisper.cpp
+对齐/说话人：WhisperX + pyannote/sherpa-onnx 等
+LLM 层：摘要、行动项、问答、标题、章节
+知识层：Markdown / 文档 / 搜索 / 向量索引 / ChatArch workspace
+```
+
+但这已经是工程项目，不是“拿一个现成服务适配”。如果有 Vexa/Scriberr/Whishper 能覆盖 70% 需求，应该先复用产品，再把底座作为替换点。
+
+## 其他项目怎么放
+
+本轮还看了几个不是主线但有参考价值的项目。
+
+| 项目 | 价值 | 不作为主线原因 |
+| --- | --- | --- |
+| [Meetily](https://github.com/Zackriya-Solutions/meetily) | 本地 privacy-first AI meeting assistant，实时转写、摘要、Ollama/OpenAI-compatible provider | 更像桌面/本地 app，中心 API/后台服务不是第一定位 |
+| [Buzz](https://github.com/chidiwilliams/buzz) | 成熟桌面转写/字幕工具，离线、live mic、speaker identification、CLI/watch folder/plugin | 适合个人工作站，不是自建后台 |
+| [Whisper-WebUI](https://github.com/jhj0517/Whisper-WebUI) | Gradio 字幕/转写 WebUI，支持多后端、YouTube/mic、VAD、pyannote | 实验/字幕 UI 好，团队服务化弱 |
+| [joinly](https://github.com/joinly-ai/joinly) | 让 AI agent 加入会议，STT/TTS 模块化 | 重点是 agent 参会和交互，不是单纯录音转写 |
+| [zoom/arlo](https://github.com/zoom/arlo) | Zoom RTMS reference，无 bot live transcript 路线 | Zoom-only 参考实现，不是通用产品 |
+
+## 推荐路线：先选产品形态，再做 runtime 实践
+
+### 路线 A：会议实时 transcript
+
+如果第一需求是“把会议链接给系统，系统自动入会并实时输出文字”，优先看 Vexa。这个问题的难点不只是模型，而是：
+
+- 各会议平台的加入流程；
+- 音频捕获和稳定性；
+- 实时 transcript stream；
+- bot 权限、命名和合规提示；
+- 会后录音、转写和知识库归档。
+
+Vexa 至少把这些问题放在同一个产品边界里了。后续实践应该只问具体问题：目标平台能否稳定加入？Transcript 延迟和 speaker attribution 是否满足需求？API 能否接到 ChatArch 文档/任务/知识库？
+
+### 路线 B：已有录音/录屏处理后台
+
+如果第一需求是“录音文件进来，系统自动转写、总结、问答、归档”，优先看 Scriberr。
+
+这条路线对 ChatArch 更容易快速落地：
+
+```text
+录音文件 / 会议录屏
+  → Scriberr folder watcher / API
+  → transcript + summary + notes
+  → ChatArch 文档 / Feishu / Git-backed meeting notes
+  → 后续由 Agent 检索、问答、拆任务
+```
+
+它不解决自动进会，但把会后处理链路补得更完整。
+
+### 路线 C：媒体字幕和内容生产
+
+如果大量输入是视频、播客、课程、访谈、YouTube URL，Whishper 更自然。它的强项是字幕、翻译和编辑，而不是会议任务系统。
+
+### 路线 D：团队媒体资产库
+
+如果目标是把所有会议、访谈、音视频资料变成可搜索、可标注、可共享、可跨文件识别 speaker 的团队资产，OpenTranscribe 值得深读。但它应该先过安全/代码质量/部署复杂度审查，再做实践。
+
+### 路线 E：自己做最小服务
+
+如果现成产品都太重，最小自研可以从 docker-whisper 或 WhisperLive 开始，而不是直接从模型代码开始。这样至少保留一个稳定的 HTTP/WebSocket 边界。
+
+## 第一轮 shortlist
+
+| 场景 | 第一候选 | 第二候选 | 暂不选原因 |
+| --- | --- | --- | --- |
+| 自动入会 + 实时 transcript API | **Vexa** | joinly / Zoom Arlo 作参考 | 普通 WebUI 不负责进会 |
+| 上传录音/录屏 + 摘要/问答 | **Scriberr** | OpenTranscribe | Vexa 太重，Whishper 偏字幕 |
+| 字幕/翻译/媒体处理 | **Whishper** | Whisper-WebUI / Buzz | 会议纪要要另补 |
+| 团队媒体库 + speaker profile | **OpenTranscribe（观察）** | Scriberr | 需要代码和安全深审 |
+| 自建 STT API | **docker-whisper** | faster-whisper 自封装 | 不是会议产品 |
+| 实时流式 STT | **WhisperLive / docker-whisper-live** | Vexa 的会议 API | 没有会议文档层 |
+| 自研 pipeline | **WhisperX + faster-whisper** | whisper.cpp | 需要自己做产品层 |
+
+## 下一步实践不要一次跑完所有项目
+
+静态调研已经足够把候选压到两个主线：**Vexa** 和 **Scriberr**。
+
+下一步如果要实践，建议拆成两个受控任务，而不是在本机把所有项目都启动一遍：
+
+1. **Vexa 实时会议 transcript smoke**：指定一台有足够资源的 Linux 主机，定义一个测试会议平台、一个会议链接、一个最长运行时间、一个 API readback 标准和清理方式。
+2. **Scriberr 录音文件后台 smoke**：准备一段公开/自有测试音频，验证上传/转写/diarization/summary/API/folder watcher 中最关键的一条链路。
+
+只有当这两个都不能满足需求，才进入自研 pipeline：docker-whisper / WhisperLive / WhisperX / faster-whisper / whisper.cpp 的组合工程化。
+
+## 主要一手来源
+
+- [Vexa](https://github.com/Vexa-ai/vexa)
+- [Scriberr](https://github.com/rishikanthc/Scriberr)
+- [Whishper](https://github.com/pluja/whishper)
+- [OpenTranscribe](https://github.com/attevon-llc/OpenTranscribe)
+- [docker-whisper](https://github.com/hwdsl2/docker-whisper)
+- [docker-whisper-live](https://github.com/hwdsl2/docker-whisper-live)
+- [WhisperLive](https://github.com/collabora/WhisperLive)
+- [WhisperX](https://github.com/m-bain/whisperX)
+- [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
+- [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
+- [openai/whisper](https://github.com/openai/whisper)
+- [Meetily](https://github.com/Zackriya-Solutions/meetily)
+- [Buzz](https://github.com/chidiwilliams/buzz)
+- [Whisper-WebUI](https://github.com/jhj0517/Whisper-WebUI)
+- [joinly](https://github.com/joinly-ai/joinly)
+- [zoom/arlo](https://github.com/zoom/arlo)
