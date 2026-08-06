@@ -1,0 +1,521 @@
+---
+title: "把 PPT 做成前端项目：Frontend Harness Slides 的工作流与实践路线"
+date: 2026-08-06
+slug: frontend-harness-slides-web-deck-workflow
+tags: [slides, frontend, react, vite, workflow, chatarch]
+description: 从 Patrick Fu 的 From Spec to Loop 演示页和 frontend-harness-slides 三个公开仓库出发，拆解这套 Web Slides 方法现在做什么、做了什么、能做什么，以及 ChatArch 如何把它变成自己的快速 slides 创建、发布和持续更新流程。
+---
+
+# 把 PPT 做成前端项目：Frontend Harness Slides 的工作流与实践路线
+
+有些“PPT”打开以后并不是 PowerPoint，也不是 Keynote，而是一个完整的前端应用。
+
+Patrick Fu 的 [From Spec to Loop](https://paaatrick.com/talks/from-spec-to-loop/) 就是这种形态：演讲页里的 Open slides 进入的是 `/talks/from-spec-to-loop/slides/` 下面的网页，URL 可以带 `?scene=1&beat=0`，按方向键会推进场景，页面加载的是 Vite 风格的 JS/CSS bundle。换句话说，它不是把网页伪装成 PPT，而是把一套演示文稿当成一个小型前端项目来做。
+
+这篇文章分两部分。
+
+第一部分看 Patrick 这组三个公开项目：它现在做什么、已经做了什么、能做什么。第二部分转到我们自己的目的：以后有一个 idea、调研结论、项目成果或想展示/炫耀的东西时，怎么用一套固定开发流程快速做出类似的互动 Web Slides，并且能持续更新和发布。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+Frontend Harness Slides 的核心不是“用 React 写几页幻灯片”，而是给演示文稿加了一个工程化 harness：**scene/beat 可寻址、固定 stage、URL deep link、互动隔离、frozen 截图模式、Playwright 审计、静态部署和生产 readback**。它最适合把重要技术内容、调研结论、项目 showcase 做成可演示、可测试、可发布的 artifact。
+:::
+
+:::info 证据口径
+本文快照时间为 **2026-08-06**。证据来自 Patrick Fu 的演讲页、线上 slides 构建产物、GitHub 公开仓库、README、`SKILL.md`、references、Workbench/Demo 源码、package scripts，以及 Workbench/Demo 线上站点 readback。本文没有找到 `from-spec-to-loop` 这套具体 deck 的公开源码，因此只把它归类为公开构建产物可证明的 Web slide deck，并把三个公开仓库作为制作范式和参考实现来分析。
+:::
+
+## 第一部分：这个项目体系现在做什么
+
+### From Spec to Loop：一套 bespoke Web slide deck
+
+Patrick 的演讲页是一个普通 talk landing page，真正的 slides 在：
+
+```text
+https://paaatrick.com/talks/from-spec-to-loop/slides/
+```
+
+它和传统 `.pptx` 的差异很明显：
+
+- slides 是 HTML 入口加 JS/CSS 静态 bundle；
+- CSS bundle 明确使用 Tailwind CSS；
+- JS bundle 里有 React root、scene/beat 状态和组件式渲染逻辑；
+- URL 支持 `?scene=1&beat=0` 这类帧定位；
+- 键盘右箭头可以推进到下一 scene；
+- 页面是固定比例 stage，而不是普通滚动网页。
+
+所以这套 talk 更准确的名称是 **bespoke Web slide deck**。它的交付物是一个可以静态部署的网页应用，不是可以下载和编辑的 PowerPoint 文件。
+
+这点很关键：我们要学习的不是“怎么导出一份网页 PPT”，而是怎么把一套演示文稿做成一个小型前端产品。
+
+### 三个公开仓库的职责
+
+围绕这套方法，Patrick 公开了三个最相关的仓库。
+
+| 仓库 | 角色 | 适合我们学什么 |
+| --- | --- | --- |
+| [frontend-harness-slides](https://github.com/patrick-fu/frontend-harness-slides) | 方法论 / Agent Skill / 风格与流程手册 | 如何从 brief、scene、beat、视觉方向、验证和交付来组织一套 Web Slides |
+| [frontend-harness-slides-workbench](https://github.com/patrick-fu/frontend-harness-slides-workbench) | 生产级 Workbench | 如何把 slides 做成有 domain contract、catalog、player、tests、thumbnail capture、publication pipeline 的前端系统 |
+| [frontend-harness-slides-demo](https://github.com/patrick-fu/frontend-harness-slides-demo) | 轻量 Demo | 单场 talk 或最小原型怎么组织 App、SlideRenderer、style components、URL state 和 navigation |
+
+我本地克隆后看了一下，三者不是同一个层级。
+
+`frontend-harness-slides` 没有 `package.json`，不是可运行 app。它主要是 `SKILL.md`、README 和 `references/01-plan.md`、`02-design.md`、`03-build.md`、`04-verify-and-ship.md` 这些流程文档。它回答的是：Agent 或开发者应该怎样规划、设计、构建和验证一套高质量 Web Slides。
+
+`frontend-harness-slides-workbench` 是完整工程。它使用 React 19、Vite 6、TypeScript、Tailwind CSS 4、Vitest、Testing Library 和 Playwright。线上 Workbench 的 `catalog-stats.json` 返回：
+
+```json
+{"styles":49,"topics":196}
+```
+
+也就是说，它不是单场演讲模板，而是一个 slide style / topic gallery：有 catalog、有 player、有 style group、有 model filter、有 showcase thumbnails、有发布脚本。
+
+`frontend-harness-slides-demo` 更小。README 直接写明：
+
+```text
+The app is built with React, Vite, Tailwind CSS, and Playwright.
+```
+
+它没有 Workbench 那么重的 TypeScript domain contract 和 generated manifest，但更适合作为单场 talk 的最小参考骨架。
+
+### 它已经做了什么
+
+把三个仓库放在一起看，Patrick 已经做的不是一个 slide 模板，而是一整套演示文稿工程化方法。
+
+#### 1. 把“第几页”升级成 scene/beat
+
+传统 PPT 主要关心 slide number。Frontend Harness Slides 更关注：
+
+```text
+scene = 一个讲述场景
+beat = 这个场景里的一个稳定故事状态
+```
+
+同一页里可以有多个 beat：先出现问题，再出现旧流程，再出现新 loop，再高亮关键差异。每个 beat 都应该能独立打开、截图、review，而不是依赖“从第一页开始点到这里”的历史状态。
+
+这解释了 Patrick 的线上 URL 为什么会出现：
+
+```text
+?scene=1&beat=0
+```
+
+这不是普通 hash navigation，而是演示系统的 frame address。
+
+#### 2. 固定 stage，而不是普通响应式网页
+
+Workbench 的 stage 是 `1920x1080`。核心做法是：内容永远写在固定 16:9 画布里，外层按容器等比缩放。
+
+```text
+scale = min(containerWidth / 1920, containerHeight / 1080)
+```
+
+这样投影、截图、CI、PDF export 和线上展示看到的是同一套几何关系。导航点、注释、图表、hover 区域不会因为 viewport 变宽突然漂移。
+
+这和做普通网页的响应式布局相反。Web Slides 更像舞台：舞台大小固定，观众席大小变化时整体缩放。
+
+#### 3. 用 domain contract 约束每套 presentation
+
+Workbench 里的 `src/domain/topic.ts` 定义了 `TopicDefinition`：每套 Topic 要有语义 ID、style ID、双语标题、metadata、Stage component、navigation、transitionScore、evidence 等。
+
+它还会验证：
+
+- Topic ID 必须是 semantic kebab-case；
+- 英文/中文 metadata 结构要对齐；
+- scene/beat IDs 要稳定；
+- transitionScore 要覆盖 scene edge；
+- factual evidence 要有 source。
+
+这已经不是“页面好看就行”，而是让 slides 也有可测试的领域契约。
+
+#### 4. Player 负责位置，Scene 负责表现
+
+Workbench 里有清晰分工：
+
+| 层 | 代表文件 | 职责 |
+| --- | --- | --- |
+| Domain | `src/domain/topic.ts` | 定义 Topic、metadata、navigation、transition、evidence 契约 |
+| Catalog | `src/catalog/*` | style definitions、topic registry、generated manifest、lazy topic loading |
+| Player | `src/player/PlayerRuntime.tsx` | 固定 stage、加载 Topic、键盘/点击/触摸导航、pure/frozen |
+| Navigation | `src/navigation/index.ts` | query state、history、scene/beat clamp、next/prev |
+| Stage fit | `src/player/stage-fit.ts` | `1920x1080` stage 根据容器等比缩放 |
+| Scene transition | `src/components/stage/SpatialSceneTrack.tsx` | active/outgoing scene、transition kind、reduced motion |
+| Tests | `src/testing/topic-contract.tsx`、`e2e/audit.spec.ts` | 检查每个 scene/beat、导航、frozen、overflow、console 等 |
+
+简单说：Player 处理“现在应该在哪一帧”，Scene 处理“这一帧应该怎么展示”。这个边界很值得我们复用。
+
+#### 5. 把测试和发布当成一等能力
+
+`frontend-harness-slides` 的 verify 文档很明确：交付不是“本地看起来能翻页”。至少要检查：
+
+- direct frame URL 是否能打开；
+- 每个 beat 是否有可见 story element；
+- keyboard/click/touch 是否一次推进一步；
+- 局部互动是否不会触发全局翻页；
+- stage 是否可见、没有 overflow/collapse；
+- console 是否无 runtime error；
+- build 后 preview 是否不是 stale output；
+- 生产 URL 是否 200、assets 是否 404、移动端是否至少可见。
+
+这就是它和普通 slide 工具最大的区别：演示文稿变成了可以被 CI 和浏览器自动审计的 artifact。
+
+### 它能做什么
+
+这套方法最有价值的能力可以分成四类。
+
+#### 1. 表达能力
+
+它可以做普通 PPT 很难稳定做到的表达：
+
+- 逐 beat reveal；
+- Magic Move 式连续运动；
+- SVG diagram 高亮；
+- code diff 展开；
+- hover/click annotation；
+- 局部 mini demo；
+- 图表、矩阵、流程、卡片、时间线、黑板、游戏化 metaphor。
+
+如果内容本身值得“演示”，这比一页页堆 bullet 更有效。
+
+#### 2. 协作能力
+
+每个状态都有 URL，意味着 review 可以这样说：
+
+```text
+看 ?scene=method&beat=2 这一帧，diagram 右侧那条箭头太弱。
+```
+
+这比“你打开 PPT 点到第 17 页，再点两下动画”清楚得多。
+
+#### 3. 工程能力
+
+它可以走软件项目的流程：
+
+```text
+Git branch -> PR -> build -> Playwright smoke -> Preview URL -> production readback
+```
+
+这让 slides 可以持续迭代，不是会后遗失在一个二进制文件里。
+
+#### 4. 发布能力
+
+它最终是静态站点，可以部署到：
+
+- Vercel；
+- GitHub Pages；
+- Cloudflare Pages；
+- 个人博客或文档站子路径；
+- 自己的静态服务。
+
+也可以额外导出 PDF 或截图归档，但核心交付是一个可访问 URL。
+
+### 它不是什么
+
+边界也要说清楚。
+
+第一，它不是 `.pptx` 生成器。非技术同事如果只会 PowerPoint，不会直接编辑它。
+
+第二，Workbench 不适合直接复制来做单场 talk。它有 49 styles、196 topics、overview、filters、model IDs、showcase thumbnails 和 publication plan，对单 deck 来说太重。
+
+第三，`from-spec-to-loop` 这套具体 talk 的未打包源码没有在公开仓库中直接找到。我们能确认的是：线上构建产物说明它是 Web slide deck；三个公开仓库说明 Patrick 的制作方法和参考实现。
+
+所以最合理的复用方式不是 fork 全部，而是抽取它的工作流和关键契约。
+
+## 第二部分：我们怎么用这套方法
+
+我们的目标不是研究完 Patrick 就结束，而是建立一套自己的 Web Slides 发布流程：以后有知识、idea、调研结论、项目成果或想展示/炫耀的东西时，可以快速做出类似效果。
+
+我会把这个流程拆成三层。
+
+```text
+第一层：Deck Starter
+  每次新建单场 slides 的代码骨架。
+
+第二层：Deck Brief + Registry 生成流程
+  把 idea / report / project result 转成 scene 和 beat。
+
+第三层：Publication Flow
+  build -> preview -> public URL -> readback -> update loop。
+```
+
+### 第一层：Deck Starter
+
+第一版不应该做成 Workbench 那样的大 gallery。我们只需要一个 single-deck starter。
+
+推荐结构：
+
+```text
+src/
+  deck/
+    registry.ts
+    types.ts
+  player/
+    Stage.tsx
+    navigation.ts
+    stageFit.ts
+    input.ts
+  scenes/
+    opening.tsx
+    problem.tsx
+    method.tsx
+    demo.tsx
+    close.tsx
+  components/
+    SpatialSceneTrack.tsx
+  test/
+    sceneContract.tsx
+  e2e/
+    audit.spec.ts
+```
+
+核心契约是：
+
+- `registry.ts` 声明 scenes、beats、标题、section、speaker intent；
+- `Stage.tsx` 固定 `1920x1080` 并整体缩放；
+- `navigation.ts` 解析和写回 `?scene=<id>&beat=<n>&frozen=1&pure=1`；
+- `input.ts` 处理 keyboard/click/touch，同时隔离 button/link/input/drag；
+- `scenes/*.tsx` 只按当前 beat 渲染 settled state；
+- `audit.spec.ts` 检查 direct frame、next/prev、console、stage visibility、interactive isolation。
+
+`package.json` 可以保留最小脚本：
+
+```json
+{
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "test": "vitest run",
+    "test:audit": "playwright test",
+    "ci": "npm run build && npm run test && npm run test:audit"
+  }
+}
+```
+
+### 第二层：把 idea 变成 scene/beat registry
+
+以后不要对 Agent 说“帮我做 PPT”。更好的输入是：
+
+```text
+请用 frontend harness slides 的方式做一套 Web Slides。
+先产出 deck brief、scene/beat registry 和 2-3 张真实视觉 preview。
+确认风格后，用 React + Vite + Tailwind 建一个 single-deck 项目。
+每个 frame 要能用 URL 打开，支持 keyboard/click navigation、pure/frozen mode。
+最后跑 build、preview、Playwright smoke，并给出 production readback 路径。
+```
+
+一个 deck brief 至少要回答：
+
+| 字段 | 问题 |
+| --- | --- |
+| audience | 谁会看或听 |
+| goal | 看完要相信什么、记住什么、做什么 |
+| duration | 5 分钟、15 分钟、30 分钟还是阅读型 |
+| content orientation | 教学、说服、产品演示、技术解释、showcase |
+| density | speaker-led、reading-first、hybrid |
+| visual direction | 黑板、产品 keynote、系统架构、游戏化、研究报告等 |
+| delivery target | 线上 URL、现场演示、PR Preview、PDF handout |
+
+然后生成 registry：
+
+```text
+scene: opening
+  title: 为什么 Spec 不是终点
+  intent: 让观众意识到“写完规格”不等于系统完成
+  beats:
+    0: 一份静态 spec 文档占据主视觉
+    1: 文档旁边出现失败反馈和真实世界输入
+    2: spec 被包进 loop，形成可验证循环
+```
+
+这个 registry 是事实来源。后续写 JSX、做截图、跑测试、生成 PDF，都应该从 registry 出发。
+
+### 第三层：做真实 interactive preview
+
+在全量实现前，应该先做 2-3 张真实 slide preview，而不是只生成 mockup 图。
+
+每张 preview 应该使用未来正式项目的同一套 stage、字体、颜色、导航和 beat 机制。这样才能尽早发现：
+
+- 中文字体是否稳；
+- 文字密度是否过高；
+- 动效是否过度；
+- 交互区域是否会误触翻页；
+- 视觉 metaphor 是否真的帮助理解；
+- 投影和截图时是否可读。
+
+preview 通过以后，再展开到完整 deck。
+
+### 第四层：互动能力怎么加
+
+这种 Web Slides 可以比普通 PPT 多很多互动，但互动必须受控。
+
+适合第一版 starter 内置的互动包括：
+
+- 空格、左右箭头翻页；
+- 点击 stage 左/右区域前进后退；
+- 手机 swipe；
+- 页内 navigator；
+- hover 高亮 diagram 节点；
+- click-to-expand 卡片；
+- code diff 展开/折叠；
+- tab 切换；
+- tooltip 或 annotation；
+- 局部 mini demo；
+- URL deep link 到任何状态；
+- pure mode 用于嵌入或无 chrome 演示；
+- frozen mode 用于截图和审计。
+
+但有一个硬规则：**局部互动不能泄漏到全局翻页。**
+
+例如按钮必须这样处理：
+
+```tsx
+<button
+  type="button"
+  onClick={(event) => {
+    event.stopPropagation();
+    onNavigate?.("method", 0);
+  }}
+>
+  跳到方法页
+</button>
+```
+
+键盘焦点在 input、textarea、select、dialog、menu、contenteditable 里时，Space/Arrow 也不应该翻页。移动端还要避免 `touchend` 后合成 click 造成一次手势推进两步。
+
+### 第五层：发布和 readback
+
+开发期可以本地跑：
+
+```bash
+npm run dev
+```
+
+交付前必须跑：
+
+```bash
+npm run build
+npm run preview
+npm run test:audit
+```
+
+然后验证 direct frame：
+
+```text
+?scene=method&beat=2&frozen=1
+```
+
+上线后不要只看首页。生产 smoke 至少包括：
+
+- 首页 HTTP 200；
+- direct frame URL HTTP 200；
+- JS/CSS/font/image assets 没有 404；
+- 键盘或点击能推进；
+- console 没有 runtime error；
+- 移动端至少可见；
+- URL、commit、部署命令和 readback 状态写回项目 progress。
+
+这一步决定它是不是交付物。localhost 只是 preview，稳定 URL 才是最终 handoff。
+
+### 第六层：后续怎么更新完善
+
+Web Slides 最大价值之一是可以持续迭代。后续更新不应该是“打开旧 PPT 改两页”，而应该走一个小型软件变更流程。
+
+推荐更新路径：
+
+```text
+1. 记录新需求：新增内容、删减内容、修改叙事、强化互动、换视觉风格
+2. 先改 registry：新增 scene、删 beat、调整顺序或改 speaker intent
+3. 再改 scene component：让每个 beat 仍然是 settled state
+4. 如果改了 shared player/navigation/stage，必须跑全量 audit
+5. 如果只改某个 scene，至少跑该 scene direct frame + final beat screenshot
+6. build / preview / production readback
+7. 在 project progress 里记录 URL、变更点和验证结果
+```
+
+版本化也很自然：
+
+| 变更类型 | 处理方式 |
+| --- | --- |
+| 修 typo / 调文案 | 直接改 scene 文案，跑 build 和关键 frame |
+| 加一页 | 先改 registry，再补 scene component 和 tests |
+| 加交互 | 先写 event isolation，再补 Playwright 检查 |
+| 改视觉系统 | 做 2-3 张 preview，确认后再批量替换 |
+| 发布新版本 | 保持旧 URL 或加版本路径，记录 production readback |
+
+这样 slides 就变成可以维护的知识 artifact，而不是一次性演示文件。
+
+## 对 ChatArch 的建议
+
+下一步最值得做的不是继续研究 Patrick 仓库，而是开一个实现任务：
+
+```text
+chatarch-web-slides-starter
+```
+
+第一版验收标准可以很窄：
+
+1. Vite + React + Tailwind starter；
+2. 固定 `1920x1080` stage，整体缩放；
+3. `src/deck/registry.ts` 管 scenes/beats；
+4. URL 支持 `?scene=<id>&beat=<n>&frozen=1&pure=1`；
+5. 支持 keyboard/click/touch navigation；
+6. 支持局部 button/tab/hover 互动且不触发全局翻页；
+7. 至少一套 demo deck：5 scenes，每个 1-3 beats；
+8. Playwright smoke：direct frame、next/prev、console、stage visible、interactive isolation；
+9. `npm run build` 和 `npm run preview` 可验证；
+10. 有部署说明和生产 URL readback 流程。
+
+以后 ChatArch 的材料都可以进入同一条路径：
+
+```text
+idea / research note / project result
+  -> deck brief
+  -> scene/beat registry
+  -> interactive previews
+  -> starter scaffold
+  -> build
+  -> deploy
+  -> readback
+  -> update loop
+```
+
+适用场景包括：
+
+- 把技术 idea 做成可讲的演示；
+- 把调研结论做成带 diagram 和互动 reveal 的 deck；
+- 把项目成果做成 showcase，而不是只贴 README；
+- 把内部流程、Agent 工作流、系统架构做成可点击/可跳转/可复盘的演示页；
+- 对外传播时用 Web URL 交付，归档时导出 PDF 或静态截图。
+
+## 小结
+
+Patrick Fu 这套 Web Slides 的核心启发是：**把演示文稿从“不可测试的视觉文件”变成“可寻址、可验证、可部署、可持续更新的前端 artifact”。**
+
+`frontend-harness-slides` 给方法论，`frontend-harness-slides-demo` 给轻量骨架，`frontend-harness-slides-workbench` 给生产级参考实现。单场演讲不需要搬整个 Workbench，但应该继承它的几个关键契约：固定 stage、scene/beat registry、URL deep link、互动隔离、frozen mode、Playwright audit、静态部署和生产 URL readback。
+
+如果只是临时五页 slides，PowerPoint 仍然更快。但如果这是一场重要技术演讲、产品发布、课程、Workshop、调研汇报或项目 showcase，把 PPT 做成前端项目是合理的。
+
+它的最终心智模型不是“网页版 PPT”，而是：
+
+```text
+Deck = small frontend app
+Scene = addressable route state
+Beat = reviewable story state
+Stage = fixed presentation canvas
+Player = navigation and delivery harness
+Tests = slide quality guardrail
+Deployment = final handoff
+Update loop = knowledge artifact lifecycle
+```
+
+## 主要来源
+
+- Patrick Fu talk: [From Spec to Loop](https://paaatrick.com/talks/from-spec-to-loop/)
+- Slides entry: [paaatrick.com/talks/from-spec-to-loop/slides/](https://paaatrick.com/talks/from-spec-to-loop/slides/)
+- Skill repo: [patrick-fu/frontend-harness-slides](https://github.com/patrick-fu/frontend-harness-slides)
+- Workbench repo: [patrick-fu/frontend-harness-slides-workbench](https://github.com/patrick-fu/frontend-harness-slides-workbench)
+- Workbench live demo: [frontend-harness-slides-workbench.vercel.app](https://frontend-harness-slides-workbench.vercel.app/)
+- Demo repo: [patrick-fu/frontend-harness-slides-demo](https://github.com/patrick-fu/frontend-harness-slides-demo)
+- Demo live site: [frontend-harness-slides-demo.vercel.app](https://frontend-harness-slides-demo.vercel.app/)
+- 本地静态阅读的关键文件：`SKILL.md`、`references/01-plan.md`、`references/02-design.md`、`references/03-build.md`、`references/04-verify-and-ship.md`、Workbench `src/domain/topic.ts`、`src/navigation/index.ts`、`src/player/PlayerRuntime.tsx`、`src/player/stage-fit.ts`、`src/components/stage/SpatialSceneTrack.tsx`、`src/testing/topic-contract.tsx`、Demo `src/App.jsx`、`src/components/SlideRenderer.jsx`、`SLIDES_SPECIFICATION.md`。
