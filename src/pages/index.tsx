@@ -12,6 +12,12 @@ const entries = [
     action: '阅读文章',
   },
   {
+    title: 'Slides',
+    description: '可演示、可 review、可发布的 Web Slides。',
+    to: '/slides',
+    action: '查看 Slides',
+  },
+  {
     title: '标签',
     description: '按主题浏览相关内容。',
     to: '/blog/tags',
@@ -57,7 +63,7 @@ function EntrySection() {
         </div>
         <div className="row">
           {entries.map((entry) => (
-            <div className={clsx('col col--4', styles.cardCol)} key={entry.title}>
+            <div className={clsx('col col--3', styles.cardCol)} key={entry.title}>
               <article className={styles.card}>
                 <Heading as="h3">{entry.title}</Heading>
                 <p>{entry.description}</p>

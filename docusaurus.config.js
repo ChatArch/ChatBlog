@@ -63,6 +63,7 @@ const config = {
         },
         items: [
           {to: '/blog', label: '博客', position: 'left'},
+          {to: '/slides', label: 'Slides', position: 'left'},
           {to: '/blog/archive', label: '时间轴', position: 'left'},
           {to: '/blog/tags', label: '标签', position: 'left'},
           {href: 'https://github.com/ChatArch/ChatBlog', label: 'GitHub', position: 'right'},
@@ -75,6 +76,7 @@ const config = {
             title: '内容',
             items: [
               {label: '最新博客', to: '/blog'},
+              {label: 'Slides', to: '/slides'},
               {label: '时间轴', to: '/blog/archive'},
               {label: '标签', to: '/blog/tags'},
             ],
