@@ -3,7 +3,7 @@ title: "千问 Token Plan 调研：把 Coding 额度接进 Codex 与 CRS"
 date: 2026-08-06
 slug: qwen-token-plan-coding-crs
 tags: [qwen, token-plan, codex, crs, chatarch]
-description: 调研千问 AI 平台 Token Plan 的个人版、团队版、Credits 额度、模型清单、Codex 接入方式，以及它作为 OpenAI-compatible API-key 账号接入 CRS 生态的可行性与边界。
+description: 调研千问 AI 平台 Token Plan 的个人版、团队版、Credits 额度、模型清单、Codex/CRS/Hermes/Claude Code 等多渠道配置，以及 OpenAI-compatible、Responses 和 Anthropic 兼容格式的选择边界。
 ---
 
 # 千问 Token Plan 调研：把 Coding 额度接进 Codex 与 CRS
@@ -35,6 +35,9 @@ description: 调研千问 AI 平台 Token Plan 的个人版、团队版、Credit
 - [Token Plan 团队版概述](https://platform.qianwenai.com/docs/token-plan/team/token-plan-team-overview)
 - [Codex 接入文档](https://platform.qianwenai.com/docs/developer-guides/clients-and-developer-tools/codex)
 - [Cursor 接入文档](https://platform.qianwenai.com/docs/developer-guides/clients-and-developer-tools/cursor)
+- [Hermes Agent 接入文档](https://platform.qianwenai.com/docs/developer-guides/clients-and-developer-tools/hermes-agent)
+- [Claude Code 接入文档](https://platform.qianwenai.com/docs/developer-guides/clients-and-developer-tools/claude-code)
+- [OpenAI 兼容接口](https://platform.qianwenai.com/docs/api-reference/toolkitframework/openai-compatible/overview)、[OpenAI Responses](https://platform.qianwenai.com/docs/api-reference/chat/openai-responses) 与 [Anthropic 兼容 API](https://platform.qianwenai.com/docs/api-reference/chat/anthropic)
 
 ## 个人版：双窗口 Credits，而不是月初给一大桶 token
 
@@ -121,6 +124,148 @@ qwen3.8-max     复杂实现 / 架构审查 / 跨文件重构
 qwen3.7-plus    日常 coding / 文档 / review
 qwen3.6-flash   快速问答 / 低风险批处理 / 小脚本
 ```
+
+## 多渠道配置速查：同一条 Token Plan，落到不同客户端要换“协议外壳”
+
+Token Plan 的底层关键参数其实只有三类：
+
+```text
+base_url = https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+model    = qwen3.8-max
+api_key  = YOUR_TOKEN_PLAN_API_KEY
+```
+
+但不同客户端说的“自定义模型”不是同一个协议外壳。比较稳的配置规则是：**客户端原生支持 OpenAI-compatible / Responses，就走 OpenAI-compatible；客户端只会说 Claude Messages，就走 Anthropic 兼容入口；进入 CRS/Hermes 这种中台时，优先用 OpenAI-Responses，因为路由、Key 绑定、统计和模型限制都更直接。**
+
+| 渠道 | 推荐接法 | 关键配置 | 什么时候用 |
+| --- | --- | --- | --- |
+| 直接 OpenAI SDK / REST | OpenAI-compatible | `base_url=/compatible-mode/v1`，`api_key`，`model` | 自己写脚本、服务端工具、轻量验证。 |
+| OpenAI Responses API | OpenAI-compatible + Responses | `POST /compatible-mode/v1/responses` | 新版 Codex、Agent 型调用、需要统一 input/output 结构时。 |
+| OpenAI Chat Completions | OpenAI-compatible + Chat | `POST /compatible-mode/v1/chat/completions` | 老客户端、只支持 chat/completions 的工具，或某些暂不支持 Responses 的模型。 |
+| Codex | Responses | `wire_api = "responses"`，`env_key = "OPENAI_API_KEY"` | 官方文档推荐路径；适合 `qwen3.8-max` 等 coding 模型。 |
+| Cursor | OpenAI-compatible 自定义模型 | Base URL 填 Token Plan endpoint | Cursor Pro/更高版本的自定义模型接入。 |
+| Qwen Code | OpenAI-compatible 自定义模型 | `baseUrl=/compatible-mode/v1`，`envKey` 指向 Token Plan Key | 更贴近千问生态的本地/IDE coding 助手。 |
+| Claude Code | Anthropic 兼容 | `ANTHROPIC_BASE_URL=https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic` | Claude Code 这类原生 Anthropic Messages 客户端。 |
+| Hermes Agent 直连 | 两者都能用；官方示例偏 Anthropic | Anthropic：`api_mode=anthropic_messages`；OpenAI：`/compatible-mode/v1` | 只给 Hermes 单机直连时可按客户端能力选；Desktop 也共用配置。 |
+| CRS + ChatArch 工具链 | OpenAI-Responses dedicated account | `baseApi=/compatible-mode/v1`，`providerEndpoint=responses`，caller key 绑定 | 团队/中台接入、审计、限额、专用 Key、后续共享池治理。 |
+
+几个可复制但不含密钥的模板如下。
+
+**直接 OpenAI SDK / Responses：**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_TOKEN_PLAN_API_KEY",
+    base_url="https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+)
+
+resp = client.responses.create(
+    model="qwen3.8-max",
+    input="Reply exactly OK.",
+)
+print(resp.output_text)
+```
+
+**Codex：**
+
+```toml
+model_provider = "Model_Studio_Token_Plan_Personal"
+model = "qwen3.8-max"
+
+[model_providers.Model_Studio_Token_Plan_Personal]
+name = "Model_Studio_Token_Plan_Personal"
+base_url = "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+env_key = "OPENAI_API_KEY"
+wire_api = "responses"
+```
+
+**Claude Code：**
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "YOUR_TOKEN_PLAN_API_KEY",
+    "ANTHROPIC_MODEL": "qwen3.8-max"
+  }
+}
+```
+
+**Hermes 直连 OpenAI-compatible 方向：**
+
+```bash
+hermes config set model.provider custom
+hermes config set model.base_url https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+hermes config set model.default qwen3.8-max
+# API Key 放到 Hermes/ChatEnv 的 secret 管理里，不要写进博客、仓库或 shell history。
+```
+
+**CRS / ChatArch 中台方向：**
+
+```yaml
+account_type: OpenAI-Responses
+baseApi: https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+providerEndpoint: responses
+accountType: dedicated
+model_allowlist:
+  - qwen3.8-max
+  - qwen3.7-plus
+  - qwen3.6-flash
+```
+
+调用方拿到的不是原始千问 Key，而是 CRS caller key。客户端继续按 OpenAI Responses 形状调用中台：
+
+```text
+POST https://crs.example.com/openai/v1/responses
+Authorization: Bearer YOUR_CRS_CALLER_KEY
+model: qwen3.8-max
+```
+
+Hermes 如果走 CRS caller key，也应把 secret 放到环境变量，再用 named custom provider 引用：
+
+```yaml
+custom_providers:
+  - name: qwen-token-plan-crs
+    base_url: https://crs.example.com/openai/v1
+    api_mode: codex_responses
+    key_env: QWEN_TOKEN_PLAN_CRS_API_KEY
+    model: qwen3.8-max
+    models:
+      - qwen3.8-max
+      - qwen3.7-plus
+      - qwen3.6-flash
+```
+
+这样做的好处是，原始 Token Plan Key 只放在 CRS 的 provider account 里；下游工具只拿到可撤销、可限额、可绑定模型白名单的 caller key。Hermes 远端节点也只需要知道 CRS caller key，不需要散落原始千问 Key。
+
+## Anthropic 还是 OpenAI：不是谁“更高级”，而是谁承担协议转换
+
+千问平台文档里同时有三条相关路线：
+
+1. **OpenAI 兼容接口**：文档明确说已有 OpenAI SDK/REST 代码时，只需改 `base_url`、`api_key` 和 `model` 三个参数即可迁移到千问。
+2. **OpenAI Responses API**：`/compatible-mode/v1/responses` 是一等 API；Codex 文档也明确让支持 Responses 的模型用最新版 Codex 和 `wire_api = "responses"`。
+3. **Anthropic 兼容 API**：`/apps/anthropic/v1/messages` 也存在；Claude Code 文档就要求设置 `ANTHROPIC_BASE_URL`、`ANTHROPIC_AUTH_TOKEN` 和 `ANTHROPIC_MODEL`。
+
+所以答案不是“Anthropic 一定不好”或“OpenAI 一定最好”，而是分场景：
+
+| 场景 | 更好的选择 | 原因 |
+| --- | --- | --- |
+| Codex / CRS / OpenAI SDK / 自研 Agent | OpenAI-compatible，优先 Responses | 原生 endpoint 是 `/compatible-mode/v1`；工具调用、Responses output、CRS OpenAI-Responses account、Key 绑定和模型白名单都更顺。 |
+| Claude Code | Anthropic 兼容 | Claude Code 的客户端协议就是 Anthropic Messages；官方接入文档也这么配。 |
+| Hermes Agent 单机直连 | 看你想贴近哪个客户端语义 | 官方 Hermes 文档示例偏 Anthropic，但也说明可替换成 OpenAI-compatible；如果后面要接 CRS/Responses，OpenAI-compatible 更统一。 |
+| 老工具 / 老 SDK | Chat Completions | 如果它不支持 Responses，就用 `/chat/completions`，但要接受能力/字段映射更旧。 |
+
+我的建议是：**ChatArch 内部长期接入千问 Token Plan，默认选 OpenAI-compatible / Responses；只有客户端天然是 Claude Messages 时，才选 Anthropic 兼容。**
+
+理由有三点：
+
+- **少一层语义转换。** Token Plan 的通用开发者入口和 `/models` 发现都围绕 OpenAI-compatible 展开；Responses 也是千问文档里的一等接口。CRS 也是按 OpenAI-Responses account 来管理这个 provider。
+- **更适合中台治理。** OpenAI-Responses 账号可以自然绑定 CRS API Key、模型白名单、account health、usage/cost 统计和 dedicated/shared 策略；Anthropic 兼容更像给 Claude Code 这类客户端的适配面。
+- **实测路径已经闭环。** 本轮已经跑通 direct Token Plan `/models`、Codex Responses smoke、CRS OpenAI-Responses account smoke、持久 CRS caller key smoke，以及远端 Hermes custom provider smoke。相反，Anthropic 路线虽然官方支持，但本轮没有必要把它作为 ChatArch 中台主路径。
+
+一个容易误解的点是 reasoning：这不是“Anthropic 才有思考，OpenAI 没有思考”。千问在 Responses 路线也支持 reasoning effort；本轮 raw Responses smoke 里，`qwen3.8-max` 接受 `none / minimal / low / medium / high / xhigh / max`，拒绝 `ultra`。因此，协议选择不应只看有没有 `thinking` 字段，而应看调用方、中台和统计治理最容易保持一致的那条路。
 
 ## CRS：应该作为 OpenAI-Responses 账号接入
 
