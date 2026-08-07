@@ -10,10 +10,11 @@ description: 介绍 ChatArch 为什么把 Mattermost 作为自托管实时 Agent
 
 如果说 Discourse 更像公开议事厅，ChatBlog 更像阶段性文章，MkDocs 更像项目手册，那么 **Mattermost** 更接近 ChatArch 目前缺的那一块：一个可以自托管、频道化、支持线程、适合人和 Agent 同处一室的实时工作间。
 
-这篇文章回答两个问题：
+这篇文章回答三个问题：
 
 1. 为什么我们要在 lean4web 上部署 Mattermost，而不是继续只依赖飞书、Discourse 或 Zulip？
 2. Hermes 要怎样接入这个 Mattermost，成为频道里的 Agent，而不是另一个需要人手工转发消息的工具？
+3. 像 CC Connect 这类项目接 Slack、未来接 Mattermost，本质上是在接什么？
 
 <!-- truncate -->
 
@@ -22,7 +23,7 @@ Mattermost 适合承担 ChatArch 的 **自托管实时 Agent 工作间**：人�
 :::
 
 :::info 证据口径
-本文使用三类来源：一是 lean4web 上 Mattermost 的公网回读和部署验收；二是 Hermes 官方 Mattermost 文档（[Mattermost | Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/)）；三是 ChatArch 前面关于 Hermes 平台入口、ChatRSS TriggerEvent 和 Agent Community 的实践文章。文中只写公开 URL、公开 API health、产品架构和非敏感配置项，不写 token、密码或私有运维细节。
+本文使用三类来源：一是 lean4web 上 Mattermost 的公网回读和部署验收；二是 Hermes 官方 Mattermost 文档（[Mattermost | Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/)）；三是 ChatArch 前面关于 Hermes 平台入口、ChatRSS TriggerEvent 和 Agent Community 的实践文章。文中只写公开 URL、公开 API health、产品架构和非敏感配置项，不写凭据、密码或私有运维细节。
 :::
 
 ## 为什么是 Mattermost
@@ -41,7 +42,7 @@ Mattermost 的价值不是“又多一个聊天软件”，而是它把几个条
 - **自托管**：服务、数据、入口和升级节奏在自己手里。
 - **频道化**：任务、项目、Agent profile、事件源可以自然拆成 channel。
 - **线程化**：一次 Agent run 可以落在一个 thread 里，避免污染主频道。
-- **Bot 友好**：Mattermost 原生支持 bot account、personal access token、REST API、WebSocket event stream。
+- **Bot 友好**：Mattermost 原生支持 bot account、private API credential、REST API、WebSocket event stream。
 - **Hermes 已有入口**：Hermes 官方 Mattermost adapter 通过 REST API v4 和 WebSocket 接收事件、发送回复。
 
 这让 Mattermost 很适合做一个“Agent 工作间”：人不必离开聊天语境，就可以 @ 一个 Agent；Agent 不必伪装成人的浏览器操作，而是通过平台 API 拿到结构化事件，再用同一个平台写回结果。
@@ -75,7 +76,7 @@ X-Version-Id: 11.9.0...
 | 进程管理 | user-level systemd `mattermost.service` |
 | 公网入口 | Nginx HTTPS `mattermost.lookeng.cn` |
 | 初始空间 | `chatarch` team / `chatrss-triggers` channel |
-| 注册与凭据 | 初始系统管理员已创建，secret 留在私有 service secret store，不进入公开文档 |
+| 注册与凭据 | 初始系统管理员已创建，私有授权材料留在 service credential store，不进入公开文档 |
 
 这里的关键不是端口号或某个文件路径，而是部署边界：**Mattermost 作为长期服务存在于 ChatArch 的服务目录和 host integration 里，不混进一次性任务目录，也不把 credential 细节写进博客。**
 
@@ -110,14 +111,14 @@ Mattermost thread 或 channel reply
 
 ### 1. 在 Mattermost 里准备 bot account
 
-Mattermost 侧需要允许 bot account，并为 Hermes 创建一个 bot 用户。这个 bot 用户会有一个 token，用于 Hermes 调用 Mattermost API。
+Mattermost 侧需要允许 bot account，并为 Hermes 创建一个 bot 用户。这个 bot 用户会有一份私有授权材料，用于 Hermes 调用 Mattermost API。
 
-文章里不应该写 token，也不应该写 secret 文件名；只需要记录状态：
+文章里不应该写凭据值，也不应该写私有授权材料的文件名；只需要记录状态：
 
 ```text
 Mattermost server: https://mattermost.lookeng.cn
 Bot account: enabled / created
-Bot token: stored in Hermes private credential store
+Bot credential: stored in Hermes private credential store
 ```
 
 ### 2. 在 Hermes 里启用 Mattermost platform
@@ -125,17 +126,17 @@ Bot token: stored in Hermes private credential store
 Hermes Gateway 支持 Mattermost 平台。配置的核心字段是：
 
 ```text
-MATTERMOST_URL=https://mattermost.lookeng.cn
-MATTERMOST_TOKEN=<bot token>
-MATTERMOST_ALLOWED_USERS=<allowed user ids, optional but recommended>
-MATTERMOST_REPLY_MODE=thread
-MATTERMOST_REQUIRE_MENTION=true
+server URL: https://mattermost.lookeng.cn
+bot credential: stored privately, never printed in docs
+allow policy: restrict who / which channels can wake the bot
+reply policy: prefer thread replies for channel messages
+trigger policy: require DM or explicit @mention in shared channels
 ```
 
 这里有两个建议默认值：
 
-- `MATTERMOST_REPLY_MODE=thread`：让 Hermes 在原消息下面开 thread 回复，避免主频道变成长上下文日志。
-- `MATTERMOST_REQUIRE_MENTION=true`：频道里只有 @Hermes 时才触发，避免 Agent 误读所有日常聊天。
+- **回复策略默认走 thread**：让 Hermes 在原消息下面开 thread 回复，避免主频道变成长上下文日志。
+- **共享频道默认要求 @mention**：频道里只有显式点名 Hermes 时才触发，避免 Agent 误读所有日常聊天。
 
 ### 3. Hermes Gateway 建立 WebSocket 监听
 
@@ -193,6 +194,90 @@ Agent 判断与执行：Hermes tools + memory + skills
         ▼
 新的协作状态：人继续追问、确认、派生任务
 ```
+
+## CC Connect 给我们的参照：Slack 已有，Mattermost 还没有
+
+你提到的 CC Connect，我按公开仓库查到的是 [chenhg5/cc-connect](https://github.com/chenhg5/cc-connect)：它的定位不是单一平台 bot，而是把本地 Claude Code、Codex、Cursor、Gemini CLI、Kimi CLI 等 coding agent 接进多个聊天平台。它的 README 当前列出 Feishu/Lark、DingTalk、Slack、Telegram、Discord、WeCom、LINE、QQ、Matrix、Weixin 等平台；我在当前源码里没有看到 Mattermost platform adapter。
+
+这个结论反而有用：**Mattermost 对 CC Connect 来说不是现成支持的平台，而是一个很自然的下一类 adapter。** 它需要补的不是 Agent runtime，而是一个新的 `platform/mattermost`，把 Mattermost 的消息事件和写回 API 映射到 CC Connect 的平台接口。
+
+CC Connect 的 Slack adapter 已经展示了这类平台接入的骨架：
+
+```text
+Slack App / Bot User
+  -> Socket Mode WebSocket
+  -> Events API: app_mention / message.im / slash command
+  -> cc-connect core.Message
+  -> local coding agent session
+  -> Slack Web API post message / upload file / thread reply
+```
+
+源码里它把 Slack 作为 `core.Platform` 注册；平台接口只要求 `Start(handler)`、`Reply(...)`、`Send(...)` 和生命周期方法。Slack adapter 持有 bot credential 与 app-level authorization credential，使用 Slack Socket Mode 建立长连接；收到 `app_mention`、DM message 或 slash command 后，构造统一的 `core.Message`，里面带 `SessionKey`、`Platform`、`UserID`、`Content`、附件和 `ReplyCtx`。回写时，它用 Slack Web API 发 `PostMessage`，并在有 thread timestamp 时写回同一条 thread。
+
+如果给 CC Connect 增加 Mattermost，形状会非常接近：
+
+```text
+Mattermost bot account
+  -> Mattermost WebSocket / outgoing webhook / slash command
+  -> platform/mattermost builds core.Message
+  -> cc-connect agent session
+  -> Mattermost REST API post message / upload file / thread reply
+```
+
+区别在于，Mattermost 侧的身份不是 Slack App installation，而是自托管 server 里的 bot account；事件入口可以选 WebSocket event stream，也可以用 outgoing webhook 或 slash command；写回则走 Mattermost REST API。Mattermost 官方文档也把 bot accounts 定位为通过 REST API 代表 bot 访问 Mattermost，并且 bot account 像普通用户一样加入 team/channel。
+
+这也解释了 Hermes 和 CC Connect 的差异：
+
+| 维度 | Hermes Mattermost Gateway | CC Connect Slack adapter | CC Connect 若接 Mattermost |
+| --- | --- | --- | --- |
+| runtime 目标 | Hermes Agent runtime：模型、工具、记忆、skills、gateway session | 本地 coding agent CLI：Claude Code / Codex / Cursor / Gemini 等 | 仍是本地 coding agent CLI |
+| 平台身份 | Mattermost bot account | Slack App + bot user | Mattermost bot account |
+| 事件入口 | Mattermost REST API v4 + WebSocket | Slack Socket Mode + Events API | Mattermost WebSocket / webhook / slash command |
+| 触发方式 | DM、频道 @mention、thread | DM、app mention、slash command | DM/mention/post event 或 slash command |
+| 写回方式 | Mattermost thread/channel reply | Slack Web API thread/channel reply | Mattermost REST API thread/channel reply |
+| 上下文边界 | Hermes session / thread / channel policy | `SessionKey` 可按 user、channel、thread 划分 | 同样需要 user/channel/thread session key |
+
+所以，Hermes 已经有 Mattermost gateway，可以先把 ChatArch 自己的 Agent 放进 Mattermost；CC Connect 的经验说明，如果未来要把 Claude Code / Codex / Cursor 这类本地 coding agent 也放进 Mattermost，不需要重新发明 Agent 层，只需要新增 Mattermost platform adapter。
+
+## 接这一类聊天平台，本质上接的是什么
+
+不管名字叫 Hermes Gateway、CC Connect platform adapter，还是 Lark CLI 背后的 Feishu 机器人，底层模式都很相似：
+
+```text
+1. Identity
+   bot account / app installation / workspace authorization
+
+2. Ingress
+   Events API / WebSocket / webhook / polling fallback
+
+3. Command surface
+   @mention / DM / slash command / button or card action
+
+4. Context normalization
+   channel, thread, user, team, message id, attachments -> internal event/message schema
+
+5. Runtime handoff
+   route to Hermes session, CC Connect agent session, or ChatRSS TriggerEvent pipeline
+
+6. Egress
+   REST/Web API post message, thread reply, reaction, file upload, card update
+
+7. Governance
+   allowlist, least privilege, human approval for writes, dedupe, audit ledger, readback verification
+```
+
+不同平台的差别主要不在“能不能当 bot”，而在这些细节：
+
+| 平台 | 常见身份 | 常见入口 | 常见写回 | 关键差异 |
+| --- | --- | --- | --- | --- |
+| Feishu / Lark | 应用机器人 | event callback / 长连接 / 卡片 action | IM API / card update | 卡片和企业权限体系强，适合审批与结构化交互 |
+| Slack | App + bot user | Events API / Socket Mode / slash command | Web API / thread reply / file upload | Socket Mode 适合本地机器，无需公网回调入口 |
+| Mattermost | bot account | WebSocket / outgoing webhook / slash command | REST API / thread reply | 自托管，server/data/权限边界在自己手里 |
+| Discord / Telegram | bot credential | gateway long connection / webhook / polling | Bot API message/reply/file | 面向社区入口成熟，但企业审计模型不同 |
+
+这也是为什么 Mattermost 对 ChatArch 很合适：它不是只能“收通知”的 webhook，也不是只能“群里发一句话”的 bot；它同时具备自托管、bot identity、实时事件、thread reply、REST 写回和权限控制。
+
+从这个角度看，ChatRSS 的 `TriggerEvent`、Hermes 的 gateway session、CC Connect 的 `core.Message` 都是在做同一件事的不同层级版本：**把平台事件变成 Agent runtime 可处理、可审计、可回写的结构化任务入口。**
 
 ## ChatRSS 在这里的位置
 
@@ -288,10 +373,10 @@ TriggerEvent(source="mattermost", type="post.mention", subject=..., actor=...)
 
 接下来还需要完成 Hermes 接入层：
 
-- 创建专用 Hermes bot account 和 token；
-- 在 Hermes Gateway 配置 Mattermost platform；
-- 选择默认回复模式：建议 thread；
-- 设置 allowed users / allowed channels；
+- 创建专用 Hermes bot account，并把凭据保存到私有 credential store；
+- 在 Hermes Gateway 启用 Mattermost platform；
+- 选择默认回复策略：建议 thread；
+- 设置允许唤醒 Hermes 的用户和频道范围；
 - 做一次真实 @Hermes 消息 -> Hermes run -> Mattermost thread reply 的回读验证；
 - 决定哪些 Mattermost 事件也要进入 ChatRSS 的 TriggerEvent/router/ledger。
 
@@ -318,6 +403,14 @@ Mattermost 实时房间
 ## 主要来源
 
 - [Mattermost | Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/)
+- [CC Connect](https://github.com/chenhg5/cc-connect)
+- [CC Connect Slack Setup Guide](https://github.com/chenhg5/cc-connect/blob/main/docs/slack.md)
+- [Slack Events API](https://docs.slack.dev/apis/events-api/)
+- [Slack Socket Mode](https://docs.slack.dev/apis/events-api/using-socket-mode/)
+- [Mattermost Bot Accounts](https://developers.mattermost.com/integrate/reference/bot-accounts/)
+- [Mattermost Custom Slash Commands](https://developers.mattermost.com/integrate/slash-commands/custom/)
+- [Mattermost Incoming Webhooks](https://developers.mattermost.com/integrate/webhooks/incoming/)
+- [Mattermost Outgoing Webhooks](https://developers.mattermost.com/integrate/webhooks/outgoing/)
 - [Hermes 支持平台图鉴：从聊天窗口到 Agent 工作间](/blog/hermes-supported-platforms-field-guide)
 - [RSS 与 RSSHub 入门：把网页更新变成可订阅的信息流](/blog/rss-and-rsshub-foundation-for-chatrss)
 - [Agent Community 应该如何工作：Human Admin、任务流与自治闭环](/blog/agent-community-human-admin-autonomy-loop)
