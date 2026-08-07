@@ -1,0 +1,173 @@
+---
+title: "Hermes 和 Codex 的 Computer Use：谁在做桌面控制，差别在哪里"
+date: 2026-08-07
+slug: hermes-codex-computer-use-comparison
+tags: [hermes, codex, computer-use, cua, agent]
+description: 对比 Hermes Agent、OpenAI Codex 与 CUA 社区在 Computer Use / desktop control / MCP plugin 上的源码、文档和 issue/PR 证据，判断 Hermes 是否已有对应能力，以及 Codex 与社区正在补哪些缺口。
+---
+
+# Hermes 和 Codex 的 Computer Use：谁在做桌面控制，差别在哪里
+
+这篇文章回答一个具体问题：**Codex 里的 Computer Use / bundled skill / plugin 在做什么，Hermes 有没有同类能力，社区有没有正在把这些东西打通的 PR 或 issue？**
+
+结论很直接：Hermes 已经把 Computer Use 做成了一个模型无关的 `computer_use` toolset，底层通过 MCP stdio 连接 `cua-driver`；Codex 也已经出现了 `computer_use` feature requirement、bundled plugin / skill 发现路径和桌面端问题单，但它现在更像是围绕 Codex Desktop 与 bundled plugins 演进的一套能力。CUA 社区正在推进一条更通用的路线：让 `cua-driver` 作为 MCP 层进入 Codex、Claude SDK 和其他 agent harness。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+Hermes 这边的主线是 **通用 toolset + `cua-driver` backend + 任意 tool-calling 模型**；Codex 这边的主线是 **Codex 自身 feature requirements + bundled Computer Use plugin / skill**；CUA 社区正在补一条 **Codex plugin / MCP SDK** 路线，让第三方 driver 能进入 Codex。
+:::
+
+## 先把三个对象分清楚
+
+| 对象 | 公开入口 | 这次看到的关键证据 |
+| --- | --- | --- |
+| Hermes Agent Computer Use | [Hermes Computer Use 文档](https://hermes-agent.nousresearch.com/docs/user-guide/features/computer-use) | 文档写明 `computer_use` toolset speaks MCP over stdio to `cua-driver`；工具参考列出 `computer_use`；CLI 文档列出 `hermes computer-use install/status`。 |
+| OpenAI Codex Computer Use | [openai/codex](https://github.com/openai/codex) | 源码里有 `Feature::ComputerUse`、`computer_use` requirement、`computer-use@openai-bundled` discoverable plugin；issue 里集中出现插件不可用、Windows 枚举失败、显式 CUA Driver MCP 被内置 skill 抢路由等问题。 |
+| CUA / cua-driver | [trycua/cua](https://github.com/trycua/cua) | `cua-driver` 提供跨平台桌面 driver；文档强调 no-foreground contract；examples 里明确 Codex SDK 走 MCP；issue/PR 正在推进 Codex plugin。 |
+
+## Hermes：已经是一个正式 toolset
+
+Hermes 文档里 Computer Use 的定位很清楚：它能在 macOS、Windows、Linux 上后台点击、输入、滚动、拖拽，同时维持用户光标、键盘焦点、虚拟桌面不被 agent 抢走。文档还强调它适用于任何 tool-capable model：Claude、GPT、Gemini 或本地 OpenAI-compatible endpoint。
+
+关键文档入口有三个：
+
+- [Computer Use 用户文档](https://hermes-agent.nousresearch.com/docs/user-guide/features/computer-use)
+- [tools reference: `computer_use` toolset](https://hermes-agent.nousresearch.com/docs/reference/tools-reference#computer_use-toolset)
+- [CLI command: `hermes computer-use`](https://hermes-agent.nousresearch.com/docs/reference/cli-commands#hermes-computer-use)
+
+源码也对应这套说法。`tools/computer_use_tool.py` 注册了名为 `computer_use`、toolset 也叫 `computer_use` 的工具，schema 来自 `tools/computer_use/schema.py`，handler 指向 `tools/computer_use/tool.py`，并带有 `check_computer_use_requirements`。公开源码入口：
+
+- https://github.com/NousResearch/hermes-agent/blob/main/tools/computer_use_tool.py
+- https://github.com/NousResearch/hermes-agent/blob/main/tools/computer_use/schema.py
+- https://github.com/NousResearch/hermes-agent/tree/main/tools/computer_use
+- https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/tools_config.py
+- https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/main.py
+
+`schema.py` 的设计重点是“一个合并工具 + action discriminator”：`capture`、`click`、`drag`、`scroll`、`type`、`key`、`list_apps`、`focus_app`，以及 browser route 相关 action 都聚合在一个 `computer_use` schema 里。这样做的好处是模型看见的是 Hermes 的统一工具，而不是直接暴露一组平台 SDK 函数。
+
+Hermes 文档还把安装和诊断做成 CLI 入口：
+
+- `hermes computer-use install`
+- `hermes computer-use status`
+- `hermes computer-use doctor`
+
+所以，**Hermes 不是“等 Codex 有了再接”，它已经有自己的 Computer Use 控制面**。它借 `cua-driver` 做跨平台后台输入与可视状态采集，再把这层能力包装成 Hermes 的工具契约。
+
+## Codex：源码里已经有 Computer Use requirement 和 bundled plugin 线索
+
+Codex 这边的证据分成三类。
+
+第一类是 feature registry。`codex-rs/features/src/lib.rs` 里有 `Feature::ComputerUse`，注释写的是 “Allow Codex Computer Use”，并且 feature spec 使用 key `computer_use`，stage 是 `Stable`，default enabled 是 `true`。
+
+- https://github.com/openai/codex/blob/main/codex-rs/features/src/lib.rs
+
+第二类是 requirements schema。`codex-rs/config/src/config_requirements.rs` 里有 `computer_use: Option<Sourced<ComputerUseRequirementsToml>>`，`ComputerUseRequirementsToml` 当前包含 `allow_locked_computer_use`。app-server protocol 也生成了 TypeScript 类型 `ComputerUseRequirements = { allowLockedComputerUse: boolean | null }`。
+
+- https://github.com/openai/codex/blob/main/codex-rs/config/src/config_requirements.rs
+- https://github.com/openai/codex/blob/main/codex-rs/app-server-protocol/schema/typescript/v2/ComputerUseRequirements.ts
+
+第三类是 bundled plugin 发现。`codex-rs/core-plugins/src/discoverable.rs` 的 allowlist 里同时出现了 `chrome@openai-bundled` 和 `computer-use@openai-bundled`。这说明 Codex 桌面端的 Computer Use 更接近“Codex 自己可发现、可注入、可受 requirement 约束的 bundled plugin / skill”。
+
+- https://github.com/openai/codex/blob/main/codex-rs/core-plugins/src/discoverable.rs
+
+把这三类源码证据放在一起看，Codex 已经把 Computer Use 放进了自己的功能开关、配置要求和 plugin discovery 系统。它不是普通 MCP server 配置那么简单，而是 Codex 产品内部的一条能力通道。
+
+## Codex issue：现在卡在插件注入、Windows 和路由优先级
+
+Codex 公开 issue 里，Computer Use 相关问题集中在几个方向。
+
+插件不可用或没有注入 callable tools：
+
+- https://github.com/openai/codex/issues/29137
+- https://github.com/openai/codex/issues/36377
+- https://github.com/openai/codex/issues/33619
+
+Windows Computer Use 在枚举窗口前失败或枚举不到窗口：
+
+- https://github.com/openai/codex/issues/37306
+- https://github.com/openai/codex/issues/37255
+- https://github.com/openai/codex/issues/37043
+
+最值得注意的是路由优先级问题：
+
+- https://github.com/openai/codex/issues/36741
+
+这个 issue 的标题是 “Let explicit user tool/MCP choice override auto-triggered bundled skills”。它对应的场景是：用户显式要求使用 CUA Driver MCP，但 Codex 自动触发 bundled Computer Use skill，导致用户选择的外部工具没有成为主路径。这个问题正好说明 Codex 的内置 Computer Use 和第三方 MCP driver 之间存在路由优先级问题。
+
+Codex 相关 PR 里，`#19071` 已经合并，标题是 “Add computer_use feature requirement key”：
+
+- https://github.com/openai/codex/pull/19071
+
+这说明 Codex 的 Computer Use 不是单个 UI bug，而是已经进入 requirement / managed configuration 体系。
+
+## CUA 社区：正在做 Codex plugin / MCP SDK 这条桥
+
+CUA 的公开文档把核心理念叫 no-foreground contract：agent 可以观察并操作桌面，同时维持用户前台体验稳定。
+
+- https://cua.ai/docs
+- https://cua.ai/docs/explanation/the-no-foreground-contract
+
+`trycua/cua` 里 `libs/cua-driver/examples/agent-sdks/README.md` 对 Codex 的描述也很关键：Codex SDK 不暴露直接 custom-tool callbacks，所以 CUA 的 Codex examples 使用 MCP，而不是发明一个 native adapter。
+
+- https://github.com/trycua/cua/blob/main/libs/cua-driver/examples/agent-sdks/README.md
+
+社区 issue/PR 也在补 Codex 路线：
+
+- https://github.com/trycua/cua/issues/2813
+- https://github.com/trycua/cua/issues/2663
+- https://github.com/trycua/cua/pull/1726
+- https://github.com/trycua/cua/pull/2109
+- https://github.com/trycua/cua/pull/1502
+
+其中 `#2813` 标题就是 “feat(cua-driver): ship an OpenAI Codex plugin (MCP + focused skills)”。`#2663` 对应 Codex 把显式 cua-driver 请求路由到内置 computer-use skill 的冲突。几个 PR 则分别围绕 embedded CUA Driver MCP SDK、System Events permission handling、TypeScript computer test contract 等方向推进。
+
+这条线和 Hermes 的选择相当接近：把桌面控制能力沉到通用 driver / MCP 层，而不是让每个 agent 产品把跨平台 desktop automation 从头做一遍。
+
+## 对比：Hermes 和 Codex 不是同一层
+
+| 维度 | Hermes | Codex |
+| --- | --- | --- |
+| 对外形态 | `computer_use` toolset | Codex feature requirement + bundled plugin / skill |
+| 底层 driver | `cua-driver`，通过 MCP stdio 连接 | Codex Desktop / bundled Computer Use plugin；外部 CUA Driver 通过 MCP 进入时涉及路由优先级 |
+| 模型假设 | 任意 tool-calling 模型 | Codex 产品和 Codex SDK 语境 |
+| 安装/诊断 | `hermes computer-use install/status/doctor` | Codex Desktop/plugin availability 和 requirements 层 |
+| 当前风险 | backend、权限、平台实现要随 `cua-driver` 版本同步 | plugin 注入、Windows 枚举、内置 skill 与显式 MCP choice 的优先级 |
+| 对 ChatArch 的意义 | 可以直接作为 Hermes 工具能力启用 | 值得跟踪其 Computer Use UX、requirement 管理和 plugin 生态 |
+
+换句话说，Hermes 的 Computer Use 更像“agent runtime 的通用桌面工具”；Codex 的 Computer Use 更像“Codex 产品内置的桌面能力模块”。它们会在底层能力上相遇，尤其是通过 MCP 和 `cua-driver`，但上层产品边界不同。
+
+## ChatArch 应该怎么判断
+
+第一，Hermes 侧无需等待 Codex。Hermes 文档、tools reference、CLI 和源码已经说明 `computer_use` 是一条现成路线。下一步的重点是 backend 安装、权限诊断和真实平台 smoke，而不是重新定义产品方向。
+
+第二，Codex 侧值得继续跟 issue/PR。Codex 的 requirement key、bundled plugin 发现和 Desktop 体验会影响用户对“Computer Use 应该怎么被 agent 调用”的预期；特别是 `#36741` 这种显式工具选择优先级问题，会直接影响 CUA Driver MCP 进入 Codex 的体验。
+
+第三，CUA 是连接层。Hermes 已经走 `cua-driver`，CUA 社区又在给 Codex 做 plugin / MCP SDK，这意味着未来更可能出现一个跨 agent 的 desktop control driver contract，而不是每个 agent 各自封闭实现。
+
+## 最后结论
+
+这次调研的答案可以压缩成三句话：
+
+1. **Hermes 已有 Computer Use**：`computer_use` toolset、文档、CLI、源码注册都存在，底层通过 `cua-driver` 提供后台桌面控制。
+2. **Codex 也在做 Computer Use**：源码里有 `computer_use` feature requirement 和 bundled plugin 发现路径，公开 issue 显示插件注入、Windows 和路由优先级仍在演进。
+3. **社区桥是 CUA Driver + MCP**：`trycua/cua` 正在推进 Codex plugin / MCP SDK，和 Hermes 的底层路线高度相关。
+
+对 ChatArch/Hermes 来说，最实际的路线是：把 Hermes 的 `computer_use` 当作已经存在的能力继续补安装、权限、诊断和平台回归；同时跟踪 Codex bundled skill 与 CUA Codex plugin 的进展，尤其是显式 MCP 工具选择和内置 skill 自动触发的冲突。
+
+## 关键 URL
+
+- https://hermes-agent.nousresearch.com/docs/user-guide/features/computer-use
+- https://hermes-agent.nousresearch.com/docs/reference/tools-reference#computer_use-toolset
+- https://hermes-agent.nousresearch.com/docs/reference/cli-commands#hermes-computer-use
+- https://github.com/NousResearch/hermes-agent
+- https://github.com/openai/codex
+- https://github.com/openai/codex/pull/19071
+- https://github.com/openai/codex/issues/36741
+- https://github.com/openai/codex/issues/29137
+- https://github.com/openai/codex/issues/33619
+- https://github.com/openai/codex/issues/37306
+- https://github.com/trycua/cua
+- https://cua.ai/docs/explanation/the-no-foreground-contract
+- https://github.com/trycua/cua/issues/2813
+- https://github.com/trycua/cua/issues/2663
