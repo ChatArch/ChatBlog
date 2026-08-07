@@ -1,0 +1,210 @@
+---
+title: "手机网页实时录音转写自建选型：PWA 入口、WebSocket 转写与 AI 纪要"
+date: 2026-08-08
+slug: mobile-web-realtime-transcription-pwa
+tags: [transcription, pwa, mediarecorder, realtime, meeting-notes, self-hosted]
+description: 把录音转写需求收窄到手机网页/PWA 点录音、实时或准实时转写、后端接 ASR API、再接 LLM 会议纪要；比较 DiScribeWeb、realtime-transcription、Rec.AI 等 GitHub 项目的真实可复用边界。
+toc_max_heading_level: 2
+---
+
+# 手机网页实时录音转写自建选型：PWA 入口、WebSocket 转写与 AI 纪要
+
+这篇只回答一个很窄的问题：**能不能自建一个手机网页或 PWA，用户打开页面点“录音”，手机麦克风开始实时或准实时转写，后端接 ASR API，停止后再用 LLM 生成会议纪要、想法笔记和行动项？**
+
+先把边界说清楚：这里不讨论 meeting bot 自动入会，不讨论桌面系统音频采集，不讨论字幕工具，也不把讯飞、腾讯云、DashScope、Deepgram、Azure、Amazon Transcribe 这种纯 ASR 服务商当成“方案”。它们只是后端 provider。真正要选的是**自建产品壳和实时转写链路**。
+
+:::info 同主题前情
+- [录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座](/blog/audio-transcription-meeting-notes-open-source)：这是当前已发布的语音/录音转写大综述，覆盖 meeting bot、录音文件后台、字幕套件、团队媒体库和 ASR 底座。
+
+这篇新文不是继续扩大项目地图，而是从前文里再收窄一层：**只看手机网页/PWA 点录音、实时或准实时转写、后端接 ASR API、再接 AI 整理的路线。**
+:::
+
+<!-- truncate -->
+
+:::tip 一句话结论
+没有找到一个成熟 GitHub 项目能完整覆盖“手机 PWA 产品体验 + 低延迟实时转写 + 外部 ASR API adapter + 会议纪要模板 + 团队归档”。最短路线是组合：**DiScribeWeb 做手机 PWA 录音/模板/分享产品壳，gtselentis/realtime-transcription 做 WebSocket 实时转写链路参考，Rec.AI 做 PWA/live transcript 前端体验参考。**
+:::
+
+:::info 证据口径
+本文快照日期为 **2026-08-08**。候选来自 GitHub 仓库 README 和本地静态阅读；没有在本机安装、启动服务或做统一延迟 benchmark。本文的结论是产品架构和代码复用边界，不是运行测评结论。
+:::
+
+![手机网页实时录音转写架构](/img/mobile-web-realtime-transcription/mobile-web-realtime-architecture.svg)
+
+*原创架构图：这不是某个项目的官方架构，而是把本轮筛到的项目能力重新拼成一条可落地路线。*
+
+## 为什么“常见功能”在 GitHub 上反而不常见
+
+用户看到的体验很简单：手机打开网页，点录音，文字不断出现，最后有一份会议纪要。工程上它拆成五件事：
+
+1. **手机端录音入口。** 浏览器必须在安全上下文里请求麦克风权限，前端通常用 `MediaRecorder` 或 Web Audio API 采集音频。
+2. **长时间稳定录制。** 手机锁屏、切后台、弱网、页面刷新和电量策略都会影响录音，不能只测十秒 demo。
+3. **实时或准实时传输。** 要么把音频切成 5–10 秒 chunk 上传，要么把 PCM/WebM 通过 WebSocket 送到后端。
+4. **ASR provider 适配。** Amazon、Azure、腾讯云、讯飞、DashScope、Deepgram、OpenAI-compatible 接口形态不同，不能把 provider 暴露在浏览器里。
+5. **笔记产品层。** transcript 只是中间产物；最终还要有会议纪要、行动项、决策、问题、想法笔记、搜索、分享和归档。
+
+GitHub 上常见的是其中一两层：有些项目是漂亮 PWA 但不实时，有些项目是实时 WebSocket demo 但没有产品，有些项目能本地跑 Whisper 但不符合“ASR 走 API”的要求。真正可用的路线不是找一个全包项目，而是把**产品壳**和**实时转写桥接**拆开选。
+
+## 候选排序
+
+| 排名 | 项目 | 能直接复用什么 | 关键缺口 | 处置 |
+|---|---|---|---|---|
+| 1 | [DiScribeWeb](https://github.com/divergentinc2021/DiScribeWeb) | Voice recorder PWA、MediaRecorder、IndexedDB、Cloudflare Worker、`/api/transcribe`、`/api/summarize`、`/api/generate-minutes`、会议纪要/口述笔记模板 | 更像录完后转写，不是低延迟 partial transcript | **产品壳首选**：改成 5–10 秒分片上传，补 WebSocket/SSE partial transcript |
+| 2 | [gtselentis/realtime-transcription](https://github.com/gtselentis/realtime-transcription) | React 前端采集麦克风，WebSocket 传 16k PCM，FastAPI 桥接 Amazon Transcribe streaming，partial/final transcript 回传 | 不是 PWA；没有会议笔记、归档和模板；AWS 绑定较深 | **实时链路首选参考**：抽出 session protocol 和 ASR bridge |
+| 3 | [Rec.AI](https://github.com/Techgeek8000-byte/Rec.AI) | Next.js PWA、MediaRecorder、live transcript UI、IndexedDB、summary/chapter 体验、移动端 responsive | 主线是 screen recorder；Web Speech API 不适合作为可控生产 ASR；后端要重接 | **前端体验参考**：借 PWA/live transcript/本地库 UI |
+| 4 | [aijnek/realtime_transcribe_app](https://github.com/aijnek/realtime_transcribe_app) | React + FastAPI + WebSocket、audio chunk、Gemini Live API、实时 UI | 日文导向；README 提到浏览器兼容问题；demo 性强 | **API-live demo**：参考 Gemini Live/WS 消息设计 |
+| 5 | [junn-a/web-voice-recorder-stt](https://github.com/junn-a/web-voice-recorder-stt) | 浏览器录音、MediaRecorder、长时录音、自动切片、PHP 后端保存、Whisper/Google/Vosk pluggable | 默认 30 分钟 chunk；转写是文件级，不是 live partial | **长录音/上传存储参考**：适合补录音库 |
+| 6 | [Azure-Voice-STT-With-Next-JS](https://github.com/scholarly360/Azure-Voice-STT-With-Next-JS) | Next.js、浏览器麦克风、Azure Speech SDK、实时显示文字 | README 明确提醒浏览器暴露 API key，生产需要后端代理；无 PWA/会议笔记 | **Azure hook 参考**：只看前端 SDK 集成 |
+| 7 | [amazon-transcribe-websocket-static](https://github.com/amazon-archives/amazon-transcribe-websocket-static) | 静态网页、浏览器麦克风、Amazon Transcribe WebSocket 实时转写 demo | 已归档；协议 demo，不是产品 | **协议参考**：证明浏览器实时流式 ASR 路径成立 |
+
+## 第一块：手机 PWA 产品壳，先看 DiScribeWeb
+
+[DiScribeWeb](https://github.com/divergentinc2021/DiScribeWeb) 的 README 直接把自己定义成“Voice recorder PWA with AI transcription and smart templates”。它的价值不在于 ASR 最强，而在于产品壳已经很接近真实需求：
+
+- 浏览器里用 `MediaRecorder API` 录麦克风；
+- PWA 可安装，移动端也能用；
+- 录音和结果保存在 IndexedDB；
+- 后端是 Cloudflare Worker；
+- API 形状已经分成 `/api/transcribe`、`/api/summarize`、`/api/generate-minutes`；
+- 模板包括 Meeting Minutes、Dictation Summary、Notes on Self、Workshop Summary 等。
+
+这正好符合“手机打开网页，录一段，转写后接 AI”的产品骨架。它的缺口也很明确：默认更像**录完后发给 Worker 转写**，不是“边说边出字”。
+
+所以它不是直接上线答案，而是最好的**第一层起点**。我们要改的不是整个产品，而是录音和转写之间这段：
+
+```text
+当前：录完一整段 -> 上传 -> 转写 -> 生成模板结果
+目标：录音中每 5–10 秒 chunk -> 后端转写 -> partial/final 回传 -> 停止后统一生成纪要
+```
+
+如果只想用一个项目开始，应该从 DiScribeWeb 开始，因为产品壳、模板、移动端分享和 Worker 后端都已经在正确方向上。
+
+## 第二块：实时转写链路，参考 gtselentis/realtime-transcription
+
+[gtselentis/realtime-transcription](https://github.com/gtselentis/realtime-transcription) 是这轮最干净的“实时链路”参考。README 描述的路径是：React 前端采集浏览器麦克风，通过 Web Audio API 重采样为 16kHz PCM，经 WebSocket 传给 FastAPI 后端；后端桥接 Amazon Transcribe streaming API，再把 partial/final transcript 通过同一个 WebSocket 发回前端。
+
+它的协议模型很适合被抽出来：
+
+```text
+client -> server: {"type": "start", "sampleRate": 16000, "languageCode": "zh-CN"}
+client -> server: <binary PCM frames>
+server -> client: {"type": "partial", "text": "..."}
+server -> client: {"type": "final", "text": "..."}
+client -> server: {"type": "stop"}
+```
+
+这类协议比“录完上传文件”更接近实时字幕和会议中记录。它的问题是产品层很薄：没有 PWA、没有会议模板、没有归档、没有分享，也不处理多 provider。换句话说，它不应该当产品，而应该当我们自建后端的**实时转写桥接样板**。
+
+实际落地时可以把 Amazon Transcribe 抽象成 provider：
+
+```text
+ASRProvider.start(session)
+ASRProvider.sendAudio(bytes)
+ASRProvider.onPartial(callback)
+ASRProvider.onFinal(callback)
+ASRProvider.stop()
+```
+
+这样以后接腾讯云、讯飞、DashScope、Azure、Deepgram 或 OpenAI-compatible endpoint 时，前端协议不需要大改。
+
+## 第三块：PWA 和 live transcript 体验，参考 Rec.AI
+
+[Rec.AI](https://github.com/Techgeek8000-byte/Rec.AI) 的 README 写得很像一个产品：Next.js PWA、MediaRecorder、live speech-to-text、IndexedDB、summary、chapters、移动端 responsive。它的目录里也把 `RecorderView`、`RecordingLibrary`、`AIToolsPanel`、`InstallPrompt` 这些前端模块拆开了。
+
+但它不能被直接当生产转写底座，原因也很明显：它用的是 Web Speech API 和本地规则式 AI，而不是我们可控的后端 ASR provider。Web Speech API 的实现、语言、稳定性和数据路径受浏览器影响，不适合作为一个自建系统的唯一转写能力。
+
+它最有价值的是三个前端模式：
+
+1. **PWA 安装和离线壳。** 用户可以像打开 App 一样打开录音页。
+2. **录音库。** 录音、转写稿和 AI 结果不是一次性页面，而是本地可回看对象。
+3. **live transcript 交互。** 录音时显示正在产生的文字，比“等上传完”更接近会议场景。
+
+所以 Rec.AI 的定位是 UI/UX 参考，而不是 ASR 参考。
+
+## 为什么不把本地 Whisper 项目放进主线
+
+这次收窄后，[VoiceStreamAI](https://github.com/alesaccoia/VoiceStreamAI)、[DaivikM/RealtimeSTT_Websocket](https://github.com/DaivikM/RealtimeSTT_Websocket)、[Parley](https://github.com/craiglush/parley)、[ormus-recorder](https://github.com/HermeticOrmus/ormus-recorder) 都被降级了。
+
+它们不是没价值，甚至有些功能很完整；问题是它们默认方向和这次需求不一致：
+
+- VoiceStreamAI 和 RealtimeSTT_Websocket：浏览器麦克风 + WebSocket 实时转写是对的，但主线是 faster-whisper、Vosk、Hugging Face、本地模型和 CUDA/模型管理。
+- Parley：会议笔记、任务、RAG、PWA 很完整，但默认是 Ollama、Parakeet、pyannote、Qdrant 这条 local-first homelab 路线。
+- ormus-recorder：手机 PWA 录音笔记形态很接近，但默认仍是本地 Whisper 转写，再可选 Claude cleanup。
+
+如果团队明确不想维护 ASR 模型链路，这些项目更适合作为功能参考，而不是第一批实施底座。
+
+## 推荐架构
+
+最终推荐的自建路线可以压缩成四层：
+
+```text
+手机 PWA
+  - 登录 / 录音 / 录音库 / live transcript UI
+  - MediaRecorder 5–10 秒 timeslice
+  - 本地 IndexedDB 缓存，弱网可恢复
+
+实时转写后端
+  - session_id / chunk_index / ack / retry
+  - WebSocket 或 SSE 回传 partial/final
+  - transcript segment store
+
+ASR provider adapter
+  - 腾讯云 / 讯飞 / DashScope / Azure / Amazon / Deepgram / OpenAI-compatible
+  - API key 永远留在后端
+  - provider 超时、重试、费用和限流统一处理
+
+AI 纪要与知识归档
+  - meeting minutes / action items / decisions / open questions
+  - 想法笔记 / 访谈纪要 / 课堂笔记模板
+  - Markdown、飞书文档、搜索和后续 Agent 工作流
+```
+
+前端到后端可以先不追求真正毫秒级 streaming。更实际的 MVP 是**准实时**：每 5–10 秒上传一个音频 chunk，后端转写后把 final segment 推回来。等中文 provider、长时间录音和移动端稳定性跑通后，再做更低延迟的 PCM/WebSocket streaming。
+
+## 最小 MVP 怎么做
+
+第一版不要同时实现十个 provider。建议按下面顺序：
+
+1. Fork DiScribeWeb，先保持 PWA、MediaRecorder、IndexedDB、模板和分享逻辑。
+2. 把录音改成 `MediaRecorder.start(timeslice)`，每 5–10 秒拿到一个 chunk。
+3. 后端新增 `POST /api/sessions`、`POST /api/sessions/:id/chunks`、`GET /api/sessions/:id/events`。
+4. 先接一个中文 ASR provider，用后端保存 API key，不把 key 下发到浏览器。
+5. 页面上显示 `partial/final transcript`，允许用户边录边看。
+6. 停止录音后，把 transcript segments 合并，再调用 LLM 生成会议纪要、行动项和想法笔记。
+7. 真机做 30–60 分钟录音测试：iPhone Safari、Android Chrome、弱网、切后台、来电/锁屏、刷新恢复。
+
+如果 MVP 能在手机上稳定跑 30 分钟，后面的 AI 总结和模板就相对简单了。真正难的是前半段：移动浏览器录音、长时间分片、实时回传、provider 延迟和失败恢复。
+
+## 和已有 ChatArch 工作流怎么接
+
+这类系统最后不应该只停在“有一段 transcript”。更有价值的是把录音变成可追踪的工作产物：
+
+- 会议：摘要、决策、行动项、负责人、截止时间；
+- 访谈：问题、回答、引用、后续追问；
+- 想法笔记：主题、下一步、相关项目、可执行任务；
+- 课程/分享：章节、术语表、关键链接、复习问题；
+- 工作流：自动写入飞书文档、Markdown、任务系统或 ChatArch workspace。
+
+这也是为什么本文把 DiScribeWeb 的模板系统放在第一位。ASR provider 可以换，LLM provider 可以换，但录音对象、模板、归档和分享一旦设计错，后面会很难补。
+
+## 最终判断
+
+如果只给一个工程决策，我会这样定：
+
+> **用 DiScribeWeb 做手机 PWA 产品壳；把 gtselentis/realtime-transcription 的 WebSocket/partial-final transcript 思路改成后端 ASR adapter；Rec.AI 只参考 PWA 和 live transcript 交互。**
+
+不要把 meeting bot 当答案，也不要把纯 ASR 厂商当答案。真正要自建的是用户每天打开的那个录音入口，以及一条可替换、可恢复、可追踪的实时转写链路。
+
+## 资料入口
+
+- [DiScribeWeb](https://github.com/divergentinc2021/DiScribeWeb)
+- [gtselentis/realtime-transcription](https://github.com/gtselentis/realtime-transcription)
+- [Rec.AI](https://github.com/Techgeek8000-byte/Rec.AI)
+- [aijnek/realtime_transcribe_app](https://github.com/aijnek/realtime_transcribe_app)
+- [junn-a/web-voice-recorder-stt](https://github.com/junn-a/web-voice-recorder-stt)
+- [Azure-Voice-STT-With-Next-JS](https://github.com/scholarly360/Azure-Voice-STT-With-Next-JS)
+- [amazon-transcribe-websocket-static](https://github.com/amazon-archives/amazon-transcribe-websocket-static)
+- [VoiceStreamAI](https://github.com/alesaccoia/VoiceStreamAI)
+- [RealtimeSTT_Websocket](https://github.com/DaivikM/RealtimeSTT_Websocket)
+- [Parley](https://github.com/craiglush/parley)
+- [ormus-recorder](https://github.com/HermeticOrmus/ormus-recorder)
