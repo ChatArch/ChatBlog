@@ -1,0 +1,324 @@
+---
+title: "把 Agent 放进自己的实时工作间：Mattermost、Hermes 与 ChatArch 的下一块拼图"
+date: 2026-08-08
+slug: mattermost-hermes-agent-workspace
+tags: [mattermost, hermes, agent, chatarch, self-hosted]
+description: 介绍 ChatArch 为什么把 Mattermost 作为自托管实时 Agent 工作间，lean4web 上这次二进制部署验证了什么，以及 Hermes 如何通过 Mattermost Gateway 进入频道、线程和团队协作流。
+---
+
+# 把 Agent 放进自己的实时工作间：Mattermost、Hermes 与 ChatArch 的下一块拼图
+
+如果说 Discourse 更像公开议事厅，ChatBlog 更像阶段性文章，MkDocs 更像项目手册，那么 **Mattermost** 更接近 ChatArch 目前缺的那一块：一个可以自托管、频道化、支持线程、适合人和 Agent 同处一室的实时工作间。
+
+这篇文章回答两个问题：
+
+1. 为什么我们要在 lean4web 上部署 Mattermost，而不是继续只依赖飞书、Discourse 或 Zulip？
+2. Hermes 要怎样接入这个 Mattermost，成为频道里的 Agent，而不是另一个需要人手工转发消息的工具？
+
+<!-- truncate -->
+
+:::tip 一句话结论
+Mattermost 适合承担 ChatArch 的 **自托管实时 Agent 工作间**：人可以在频道里发起任务，Hermes 通过 Mattermost Gateway 监听 bot mention / DM / thread，再把消息送进 Hermes 的模型、工具、记忆和执行环境，最后回到同一个频道或线程。ChatRSS 不需要进入这条 happy path；它更适合在事件需要统一 TriggerEvent、去重、路由、审计时作为下一层。
+:::
+
+:::info 证据口径
+本文使用三类来源：一是 lean4web 上 Mattermost 的公网回读和部署验收；二是 Hermes 官方 Mattermost 文档（[Mattermost | Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/)）；三是 ChatArch 前面关于 Hermes 平台入口、ChatRSS TriggerEvent 和 Agent Community 的实践文章。文中只写公开 URL、公开 API health、产品架构和非敏感配置项，不写 token、密码或私有运维细节。
+:::
+
+## 为什么是 Mattermost
+
+ChatArch 现在已经有几类协作空间：
+
+| 空间 | 更像什么 | 优点 | 边界 |
+| --- | --- | --- | --- |
+| Feishu / Lark | 当前组织入口 | 文档、群聊、审批、卡片成熟 | 平台是 SaaS，不是自托管社区本体 |
+| Discourse | 公开议事厅 | 长文讨论、主题沉淀、可引用 | 实时协作体验弱 |
+| Zulip | 结构化实时聊天 | stream / topic 分层清楚 | Hermes 当前没有原生 Zulip gateway，需要 bridge |
+| Mattermost | 自托管团队聊天 | channel、thread、bot、REST/WebSocket、权限都贴合 Agent 房间 | 需要自己运维服务、数据库、入口和账号 |
+
+Mattermost 的价值不是“又多一个聊天软件”，而是它把几个条件放到了一起：
+
+- **自托管**：服务、数据、入口和升级节奏在自己手里。
+- **频道化**：任务、项目、Agent profile、事件源可以自然拆成 channel。
+- **线程化**：一次 Agent run 可以落在一个 thread 里，避免污染主频道。
+- **Bot 友好**：Mattermost 原生支持 bot account、personal access token、REST API、WebSocket event stream。
+- **Hermes 已有入口**：Hermes 官方 Mattermost adapter 通过 REST API v4 和 WebSocket 接收事件、发送回复。
+
+这让 Mattermost 很适合做一个“Agent 工作间”：人不必离开聊天语境，就可以 @ 一个 Agent；Agent 不必伪装成人的浏览器操作，而是通过平台 API 拿到结构化事件，再用同一个平台写回结果。
+
+## lean4web 上这次实际部署了什么
+
+这次部署不是概念设计，而是已经在 lean4web 上跑起来的服务。
+
+可打开入口：
+
+https://mattermost.lookeng.cn/
+
+外部回读结果：
+
+```text
+mattermost.lookeng.cn -> 14.103.8.233
+GET https://mattermost.lookeng.cn/api/v4/system/ping -> {"status":"OK"}
+X-Version-Id: 11.9.0...
+```
+
+部署方式上，我们刻意没有走 Docker。原因很简单：如果一个服务可以稳定地以官方二进制方式运行，就优先减少容器层和 Compose 图谱，把服务更清楚地放进 ChatArch 的管理边界里。
+
+本次落地的形态是：
+
+| 层 | 实际选择 |
+| --- | --- |
+| 应用 | Mattermost 11.9.0 官方 Linux amd64 二进制 |
+| 安装模式 | binary-first，不用 Docker 跑 Mattermost app |
+| 应用目录 | ChatArch 管理的服务目录 |
+| 数据库 | Host PostgreSQL 16 |
+| 进程管理 | user-level systemd `mattermost.service` |
+| 公网入口 | Nginx HTTPS `mattermost.lookeng.cn` |
+| 初始空间 | `chatarch` team / `chatrss-triggers` channel |
+| 注册与凭据 | 初始系统管理员已创建，secret 留在私有 service secret store，不进入公开文档 |
+
+这里的关键不是端口号或某个文件路径，而是部署边界：**Mattermost 作为长期服务存在于 ChatArch 的服务目录和 host integration 里，不混进一次性任务目录，也不把 credential 细节写进博客。**
+
+## Hermes 怎么接到 Mattermost
+
+Hermes 接入 Mattermost 的最直接路径是 Mattermost Gateway：
+
+```text
+Mattermost 用户 / 频道消息 / DM / thread
+        │
+        ▼
+Mattermost REST API + WebSocket event stream
+        │
+        ▼
+Hermes Mattermost Gateway
+        │
+        ▼
+Hermes Agent pipeline
+  - session routing
+  - model reasoning
+  - tools
+  - memory / skills
+  - filesystem / SSH / web / docs 等能力
+        │
+        ▼
+Mattermost thread 或 channel reply
+```
+
+在 Hermes 官方文档里，Mattermost adapter 的角色很明确：它把 Hermes 作为一个 Mattermost bot 接入 direct message 或 team channel；事件通过 Mattermost REST API v4 与 WebSocket 进入 Hermes，Hermes 再用自身的模型、工具、记忆和推理能力处理消息，并实时回复。
+
+最小接入流程可以拆成五步。
+
+### 1. 在 Mattermost 里准备 bot account
+
+Mattermost 侧需要允许 bot account，并为 Hermes 创建一个 bot 用户。这个 bot 用户会有一个 token，用于 Hermes 调用 Mattermost API。
+
+文章里不应该写 token，也不应该写 secret 文件名；只需要记录状态：
+
+```text
+Mattermost server: https://mattermost.lookeng.cn
+Bot account: enabled / created
+Bot token: stored in Hermes private credential store
+```
+
+### 2. 在 Hermes 里启用 Mattermost platform
+
+Hermes Gateway 支持 Mattermost 平台。配置的核心字段是：
+
+```text
+MATTERMOST_URL=https://mattermost.lookeng.cn
+MATTERMOST_TOKEN=<bot token>
+MATTERMOST_ALLOWED_USERS=<allowed user ids, optional but recommended>
+MATTERMOST_REPLY_MODE=thread
+MATTERMOST_REQUIRE_MENTION=true
+```
+
+这里有两个建议默认值：
+
+- `MATTERMOST_REPLY_MODE=thread`：让 Hermes 在原消息下面开 thread 回复，避免主频道变成长上下文日志。
+- `MATTERMOST_REQUIRE_MENTION=true`：频道里只有 @Hermes 时才触发，避免 Agent 误读所有日常聊天。
+
+### 3. Hermes Gateway 建立 WebSocket 监听
+
+配置好以后，Hermes Gateway 会连接 Mattermost：
+
+```text
+Mattermost WebSocket event
+  -> Hermes Gateway receives post event
+  -> if DM or @bot mention passes policy
+  -> create or resume Hermes session
+```
+
+这一步和 RSSHub 不同。RSSHub 是“把外部来源转换成 feed”；Mattermost gateway 是“平台实时事件直接进入 Agent”。对一个聊天工作间来说，后者更自然。
+
+### 4. Hermes 选择 session 边界
+
+Mattermost 里最容易出问题的是上下文污染：同一个频道里可能有很多人、很多任务、很多 thread。如果所有消息都塞进一个 Hermes session，成本和干扰都会爆炸。
+
+更合理的默认模型是：
+
+| Mattermost 场景 | Hermes session 边界 |
+| --- | --- |
+| DM | 每个 DM 一条 session |
+| Channel mention | 按 user/channel/thread 划分 |
+| Thread reply | thread 独立 namespace |
+| 多用户同频道 | 默认不要共享一条 transcript |
+
+这样一个用户在 `chatrss-triggers` 里让 Hermes 做部署检查，不会污染另一个用户在同频道里让 Hermes 写 release note 的上下文。
+
+### 5. Hermes 写回 Mattermost
+
+当 Agent run 完成后，结果回到 Mattermost：
+
+```text
+Hermes final response
+  -> Mattermost REST API post
+  -> thread reply / channel reply
+  -> user can continue follow-up
+```
+
+这就形成了一个完整闭环：
+
+```text
+人类前置动作：在频道里 @Hermes
+        │
+        ▼
+平台事件：Mattermost post event
+        │
+        ▼
+Agent 判断与执行：Hermes tools + memory + skills
+        │
+        ▼
+平台写回：Mattermost thread reply
+        │
+        ▼
+新的协作状态：人继续追问、确认、派生任务
+```
+
+## ChatRSS 在这里的位置
+
+容易混淆的一点是：既然 ChatRSS 刚刚升级成 trigger-router-action framework，那么 Mattermost 事件是不是也应该先走 ChatRSS？
+
+答案是：**看目标。**
+
+如果目标只是“让人能在 Mattermost 里 @ 一个 Agent 并得到回复”，不要把路径绕远：
+
+```text
+@Hermes -> Hermes Mattermost Gateway -> Agent -> thread reply
+```
+
+这是 realtime chat-native 的 happy path。Mattermost 已经提供了消息事件、bot、thread、API 和权限模型，不需要 RSSHub 再把它变成 feed。
+
+但如果目标是“把 Mattermost 事件和 GitHub、RSSHub、Discourse、Zulip 等来源放进同一个事件路由系统”，那 ChatRSS 就有意义：
+
+```text
+Mattermost post/webhook/WebSocket event
+  -> mattermost.posts connector
+  -> TriggerEvent
+  -> Event Inbox / Dedupe
+  -> Rule Router
+  -> Model Router
+  -> Action Planner
+  -> Action Executor
+  -> Ledger / Audit
+```
+
+这两条路的区别可以这样记：
+
+| 目标 | 推荐路径 |
+| --- | --- |
+| 在频道里和 Agent 实时对话 | Hermes Mattermost Gateway |
+| 把 Mattermost 作为统一事件源之一 | ChatRSS TriggerEvent pipeline |
+| 需要去重、审计、跨平台规则、批准后执行 | ChatRSS |
+| 需要最快让 Agent 进房间 | Hermes direct gateway |
+
+所以 Mattermost、Hermes 和 ChatRSS 不是互斥关系。它们分工不同：
+
+```text
+Mattermost = 人和 Agent 共处的实时房间
+Hermes     = 能推理、用工具、记忆和执行的 Agent runtime
+ChatRSS    = 跨来源事件的去重、路由、计划和审计层
+```
+
+## 为什么这对 Agent Community 重要
+
+Agent Community 不是“多个模型在一个群里闲聊”。它至少需要三件事：
+
+1. **有地方发生事件**：人发消息、服务告警、任务状态变化、仓库更新。
+2. **有 Agent 能理解并行动**：不是只回复一句话，而是能查文件、改代码、部署、写文档、开 PR。
+3. **有边界和审计**：哪些自动做，哪些等人批准，做完如何回读验证。
+
+Mattermost 解决第一件事的一部分：它给人和 Agent 一个自托管、可频道化的实时空间。
+
+Hermes 解决第二件事：它不是普通聊天机器人，而是能携带工具、记忆、skills、SSH、文件、浏览器和发布流程的 Agent runtime。
+
+ChatRSS 解决第三件事的一部分：当事件不是单次聊天，而是跨平台、可重放、要去重、要审计的 trigger 时，它把“发生了什么”标准化成 `TriggerEvent`，再交给 router/model/action/ledger。
+
+这也是这次部署 Mattermost 的意义：它不是孤立装了一个 Slack-like 工具，而是在补 ChatArch Agent Community 的实时协作层。
+
+## 一个实际使用场景
+
+假设 `chatrss-triggers` 频道里有人发：
+
+```text
+@Hermes 看一下 ChatRSS 的 PyPI 发布状态，确认 docs 有没有同步。
+```
+
+理想路径是：
+
+```text
+1. Mattermost 产生一条 post event。
+2. Hermes Mattermost Gateway 因为 @mention 接收该事件。
+3. Hermes 创建这个 thread 对应的 session。
+4. Hermes 调用工具检查 PyPI、GitHub workflow、生产 docs。
+5. Hermes 把结论写回同一个 Mattermost thread。
+6. 如果检查发现需要后续工作，再由人确认是否进入执行。
+```
+
+如果同一条消息需要进入跨平台事件系统，例如“所有来自 Mattermost 的 release 请求都要进入同一套 dedupe/router/ledger”，那它可以再被 ChatRSS connector 标准化为：
+
+```text
+TriggerEvent(source="mattermost", type="post.mention", subject=..., actor=...)
+```
+
+然后由 ChatRSS 判断它是不是 release gate、是否需要 human approval、是否应该写入审计账本。
+
+## 当前还没有完成的事
+
+这次已经完成的是 Mattermost 服务本身：公网入口、HTTPS、数据库、服务进程、初始 team/channel 都已可用。
+
+接下来还需要完成 Hermes 接入层：
+
+- 创建专用 Hermes bot account 和 token；
+- 在 Hermes Gateway 配置 Mattermost platform；
+- 选择默认回复模式：建议 thread；
+- 设置 allowed users / allowed channels；
+- 做一次真实 @Hermes 消息 -> Hermes run -> Mattermost thread reply 的回读验证；
+- 决定哪些 Mattermost 事件也要进入 ChatRSS 的 TriggerEvent/router/ledger。
+
+也就是说，Mattermost 已经是“房间”；下一步是把 Hermes 这个 Agent 真正请进房间，并决定哪些房间里的事件需要进入更正式的任务/审计系统。
+
+## 小结
+
+Mattermost 在 ChatArch 里的定位可以用一句话概括：**它是自托管 Agent 工作间，而不是另一个通知渠道。**
+
+Hermes 接入 Mattermost 后，频道消息不再只是聊天记录，而可以成为 Agent run 的入口；thread 不再只是回复 UI，而可以成为任务上下文边界；bot mention 不再只是提醒，而可以成为权限明确的触发动作。
+
+这条路径把 ChatArch 的几个方向接到了一起：
+
+```text
+Mattermost 实时房间
+  + Hermes Agent runtime
+  + ChatRSS 事件路由 / 审计层
+  = 可追踪、可执行、可逐步自治的 Agent Community 工作面
+```
+
+先把房间搭起来，再把 Agent 接进去，最后把可复用的事件沉淀成任务和账本。这就是 Mattermost 这块拼图的意义。
+
+
+## 主要来源
+
+- [Mattermost | Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/)
+- [Hermes 支持平台图鉴：从聊天窗口到 Agent 工作间](/blog/hermes-supported-platforms-field-guide)
+- [RSS 与 RSSHub 入门：把网页更新变成可订阅的信息流](/blog/rss-and-rsshub-foundation-for-chatrss)
+- [Agent Community 应该如何工作：Human Admin、任务流与自治闭环](/blog/agent-community-human-admin-autonomy-loop)
+- Mattermost public service readback: https://mattermost.lookeng.cn/api/v4/system/ping
