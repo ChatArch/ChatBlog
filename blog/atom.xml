@@ -166,6 +166,127 @@
         <category label="self-hosted" term="self-hosted"/>
     </entry>
     <entry>
+        <title type="html"><![CDATA[手机网页实时录音转写自建选型：PWA 入口、WebSocket 转写与 AI 纪要]]></title>
+        <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa</id>
+        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa"/>
+        <updated>2026-08-08T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[把录音转写需求收窄到手机网页/PWA 点录音、实时或准实时转写、后端接 ASR API、再接 LLM 会议纪要；比较 DiScribeWeb、realtime-transcription、Rec.AI 等 GitHub 项目的真实可复用边界。]]></summary>
+        <content type="html"><![CDATA[<p>这篇只回答一个很窄的问题：<strong>能不能自建一个手机网页或 PWA，用户打开页面点“录音”，手机麦克风开始实时或准实时转写，后端接 ASR API，停止后再用 LLM 生成会议纪要、想法笔记和行动项？</strong></p>
+<p>先把边界说清楚：这里不讨论 meeting bot 自动入会，不讨论桌面系统音频采集，不讨论字幕工具，也不把讯飞、腾讯云、DashScope、Deepgram、Azure、Amazon Transcribe 这种纯 ASR 服务商当成“方案”。它们只是后端 provider。真正要选的是<strong>自建产品壳和实时转写链路</strong>。</p>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>同主题前情</div><div class="admonitionContent_BuS1"><ul>
+<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/audio-transcription-meeting-notes-open-source">录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座</a>：这是当前已发布的语音/录音转写大综述，覆盖 meeting bot、录音文件后台、字幕套件、团队媒体库和 ASR 底座。</li>
+</ul><p>这篇新文不是继续扩大项目地图，而是从前文里再收窄一层：<strong>只看手机网页/PWA 点录音、实时或准实时转写、后端接 ASR API、再接 AI 整理的路线。</strong></p></div></div>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>没有找到一个成熟 GitHub 项目能完整覆盖“手机 PWA 产品体验 + 低延迟实时转写 + 外部 ASR API adapter + 会议纪要模板 + 团队归档”。最短路线是组合：<strong>DiScribeWeb 做手机 PWA 录音/模板/分享产品壳，gtselentis/realtime-transcription 做 WebSocket 实时转写链路参考，Rec.AI 做 PWA/live transcript 前端体验参考。</strong></p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>本文快照日期为 <strong>2026-08-08</strong>。候选来自 GitHub 仓库 README 和本地静态阅读；没有在本机安装、启动服务或做统一延迟 benchmark。本文的结论是产品架构和代码复用边界，不是运行测评结论。</p></div></div>
+<p><img decoding="async" loading="lazy" alt="手机网页实时录音转写架构" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNDAwIiBoZWlnaHQ9Ijg2MCIgdmlld0JveD0iMCAwIDE0MDAgODYwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+5omL5py6572R6aG15a6e5pe25b2V6Z+z6L2s5YaZ6Ieq5bu65p625p6EPC90aXRsZT4KICA8ZGVzYyBpZD0iZGVzYyI+5LuO5omL5py65rWP6KeI5ZmoIFBXQSDlvZXpn7PvvIzliLAgV2ViU29ja2V0IOaIluWIhueJh+S4iuS8oO+8jOWGjeWIsCBBU1IgUHJvdmlkZXLjgIFMTE0g5Lya6K6u57qq6KaB5ZKM55+l6K+G5b2S5qGj55qE5p625p6E5Zu+44CCPC9kZXNjPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMwNjEzMjUiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIwLjU1IiBzdG9wLWNvbG9yPSIjMGYxNzJhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzExMTgyNyIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMWYyOTM3IiBzdHJva2Utd2lkdGg9IjAuNyIgb3BhY2l0eT0iMC42NSIvPgogICAgPC9wYXR0ZXJuPgogICAgPG1hcmtlciBpZD0iYXJyb3ciIG1hcmtlcldpZHRoPSIxMiIgbWFya2VySGVpZ2h0PSIxMiIgcmVmWD0iMTAiIHJlZlk9IjYiIG9yaWVudD0iYXV0byIgbWFya2VyVW5pdHM9InN0cm9rZVdpZHRoIj4KICAgICAgPHBhdGggZD0iTTIsMiBMMTAsNiBMMiwxMCBaIiBmaWxsPSIjNjdlOGY5Ii8+CiAgICA8L21hcmtlcj4KICAgIDxtYXJrZXIgaWQ9ImFycm93R3JlZW4iIG1hcmtlcldpZHRoPSIxMiIgbWFya2VySGVpZ2h0PSIxMiIgcmVmWD0iMTAiIHJlZlk9IjYiIG9yaWVudD0iYXV0byIgbWFya2VyVW5pdHM9InN0cm9rZVdpZHRoIj4KICAgICAgPHBhdGggZD0iTTIsMiBMMTAsNiBMMiwxMCBaIiBmaWxsPSIjMzRkMzk5Ii8+CiAgICA8L21hcmtlcj4KICAgIDxmaWx0ZXIgaWQ9InNoYWRvdyIgeD0iLTIwJSIgeT0iLTIwJSIgd2lkdGg9IjE0MCUiIGhlaWdodD0iMTQwJSI+CiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAiIGR5PSIxMCIgc3RkRGV2aWF0aW9uPSIxMiIgZmxvb2QtY29sb3I9IiMwMDAwMDAiIGZsb29kLW9wYWNpdHk9IjAuMzUiLz4KICAgIDwvZmlsdGVyPgogICAgPHN0eWxlPgogICAgICAudGl0bGV7Zm9udC1mYW1pbHk6LWFwcGxlLXN5c3RlbSxCbGlua01hY1N5c3RlbUZvbnQsIlNlZ29lIFVJIiwiTm90byBTYW5zIFNDIixzYW5zLXNlcmlmO2ZvbnQtc2l6ZTozNHB4O2ZvbnQtd2VpZ2h0OjgwMDtmaWxsOiNmOGZhZmM7bGV0dGVyLXNwYWNpbmc6LjVweH0KICAgICAgLnN1YnRpdGxle2ZvbnQtZmFtaWx5Oi1hcHBsZS1zeXN0ZW0sQmxpbmtNYWNTeXN0ZW1Gb250LCJTZWdvZSBVSSIsIk5vdG8gU2FucyBTQyIsc2Fucy1zZXJpZjtmb250LXNpemU6MTZweDtmaWxsOiNjYmQ1ZTF9CiAgICAgIC5sYWJlbHtmb250LWZhbWlseTotYXBwbGUtc3lzdGVtLEJsaW5rTWFjU3lzdGVtRm9udCwiU2Vnb2UgVUkiLCJOb3RvIFNhbnMgU0MiLHNhbnMtc2VyaWY7Zm9udC1zaXplOjIwcHg7Zm9udC13ZWlnaHQ6NzUwO2ZpbGw6I2Y4ZmFmY30KICAgICAgLnN1Yntmb250LWZhbWlseTotYXBwbGUtc3lzdGVtLEJsaW5rTWFjU3lzdGVtRm9udCwiU2Vnb2UgVUkiLCJOb3RvIFNhbnMgU0MiLHNhbnMtc2VyaWY7Zm9udC1zaXplOjE0cHg7ZmlsbDojY2JkNWUxfQogICAgICAudGlueXtmb250LWZhbWlseTotYXBwbGUtc3lzdGVtLEJsaW5rTWFjU3lzdGVtRm9udCwiU2Vnb2UgVUkiLCJOb3RvIFNhbnMgU0MiLHNhbnMtc2VyaWY7Zm9udC1zaXplOjEycHg7ZmlsbDojOTRhM2I4fQogICAgICAubGFuZXtmaWxsOnJnYmEoMTUsMjMsNDIsLjY4KTtzdHJva2U6IzMzNDE1NTtzdHJva2Utd2lkdGg6MS4yO3J4OjIyfQogICAgICAuZnJvbnRlbmR7ZmlsbDpyZ2JhKDgsNTEsNjgsLjYyKTtzdHJva2U6IzIyZDNlZTtzdHJva2Utd2lkdGg6MjtyeDoxNDtmaWx0ZXI6dXJsKCNzaGFkb3cpfQogICAgICAuYmFja2VuZHtmaWxsOnJnYmEoNiw3OCw1OSwuNTgpO3N0cm9rZTojMzRkMzk5O3N0cm9rZS13aWR0aDoyO3J4OjE0O2ZpbHRlcjp1cmwoI3NoYWRvdyl9CiAgICAgIC5wcm92aWRlcntmaWxsOnJnYmEoMTIwLDUzLDE1LC41MCk7c3Ryb2tlOiNmYmJmMjQ7c3Ryb2tlLXdpZHRoOjI7cng6MTQ7ZmlsdGVyOnVybCgjc2hhZG93KX0KICAgICAgLnN0b3Jle2ZpbGw6cmdiYSg3NiwyOSwxNDksLjUwKTtzdHJva2U6I2E3OGJmYTtzdHJva2Utd2lkdGg6MjtyeDoxNDtmaWx0ZXI6dXJsKCNzaGFkb3cpfQogICAgICAucmlza3tmaWxsOnJnYmEoMTM2LDE5LDU1LC40Nik7c3Ryb2tlOiNmYjcxODU7c3Ryb2tlLXdpZHRoOjI7cng6MTQ7ZmlsdGVyOnVybCgjc2hhZG93KX0KICAgICAgLmxpbmV7ZmlsbDpub25lO3N0cm9rZTojNjdlOGY5O3N0cm9rZS13aWR0aDozO21hcmtlci1lbmQ6dXJsKCNhcnJvdyl9CiAgICAgIC5saW5lR3JlZW57ZmlsbDpub25lO3N0cm9rZTojMzRkMzk5O3N0cm9rZS13aWR0aDozO21hcmtlci1lbmQ6dXJsKCNhcnJvd0dyZWVuKX0KICAgICAgLmRhc2h7ZmlsbDpub25lO3N0cm9rZTojZmI3MTg1O3N0cm9rZS13aWR0aDoyLjU7c3Ryb2tlLWRhc2hhcnJheTo4IDh9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTQwMCIgaGVpZ2h0PSI4NjAiIGZpbGw9InVybCgjYmcpIi8+CiAgPHJlY3Qgd2lkdGg9IjE0MDAiIGhlaWdodD0iODYwIiBmaWxsPSJ1cmwoI2dyaWQpIiBvcGFjaXR5PSIwLjcyIi8+CiAgPHRleHQgeD0iNjAiIHk9IjcwIiBjbGFzcz0idGl0bGUiPuaJi+acuue9kemhteWunuaXtuW9lemfs+i9rOWGme+8muiHquW7uuS6p+WTgeWjsyArIEFQSSBQcm92aWRlcjwvdGV4dD4KICA8dGV4dCB4PSI2MCIgeT0iMTA0IiBjbGFzcz0ic3VidGl0bGUiPuebruagh+S4jeaYryBtZWV0aW5nIGJvdO+8jOS5n+S4jeaYr+e6ryBBU1Ig5Y6C5ZWG5riF5Y2V77yb6ICM5piv5omL5py65rWP6KeI5Zmo54K55b2V6Z+z77yM5a6e5pe2L+WHhuWunuaXtuWHuuWtl++8jOWGjeaOpSBBSSDnuqropoHjgII8L3RleHQ+CgogIDxyZWN0IHg9IjUwIiB5PSIxNDUiIHdpZHRoPSI0MDAiIGhlaWdodD0iNjEwIiBjbGFzcz0ibGFuZSIvPgogIDxyZWN0IHg9IjUwMCIgeT0iMTQ1IiB3aWR0aD0iNDA1IiBoZWlnaHQ9IjYxMCIgY2xhc3M9ImxhbmUiLz4KICA8cmVjdCB4PSI5NTUiIHk9IjE0NSIgd2lkdGg9IjM5NSIgaGVpZ2h0PSI2MTAiIGNsYXNzPSJsYW5lIi8+CiAgPHRleHQgeD0iODAiIHk9IjE4NSIgY2xhc3M9ImxhYmVsIj4xLiDmiYvmnLrnvZHpobXlhaXlj6M8L3RleHQ+CiAgPHRleHQgeD0iNTMwIiB5PSIxODUiIGNsYXNzPSJsYWJlbCI+Mi4g6Ieq5bu65a6e5pe26L2s5YaZ5pyN5YqhPC90ZXh0PgogIDx0ZXh0IHg9Ijk4NSIgeT0iMTg1IiBjbGFzcz0ibGFiZWwiPjMuIEFJIOeslOiusOS4juW9kuahozwvdGV4dD4KCiAgPHJlY3QgeD0iODAiIHk9IjIyNSIgd2lkdGg9IjMzMCIgaGVpZ2h0PSI5NCIgY2xhc3M9ImZyb250ZW5kIi8+CiAgPHRleHQgeD0iMTA2IiB5PSIyNjAiIGNsYXNzPSJsYWJlbCI+UFdBIC8gTW9iaWxlIFdlYjwvdGV4dD4KICA8dGV4dCB4PSIxMDYiIHk9IjI4NiIgY2xhc3M9InN1YiI+SFRUUFMg5omT5byA6aG16Z2i77yM54K55Ye75b2V6Z+zPC90ZXh0PgogIDx0ZXh0IHg9IjEwNiIgeT0iMzA4IiBjbGFzcz0idGlueSI+RGlTY3JpYmVXZWIgLyBSZWMuQUkg5L2c5Li65Lqn5ZOB5aOz5Y+C6ICDPC90ZXh0PgoKICA8cmVjdCB4PSI4MCIgeT0iMzY1IiB3aWR0aD0iMzMwIiBoZWlnaHQ9Ijk0IiBjbGFzcz0iZnJvbnRlbmQiLz4KICA8dGV4dCB4PSIxMDYiIHk9IjQwMCIgY2xhc3M9ImxhYmVsIj5NZWRpYVJlY29yZGVyPC90ZXh0PgogIDx0ZXh0IHg9IjEwNiIgeT0iNDI2IiBjbGFzcz0ic3ViIj7miYvmnLrpuqblhYvpo47mjojmnYPvvIw14oCTMTAg56eS5YiG54mHPC90ZXh0PgogIDx0ZXh0IHg9IjEwNiIgeT0iNDQ4IiBjbGFzcz0idGlueSI+YXVkaW8vd2VibS9vcHVzIOaIliBQQ03vvJvmlq3ngrnkuI7ph43or5U8L3RleHQ+CgogIDxyZWN0IHg9IjgwIiB5PSI1MDUiIHdpZHRoPSIzMzAiIGhlaWdodD0iMTIwIiBjbGFzcz0icmlzayIvPgogIDx0ZXh0IHg9IjEwNiIgeT0iNTQwIiBjbGFzcz0ibGFiZWwiPuenu+WKqOerr+WFs+mUrumjjumZqTwvdGV4dD4KICA8dGV4dCB4PSIxMDYiIHk9IjU2OCIgY2xhc3M9InN1YiI+6ZSB5bGPIC8g5YiH5ZCO5Y+wIC8g572R57uc5oqW5YqoPC90ZXh0PgogIDx0ZXh0IHg9IjEwNiIgeT0iNTkwIiBjbGFzcz0ic3ViIj5pT1MgU2FmYXJpIOihjOS4uuOAgemVv+W9lemfs+aBouWkjTwvdGV4dD4KICA8dGV4dCB4PSIxMDYiIHk9IjYxMiIgY2xhc3M9InRpbnkiPuWFiOWBmuecn+acuiAzMOKAkzYwIOWIhumSnyBzbW9rZTwvdGV4dD4KCiAgPHJlY3QgeD0iNTM1IiB5PSIyMjUiIHdpZHRoPSIzMzAiIGhlaWdodD0iOTQiIGNsYXNzPSJiYWNrZW5kIi8+CiAgPHRleHQgeD0iNTYxIiB5PSIyNjAiIGNsYXNzPSJsYWJlbCI+U2Vzc2lvbiArIENodW5rIEFQSTwvdGV4dD4KICA8dGV4dCB4PSI1NjEiIHk9IjI4NiIgY2xhc3M9InN1YiI+c2Vzc2lvbl9pZCAvIGNodW5rX2luZGV4IC8gcHJvZ3Jlc3M8L3RleHQ+CiAgPHRleHQgeD0iNTYxIiB5PSIzMDgiIGNsYXNzPSJ0aW55Ij7kuIrkvKDkv53lrZjjgIHljrvph43jgIHlpLHotKXniYfmrrXph43or5U8L3RleHQ+CgogIDxyZWN0IHg9IjUzNSIgeT0iMzY1IiB3aWR0aD0iMzMwIiBoZWlnaHQ9Ijk0IiBjbGFzcz0iYmFja2VuZCIvPgogIDx0ZXh0IHg9IjU2MSIgeT0iNDAwIiBjbGFzcz0ibGFiZWwiPldlYlNvY2tldCAvIFNTRTwvdGV4dD4KICA8dGV4dCB4PSI1NjEiIHk9IjQyNiIgY2xhc3M9InN1YiI+cGFydGlhbCAvIGZpbmFsIHRyYW5zY3JpcHQg5o6o5Zue6aG16Z2iPC90ZXh0PgogIDx0ZXh0IHg9IjU2MSIgeT0iNDQ4IiBjbGFzcz0idGlueSI+5Y+C6ICDIGd0c2VsZW50aXMgcmVhbHRpbWUtdHJhbnNjcmlwdGlvbjwvdGV4dD4KCiAgPHJlY3QgeD0iNTM1IiB5PSI1MDUiIHdpZHRoPSIzMzAiIGhlaWdodD0iMTIwIiBjbGFzcz0icHJvdmlkZXIiLz4KICA8dGV4dCB4PSI1NjEiIHk9IjU0MCIgY2xhc3M9ImxhYmVsIj5BU1IgUHJvdmlkZXIgQWRhcHRlcjwvdGV4dD4KICA8dGV4dCB4PSI1NjEiIHk9IjU2OCIgY2xhc3M9InN1YiI+6IW+6K6v5LqRIC8g6K6v6aOeIC8gRGFzaFNjb3BlIC8gQXp1cmU8L3RleHQ+CiAgPHRleHQgeD0iNTYxIiB5PSI1OTAiIGNsYXNzPSJzdWIiPkFtYXpvbiAvIERlZXBncmFtIC8gT3BlbkFJLWNvbXBhdGlibGU8L3RleHQ+CiAgPHRleHQgeD0iNTYxIiB5PSI2MTIiIGNsYXNzPSJ0aW55Ij5Qcm92aWRlciDmmK/mj5Lku7bvvIzkuI3mmK/kuqflk4HmnKzouqs8L3RleHQ+CgogIDxyZWN0IHg9Ijk5MCIgeT0iMjI1IiB3aWR0aD0iMzIwIiBoZWlnaHQ9Ijk0IiBjbGFzcz0ic3RvcmUiLz4KICA8dGV4dCB4PSIxMDE2IiB5PSIyNjAiIGNsYXNzPSJsYWJlbCI+VHJhbnNjcmlwdCBTdG9yZTwvdGV4dD4KICA8dGV4dCB4PSIxMDE2IiB5PSIyODYiIGNsYXNzPSJzdWIiPnNlZ21lbnRz44CBdGltZXN0YW1wc+OAgXNwZWFrZXIgaGludHM8L3RleHQ+CiAgPHRleHQgeD0iMTAxNiIgeT0iMzA4IiBjbGFzcz0idGlueSI+5L+d55WZ5Y6f5aeL5YiG54mH5ZKM5pyA57uI5ZCI5bm256i/PC90ZXh0PgoKICA8cmVjdCB4PSI5OTAiIHk9IjM2NSIgd2lkdGg9IjMyMCIgaGVpZ2h0PSI5NCIgY2xhc3M9InN0b3JlIi8+CiAgPHRleHQgeD0iMTAxNiIgeT0iNDAwIiBjbGFzcz0ibGFiZWwiPkxMTSBOb3RlczwvdGV4dD4KICA8dGV4dCB4PSIxMDE2IiB5PSI0MjYiIGNsYXNzPSJzdWIiPuS8muiurue6quimgeOAgeihjOWKqOmhueOAgeaDs+azleeslOiusDwvdGV4dD4KICA8dGV4dCB4PSIxMDE2IiB5PSI0NDgiIGNsYXNzPSJ0aW55Ij7mqKHmnb/ljJYgcHJvbXB077yM5Y+v5oyJ5Zy65pmv5a6a5Yi2PC90ZXh0PgoKICA8cmVjdCB4PSI5OTAiIHk9IjUwNSIgd2lkdGg9IjMyMCIgaGVpZ2h0PSIxMjAiIGNsYXNzPSJzdG9yZSIvPgogIDx0ZXh0IHg9IjEwMTYiIHk9IjU0MCIgY2xhc3M9ImxhYmVsIj7nn6Xor4blt6XkvZzmtYE8L3RleHQ+CiAgPHRleHQgeD0iMTAxNiIgeT0iNTY4IiBjbGFzcz0ic3ViIj5NYXJrZG93biAvIOmjnuS5puaWh+ahoyAvIOaQnOe0ojwvdGV4dD4KICA8dGV4dCB4PSIxMDE2IiB5PSI1OTAiIGNsYXNzPSJzdWIiPuS7u+WKoeOAgeWGs+etluOAgemXrumimOOAgeWQjue7rSBBZ2VudDwvdGV4dD4KICA8dGV4dCB4PSIxMDE2IiB5PSI2MTIiIGNsYXNzPSJ0aW55Ij7mjqUgQ2hhdEFyY2ggd29ya3NwYWNlIC8g5paH5qGj5rKJ5reAPC90ZXh0PgoKICA8cGF0aCBjbGFzcz0ibGluZSIgZD0iTTQxMCAyNzIgQzQ2MCAyNzIgNDgwIDI3MiA1MzUgMjcyIi8+CiAgPHBhdGggY2xhc3M9ImxpbmUiIGQ9Ik00MTAgNDEyIEM0NzAgNDEyIDQ3NyA0MTIgNTM1IDQxMiIvPgogIDxwYXRoIGNsYXNzPSJsaW5lR3JlZW4iIGQ9Ik04NjUgMjcyIEM5MTggMjcyIDk0MCAyNzIgOTkwIDI3MiIvPgogIDxwYXRoIGNsYXNzPSJsaW5lR3JlZW4iIGQ9Ik04NjUgNDEyIEM5MTggNDEyIDk0MCA0MTIgOTkwIDQxMiIvPgogIDxwYXRoIGNsYXNzPSJsaW5lR3JlZW4iIGQ9Ik04NjUgNTY1IEM5MTggNTY1IDk0MCA1NjUgOTkwIDU2NSIvPgogIDxwYXRoIGNsYXNzPSJkYXNoIiBkPSJNMjQ1IDQ1OSBDMjQ1IDQ4NCAyNDUgNDk0IDI0NSA1MDUiLz4KCiAgPHJlY3QgeD0iODAiIHk9IjY3NSIgd2lkdGg9IjEyMzAiIGhlaWdodD0iNTQiIHJ4PSIxNiIgZmlsbD0icmdiYSgxNSwyMyw0MiwuNzgpIiBzdHJva2U9IiM0NzU1NjkiLz4KICA8dGV4dCB4PSIxMTAiIHk9IjcwOCIgY2xhc3M9InN1YiI+6JC95Zyw6aG65bqP77ya5YWI6aqM6K+B5omL5py65b2V6Z+z56iz5a6a5oCn5ZKM5a6e5pe2IHBhcnRpYWwgdHJhbnNjcmlwdO+8jOWGjeabv+aNouS4reaWhyBBU1IgUHJvdmlkZXLvvIzmnIDlkI7lgZogTExNIOe6quimgeaooeadv+WSjOefpeivhuW9kuaho+OAgjwvdGV4dD4KICA8dGV4dCB4PSI2MCIgeT0iODEwIiBjbGFzcz0idGlueSI+5Y6f5Yib5Zu+77yaQ2hhdEJsb2cgLyBDaGF0QXJjaOOAgueUqOS6juino+mHiuacrOevh+eahOaOqOiNkOe7hOWQiO+8jOS4jeihqOekuuS7u+S9leWNleS4qiBHaXRIdWIg6aG555uu5bey5a6M5pW06KaG55uW5YWo6YOo5qih5Z2X44CCPC90ZXh0Pgo8L3N2Zz4K" width="1400" height="860" class="img_ev3q"></p>
+<p><em>原创架构图：这不是某个项目的官方架构，而是把本轮筛到的项目能力重新拼成一条可落地路线。</em></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么常见功能在-github-上反而不常见">为什么“常见功能”在 GitHub 上反而不常见<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%B8%B8%E8%A7%81%E5%8A%9F%E8%83%BD%E5%9C%A8-github-%E4%B8%8A%E5%8F%8D%E8%80%8C%E4%B8%8D%E5%B8%B8%E8%A7%81" class="hash-link" aria-label="为什么“常见功能”在 GitHub 上反而不常见的直接链接" title="为什么“常见功能”在 GitHub 上反而不常见的直接链接" translate="no">​</a></h2>
+<p>用户看到的体验很简单：手机打开网页，点录音，文字不断出现，最后有一份会议纪要。工程上它拆成五件事：</p>
+<ol>
+<li class=""><strong>手机端录音入口。</strong> 浏览器必须在安全上下文里请求麦克风权限，前端通常用 <code>MediaRecorder</code> 或 Web Audio API 采集音频。</li>
+<li class=""><strong>长时间稳定录制。</strong> 手机锁屏、切后台、弱网、页面刷新和电量策略都会影响录音，不能只测十秒 demo。</li>
+<li class=""><strong>实时或准实时传输。</strong> 要么把音频切成 5–10 秒 chunk 上传，要么把 PCM/WebM 通过 WebSocket 送到后端。</li>
+<li class=""><strong>ASR provider 适配。</strong> Amazon、Azure、腾讯云、讯飞、DashScope、Deepgram、OpenAI-compatible 接口形态不同，不能把 provider 暴露在浏览器里。</li>
+<li class=""><strong>笔记产品层。</strong> transcript 只是中间产物；最终还要有会议纪要、行动项、决策、问题、想法笔记、搜索、分享和归档。</li>
+</ol>
+<p>GitHub 上常见的是其中一两层：有些项目是漂亮 PWA 但不实时，有些项目是实时 WebSocket demo 但没有产品，有些项目能本地跑 Whisper 但不符合“ASR 走 API”的要求。真正可用的路线不是找一个全包项目，而是把<strong>产品壳</strong>和<strong>实时转写桥接</strong>拆开选。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="候选排序">候选排序<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E5%80%99%E9%80%89%E6%8E%92%E5%BA%8F" class="hash-link" aria-label="候选排序的直接链接" title="候选排序的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>排名</th><th>项目</th><th>能直接复用什么</th><th>关键缺口</th><th>处置</th></tr></thead><tbody><tr><td>1</td><td><a href="https://github.com/divergentinc2021/DiScribeWeb" target="_blank" rel="noopener noreferrer" class="">DiScribeWeb</a></td><td>Voice recorder PWA、MediaRecorder、IndexedDB、Cloudflare Worker、<code>/api/transcribe</code>、<code>/api/summarize</code>、<code>/api/generate-minutes</code>、会议纪要/口述笔记模板</td><td>更像录完后转写，不是低延迟 partial transcript</td><td><strong>产品壳首选</strong>：改成 5–10 秒分片上传，补 WebSocket/SSE partial transcript</td></tr><tr><td>2</td><td><a href="https://github.com/gtselentis/realtime-transcription" target="_blank" rel="noopener noreferrer" class="">gtselentis/realtime-transcription</a></td><td>React 前端采集麦克风，WebSocket 传 16k PCM，FastAPI 桥接 Amazon Transcribe streaming，partial/final transcript 回传</td><td>不是 PWA；没有会议笔记、归档和模板；AWS 绑定较深</td><td><strong>实时链路首选参考</strong>：抽出 session protocol 和 ASR bridge</td></tr><tr><td>3</td><td><a href="https://github.com/Techgeek8000-byte/Rec.AI" target="_blank" rel="noopener noreferrer" class="">Rec.AI</a></td><td>Next.js PWA、MediaRecorder、live transcript UI、IndexedDB、summary/chapter 体验、移动端 responsive</td><td>主线是 screen recorder；Web Speech API 不适合作为可控生产 ASR；后端要重接</td><td><strong>前端体验参考</strong>：借 PWA/live transcript/本地库 UI</td></tr><tr><td>4</td><td><a href="https://github.com/aijnek/realtime_transcribe_app" target="_blank" rel="noopener noreferrer" class="">aijnek/realtime_transcribe_app</a></td><td>React + FastAPI + WebSocket、audio chunk、Gemini Live API、实时 UI</td><td>日文导向；README 提到浏览器兼容问题；demo 性强</td><td><strong>API-live demo</strong>：参考 Gemini Live/WS 消息设计</td></tr><tr><td>5</td><td><a href="https://github.com/junn-a/web-voice-recorder-stt" target="_blank" rel="noopener noreferrer" class="">junn-a/web-voice-recorder-stt</a></td><td>浏览器录音、MediaRecorder、长时录音、自动切片、PHP 后端保存、Whisper/Google/Vosk pluggable</td><td>默认 30 分钟 chunk；转写是文件级，不是 live partial</td><td><strong>长录音/上传存储参考</strong>：适合补录音库</td></tr><tr><td>6</td><td><a href="https://github.com/scholarly360/Azure-Voice-STT-With-Next-JS" target="_blank" rel="noopener noreferrer" class="">Azure-Voice-STT-With-Next-JS</a></td><td>Next.js、浏览器麦克风、Azure Speech SDK、实时显示文字</td><td>README 明确提醒浏览器暴露 API key，生产需要后端代理；无 PWA/会议笔记</td><td><strong>Azure hook 参考</strong>：只看前端 SDK 集成</td></tr><tr><td>7</td><td><a href="https://github.com/amazon-archives/amazon-transcribe-websocket-static" target="_blank" rel="noopener noreferrer" class="">amazon-transcribe-websocket-static</a></td><td>静态网页、浏览器麦克风、Amazon Transcribe WebSocket 实时转写 demo</td><td>已归档；协议 demo，不是产品</td><td><strong>协议参考</strong>：证明浏览器实时流式 ASR 路径成立</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一块手机-pwa-产品壳先看-discribeweb">第一块：手机 PWA 产品壳，先看 DiScribeWeb<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E7%AC%AC%E4%B8%80%E5%9D%97%E6%89%8B%E6%9C%BA-pwa-%E4%BA%A7%E5%93%81%E5%A3%B3%E5%85%88%E7%9C%8B-discribeweb" class="hash-link" aria-label="第一块：手机 PWA 产品壳，先看 DiScribeWeb的直接链接" title="第一块：手机 PWA 产品壳，先看 DiScribeWeb的直接链接" translate="no">​</a></h2>
+<p><a href="https://github.com/divergentinc2021/DiScribeWeb" target="_blank" rel="noopener noreferrer" class="">DiScribeWeb</a> 的 README 直接把自己定义成“Voice recorder PWA with AI transcription and smart templates”。它的价值不在于 ASR 最强，而在于产品壳已经很接近真实需求：</p>
+<ul>
+<li class="">浏览器里用 <code>MediaRecorder API</code> 录麦克风；</li>
+<li class="">PWA 可安装，移动端也能用；</li>
+<li class="">录音和结果保存在 IndexedDB；</li>
+<li class="">后端是 Cloudflare Worker；</li>
+<li class="">API 形状已经分成 <code>/api/transcribe</code>、<code>/api/summarize</code>、<code>/api/generate-minutes</code>；</li>
+<li class="">模板包括 Meeting Minutes、Dictation Summary、Notes on Self、Workshop Summary 等。</li>
+</ul>
+<p>这正好符合“手机打开网页，录一段，转写后接 AI”的产品骨架。它的缺口也很明确：默认更像<strong>录完后发给 Worker 转写</strong>，不是“边说边出字”。</p>
+<p>所以它不是直接上线答案，而是最好的<strong>第一层起点</strong>。我们要改的不是整个产品，而是录音和转写之间这段：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">当前：录完一整段 -&gt; 上传 -&gt; 转写 -&gt; 生成模板结果</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">目标：录音中每 5–10 秒 chunk -&gt; 后端转写 -&gt; partial/final 回传 -&gt; 停止后统一生成纪要</span><br></div></code></pre></div></div>
+<p>如果只想用一个项目开始，应该从 DiScribeWeb 开始，因为产品壳、模板、移动端分享和 Worker 后端都已经在正确方向上。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第二块实时转写链路参考-gtselentisrealtime-transcription">第二块：实时转写链路，参考 gtselentis/realtime-transcription<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E7%AC%AC%E4%BA%8C%E5%9D%97%E5%AE%9E%E6%97%B6%E8%BD%AC%E5%86%99%E9%93%BE%E8%B7%AF%E5%8F%82%E8%80%83-gtselentisrealtime-transcription" class="hash-link" aria-label="第二块：实时转写链路，参考 gtselentis/realtime-transcription的直接链接" title="第二块：实时转写链路，参考 gtselentis/realtime-transcription的直接链接" translate="no">​</a></h2>
+<p><a href="https://github.com/gtselentis/realtime-transcription" target="_blank" rel="noopener noreferrer" class="">gtselentis/realtime-transcription</a> 是这轮最干净的“实时链路”参考。README 描述的路径是：React 前端采集浏览器麦克风，通过 Web Audio API 重采样为 16kHz PCM，经 WebSocket 传给 FastAPI 后端；后端桥接 Amazon Transcribe streaming API，再把 partial/final transcript 通过同一个 WebSocket 发回前端。</p>
+<p>它的协议模型很适合被抽出来：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">client -&gt; server: {"type": "start", "sampleRate": 16000, "languageCode": "zh-CN"}</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">client -&gt; server: &lt;binary PCM frames&gt;</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">server -&gt; client: {"type": "partial", "text": "..."}</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">server -&gt; client: {"type": "final", "text": "..."}</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">client -&gt; server: {"type": "stop"}</span><br></div></code></pre></div></div>
+<p>这类协议比“录完上传文件”更接近实时字幕和会议中记录。它的问题是产品层很薄：没有 PWA、没有会议模板、没有归档、没有分享，也不处理多 provider。换句话说，它不应该当产品，而应该当我们自建后端的<strong>实时转写桥接样板</strong>。</p>
+<p>实际落地时可以把 Amazon Transcribe 抽象成 provider：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ASRProvider.start(session)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ASRProvider.sendAudio(bytes)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ASRProvider.onPartial(callback)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ASRProvider.onFinal(callback)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ASRProvider.stop()</span><br></div></code></pre></div></div>
+<p>这样以后接腾讯云、讯飞、DashScope、Azure、Deepgram 或 OpenAI-compatible endpoint 时，前端协议不需要大改。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第三块pwa-和-live-transcript-体验参考-recai">第三块：PWA 和 live transcript 体验，参考 Rec.AI<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E7%AC%AC%E4%B8%89%E5%9D%97pwa-%E5%92%8C-live-transcript-%E4%BD%93%E9%AA%8C%E5%8F%82%E8%80%83-recai" class="hash-link" aria-label="第三块：PWA 和 live transcript 体验，参考 Rec.AI的直接链接" title="第三块：PWA 和 live transcript 体验，参考 Rec.AI的直接链接" translate="no">​</a></h2>
+<p><a href="https://github.com/Techgeek8000-byte/Rec.AI" target="_blank" rel="noopener noreferrer" class="">Rec.AI</a> 的 README 写得很像一个产品：Next.js PWA、MediaRecorder、live speech-to-text、IndexedDB、summary、chapters、移动端 responsive。它的目录里也把 <code>RecorderView</code>、<code>RecordingLibrary</code>、<code>AIToolsPanel</code>、<code>InstallPrompt</code> 这些前端模块拆开了。</p>
+<p>但它不能被直接当生产转写底座，原因也很明显：它用的是 Web Speech API 和本地规则式 AI，而不是我们可控的后端 ASR provider。Web Speech API 的实现、语言、稳定性和数据路径受浏览器影响，不适合作为一个自建系统的唯一转写能力。</p>
+<p>它最有价值的是三个前端模式：</p>
+<ol>
+<li class=""><strong>PWA 安装和离线壳。</strong> 用户可以像打开 App 一样打开录音页。</li>
+<li class=""><strong>录音库。</strong> 录音、转写稿和 AI 结果不是一次性页面，而是本地可回看对象。</li>
+<li class=""><strong>live transcript 交互。</strong> 录音时显示正在产生的文字，比“等上传完”更接近会议场景。</li>
+</ol>
+<p>所以 Rec.AI 的定位是 UI/UX 参考，而不是 ASR 参考。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么不把本地-whisper-项目放进主线">为什么不把本地 Whisper 项目放进主线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E6%8A%8A%E6%9C%AC%E5%9C%B0-whisper-%E9%A1%B9%E7%9B%AE%E6%94%BE%E8%BF%9B%E4%B8%BB%E7%BA%BF" class="hash-link" aria-label="为什么不把本地 Whisper 项目放进主线的直接链接" title="为什么不把本地 Whisper 项目放进主线的直接链接" translate="no">​</a></h2>
+<p>这次收窄后，<a href="https://github.com/alesaccoia/VoiceStreamAI" target="_blank" rel="noopener noreferrer" class="">VoiceStreamAI</a>、<a href="https://github.com/DaivikM/RealtimeSTT_Websocket" target="_blank" rel="noopener noreferrer" class="">DaivikM/RealtimeSTT_Websocket</a>、<a href="https://github.com/craiglush/parley" target="_blank" rel="noopener noreferrer" class="">Parley</a>、<a href="https://github.com/HermeticOrmus/ormus-recorder" target="_blank" rel="noopener noreferrer" class="">ormus-recorder</a> 都被降级了。</p>
+<p>它们不是没价值，甚至有些功能很完整；问题是它们默认方向和这次需求不一致：</p>
+<ul>
+<li class="">VoiceStreamAI 和 RealtimeSTT_Websocket：浏览器麦克风 + WebSocket 实时转写是对的，但主线是 faster-whisper、Vosk、Hugging Face、本地模型和 CUDA/模型管理。</li>
+<li class="">Parley：会议笔记、任务、RAG、PWA 很完整，但默认是 Ollama、Parakeet、pyannote、Qdrant 这条 local-first homelab 路线。</li>
+<li class="">ormus-recorder：手机 PWA 录音笔记形态很接近，但默认仍是本地 Whisper 转写，再可选 Claude cleanup。</li>
+</ul>
+<p>如果团队明确不想维护 ASR 模型链路，这些项目更适合作为功能参考，而不是第一批实施底座。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="推荐架构">推荐架构<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E6%8E%A8%E8%8D%90%E6%9E%B6%E6%9E%84" class="hash-link" aria-label="推荐架构的直接链接" title="推荐架构的直接链接" translate="no">​</a></h2>
+<p>最终推荐的自建路线可以压缩成四层：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">手机 PWA</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - 登录 / 录音 / 录音库 / live transcript UI</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - MediaRecorder 5–10 秒 timeslice</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - 本地 IndexedDB 缓存，弱网可恢复</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">实时转写后端</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - session_id / chunk_index / ack / retry</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - WebSocket 或 SSE 回传 partial/final</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - transcript segment store</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ASR provider adapter</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - 腾讯云 / 讯飞 / DashScope / Azure / Amazon / Deepgram / OpenAI-compatible</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - API key 永远留在后端</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - provider 超时、重试、费用和限流统一处理</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">AI 纪要与知识归档</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - meeting minutes / action items / decisions / open questions</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - 想法笔记 / 访谈纪要 / 课堂笔记模板</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  - Markdown、飞书文档、搜索和后续 Agent 工作流</span><br></div></code></pre></div></div>
+<p>前端到后端可以先不追求真正毫秒级 streaming。更实际的 MVP 是<strong>准实时</strong>：每 5–10 秒上传一个音频 chunk，后端转写后把 final segment 推回来。等中文 provider、长时间录音和移动端稳定性跑通后，再做更低延迟的 PCM/WebSocket streaming。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最小-mvp-怎么做">最小 MVP 怎么做<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E6%9C%80%E5%B0%8F-mvp-%E6%80%8E%E4%B9%88%E5%81%9A" class="hash-link" aria-label="最小 MVP 怎么做的直接链接" title="最小 MVP 怎么做的直接链接" translate="no">​</a></h2>
+<p>第一版不要同时实现十个 provider。建议按下面顺序：</p>
+<ol>
+<li class="">Fork DiScribeWeb，先保持 PWA、MediaRecorder、IndexedDB、模板和分享逻辑。</li>
+<li class="">把录音改成 <code>MediaRecorder.start(timeslice)</code>，每 5–10 秒拿到一个 chunk。</li>
+<li class="">后端新增 <code>POST /api/sessions</code>、<code>POST /api/sessions/:id/chunks</code>、<code>GET /api/sessions/:id/events</code>。</li>
+<li class="">先接一个中文 ASR provider，用后端保存 API key，不把 key 下发到浏览器。</li>
+<li class="">页面上显示 <code>partial/final transcript</code>，允许用户边录边看。</li>
+<li class="">停止录音后，把 transcript segments 合并，再调用 LLM 生成会议纪要、行动项和想法笔记。</li>
+<li class="">真机做 30–60 分钟录音测试：iPhone Safari、Android Chrome、弱网、切后台、来电/锁屏、刷新恢复。</li>
+</ol>
+<p>如果 MVP 能在手机上稳定跑 30 分钟，后面的 AI 总结和模板就相对简单了。真正难的是前半段：移动浏览器录音、长时间分片、实时回传、provider 延迟和失败恢复。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="和已有-chatarch-工作流怎么接">和已有 ChatArch 工作流怎么接<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E5%92%8C%E5%B7%B2%E6%9C%89-chatarch-%E5%B7%A5%E4%BD%9C%E6%B5%81%E6%80%8E%E4%B9%88%E6%8E%A5" class="hash-link" aria-label="和已有 ChatArch 工作流怎么接的直接链接" title="和已有 ChatArch 工作流怎么接的直接链接" translate="no">​</a></h2>
+<p>这类系统最后不应该只停在“有一段 transcript”。更有价值的是把录音变成可追踪的工作产物：</p>
+<ul>
+<li class="">会议：摘要、决策、行动项、负责人、截止时间；</li>
+<li class="">访谈：问题、回答、引用、后续追问；</li>
+<li class="">想法笔记：主题、下一步、相关项目、可执行任务；</li>
+<li class="">课程/分享：章节、术语表、关键链接、复习问题；</li>
+<li class="">工作流：自动写入飞书文档、Markdown、任务系统或 ChatArch workspace。</li>
+</ul>
+<p>这也是为什么本文把 DiScribeWeb 的模板系统放在第一位。ASR provider 可以换，LLM provider 可以换，但录音对象、模板、归档和分享一旦设计错，后面会很难补。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最终判断">最终判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E6%9C%80%E7%BB%88%E5%88%A4%E6%96%AD" class="hash-link" aria-label="最终判断的直接链接" title="最终判断的直接链接" translate="no">​</a></h2>
+<p>如果只给一个工程决策，我会这样定：</p>
+<blockquote>
+<p><strong>用 DiScribeWeb 做手机 PWA 产品壳；把 gtselentis/realtime-transcription 的 WebSocket/partial-final transcript 思路改成后端 ASR adapter；Rec.AI 只参考 PWA 和 live transcript 交互。</strong></p>
+</blockquote>
+<p>不要把 meeting bot 当答案，也不要把纯 ASR 厂商当答案。真正要自建的是用户每天打开的那个录音入口，以及一条可替换、可恢复、可追踪的实时转写链路。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="资料入口">资料入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa#%E8%B5%84%E6%96%99%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="资料入口的直接链接" title="资料入口的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://github.com/divergentinc2021/DiScribeWeb" target="_blank" rel="noopener noreferrer" class="">DiScribeWeb</a></li>
+<li class=""><a href="https://github.com/gtselentis/realtime-transcription" target="_blank" rel="noopener noreferrer" class="">gtselentis/realtime-transcription</a></li>
+<li class=""><a href="https://github.com/Techgeek8000-byte/Rec.AI" target="_blank" rel="noopener noreferrer" class="">Rec.AI</a></li>
+<li class=""><a href="https://github.com/aijnek/realtime_transcribe_app" target="_blank" rel="noopener noreferrer" class="">aijnek/realtime_transcribe_app</a></li>
+<li class=""><a href="https://github.com/junn-a/web-voice-recorder-stt" target="_blank" rel="noopener noreferrer" class="">junn-a/web-voice-recorder-stt</a></li>
+<li class=""><a href="https://github.com/scholarly360/Azure-Voice-STT-With-Next-JS" target="_blank" rel="noopener noreferrer" class="">Azure-Voice-STT-With-Next-JS</a></li>
+<li class=""><a href="https://github.com/amazon-archives/amazon-transcribe-websocket-static" target="_blank" rel="noopener noreferrer" class="">amazon-transcribe-websocket-static</a></li>
+<li class=""><a href="https://github.com/alesaccoia/VoiceStreamAI" target="_blank" rel="noopener noreferrer" class="">VoiceStreamAI</a></li>
+<li class=""><a href="https://github.com/DaivikM/RealtimeSTT_Websocket" target="_blank" rel="noopener noreferrer" class="">RealtimeSTT_Websocket</a></li>
+<li class=""><a href="https://github.com/craiglush/parley" target="_blank" rel="noopener noreferrer" class="">Parley</a></li>
+<li class=""><a href="https://github.com/HermeticOrmus/ormus-recorder" target="_blank" rel="noopener noreferrer" class="">ormus-recorder</a></li>
+</ul>]]></content>
+        <category label="transcription" term="transcription"/>
+        <category label="pwa" term="pwa"/>
+        <category label="mediarecorder" term="mediarecorder"/>
+        <category label="realtime" term="realtime"/>
+        <category label="meeting-notes" term="meeting-notes"/>
+        <category label="self-hosted" term="self-hosted"/>
+    </entry>
+    <entry>
         <title type="html"><![CDATA[录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座]]></title>
         <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/audio-transcription-meeting-notes-open-source</id>
         <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/audio-transcription-meeting-notes-open-source"/>
@@ -3570,240 +3691,5 @@
         <category label="ai-for-science" term="ai-for-science"/>
         <category label="research" term="research"/>
         <category label="publishing" term="publishing"/>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Tau Ceti：人类写 roadmap，AI 真的能维护一座数学库吗？]]></title>
-        <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system</id>
-        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system"/>
-        <updated>2026-07-31T09:10:00.000Z</updated>
-        <summary type="html"><![CDATA[本地拉取 Tau Ceti 的五个核心仓库与运行链条，拆解 human roadmap、AI author/review、sandboxed CI、公开 review archive 和 17 万行 Lean 背后的真实能力与风险。]]></summary>
-        <content type="html"><![CDATA[<p>2026 年 6 月，Tau Ceti 还是一个新仓库。到 7 月 31 日的固定快照，它已经有 <strong>932 个 Lean 源文件、171,565 行代码和 1,336 个已合并 PR</strong>。在最忙的一天，100 个 PR 进入 <code>main</code>。</p>
-<p>如果只看这些数字，Tau Ceti 很容易被概括成“AI 正在复制 Mathlib”。但我把它的五个组织仓库、Worker、review archive 和依赖更新链条全部拉到本地后，发现真正值得研究的并不是 AI 写 Lean 有多快，而是它怎样重组了一座数学库的生产关系：</p>
-<blockquote>
-<p><strong>人类写 roadmap 和 rubric，AI 写代码、修代码、审代码；Lean kernel 与 trusted CI 负责机械裁决；每一次 review 都成为公开数据。</strong></p>
-</blockquote>
-<p>这不是一个更大的 theorem-proving benchmark，而是一套正在运行的 formal-library operating system。</p>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>关于快照</div><div class="admonitionContent_BuS1"><p>本文的代码与 build 结论固定在 <a href="https://github.com/TauCetiProject/TauCeti/commit/a3913fd9111b851af857f720b4ce6721e6634183" target="_blank" rel="noopener noreferrer" class=""><code>TauCeti@a3913fd</code></a>，GitHub PR 数据抓取于 2026-07-31 稍晚时间。项目更新极快，因此线上计数会继续增长。所有百分比和规模都描述这个快照，而不是永久状态。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先纠正ai-mathlib这个叫法">先纠正“AI Mathlib”这个叫法<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%85%88%E7%BA%A0%E6%AD%A3ai-mathlib%E8%BF%99%E4%B8%AA%E5%8F%AB%E6%B3%95" class="hash-link" aria-label="先纠正“AI Mathlib”这个叫法的直接链接" title="先纠正“AI Mathlib”这个叫法的直接链接" translate="no">​</a></h2>
-<p>Tau Ceti 的 <a href="https://github.com/TauCetiProject/TauCeti/blob/a3913fd9111b851af857f720b4ce6721e6634183/README.md" target="_blank" rel="noopener noreferrer" class="">README</a> 说得很清楚：它要 formalize 尽可能多的数学，但<strong>不打算取代 Mathlib 的 human curation、clarity 与 understanding</strong>。</p>
-<p>它依赖 Mathlib，跟随 Mathlib 的命名和设计决策，也不会自动把自己的产出反向推回 Mathlib。Mathlib 贡献者可以挑选、修改、消化其中的内容，再决定是否 upstream。</p>
-<p>所以四种说法里，只有两种准确：</p>
-<table><thead><tr><th>说法</th><th>判断</th></tr></thead><tbody><tr><td>“AI 在写一座大型 Lean 数学库”</td><td>是，按项目贡献政策，<code>TauCeti/</code> 由 AI author agents 维护</td></tr><tr><td>“人类已经退出 formalization”</td><td>否，人类控制 roadmap、rubric、CI policy、GitHub 权限与异常处理</td></tr><tr><td>“Tau Ceti 是 Mathlib 的替代品”</td><td>否，它是 Mathlib downstream，并把 Mathlib 当作设计权威</td></tr><tr><td>“Tau Ceti 在实验 AI 能否运营一座数学库”</td><td>是，这才是项目的核心问题</td></tr></tbody></table>
-<p>一个更准确的结构是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Mathlib             提供经过人类长期打磨的共同语言与设计方向</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Tau Ceti            用 AI 高速扩展可复用的 downstream substrate</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">frontier projects   从两者取用材料，继续走向研究前沿</span><br></div></code></pre></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="五个仓库不是拆包而是-trust-architecture">五个仓库不是拆包，而是 trust architecture<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E4%BA%94%E4%B8%AA%E4%BB%93%E5%BA%93%E4%B8%8D%E6%98%AF%E6%8B%86%E5%8C%85%E8%80%8C%E6%98%AF-trust-architecture" class="hash-link" aria-label="五个仓库不是拆包，而是 trust architecture的直接链接" title="五个仓库不是拆包，而是 trust architecture的直接链接" translate="no">​</a></h2>
-<p>Tau Ceti 根 README 仍写着 “three repositories”，但实时 organization 已经有五个：</p>
-<ol>
-<li class=""><a href="https://github.com/TauCetiProject/TauCeti" target="_blank" rel="noopener noreferrer" class=""><code>TauCeti</code></a>：AI-authored Lean mathematics 与 trusted CI 外壳；</li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiRoadmap" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiRoadmap</code></a>：human-controlled mathematical specifications；</li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiReview" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiReview</code></a>：human-written rubrics、review engine 与 merge policy；</li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiData" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiData</code></a>：每次 AI review 的 durable archive 与 evaluation corpus；</li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiProgress" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiProgress</code></a>：从 git、PR 与 doc-gen 事实生成 roadmap status/progress。</li>
-</ol>
-<p>此外，<a href="https://github.com/kim-em/TauCetiWorker" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiWorker</code></a> 是实际驱动 author、fix、review 和 Mathlib bump 的 operator-side worker。</p>
-<!-- -->
-<p>关键点不是“microservices 比 monorepo 好”，而是<strong>生成代码不能同时定义自己的任务、修改自己的评分标准、选择自己的证据和批准自己的 merge</strong>。</p>
-<p>仓库分离把这些权力拆开了。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="roadmap人类不再逐行写-proof而是写可执行规格">Roadmap：人类不再逐行写 proof，而是写可执行规格<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#roadmap%E4%BA%BA%E7%B1%BB%E4%B8%8D%E5%86%8D%E9%80%90%E8%A1%8C%E5%86%99-proof%E8%80%8C%E6%98%AF%E5%86%99%E5%8F%AF%E6%89%A7%E8%A1%8C%E8%A7%84%E6%A0%BC" class="hash-link" aria-label="Roadmap：人类不再逐行写 proof，而是写可执行规格的直接链接" title="Roadmap：人类不再逐行写 proof，而是写可执行规格的直接链接" translate="no">​</a></h2>
-<p>Tau Ceti 的 roadmap 不是一句“请形式化 genus theory”。一个合格 roadmap 要交代：</p>
-<ul>
-<li class="">Mathlib 已经有什么；</li>
-<li class="">缺失的对象和 theorem 是什么；</li>
-<li class="">依赖顺序如何；</li>
-<li class="">应采用什么 generality 与 convention；</li>
-<li class="">哪些已有代码可以迁移，license/provenance 是什么；</li>
-<li class="">哪些 concrete examples 能发现 vacuous definition；</li>
-<li class="">推荐的 Lean signature 长什么样。</li>
-</ul>
-<p>以 <a href="https://github.com/TauCetiProject/TauCetiRoadmap/blob/5e1441112a2bf60b9bb19bd0df3800d95d98977f/TauCetiRoadmap/Multiquadratic/README.md" target="_blank" rel="noopener noreferrer" class=""><code>Multiquadratic</code></a> 为例，它把工作拆成：</p>
-<ol>
-<li class="">multiquadratic field 的 degree 与 Galois group；</li>
-<li class="">prime-splitting law；</li>
-<li class=""><code>Cl/Cl²</code> 这个 elementary-2 quotient；</li>
-<li class="">genus field 与 2-rank theorem。</li>
-</ol>
-<p>它还特别警告：</p>
-<ul>
-<li class="">characteristic 2 会让整个叙事失效；</li>
-<li class="">ramification at 2 需要 prime discriminants，而不只是 squarefree radicands；</li>
-<li class=""><code>Cl/Cl²</code> 不是 <code>Cl[2]</code>；</li>
-<li class="">实二次域的公式需要 narrow class group。</li>
-</ul>
-<p>配套的 <a href="https://github.com/TauCetiProject/TauCetiRoadmap/blob/5e1441112a2bf60b9bb19bd0df3800d95d98977f/TauCetiRoadmap/Multiquadratic/Suggested.lean" target="_blank" rel="noopener noreferrer" class=""><code>Suggested.lean</code></a> 用 <code>sorry</code> 写出 target signatures，但文件开头明确说：Markdown 才是 specification，Lean signatures 只是让 author 与 reviewer 对目标形状收敛。</p>
-<p>这揭示了新的人工瓶颈：<strong>当 proof 变便宜，最难的工作变成把数学领域压缩成不会把 AI 引向错误 abstraction 的 roadmap。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="worker不是一个超级-agent而是一支可并发的流水线">Worker：不是一个超级 agent，而是一支可并发的流水线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#worker%E4%B8%8D%E6%98%AF%E4%B8%80%E4%B8%AA%E8%B6%85%E7%BA%A7-agent%E8%80%8C%E6%98%AF%E4%B8%80%E6%94%AF%E5%8F%AF%E5%B9%B6%E5%8F%91%E7%9A%84%E6%B5%81%E6%B0%B4%E7%BA%BF" class="hash-link" aria-label="Worker：不是一个超级 agent，而是一支可并发的流水线的直接链接" title="Worker：不是一个超级 agent，而是一支可并发的流水线的直接链接" translate="no">​</a></h2>
-<p>TauCetiWorker 采用 “bring your own agent”。任何人都可以用自己的 GitHub account、fork、模型订阅和机器运行 worker。</p>
-<p>一轮只做一个 work unit，并按固定优先级选择：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">rebase conflict</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; fix red CI</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; address or contest review findings</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; review a green PR</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; repair a Mathlib bump</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  &gt; author a new roadmap target</span><br></div></code></pre></div></div>
-<p>这个顺序很重要。它把“先把已有工作收尾”写进 queue policy，避免 generator 不断开新 PR、review 和 maintenance 永远追不上。</p>
-<p>多个 worker 没有中央调度器。它们通过 GitHub-visible state 协作：</p>
-<ul>
-<li class="">roadmap issue 上有带 TTL 的 intention/claim；</li>
-<li class=""><code>refs/tauceti-claims/*</code> 提供短期 lease；</li>
-<li class="">push 使用 <code>--force-with-lease</code> compare-and-swap；</li>
-<li class="">PR body 有 machine-readable target marker；</li>
-<li class="">current scoreboard/ledger 告诉其他 worker 哪个 head 已经 review。</li>
-</ul>
-<p><a href="https://github.com/TauCetiProject/TauCeti/blob/a3913fd9111b851af857f720b4ce6721e6634183/COORDINATION.md" target="_blank" rel="noopener noreferrer" class=""><code>COORDINATION.md</code></a> 把规则分成两类：</p>
-<ul>
-<li class=""><code>[COOP]</code> 只减少重复 compute；</li>
-<li class=""><code>[HARD]</code> 防止覆盖 branch、无理由关闭 PR、绕过 review merge。</li>
-</ul>
-<p>即使所有人忽略 cooperative claim，合规 worker 的最坏结果也应该是<strong>重复做功，而不是丢失别人的工作</strong>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="一个不能略过的安全细节">一个不能略过的安全细节<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E4%B8%80%E4%B8%AA%E4%B8%8D%E8%83%BD%E7%95%A5%E8%BF%87%E7%9A%84%E5%AE%89%E5%85%A8%E7%BB%86%E8%8A%82" class="hash-link" aria-label="一个不能略过的安全细节的直接链接" title="一个不能略过的安全细节的直接链接" translate="no">​</a></h3>
-<p>Worker 当前默认在 host 上执行 agent；Codex authoring 使用 <code>danger-full-access</code>。更安全的 <a href="https://github.com/kim-em/bubble" target="_blank" rel="noopener noreferrer" class=""><code>bubble</code></a> 模式需要显式 <code>--bubble</code>：它用 Incus container、repo-scoped GitHub proxy、单一 provider credential 和网络 allowlist 隔离工作。</p>
-<p>这意味着 Tau Ceti 的 CI 是 secure-by-default，但 operator-side autonomous authoring 目前仍是 secure-by-option。后文会回到这个风险。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="cilean-code-不只是文本它在-build-时能执行代码">CI：Lean code 不只是文本，它在 build 时能执行代码<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#cilean-code-%E4%B8%8D%E5%8F%AA%E6%98%AF%E6%96%87%E6%9C%AC%E5%AE%83%E5%9C%A8-build-%E6%97%B6%E8%83%BD%E6%89%A7%E8%A1%8C%E4%BB%A3%E7%A0%81" class="hash-link" aria-label="CI：Lean code 不只是文本，它在 build 时能执行代码的直接链接" title="CI：Lean code 不只是文本，它在 build 时能执行代码的直接链接" translate="no">​</a></h2>
-<p>Lean elaboration、macro、<code>initialize</code>、<code>#eval</code> 和 Lake config 都可能执行任意代码。让 PR 修改自己的 workflow，再在带 secrets 的 runner 上直接 <code>lake build</code>，不是安全模型。</p>
-<p>Tau Ceti 的 <a href="https://github.com/TauCetiProject/TauCeti/blob/a3913fd9111b851af857f720b4ce6721e6634183/.github/workflows/pr-build.yml" target="_blank" rel="noopener noreferrer" class=""><code>pr-build.yml</code></a> 因此使用 base-defined <code>pull_request_target</code>：</p>
-<ol>
-<li class="">checkout trusted base；</li>
-<li class="">无 credential checkout untrusted PR；</li>
-<li class="">只 overlay <code>TauCeti/</code>、空 root module 与经过验证的 pin；</li>
-<li class="">拒绝 symlink、<code>set_option</code>、跨入 Roadmap/Review 的 import；</li>
-<li class="">限制 diff 与新文件大小；</li>
-<li class="">在 checksum-pinned <code>landrun</code> 下离线 build；</li>
-<li class="">分别发布 <code>build</code>、<code>scope</code>、<code>bump-guard</code> 状态。</li>
-</ol>
-<p>sandbox 中运行四层检查：</p>
-<ul>
-<li class=""><code>lake build --iofail</code>；</li>
-<li class="">compiled axiom audit；</li>
-<li class="">module-system audit；</li>
-<li class="">Mathlib environment linter + docstring/baseline audit。</li>
-</ul>
-<p>我在本地固定快照上实际运行了同一机械核心：</p>
-<table><thead><tr><th>本地验证</th><th style="text-align:right">结果</th></tr></thead><tbody><tr><td>Lake build jobs</td><td style="text-align:right">5,945，全部成功</td></tr><tr><td>compiled Tau Ceti declarations</td><td style="text-align:right">16,947</td></tr><tr><td>允许 axioms</td><td style="text-align:right"><code>propext</code>、<code>Classical.choice</code>、<code>Quot.sound</code></td></tr><tr><td>module-system audit</td><td style="text-align:right">933/933 modules 通过</td></tr></tbody></table>
-<p>这证明的是：代码在该 toolchain/Mathlib pin 下能够通过标准 Lean kernel 与项目 policy。</p>
-<p>它<strong>不证明</strong> definition 表达了正确对象，也不证明 theorem statement 对应 roadmap 的数学含义。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-review专门填-kernel-留下的-semantic-gap">AI review：专门填 kernel 留下的 semantic gap<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#ai-review%E4%B8%93%E9%97%A8%E5%A1%AB-kernel-%E7%95%99%E4%B8%8B%E7%9A%84-semantic-gap" class="hash-link" aria-label="AI review：专门填 kernel 留下的 semantic gap的直接链接" title="AI review：专门填 kernel 留下的 semantic gap的直接链接" translate="no">​</a></h2>
-<p>TauCetiReview 把 review 分成十个角度：</p>
-<table><thead><tr><th>Rubric</th><th>问题</th><th style="text-align:right">可否 <code>block</code></th></tr></thead><tbody><tr><td>correctness</td><td>statement/definition 是否真的表达目标数学</td><td style="text-align:right">是</td></tr><tr><td>reuse</td><td>是否重复 Mathlib/Tau Ceti 现有 API</td><td style="text-align:right">直接重复时是</td></tr><tr><td>scope</td><td>是否推进一个 human roadmap target，且 PR 单一主题</td><td style="text-align:right">是</td></tr><tr><td>attribution</td><td>是否缺失明确来源/credit</td><td style="text-align:right">明确缺失时是</td></tr><tr><td>API design</td><td>public surface 与 characteristic API 是否合适</td><td style="text-align:right">否</td></tr><tr><td>generality</td><td>assumptions 是否最弱、层次是否自然</td><td style="text-align:right">否</td></tr><tr><td>placement</td><td>文件位置与 imports 是否正确</td><td style="text-align:right">否</td></tr><tr><td>naming</td><td>名称与 notation 是否符合结论和惯例</td><td style="text-align:right">否</td></tr><tr><td>documentation</td><td>docstring 是否准确</td><td style="text-align:right">否</td></tr><tr><td>proof quality</td><td>proof 是否稳健、可维护</td><td style="text-align:right">否</td></tr></tbody></table>
-<p><a href="https://github.com/TauCetiProject/TauCetiReview/blob/f0cf746096a8637b7a1703911a0c02a5ec93283c/rubrics/correctness.md" target="_blank" rel="noopener noreferrer" class=""><code>correctness.md</code></a> 的第一句就是：</p>
-<blockquote>
-<p>green proofs can still state the wrong theorem</p>
-</blockquote>
-<p>它要求 reviewer 主动找 quantifier 错位、vacuity、把困难塞进 hypotheses、<code>True</code> placeholder、没有 consumer 的 predicate 和过强 typeclass assumptions。</p>
-<p>而 <a href="https://github.com/TauCetiProject/TauCetiReview/blob/f0cf746096a8637b7a1703911a0c02a5ec93283c/rubrics/_common.md" target="_blank" rel="noopener noreferrer" class=""><code>_common.md</code></a> 把 PR diff、comments、docstrings、commit messages 全部视为 attacker-controlled data。Reviewer 只有 read tools，没有 merge 权；真正 verdict 必须出现在 runner 生成的一次性 marker 之后，PR 里伪造的 <code>{"verdict":"approve"}</code> 无法进入解析通道。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="十个独立-agent不等于十种独立认知">“十个独立 agent”不等于“十种独立认知”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%8D%81%E4%B8%AA%E7%8B%AC%E7%AB%8B-agent%E4%B8%8D%E7%AD%89%E4%BA%8E%E5%8D%81%E7%A7%8D%E7%8B%AC%E7%AB%8B%E8%AE%A4%E7%9F%A5" class="hash-link" aria-label="“十个独立 agent”不等于“十种独立认知”的直接链接" title="“十个独立 agent”不等于“十种独立认知”的直接链接" translate="no">​</a></h3>
-<p>每个 rubric 是独立 execution 与独立 attention angle，但未必是不同 model。当前 archive 中，大多数 production review 来自 Codex 或 Claude；一个 PR 的十个角度完全可能由同一模型执行。</p>
-<p>这能减少一个大 prompt 里的 attention conflict，却不能消除 shared blind spot。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一条完整证据链pr-1434">一条完整证据链：PR #1434<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E4%B8%80%E6%9D%A1%E5%AE%8C%E6%95%B4%E8%AF%81%E6%8D%AE%E9%93%BEpr-1434" class="hash-link" aria-label="一条完整证据链：PR #1434的直接链接" title="一条完整证据链：PR #1434的直接链接" translate="no">​</a></h2>
-<p><a href="https://github.com/TauCetiProject/TauCeti/pull/1434" target="_blank" rel="noopener noreferrer" class=""><code>TauCeti#1434</code></a> 实现 multiquadratic field 的 relative Galois group，最后成为本文固定的 main commit。</p>
-<p>它不是一次 review 绿灯：</p>
-<table><thead><tr><th>Round</th><th>Head 上发生了什么</th></tr></thead><tbody><tr><td>1</td><td>correctness 通过；reuse 发现三个 public declarations 重复 Mathlib instance API，直接 <code>block</code></td></tr><tr><td>2</td><td>scope/attribution/placement/naming/docs/proof 通过；reuse、API design、generality 要求修改</td></tr><tr><td>3</td><td>三个未解决角度重跑，仍要求修改</td></tr><tr><td>4</td><td>reuse/API/generality 清除；documentation 抓到一个过度声称的 docstring</td></tr><tr><td>5</td><td>十个角度全部在 final head 通过</td></tr></tbody></table>
-<p>总计：</p>
-<ul>
-<li class="">5 个 heads / 5 rounds；</li>
-<li class="">34 次 rubric execution；</li>
-<li class="">26 approve、7 request changes、1 block；</li>
-<li class="">约 17.5 分钟 aggregate model runtime；</li>
-<li class="">约 7.32 美元 API-equivalent review cost。</li>
-</ul>
-<p>最终源码明确改为组合 Mathlib 的 <code>IntermediateField.fixingSubgroupEquiv</code>，而不是手工重证 bijection。这与 reuse review 的要求一致。</p>
-<p>这个案例证明 AI review 能改变代码，不只是给 build 贴章。</p>
-<p>它仍然不能证明最终数学经过 domain expert 审核；而且这 34 次 review 全部由同一个 <code>gpt-5.6-sol</code> 模型执行。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="taucetidatareview-本身也要被-review">TauCetiData：review 本身也要被 review<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#taucetidatareview-%E6%9C%AC%E8%BA%AB%E4%B9%9F%E8%A6%81%E8%A2%AB-review" class="hash-link" aria-label="TauCetiData：review 本身也要被 review的直接链接" title="TauCetiData：review 本身也要被 review的直接链接" translate="no">​</a></h2>
-<p>GitHub scoreboard 会在新 round 中原地更新，不适合作为历史记录。TauCetiData 因此把每次执行写成 immutable record：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">(PR, head SHA, rubric, model)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + exact diff hash</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + rubric/engine SHA</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + prompt policy</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + verdict/findings</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + token/runtime/cost</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  + content-addressed transcript blob</span><br></div></code></pre></div></div>
-<p>本地扫描 <a href="https://github.com/TauCetiProject/TauCetiData/tree/08187cf484f2190e39ffc842d595171856963577" target="_blank" rel="noopener noreferrer" class=""><code>TauCetiData@08187cf</code></a> 得到：</p>
-<table><thead><tr><th>Archive item</th><th style="text-align:right">Count</th></tr></thead><tbody><tr><td>review runs</td><td style="text-align:right">50,361</td></tr><tr><td>distinct reviewed PR numbers</td><td style="text-align:right">1,223</td></tr><tr><td>distinct PR-head pairs</td><td style="text-align:right">4,876</td></tr><tr><td>round records</td><td style="text-align:right">6,641</td></tr><tr><td>compressed diff/transcript blobs</td><td style="text-align:right">45,440</td></tr><tr><td>A/B pairs</td><td style="text-align:right">398</td></tr><tr><td>AI pairwise judgments</td><td style="text-align:right">2,102</td></tr><tr><td>human meta-review decisions</td><td style="text-align:right">35</td></tr></tbody></table>
-<p>全历史 execution error 占 23.5%，但这个数字被早期 provider/infra failures 主导：</p>
-<ul>
-<li class="">7 月以来约 3.0%；</li>
-<li class="">最近一周约 1.1%；</li>
-<li class="">7 月 29 日以后约 0.06%。</li>
-</ul>
-<p>这说明 runner 已经稳定很多。它不说明 review 更正确——<strong>能够稳定输出错误 approval，也会得到漂亮的 reliability 曲线。</strong></p>
-<p>Archive 中约 11,602 美元是按 token 和当日 price table 复算的 API-equivalent cost；快照里的 exact runs 都标记为 subscription auth，不应把它直接写成项目现金支出。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="meta-review-还很早">Meta-review 还很早<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#meta-review-%E8%BF%98%E5%BE%88%E6%97%A9" class="hash-link" aria-label="Meta-review 还很早的直接链接" title="Meta-review 还很早的直接链接" translate="no">​</a></h3>
-<p>TauCetiData 已经能让两个 reviews 在相同 <code>(PR, head, rubric)</code> 上 A/B：judge 会看到实际 checkout，交换两种 presentation order，并尝试用 cross-family panel 降低 self-preference。</p>
-<p>但当前只有 35 个 human decisions，而且 design doc 明确说 resolver/resolution pipeline 尚未完成。</p>
-<p>50,361 次 AI review 是规模；35 个人工标签才是校准。两者不能混为一谈。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="17-万行到底意味着什么">17 万行到底意味着什么？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#17-%E4%B8%87%E8%A1%8C%E5%88%B0%E5%BA%95%E6%84%8F%E5%91%B3%E7%9D%80%E4%BB%80%E4%B9%88" class="hash-link" aria-label="17 万行到底意味着什么？的直接链接" title="17 万行到底意味着什么？的直接链接" translate="no">​</a></h2>
-<p>固定快照的增长很惊人：</p>
-<table><thead><tr><th>指标</th><th style="text-align:right">数值</th></tr></thead><tbody><tr><td>仓库年龄</td><td style="text-align:right">约 60 天</td></tr><tr><td><code>TauCeti/</code> Lean LOC</td><td style="text-align:right">171,565</td></tr><tr><td>merged PRs</td><td style="text-align:right">1,336</td></tr><tr><td>PR merge latency 中位数</td><td style="text-align:right">1.86 小时</td></tr><tr><td>24 小时内 merge</td><td style="text-align:right">94.3%</td></tr><tr><td>单日最高 merge</td><td style="text-align:right">100 PRs</td></tr><tr><td>最近七个抓取日</td><td style="text-align:right">358 merged PRs</td></tr><tr><td>source additions / deletions</td><td style="text-align:right">196,223 / 24,658</td></tr></tbody></table>
-<p>但 LOC 不是 theorem，也不是 roadmap completion。</p>
-<p>新上线的 TauCetiProgress 对 ReductiveGroups 做了第一份细读报告：100 个 PR 中，55 个没有新增 declaration，而是在拆目录、改 imports、rename 和 consolidate。其余很多是让 comodule API 可用的 <code>_apply</code>、<code>_comp</code>、<code>_toLinearMap</code> plumbing。</p>
-<p>这些工作未必浪费。Mathlib 自己也靠大量 plumbing 才能复用。问题是：</p>
-<blockquote>
-<p><strong>PR 数量衡量流水线吞吐，roadmap summit 才衡量数学完成。</strong></p>
-</blockquote>
-<p>目前 14 个 active roadmap 中，只有 ReductiveGroups 有生成的 <code>STATUS.md</code> / <code>PROGRESS.md</code>；它仍把 scheme-side equivalence、Lie theory、unipotence、reductivity 与 classification 标成 untouched。</p>
-<p>Tau Ceti 已经解决“能不能高速生产 Lean”，还没有解决“这些 Lean 在半年后有多少仍被使用”。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="它怎样追着-mathlib-跑">它怎样追着 Mathlib 跑<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%AE%83%E6%80%8E%E6%A0%B7%E8%BF%BD%E7%9D%80-mathlib-%E8%B7%91" class="hash-link" aria-label="它怎样追着 Mathlib 跑的直接链接" title="它怎样追着 Mathlib 跑的直接链接" translate="no">​</a></h2>
-<p>Tau Ceti 不是固定 Mathlib release 上的静态项目，而是尝试跟随 master。</p>
-<p><a href="https://github.com/TauCetiProject/TauCeti/blob/a3913fd9111b851af857f720b4ce6721e6634183/.github/workflows/update.yml" target="_blank" rel="noopener noreferrer" class=""><code>update.yml</code></a> 每天调用 SHA-pinned <a href="https://github.com/leanprover-community/downstream-reports" target="_blank" rel="noopener noreferrer" class=""><code>downstream-reports</code></a>：</p>
-<ul>
-<li class="">compatible：打开/更新 last-known-good forward bump；</li>
-<li class="">incompatible：记录 first-known-bad commit，开 issue 与 repair PR；</li>
-<li class="">Worker 的 <code>bump</code> phase 修复代码；</li>
-<li class="">bump guard 只允许严格的 forward pin/toolchain transition。</li>
-</ul>
-<p>不到两个月的 main history 里至少有 26 个 dependency/pin-related commits。抓取时又有新的 Mathlib incompatibility issue 与 bot repair PR 在进行。</p>
-<p>这也回应了上一篇 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/are-we-stuck-with-lean-mathlib-proof-portability">“我们真的被 Lean 锁定了吗？”</a>：Tau Ceti 不是在缓解 Lean lock-in，而是在极大增强 Lean/Mathlib ecosystem 的生产速度。未来跨 prover 的 roadmap/spec translation 或许会降低迁移成本，但今天它仍是一台 Lean accelerator。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="六个不能被规模掩盖的问题">六个不能被规模掩盖的问题<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%85%AD%E4%B8%AA%E4%B8%8D%E8%83%BD%E8%A2%AB%E8%A7%84%E6%A8%A1%E6%8E%A9%E7%9B%96%E7%9A%84%E9%97%AE%E9%A2%98" class="hash-link" aria-label="六个不能被规模掩盖的问题的直接链接" title="六个不能被规模掩盖的问题的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-same-model-review-monoculture">1. Same-model review monoculture<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#1-same-model-review-monoculture" class="hash-link" aria-label="1. Same-model review monoculture的直接链接" title="1. Same-model review monoculture的直接链接" translate="no">​</a></h3>
-<p>十个 angle 不等于十个独立 verifier。需要按风险抽样引入第二 provider 与 domain expert。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-worker-host-mode-默认过宽">2. Worker host mode 默认过宽<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#2-worker-host-mode-%E9%BB%98%E8%AE%A4%E8%BF%87%E5%AE%BD" class="hash-link" aria-label="2. Worker host mode 默认过宽的直接链接" title="2. Worker host mode 默认过宽的直接链接" translate="no">​</a></h3>
-<p>CI sandbox 很强，但 persistent worker 的安全模式是 opt-in。对 unattended agent，Bubble 应更接近默认而不是高级选项。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-rubric-freshness-还有已知缺口">3. Rubric freshness 还有已知缺口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#3-rubric-freshness-%E8%BF%98%E6%9C%89%E5%B7%B2%E7%9F%A5%E7%BC%BA%E5%8F%A3" class="hash-link" aria-label="3. Rubric freshness 还有已知缺口的直接链接" title="3. Rubric freshness 还有已知缺口的直接链接" translate="no">​</a></h3>
-<p>Review 会记录 rubric fingerprint，但当前源码注释明确说：rubric 修改还不会让 carried-forward approvals 自动 stale，相关 issue 仍在跟踪。Head freshness 已解决，policy freshness 尚未完全解决。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-human-calibration-与-ai-review-不成比例">4. Human calibration 与 AI review 不成比例<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#4-human-calibration-%E4%B8%8E-ai-review-%E4%B8%8D%E6%88%90%E6%AF%94%E4%BE%8B" class="hash-link" aria-label="4. Human calibration 与 AI review 不成比例的直接链接" title="4. Human calibration 与 AI review 不成比例的直接链接" translate="no">​</a></h3>
-<p>50k reviews 对 35 human decisions。项目已经有正确的 evaluation 架构，但还没有足够 ground truth 支撑“AI review 准确率很高”的结论。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-长期维护没有经过时间检验">5. 长期维护没有经过时间检验<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#5-%E9%95%BF%E6%9C%9F%E7%BB%B4%E6%8A%A4%E6%B2%A1%E6%9C%89%E7%BB%8F%E8%BF%87%E6%97%B6%E9%97%B4%E6%A3%80%E9%AA%8C" class="hash-link" aria-label="5. 长期维护没有经过时间检验的直接链接" title="5. 长期维护没有经过时间检验的直接链接" translate="no">​</a></h3>
-<p>两个月无法证明 API 经得起多次 Mathlib migration、consolidation、downstream use 和 model/maintainer turnover。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-data-与-governance-都有-scalebus-factor-风险">6. Data 与 governance 都有 scale/bus-factor 风险<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#6-data-%E4%B8%8E-governance-%E9%83%BD%E6%9C%89-scalebus-factor-%E9%A3%8E%E9%99%A9" class="hash-link" aria-label="6. Data 与 governance 都有 scale/bus-factor 风险的直接链接" title="6. Data 与 governance 都有 scale/bus-factor 风险的直接链接" translate="no">​</a></h3>
-<p>TauCetiData 已有 115,555 个 tracked files、8,603 commits；继续按当前速度需要 sharding/packing。Worker、Review 和 GitHub App 的运行知识也高度集中在少数维护者身上。</p>
-<p>还有一项值得补充：Tau Ceti 自己目前依赖标准 Lean kernel，没有把 nanoda、Lean4Lean 或另一套 external kernel 加进项目 workflow。独立 checker 可以增加 implementation diversity，但仍不能判断 statement 是否忠实。关于这个边界，可以参见<a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda">此前的 Lean soundness 分析</a>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最值得迁移的不是代码而是方法">最值得迁移的不是代码，而是方法<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E6%9C%80%E5%80%BC%E5%BE%97%E8%BF%81%E7%A7%BB%E7%9A%84%E4%B8%8D%E6%98%AF%E4%BB%A3%E7%A0%81%E8%80%8C%E6%98%AF%E6%96%B9%E6%B3%95" class="hash-link" aria-label="最值得迁移的不是代码，而是方法的直接链接" title="最值得迁移的不是代码，而是方法的直接链接" translate="no">​</a></h2>
-<p>即使 Tau Ceti 最后没有成为长期数学基础设施，它已经提供了几条可复用的工程原则：</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="policy-与-generated-code-分仓">Policy 与 generated code 分仓<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#policy-%E4%B8%8E-generated-code-%E5%88%86%E4%BB%93" class="hash-link" aria-label="Policy 与 generated code 分仓的直接链接" title="Policy 与 generated code 分仓的直接链接" translate="no">​</a></h3>
-<p>生成器不能修改自己的 roadmap、rubric 和 trusted CI。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="deterministic-controlgenerative-prose">Deterministic control，generative prose<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#deterministic-controlgenerative-prose" class="hash-link" aria-label="Deterministic control，generative prose的直接链接" title="Deterministic control，generative prose的直接链接" translate="no">​</a></h3>
-<p>能用 Python 决定的 window、cursor、PR set、declaration list，不交给模型。模型只写 status prose，并明确标注未验证。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="review-是-data-product">Review 是 data product<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#review-%E6%98%AF-data-product" class="hash-link" aria-label="Review 是 data product的直接链接" title="Review 是 data product的直接链接" translate="no">​</a></h3>
-<p>保存 exact diff、rubric SHA、model、verdict 与 transcript，才能比较模型、复盘 incident、做 human calibration。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="当前-head-才有-approval">当前 head 才有 approval<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E5%BD%93%E5%89%8D-head-%E6%89%8D%E6%9C%89-approval" class="hash-link" aria-label="当前 head 才有 approval的直接链接" title="当前 head 才有 approval的直接链接" translate="no">​</a></h3>
-<p>一旦 push，新 head 必须重新 review；merge 读 ledger，不信 rendered comment。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="生成必须有-backpressure">生成必须有 backpressure<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E7%94%9F%E6%88%90%E5%BF%85%E9%A1%BB%E6%9C%89-backpressure" class="hash-link" aria-label="生成必须有 backpressure的直接链接" title="生成必须有 backpressure的直接链接" translate="no">​</a></h3>
-<p>先 rebase/fix/review，再 author；否则 AI 只会把 bottleneck 从写 proof 转成无限积压。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cooperative-coordination-与-hard-safety-分开">Cooperative coordination 与 hard safety 分开<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#cooperative-coordination-%E4%B8%8E-hard-safety-%E5%88%86%E5%BC%80" class="hash-link" aria-label="Cooperative coordination 与 hard safety 分开的直接链接" title="Cooperative coordination 与 hard safety 分开的直接链接" translate="no">​</a></h3>
-<p>Claim 可以 fail-open，branch overwrite 必须 fail-closed。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最终判断">最终判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E6%9C%80%E7%BB%88%E5%88%A4%E6%96%AD" class="hash-link" aria-label="最终判断的直接链接" title="最终判断的直接链接" translate="no">​</a></h2>
-<p>Tau Ceti 已经证明了三件事：</p>
-<ol>
-<li class="">AI 可以在很短时间内生成一座大型、可 build、通过 axiom audit 的 Lean downstream library；</li>
-<li class="">AI review 可以被做成 iterative、multi-angle、可留证据的工程流程；</li>
-<li class="">去中心化 workers 可以在 Mathlib 持续变化时维持极高吞吐。</li>
-</ol>
-<p>它还没有证明：</p>
-<ul>
-<li class="">semantic accuracy 能达到同样规模；</li>
-<li class="">API 会长期保持 coherent；</li>
-<li class="">独立 downstream 会广泛复用这些 declarations；</li>
-<li class="">这种成本和治理模式能持续多年。</li>
-</ul>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>更准确的定义</div><div class="admonitionContent_BuS1"><p><strong>Tau Ceti 是一次公开实验：把 formal-library engineering 从“人类写 proof”迁移到“人类写 specification、policy 与 audit”。</strong></p><p>这比“AI Mathlib”更精确，也更值得关注。</p></div></div>
-<p>下一阶段最有价值的数字，不是第 20 万行，而是：domain-expert overturn rate、90/180 天 API survival、独立 downstream consumers、每次 Mathlib bump 的 repair cost，以及 roadmap acceptance criteria 真正完成了多少。</p>
-<hr>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要资料">主要资料<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/tauceti-ai-mathlib-roadmap-review-system#%E4%B8%BB%E8%A6%81%E8%B5%84%E6%96%99" class="hash-link" aria-label="主要资料的直接链接" title="主要资料的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://github.com/TauCetiProject/TauCeti" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCeti</a></li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiRoadmap" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCetiRoadmap</a></li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiReview" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCetiReview</a></li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiData" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCetiData</a></li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiProgress" target="_blank" rel="noopener noreferrer" class="">TauCetiProject/TauCetiProgress</a></li>
-<li class=""><a href="https://github.com/kim-em/TauCetiWorker" target="_blank" rel="noopener noreferrer" class="">kim-em/TauCetiWorker</a></li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiReview/blob/f0cf746096a8637b7a1703911a0c02a5ec93283c/SECURITY.md" target="_blank" rel="noopener noreferrer" class="">Tau Ceti review security model</a></li>
-<li class=""><a href="https://github.com/TauCetiProject/TauCetiData/blob/08187cf484f2190e39ffc842d595171856963577/docs/eval-design.md" target="_blank" rel="noopener noreferrer" class="">Tau Ceti review evaluation design</a></li>
-<li class=""><a href="https://github.com/leanprover-community/intentions" target="_blank" rel="noopener noreferrer" class="">leanprover-community/intentions</a></li>
-<li class=""><a href="https://github.com/leanprover-community/downstream-reports" target="_blank" rel="noopener noreferrer" class="">leanprover-community/downstream-reports</a></li>
-</ul>]]></content>
-        <category label="lean" term="lean"/>
-        <category label="ai-math" term="ai-math"/>
-        <category label="formal-verification" term="formal-verification"/>
-        <category label="mathlib" term="mathlib"/>
-        <category label="multi-agent" term="multi-agent"/>
     </entry>
 </feed>
