@@ -1,49 +1,70 @@
 ---
-title: "录音转写与会议笔记自建选型：从会议 Bot 到 API-first 体验栈"
+title: "录音转写与会议笔记自建选型：从旁路录音到 API-first 体验栈"
 date: 2026-08-07
 slug: audio-transcription-meeting-notes-open-source
-tags: [transcription, meeting-notes, self-hosted, api, meeting-bot, open-source]
-description: 静态调研 GitHub 上适合自建录音转写和会议笔记的开源项目，更新为 API-first 与体验侧优先口径，区分会议 bot/API、体验型会议助手、文件后台、媒体库和 ASR API provider。
+tags: [transcription, meeting-notes, self-hosted, api, ambient-recording, open-source]
+description: 静态调研 GitHub 上适合线下会议、微信会议和录音文件转写的开源项目，更新为旁路录音、桌面/浏览器采集、API-first STT 和会议笔记体验优先。
 ---
 
-# 录音转写与会议笔记自建选型：从会议 Bot 到 API-first 体验栈
+# 录音转写与会议笔记自建选型：从旁路录音到 API-first 体验栈
 
 录音转写看起来像一个单点能力：给一段音频，返回文字。真的要自建时，它会很快拆成几个完全不同的问题：谁负责录音或进会？是实时字幕还是会后处理？要不要说话人？要不要摘要、行动项和问答？要不要 API、权限、队列和搜索？
 
-这篇文章的第一版把重点放在“自建开源项目”上；更新后要把口径再往前推一步：**优先选择能接外部 API、体验侧已经成型的项目**，不要把团队早期精力压在本地 Whisper / faster-whisper / Parakeet 模型运维上。
+这篇文章的第一版把重点放在“自建开源项目”上；第二版又偏向了“在线会议 bot 入会”。真正的目标应该更像：**把手机或电脑放在旁边录音，一边实时转写，一边生成会议笔记**。它覆盖线下会议、办公室讨论、访谈，以及微信会议这类 bot 不容易进入或没必要进入的场景。
 
-因此，本文不再把模型底座当成主线，而是把它放回应该在的位置：会议 bot、浏览器/桌面体验、文件后台、团队媒体库和 ASR API provider 之间的一个可替换后端。
+因此，本文不再把会议 bot 当成唯一主线，也不把本地模型底座当成主线。更合理的分层是：先解决手机/桌面/浏览器的旁路录音入口，再把音频流接到外部 STT API，最后做会议笔记、行动项、问答和归档。
 
 <!-- truncate -->
 
 :::tip 一句话结论
-如果要自建“会议链接进来、实时 transcript 出去”的底座，仍然先看 **Vexa**，并把它的 transcription 后端改接外部 STT API / OpenAI-compatible gateway；同时把 **Attendee** 加入同级 meeting bot API 候选。体验侧重点看 **Cognium Meet / Pikabaka / Amurex / anarlog**；文件后台重点看 **OpenTranscribe**；Scriberr、Whishper 和本地 Whisper 系列降级为特定场景或 fallback。
+如果主场景是线下会议或微信会议，第一优先不是 Vexa 这类 meeting bot，而是 **旁路录音/桌面采集 + 实时 STT API + 会议笔记体验**。桌面侧先看 **Pikabaka** 和 **screenpipe**；浏览器会议可看 **Cognium Meet**；录音文件和团队归档看 **OpenTranscribe / Scriberr**；真正需要 bot 自动加入 Zoom/Meet/Teams 时，再看 **Vexa / Attendee**。
 :::
 
 :::info 证据口径
-本文快照日期为 **2026-08-07**。候选来自 GitHub 仓库、README、官方文档、release/license 状态和项目官方截图/架构图；本次更新新增了 Attendee、Cognium Meet、Pikabaka、Amurex、anarlog，以及 Deepgram、AssemblyAI、OpenAI、Speechmatics、DashScope 等外部 ASR API 文档。本文不把本地启动模型作为选型证据；运行实践属于 shortlist 之后的独立任务。
+本文快照日期为 **2026-08-07**。候选来自 GitHub 仓库、README、官方文档、release/license 状态和项目官方截图/架构图；本次更新新增了旁路录音/桌面采集口径，补入 screenpipe，并重新解释 Pikabaka、Cognium Meet、OpenTranscribe、Scriberr、Vexa/Attendee 与外部 ASR API 的位置。本文不把本地启动模型作为选型证据；运行实践属于 shortlist 之后的独立任务。
 :::
 
-## 先把“转写”拆成六层产品
+## 先把“转写”拆成六层产品：从旁路录音开始
 
 “能转写”不是一个产品类别。真正影响落地的是：谁拿到会议音频、谁提供用户体验、谁保存资料、谁做说话人和摘要、谁承担 ASR 质量与成本。
 
 | 层级 | 典型输入 | 典型输出 | 优先候选 | 最容易踩的坑 |
 | --- | --- | --- | --- | --- |
-| 会议 bot / transcription API | Google Meet、Teams、Zoom、Jitsi 等会议 URL | 实时 speaker-attributed transcript、API/WebSocket、webhook | Vexa、Attendee；商业对照 Recall.ai / MeetingBaaS | 入会、音频捕获、平台限制比 ASR 本身更难 |
-| 体验型会议助手 | 浏览器 tab audio、桌面系统音频、麦克风 | 实时建议、会议笔记、Ask/Q&A、follow-up email、Markdown/SQLite | Cognium Meet、Pikabaka、Amurex、anarlog、Meetily | 体验很好，但不一定适合作团队中心 API |
-| 录音文件后台 | 音频、视频、会议录屏、文件夹 watcher | 转写、说话人、摘要、问答、归档 | OpenTranscribe、Scriberr | 不负责自动进会，实时性有限 |
+| 旁路录音 / 桌面采集 | 手机麦克风、电脑麦克风、系统音频、微信会议声音、线下会议环境声 | 实时音频流、临时录音、speaker-separated channel、时间戳 | Pikabaka、screenpipe；自研时用 Web/PWA recorder + STT API | 这是主场景的入口层；手机和电脑权限、回声、多人说话、知情同意比模型更关键 |
+| 浏览器会议助手 | 浏览器 tab audio、Google Meet 等网页会议 | transcript、notes、action items、Ask/Q&A | Cognium Meet、Amurex | 适合网页会议，不一定覆盖微信桌面客户端或线下会议 |
+| 录音文件后台 | 音频、视频、会议录屏、文件夹 watcher | 转写、说话人、摘要、问答、归档 | OpenTranscribe、Scriberr | 不负责实时录音入口；适合会后处理和团队资产库 |
+| 会议 bot / transcription API | Google Meet、Teams、Zoom、Jitsi 等会议 URL | bot 入会、实时 transcript、webhook/API | Vexa、Attendee；商业对照 Recall.ai / MeetingBaaS | 只在“必须自动进线上会议”时优先；对线下/微信会议不是第一解 |
 | 字幕/媒体转写 WebUI | 本地文件、URL、YouTube/yt-dlp | TXT、JSON、SRT、VTT、字幕编辑/翻译 | Whishper、Whisper-WebUI、Buzz | 适合媒体处理，不等于会议纪要系统 |
-| 团队媒体库/分析平台 | 大量音视频、S3/SMB/watch sources | 搜索、speaker profiles、RBAC、集合、AI 分析 | OpenTranscribe | 功能重，成熟度与权限边界必须深审 |
 | ASR API / diarization provider | 音频流或文件 | 文字、word timestamp、speaker label、段落和格式化 | Deepgram、AssemblyAI、Gladia、Speechmatics、OpenAI、DashScope | 它们是能力层，不是会议笔记产品 |
 
-这个分类比 stars 更重要。会议笔记需求一旦包含“自动进入会议”，普通上传转写 WebUI 就不在同一赛道；如果只是“录音文件进后台”，会议 bot 反而太重。如果团队明确不想自己跑模型，核心筛选条件就应该变成：**产品层是否成熟，ASR 层是否能替换成 API。**
+这个分类比 stars 更重要。线下会议和微信会议的关键问题不是“bot 能不能入会”，而是能不能稳定拿到现场或系统音频，并把音频实时送到 STT API。只有当需求明确是“系统自己进入 Zoom/Meet/Teams 会议链接”时，Vexa / Attendee 才是第一层。
 
-## Vexa：会议 bot 和实时 transcription API
+## 对线下会议 / 微信会议，先选录音入口
+
+这类场景应该按录音入口分三种：
+
+| 场景 | 推荐入口 | 为什么 |
+| --- | --- | --- |
+| 线下会议，手机放桌上录 | 手机录音 / Web/PWA recorder / 轻量移动端上传 | 不需要 bot；重点是麦克风质量、多人说话、断网缓存、录音权限和会后归档 |
+| 微信会议或其它桌面客户端 | 桌面系统音频 + 麦克风双通道采集 | bot 很难进入微信会议；更实用的是捕获电脑听到的声音和自己麦克风，然后实时送 STT API |
+| 浏览器里的在线会议 | 浏览器 tab audio / extension | 如果会议在浏览器里，Chrome extension 或 WebRTC tab capture 能比 bot 更轻 |
+
+所以，第一版产品可以不是“会议 bot 平台”，而是：
+
+```text
+手机 / 桌面 / 浏览器录音入口
+  → 实时 STT API（Deepgram / AssemblyAI / OpenAI / DashScope 等）
+  → 会议笔记整理（摘要、行动项、问题、决策、发言人）
+  → ChatArch / Feishu / Markdown / 搜索归档
+```
+
+这条路线也更接近用户实际体验：打开一个 App 或网页，点“开始记录”，把手机放桌上，会议结束后自动得到 transcript 和纪要。它缺的是好的采集端和笔记体验，不是再维护一套本地 ASR 模型。
+
+## Vexa：只有需要 bot 自动入会时才优先
 
 Repo: [Vexa-ai/vexa](https://github.com/Vexa-ai/vexa)
 
-Vexa 是本轮最贴近“在线会议实时转写服务”的项目。它的 README 明确定位为 open-source、self-hosted meeting bot & transcription API：bot 加入 Google Meet、Microsoft Teams、Zoom、Jitsi，然后通过你自托管的 API 输出 speaker-attributed transcripts。README 还特别说明，如果只需要 transcription API，可以忽略 agent lane，把它当独立产品使用。
+Vexa 仍然重要，但它解决的是另一类问题：系统自己作为 bot 加入在线会议。它的 README 明确定位为 open-source、self-hosted meeting bot & transcription API：bot 加入 Google Meet、Microsoft Teams、Zoom、Jitsi，然后通过你自托管的 API 输出 speaker-attributed transcripts。README 还特别说明，如果只需要 transcription API，可以忽略 agent lane，把它当独立产品使用。
 
 ![Vexa official architecture](/img/audio-transcription-meeting-notes/vexa-architecture.svg)
 
@@ -181,19 +202,20 @@ OpenTranscribe 是这批候选里功能面最宽的：README 定位为 container
 | 初步结论 | **观察/深审候选：功能形态很对，但不能凭 README 上生产** |
 
 
-## 体验型会议助手：更像 Granola / Otter 的那一层
+## 桌面/体验型会议助手：微信会议和线下旁路录音更相关
 
-如果用户说“体验要丰富”，就不能只看服务端 bot 和 ASR provider。体验型项目通常不一定是最佳中心服务，但它们最能说明会议笔记产品应该长什么样。
+如果用户说“开个手机或电脑放旁边录”，就不能只看服务端 bot 和 ASR provider。体验型项目通常不一定是最佳中心服务，但它们最能说明旁路录音会议笔记应该长什么样。
 
 | 项目 | 体验特征 | API / provider 支持 | 选型判断 |
 | --- | --- | --- | --- |
-| [Cognium Meet](https://github.com/cogniumhq/cognium-meet) | Chrome extension + local API；可录制 browser tab audio，包括 Google Meet；生成 notes、action items、decisions、open questions，并支持对历史会议 Ask/Q&A | README 声称支持 OpenAI `whisper-1` 或 diarized transcription；AI notes 可接 OpenAI/Ollama | **最符合“体验丰富 + 接 API”的开源候选之一**，适合拆 UI、浏览器采集、会议记录库和问答设计 |
-| [Pikabaka](https://github.com/royisme/pikabaka) | 桌面 meeting/interview copilot；实时转写、AI suggested answers、截图理解、双通道系统音频 + 麦克风、local RAG memory | README 声称可切 OpenAI、Claude、Gemini、Groq、Ollama、OpenAI-compatible；STT provider 包含 Deepgram、OpenAI Whisper、Groq Whisper、Azure 等 | 体验侧很强，尤其“实时辅助/面试 copilot”；但更像个人桌面 app，不是团队中心 API |
-| [Amurex](https://github.com/thepersonalaicompany/amurex) | Chrome extension meeting copilot；Google Meet、实时建议、摘要、late join recap、完整 transcript、follow-up email | 自托管需要 extension + backend + web 三仓；README 更偏产品体验，ASR provider 契约需继续深审 | late join recap / follow-up email 很值得借鉴；作为底座前要深读后端/API 边界 |
+| [Pikabaka](https://github.com/royisme/pikabaka) | 桌面 meeting/interview copilot；双通道采集 system audio 和 microphone，实时转写、AI suggested answers、截图理解、local RAG memory | README 声称任意 LLM / 任意 STT，可切 OpenAI、Claude、Gemini、Groq、Ollama、OpenAI-compatible；STT provider 包含 Deepgram、OpenAI Whisper、Groq Whisper、Azure 等 | **最贴近微信会议/桌面会议旁路录音**：能同时拿“别人声音”和“自己麦克风”，适合作为第一深读对象 |
+| [screenpipe](https://github.com/screenpipe/screenpipe) | 24/7 捕获 screen + audio，本地保存，给 Agent 做 searchable memory、SOP 和 automation | README 明确捕获 system audio 和 microphone；可用本地 Whisper 或 Deepgram cloud transcription；能覆盖 Zoom、Google Meet、Teams 或任意应用 | **最贴近“电脑旁路记录一切”**，但它是持续记录/个人记忆平台，需注意隐私、授权和 license/source-available 边界 |
+| [Cognium Meet](https://github.com/cogniumhq/cognium-meet) | Chrome extension + local API；可录制 browser tab audio，包括 Google Meet；生成 notes、action items、decisions、open questions，并支持对历史会议 Ask/Q&A | README 声称支持 OpenAI `whisper-1` 或 diarized transcription；AI notes 可接 OpenAI/Ollama | 适合浏览器会议和网页录音入口；不直接覆盖微信桌面客户端 |
+| [Amurex](https://github.com/thepersonalaicompany/amurex) | Chrome extension meeting copilot；Google Meet、实时建议、摘要、late join recap、完整 transcript、follow-up email | 自托管需要 extension + backend + web 三仓；README 更偏产品体验，ASR provider 契约需继续深审 | late join recap / follow-up email 很值得借鉴；主要是 Google Meet/Teams 网页会议体验参考 |
 | [anarlog](https://github.com/fastrepl/anarlog) | 开源 Granola alternative；local-first meeting notetaker；SQLite 保存 canonical meeting data，Markdown export | BYO LLM 支持 OpenAI、Anthropic、Gemini、OpenRouter、Ollama；但 README 明确本地转写 | 体验 benchmark 强，API-first STT 弱；适合借鉴 local-first / Markdown / SQLite，而不是直接当主线 |
-| [Meetily](https://github.com/Zackriya-Solutions/meetily) | 跨平台本地会议助手，实时转写和总结 | LLM provider 可接 Ollama、Claude、Groq、OpenRouter、OpenAI-compatible；转写主线偏本地模型 | 体验参考，不是“不跑本地模型”的首选 |
+| [Meetily](https://github.com/Zackriya-Solutions/meetily) | 跨平台本地会议助手，实时转写和总结，并描述 microphone + system audio mixing | LLM provider 可接 Ollama、Claude、Groq、OpenRouter、OpenAI-compatible；转写主线偏本地模型 | 体验参考，不是“不跑本地模型”的首选 |
 
-这组项目给出的产品启发是：会议笔记不只是 transcript，还包括会中辅助、迟到补课、会后摘要、行动项、follow-up email、全文问答、Markdown/本地数据模型和团队共享。即使最终不用它们做底座，也应该把它们当体验标杆。
+这组项目给出的产品启发是：会议笔记不只是 transcript，还包括录音入口、双通道音频、会中辅助、迟到补课、会后摘要、行动项、follow-up email、全文问答、Markdown/本地数据模型和团队共享。即使最终不用它们做底座，也应该把它们当体验标杆。
 
 
 ## ASR API provider：把模型运维移出第一阶段
@@ -316,10 +338,11 @@ Vexa 至少把这些问题放在同一个产品边界里了。后续实践应该
 
 | 场景 | 第一候选 | 第二候选 | 为什么 |
 | --- | --- | --- | --- |
-| 自建会议 bot + 实时 transcript API | **Vexa** | Attendee | Vexa 更端到端；Attendee 更像 meeting bot primitive |
-| 统一 meeting bot 基础设施 | **Attendee** | Vexa / Recall.ai 对照 | 如果我们要自己做体验层，薄 bot API 更灵活 |
-| 体验型会议助手 / Granola-like | **Cognium Meet / Pikabaka** | Amurex / anarlog / Meetily | 重点看浏览器/桌面采集、会中辅助、notes/Q&A/follow-up，而不是模型 |
+| 线下会议，手机放桌上录 | **Web/PWA recorder + STT API** | Scriberr / OpenTranscribe 做会后后台 | 开源现成端到端手机会议笔记较少，先把移动录音入口和后端 API 边界做薄 |
+| 微信会议 / 桌面客户端 | **Pikabaka / screenpipe** | Meetily | 重点是系统音频 + 麦克风双通道采集，bot 入会不是主线 |
+| 浏览器会议 | **Cognium Meet** | Amurex | Chrome extension / tab audio 比 bot 更轻 |
 | 已有录音/录屏后台 | **OpenTranscribe** | Scriberr | API-first 口径下，OpenTranscribe 的 cloud ASR provider 抽象更重要 |
+| 自建会议 bot + 实时 transcript API | Vexa | Attendee | 只有明确要系统自动加入 Zoom/Meet/Teams 会议时才优先 |
 | 媒体字幕和翻译 | **Whishper** | Whisper-WebUI / Buzz | 仍适合媒体/字幕，不是会议笔记主线 |
 | ASR provider 层 | **Deepgram / AssemblyAI** | OpenAI / Gladia / Speechmatics / DashScope | 用同一组样例实测 diarization、时间戳、标点、延迟、成本 |
 | 自建 STT fallback | docker-whisper / WhisperLive | faster-whisper / WhisperX | 只作为 fallback 或特殊隐私/离线场景 |
@@ -328,11 +351,11 @@ Vexa 至少把这些问题放在同一个产品边界里了。后续实践应该
 
 下一步不应该继续在本地模型上消耗时间。更合理的实践顺序是：
 
-1. **保留 Vexa 作为会议 bot/API 底座**，但把当前 CPU STT 视为 smoke/fallback；新增一个 external STT adapter，把 `TRANSCRIPTION_SERVICE_URL` 指向外部 API。
-2. **让 Attendee 和 Vexa 并列静态深读**：比较 bot lifecycle、webhook、media stream、self-host 部署、权限和会议平台覆盖。
-3. **做 provider 小样本实测**：同一段中文、英文、多人会议音频，分别跑 Deepgram、AssemblyAI、OpenAI、DashScope；比较 diarization、时间戳、段落、标点、延迟、成本和摘要前处理质量。
-4. **从体验型项目拆产品需求**：Cognium Meet / Pikabaka / Amurex / anarlog 重点看 UI、数据模型、导出、会中辅助、Ask/Q&A 和 follow-up workflow。
-5. **文件后台另做 OpenTranscribe 专项审查**：如果它的 cloud ASR provider、权限、搜索和媒体库足够稳，可以作为录音归档后台；否则先只借鉴它的 provider 抽象。
+1. **先做旁路录音 MVP**：手机/浏览器/桌面只负责录音和上传/stream，不做重模型；后端接 Deepgram、AssemblyAI、OpenAI 或 DashScope 做实时/准实时转写。
+2. **桌面微信会议优先验证双通道采集**：用 Pikabaka / screenpipe 的设计做参考，确认 macOS/Windows 上能否稳定采集 system audio + microphone，并区分“对方声音”和“自己声音”。
+3. **做 provider 小样本实测**：同一段线下中文会议、微信会议录音、多人对话样例，分别跑 Deepgram、AssemblyAI、OpenAI、DashScope；比较 diarization、时间戳、段落、标点、延迟、成本和摘要前处理质量。
+4. **从体验型项目拆产品需求**：Pikabaka / screenpipe / Cognium Meet / Amurex / anarlog 重点看录音入口、UI、数据模型、导出、会中辅助、Ask/Q&A 和 follow-up workflow。
+5. **Vexa / Attendee 保留为线上会议 bot 支线**：只有当需求变成“给系统一个 Zoom/Meet/Teams 链接，让系统自己入会”时，再推进 bot stack。
 
 ## 主要一手来源
 
@@ -348,6 +371,7 @@ Vexa 至少把这些问题放在同一个产品边界里了。后续实践应该
 
 - [Cognium Meet](https://github.com/cogniumhq/cognium-meet)
 - [Pikabaka](https://github.com/royisme/pikabaka)
+- [screenpipe](https://github.com/screenpipe/screenpipe)
 - [Amurex](https://github.com/thepersonalaicompany/amurex)
 - [anarlog](https://github.com/fastrepl/anarlog)
 - [Meetily](https://github.com/Zackriya-Solutions/meetily)
