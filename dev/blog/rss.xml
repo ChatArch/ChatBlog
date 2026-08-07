@@ -9,29 +9,23 @@
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
         <item>
-            <title><![CDATA[录音转写与会议笔记自建选型：从旁路录音到 API-first 体验栈]]></title>
+            <title><![CDATA[录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source</link>
             <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source</guid>
             <pubDate>Fri, 07 Aug 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[静态调研 GitHub 上适合线下会议、微信会议和录音文件转写的开源项目，更新为旁路录音、桌面/浏览器采集、API-first STT 和会议笔记体验优先。]]></description>
+            <description><![CDATA[静态调研 GitHub 上适合自建录音转写、在线会议实时转写和会议纪要的开源项目，区分会议 bot/API、录音文件后台、字幕媒体套件、团队媒体库与底层 ASR pipeline。]]></description>
             <content:encoded><![CDATA[<p>录音转写看起来像一个单点能力：给一段音频，返回文字。真的要自建时，它会很快拆成几个完全不同的问题：谁负责录音或进会？是实时字幕还是会后处理？要不要说话人？要不要摘要、行动项和问答？要不要 API、权限、队列和搜索？</p>
-<p>这篇文章的第一版把重点放在“自建开源项目”上；第二版又偏向了“在线会议 bot 入会”。真正的目标应该更像：<strong>把手机或电脑放在旁边录音，一边实时转写，一边生成会议笔记</strong>。它覆盖线下会议、办公室讨论、访谈，以及微信会议这类 bot 不容易进入或没必要进入的场景。</p>
-<p>因此，本文不再把会议 bot 当成唯一主线，也不把本地模型底座当成主线。更合理的分层是：先解决手机/桌面/浏览器的旁路录音入口，再把音频流接到外部 STT API，最后做会议笔记、行动项、问答和归档。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>如果主场景是线下会议或微信会议，第一优先不是 Vexa 这类 meeting bot，而是 <strong>旁路录音/桌面采集 + 实时 STT API + 会议笔记体验</strong>。桌面侧先看 <strong>Pikabaka</strong> 和 <strong>screenpipe</strong>；浏览器会议可看 <strong>Cognium Meet</strong>；录音文件和团队归档看 <strong>OpenTranscribe / Scriberr</strong>；真正需要 bot 自动加入 Zoom/Meet/Teams 时，再看 <strong>Vexa / Attendee</strong>。</p></div></div>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>本文快照日期为 <strong>2026-08-07</strong>。候选来自 GitHub 仓库、README、官方文档、release/license 状态和项目官方截图/架构图；本次更新新增了旁路录音/桌面采集口径，补入 screenpipe，并重新解释 Pikabaka、Cognium Meet、OpenTranscribe、Scriberr、Vexa/Attendee 与外部 ASR API 的位置。本文不把本地启动模型作为选型证据；运行实践属于 shortlist 之后的独立任务。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把转写拆成六层产品从旁路录音开始">先把“转写”拆成六层产品：从旁路录音开始<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E5%85%88%E6%8A%8A%E8%BD%AC%E5%86%99%E6%8B%86%E6%88%90%E5%85%AD%E5%B1%82%E4%BA%A7%E5%93%81%E4%BB%8E%E6%97%81%E8%B7%AF%E5%BD%95%E9%9F%B3%E5%BC%80%E5%A7%8B" class="hash-link" aria-label="先把“转写”拆成六层产品：从旁路录音开始的直接链接" title="先把“转写”拆成六层产品：从旁路录音开始的直接链接" translate="no">​</a></h2>
-<p>“能转写”不是一个产品类别。真正影响落地的是：谁拿到会议音频、谁提供用户体验、谁保存资料、谁做说话人和摘要、谁承担 ASR 质量与成本。</p>
-<table><thead><tr><th>层级</th><th>典型输入</th><th>典型输出</th><th>优先候选</th><th>最容易踩的坑</th></tr></thead><tbody><tr><td>旁路录音 / 桌面采集</td><td>手机麦克风、电脑麦克风、系统音频、微信会议声音、线下会议环境声</td><td>实时音频流、临时录音、speaker-separated channel、时间戳</td><td>Pikabaka、screenpipe；自研时用 Web/PWA recorder + STT API</td><td>这是主场景的入口层；手机和电脑权限、回声、多人说话、知情同意比模型更关键</td></tr><tr><td>浏览器会议助手</td><td>浏览器 tab audio、Google Meet 等网页会议</td><td>transcript、notes、action items、Ask/Q&amp;A</td><td>Cognium Meet、Amurex</td><td>适合网页会议，不一定覆盖微信桌面客户端或线下会议</td></tr><tr><td>录音文件后台</td><td>音频、视频、会议录屏、文件夹 watcher</td><td>转写、说话人、摘要、问答、归档</td><td>OpenTranscribe、Scriberr</td><td>不负责实时录音入口；适合会后处理和团队资产库</td></tr><tr><td>会议 bot / transcription API</td><td>Google Meet、Teams、Zoom、Jitsi 等会议 URL</td><td>bot 入会、实时 transcript、webhook/API</td><td>Vexa、Attendee；商业对照 Recall.ai / MeetingBaaS</td><td>只在“必须自动进线上会议”时优先；对线下/微信会议不是第一解</td></tr><tr><td>字幕/媒体转写 WebUI</td><td>本地文件、URL、YouTube/yt-dlp</td><td>TXT、JSON、SRT、VTT、字幕编辑/翻译</td><td>Whishper、Whisper-WebUI、Buzz</td><td>适合媒体处理，不等于会议纪要系统</td></tr><tr><td>ASR API / diarization provider</td><td>音频流或文件</td><td>文字、word timestamp、speaker label、段落和格式化</td><td>Deepgram、AssemblyAI、Gladia、Speechmatics、OpenAI、DashScope</td><td>它们是能力层，不是会议笔记产品</td></tr></tbody></table>
-<p>这个分类比 stars 更重要。线下会议和微信会议的关键问题不是“bot 能不能入会”，而是能不能稳定拿到现场或系统音频，并把音频实时送到 STT API。只有当需求明确是“系统自己进入 Zoom/Meet/Teams 会议链接”时，Vexa / Attendee 才是第一层。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="对线下会议--微信会议先选录音入口">对线下会议 / 微信会议，先选录音入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E5%AF%B9%E7%BA%BF%E4%B8%8B%E4%BC%9A%E8%AE%AE--%E5%BE%AE%E4%BF%A1%E4%BC%9A%E8%AE%AE%E5%85%88%E9%80%89%E5%BD%95%E9%9F%B3%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="对线下会议 / 微信会议，先选录音入口的直接链接" title="对线下会议 / 微信会议，先选录音入口的直接链接" translate="no">​</a></h2>
-<p>这类场景应该按录音入口分三种：</p>
-<table><thead><tr><th>场景</th><th>推荐入口</th><th>为什么</th></tr></thead><tbody><tr><td>线下会议，手机放桌上录</td><td>手机录音 / Web/PWA recorder / 轻量移动端上传</td><td>不需要 bot；重点是麦克风质量、多人说话、断网缓存、录音权限和会后归档</td></tr><tr><td>微信会议或其它桌面客户端</td><td>桌面系统音频 + 麦克风双通道采集</td><td>bot 很难进入微信会议；更实用的是捕获电脑听到的声音和自己麦克风，然后实时送 STT API</td></tr><tr><td>浏览器里的在线会议</td><td>浏览器 tab audio / extension</td><td>如果会议在浏览器里，Chrome extension 或 WebRTC tab capture 能比 bot 更轻</td></tr></tbody></table>
-<p>所以，第一版产品可以不是“会议 bot 平台”，而是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">手机 / 桌面 / 浏览器录音入口</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → 实时 STT API（Deepgram / AssemblyAI / OpenAI / DashScope 等）</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → 会议笔记整理（摘要、行动项、问题、决策、发言人）</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → ChatArch / Feishu / Markdown / 搜索归档</span><br></div></code></pre></div></div>
-<p>这条路线也更接近用户实际体验：打开一个 App 或网页，点“开始记录”，把手机放桌上，会议结束后自动得到 transcript 和纪要。它缺的是好的采集端和笔记体验，不是再维护一套本地 ASR 模型。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="vexa只有需要-bot-自动入会时才优先">Vexa：只有需要 bot 自动入会时才优先<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#vexa%E5%8F%AA%E6%9C%89%E9%9C%80%E8%A6%81-bot-%E8%87%AA%E5%8A%A8%E5%85%A5%E4%BC%9A%E6%97%B6%E6%89%8D%E4%BC%98%E5%85%88" class="hash-link" aria-label="Vexa：只有需要 bot 自动入会时才优先的直接链接" title="Vexa：只有需要 bot 自动入会时才优先的直接链接" translate="no">​</a></h2>
+<p>如果不先把这些产品形态分开，就很容易把 <code>openai/whisper</code>、<code>faster-whisper</code>、<code>WhisperX</code>、一个 Gradio WebUI、一个会议 bot、一个媒体库平台放进同一张表里比较，最后得到一堆“都能转写”的无效结论。</p>
+<p>这篇只做静态调研，关注 GitHub 上可自建、可部署或可封装的项目，重点场景是录音转写、会议笔记和后续 ChatArch/Agent 工作流集成。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>如果要自动进入在线会议并实时拿 transcript，先看 <strong>Vexa</strong>；如果已有录音/录屏要进一个自托管后台，先看 <strong>Scriberr</strong>；如果主线是字幕、翻译和媒体转写，先看 <strong>Whishper</strong>；如果要团队级媒体库、speaker profile、搜索和协作，观察 <strong>OpenTranscribe</strong>；如果只是缺一个 STT API 或实时流式底座，才看 <strong>docker-whisper / WhisperLive / WhisperX / faster-whisper / whisper.cpp</strong>。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>本文快照日期为 <strong>2026-08-07</strong>。候选来自 GitHub 仓库、README、官方文档、release/license 状态和项目官方截图/架构图。本文没有在本机安装、构建、启动容器、下载模型或做统一 benchmark；运行实践属于 shortlist 之后的独立任务。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把转写拆成五类产品">先把“转写”拆成五类产品<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E5%85%88%E6%8A%8A%E8%BD%AC%E5%86%99%E6%8B%86%E6%88%90%E4%BA%94%E7%B1%BB%E4%BA%A7%E5%93%81" class="hash-link" aria-label="先把“转写”拆成五类产品的直接链接" title="先把“转写”拆成五类产品的直接链接" translate="no">​</a></h2>
+<p>录音转写至少有五条路线。它们都可能用 Whisper 或类似模型，但交付物完全不同。</p>
+<table><thead><tr><th>产品形态</th><th>典型输入</th><th>典型输出</th><th>最容易踩的坑</th></tr></thead><tbody><tr><td>会议 bot / transcription API</td><td>Google Meet、Teams、Zoom、Jitsi 等会议 URL</td><td>实时 speaker-attributed transcript、API/WebSocket</td><td>入会、音频捕获、平台限制比 ASR 本身更难</td></tr><tr><td>录音文件后台</td><td>音频、视频、会议录屏、文件夹 watcher</td><td>转写、说话人、摘要、问答、归档</td><td>不负责自动进会，实时性有限</td></tr><tr><td>字幕/媒体转写 WebUI</td><td>本地文件、URL、YouTube/yt-dlp</td><td>TXT、JSON、SRT、VTT、字幕编辑/翻译</td><td>适合媒体处理，不等于会议纪要系统</td></tr><tr><td>团队媒体库/分析平台</td><td>大量音视频、S3/SMB/watch sources</td><td>搜索、speaker profiles、RBAC、集合、AI 分析</td><td>功能重，成熟度与权限边界必须深审</td></tr><tr><td>ASR / diarization 底座</td><td>音频流或文件</td><td>文字、word timestamp、speaker label</td><td>只是 pipeline，不提供产品、权限、存储和 UI</td></tr></tbody></table>
+<p>这个分类比 stars 更重要。会议笔记需求一旦包含“自动进入会议”，普通上传转写 WebUI 就不在同一赛道；如果只是“录音文件进后台”，会议 bot 反而太重。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="vexa会议-bot-和实时-transcription-api">Vexa：会议 bot 和实时 transcription API<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#vexa%E4%BC%9A%E8%AE%AE-bot-%E5%92%8C%E5%AE%9E%E6%97%B6-transcription-api" class="hash-link" aria-label="Vexa：会议 bot 和实时 transcription API的直接链接" title="Vexa：会议 bot 和实时 transcription API的直接链接" translate="no">​</a></h2>
 <p>Repo: <a href="https://github.com/Vexa-ai/vexa" target="_blank" rel="noopener noreferrer" class="">Vexa-ai/vexa</a></p>
-<p>Vexa 仍然重要，但它解决的是另一类问题：系统自己作为 bot 加入在线会议。它的 README 明确定位为 open-source、self-hosted meeting bot &amp; transcription API：bot 加入 Google Meet、Microsoft Teams、Zoom、Jitsi，然后通过你自托管的 API 输出 speaker-attributed transcripts。README 还特别说明，如果只需要 transcription API，可以忽略 agent lane，把它当独立产品使用。</p>
+<p>Vexa 是本轮最贴近“在线会议实时转写服务”的项目。它的 README 明确定位为 open-source、self-hosted meeting bot &amp; transcription API：bot 加入 Google Meet、Microsoft Teams、Zoom、Jitsi，然后通过你自托管的 API 输出 speaker-attributed transcripts。README 还特别说明，如果只需要 transcription API，可以忽略 agent lane，把它当独立产品使用。</p>
 <p><img decoding="async" loading="lazy" alt="Vexa official architecture" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MjAgNjEwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idCBkIiBmb250LWZhbWlseT0iLWFwcGxlLXN5c3RlbSxCbGlua01hY1N5c3RlbUZvbnQsJ1NlZ29lIFVJJyxSb2JvdG8sSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiPgogIDx0aXRsZSBpZD0idCI+VmV4YSBhcmNoaXRlY3R1cmU8L3RpdGxlPgogIDxkZXNjIGlkPSJkIj5PbmUgQVBJIGdhdGV3YXkgcm91dGVzIHRvIHR3byBkb21haW5zIOKAlCBNZWV0aW5ncyBhbmQgQWdlbnRzIOKAlCBib3RoIHJ1bm5pbmcgb24gb25lIHJ1bnRpbWUgdGhhdCBzcGF3bnMgZWFjaCBib3QgYW5kIGFnZW50IGluIGl0cyBvd24gc2FuZGJveGVkIGNvbnRhaW5lciBvbiBEb2NrZXIsIEt1YmVybmV0ZXMsIG9yIFByb2Nlc3MuPC9kZXNjPgoKICA8ZGVmcz4KICAgIDxtYXJrZXIgaWQ9ImFycm93IiB2aWV3Qm94PSIwIDAgMTAgMTAiIHJlZlg9IjgiIHJlZlk9IjUiIG1hcmtlcldpZHRoPSI3IiBtYXJrZXJIZWlnaHQ9IjciIG9yaWVudD0iYXV0by1zdGFydC1yZXZlcnNlIj4KICAgICAgPHBhdGggZD0iTTAsMCBMMTAsNSBMMCwxMCB6IiBmaWxsPSIjNjQ3NDhiIi8+CiAgICA8L21hcmtlcj4KICAgIDxzdHlsZT4KICAgICAgLm1vbm8geyBmb250LWZhbWlseTogdWktbW9ub3NwYWNlLCdTRiBNb25vJywnTWVubG8nLCdDb25zb2xhcycsbW9ub3NwYWNlOyB9CiAgICAgIC5lZGdlIHsgc3Ryb2tlOiAjNjQ3NDhiOyBzdHJva2Utd2lkdGg6IDEuODsgZmlsbDogbm9uZTsgfQogICAgICAubGJsICB7IGZpbGw6ICM2NDc0OGI7IH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgoKICA8IS0tIGRvbWFpbiBwYW5lbHMgLS0+CiAgPHJlY3QgeD0iMzYiICB5PSI4OCIgd2lkdGg9IjM4OCIgaGVpZ2h0PSI0ODYiIHJ4PSIxOCIgZmlsbD0iIzBlYTVlOSIgb3BhY2l0eT0iMC4wNyIvPgogIDxyZWN0IHg9IjQ5NiIgeT0iODgiIHdpZHRoPSIzODgiIGhlaWdodD0iNDg2IiByeD0iMTgiIGZpbGw9IiM4YjVjZjYiIG9wYWNpdHk9IjAuMDciLz4KCiAgPCEtLSBjb2x1bW4gaGVhZGVycyAtLT4KICA8dGV4dCB4PSIxNjAiIHk9IjExMiIgZmlsbD0iIzBlYTVlOSIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9IjcwMCIgbGV0dGVyLXNwYWNpbmc9IjMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk1FRVRJTkdTPC90ZXh0PgogIDx0ZXh0IHg9Ijc2MCIgeT0iMTEyIiBmaWxsPSIjOGI1Y2Y2IiBmb250LXNpemU9IjEzIiBmb250LXdlaWdodD0iNzAwIiBsZXR0ZXItc3BhY2luZz0iMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QUdFTlRTPC90ZXh0PgoKICA8IS0tIGdhdGV3YXkgLS0+CiAgPHJlY3QgeD0iMjg1IiB5PSIzMCIgd2lkdGg9IjM1MCIgaGVpZ2h0PSI0NiIgcng9IjEwIiBmaWxsPSIjNjM2NmYxIi8+CiAgPHRleHQgeD0iNDYwIiB5PSI1OCIgZmlsbD0iI2ZmZmZmZiIgZm9udC1zaXplPSIxNi41IiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5BUEkgZ2F0ZXdheSDCtyBYLUFQSS1LZXk8L3RleHQ+CgogIDwhLS0gZ2F0ZXdheSAtPiBhcGlzIC0tPgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzUwIiB5MT0iNzYiIHgyPSIxNjgiIHkyPSIxNTAiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSI1NzAiIHkxPSI3NiIgeDI9Ijc1MiIgeTI9IjE1MCIgbWFya2VyLWVuZD0idXJsKCNhcnJvdykiLz4KICA8dGV4dCBjbGFzcz0ibW9ubyIgeD0iMzAwIiB5PSIxMjAiIGZpbGw9IiMwZWE1ZTkiIGZvbnQtc2l6ZT0iMTEiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBPU1QgL2JvdHM8L3RleHQ+CiAgPHRleHQgY2xhc3M9Im1vbm8iIHg9IjYyMCIgeT0iMTIwIiBmaWxsPSIjOGI1Y2Y2IiBmb250LXNpemU9IjExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QT1NUIC9hZ2VudC8qPC90ZXh0PgoKICA8IS0tIG1lZXRpbmctYXBpIC8gYWdlbnQtYXBpIC0tPgogIDxyZWN0IHg9Ijc1IiAgeT0iMTUyIiB3aWR0aD0iMTc1IiBoZWlnaHQ9IjU2IiByeD0iMTAiIGZpbGw9IiMwZWE1ZTkiLz4KICA8dGV4dCB4PSIxNjIiIHk9IjE3OCIgZmlsbD0iI2ZmZmZmZiIgZm9udC1zaXplPSIxNSIgZm9udC13ZWlnaHQ9IjYwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+bWVldGluZy1hcGk8L3RleHQ+CiAgPHRleHQgeD0iMTYyIiB5PSIxOTciIGZpbGw9IiNlMGYyZmUiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Ym90cyDCtyB0cmFuc2NyaXB0cyDCtyByZWNvcmRpbmdzPC90ZXh0PgoKICA8cmVjdCB4PSI2NzAiIHk9IjE1MiIgd2lkdGg9IjE3NSIgaGVpZ2h0PSI1NiIgcng9IjEwIiBmaWxsPSIjOGI1Y2Y2Ii8+CiAgPHRleHQgeD0iNzU3IiB5PSIxNzgiIGZpbGw9IiNmZmZmZmYiIGZvbnQtc2l6ZT0iMTUiIGZvbnQtd2VpZ2h0PSI2MDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPmFnZW50LWFwaTwvdGV4dD4KICA8dGV4dCB4PSI3NTciIHk9IjE5NyIgZmlsbD0iI2VkZTlmZSIgZm9udC1zaXplPSIxMC41IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5jaGF0IMK3IHJvdXRpbmVzIMK3IGV2ZW50czwvdGV4dD4KCiAgPCEtLSBhcGlzIC0+IHJ1bnRpbWUgLS0+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSIyNTAiIHkxPSIxODIiIHgyPSIzNDYiIHkyPSIyNzYiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSI2NzAiIHkxPSIxODIiIHgyPSI1NzQiIHkyPSIyNzYiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPHRleHQgY2xhc3M9ImxibCIgeD0iMjg0IiB5PSIyMjAiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+ZGlzcGF0Y2g8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImxibCIgeD0iNjM2IiB5PSIyMjAiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+ZGlzcGF0Y2g8L3RleHQ+CgogIDwhLS0gcnVudGltZSAtLT4KICA8cmVjdCB4PSIzNTAiIHk9IjI0OCIgd2lkdGg9IjIyMCIgaGVpZ2h0PSI5OCIgcng9IjE2IiBmaWxsPSIjMGYxNzJhIiBzdHJva2U9IiMzNGQzOTkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDx0ZXh0IHg9IjQ2MCIgeT0iMjg2IiBmaWxsPSIjZmZmZmZmIiBmb250LXNpemU9IjIxIiBmb250LXdlaWdodD0iNzAwIiBsZXR0ZXItc3BhY2luZz0iMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UlVOVElNRTwvdGV4dD4KICA8dGV4dCB4PSI0NjAiIHk9IjMwOCIgZmlsbD0iIzk0YTNiOCIgZm9udC1zaXplPSIxMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+aXNvbGF0ZWQgwrcgZXBoZW1lcmFsIMK3IHJlYXBlZCBvbiBpZGxlPC90ZXh0PgogIDx0ZXh0IHg9IjQ2MCIgeT0iMzI4IiBmaWxsPSIjMzRkMzk5IiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Eb2NrZXIgwrcgS3ViZXJuZXRlcyDCtyBQcm9jZXNzPC90ZXh0PgoKICA8IS0tIHJ1bnRpbWUgLT4gY29udGFpbmVycyAtLT4KICA8dGV4dCBjbGFzcz0ibGJsIiB4PSI0NjAiIHk9IjM3OCIgZm9udC1zaXplPSIxMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+c3Bhd25zIG9uZSBjb250YWluZXIgcGVyIHdvcmtsb2FkPC90ZXh0PgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iNDE1IiB5MT0iMzQ2IiB4Mj0iMjYwIiB5Mj0iNDI2IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iNTA1IiB5MT0iMzQ2IiB4Mj0iNjYwIiB5Mj0iNDI2IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPgoKICA8IS0tIGNvbnRhaW5lcnMgLS0+CiAgPHJlY3QgeD0iOTUiIHk9IjQzMCIgd2lkdGg9IjMxMCIgaGVpZ2h0PSIxMjgiIHJ4PSIxNCIgZmlsbD0iIzFlMjkzYiIgc3Ryb2tlPSIjMGVhNWU5IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDx0ZXh0IHg9IjI1MCIgeT0iNDYwIiBmaWxsPSIjZmZmZmZmIiBmb250LXNpemU9IjE1IiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj52ZXhhLWJvdCBjb250YWluZXI8L3RleHQ+CiAgPHRleHQgeD0iMjUwIiB5PSI0ODciIGZpbGw9IiNjYmQ1ZTEiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+am9pbnMgdGhlIGNhbGwg4oaSIGNhcHR1cmVzIGF1ZGlvPC90ZXh0PgogIDx0ZXh0IHg9IjI1MCIgeT0iNTA5IiBmaWxsPSIjY2JkNWUxIiBmb250LXNpemU9IjExLjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPldoaXNwZXIg4oaSIHRyYW5zY3JpcHQudjE8L3RleHQ+CiAgPHRleHQgeD0iMjUwIiB5PSI1MzEiIGZpbGw9IiMzOGJkZjgiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+4oaSIFJlZGlzIHN0cmVhbSDihpIgeW91ciBBUEk8L3RleHQ+CgogIDxyZWN0IHg9IjUxNSIgeT0iNDMwIiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjEyOCIgcng9IjE0IiBmaWxsPSIjMWUyOTNiIiBzdHJva2U9IiM4YjVjZjYiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHRleHQgeD0iNjcwIiB5PSI0NjAiIGZpbGw9IiNmZmZmZmYiIGZvbnQtc2l6ZT0iMTUiIGZvbnQtd2VpZ2h0PSI2MDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPmFnZW50IGNvbnRhaW5lcjwvdGV4dD4KICA8dGV4dCB4PSI2NzAiIHk9IjQ4NyIgZmlsbD0iI2NiZDVlMSIgZm9udC1zaXplPSIxMS41IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5tb3VudHMgL3dvcmtzcGFjZSAoZ2l0IE1hcmtkb3duIMK3IE9LRik8L3RleHQ+CiAgPHRleHQgeD0iNjcwIiB5PSI1MDkiIGZpbGw9IiNjYmQ1ZTEiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+cmVhZHMgwrcgd3JpdGVzIMK3IGNvbW1pdHM8L3RleHQ+CiAgPHRleHQgeD0iNjcwIiB5PSI1MzEiIGZpbGw9IiNjNGI1ZmQiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+4oaSIHN0cmVhbXMgU1NFIChtZXNzYWdlLWRlbHRhIMK3IGNvbW1pdCk8L3RleHQ+CgogIDwhLS0gY2FwdGlvbiAtLT4KICA8dGV4dCB4PSI0NjAiIHk9IjU5MCIgZmlsbD0iIzY0NzQ4YiIgZm9udC1zaXplPSIxMS41IiBmb250LXN0eWxlPSJpdGFsaWMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkEgYm90IGFuZCBhbiBhZ2VudCBhcmUgdGhlIHNhbWUgcnVudGltZS52MSB3b3JrbG9hZC48L3RleHQ+Cjwvc3ZnPgo=" width="920" height="610" class="img_ev3q"></p>
 <p><em>Vexa 官方架构图：同一个 runtime 调度 meeting bot 和 agent workload；会议侧重点是 bot 入会、捕获音频、产生 transcript stream。来源：Vexa 官方仓库。</em></p>
 <p>Vexa 的价值在于把“入会”这件最容易低估的工程工作产品化了：</p>
@@ -42,14 +36,8 @@
 <li class="">transcript 可以被实时读取；</li>
 <li class="">后续 agent/workspace 只是它扩展出来的一条路线。</li>
 </ul>
-<p>它也有清晰的代价。完整自托管不是“一个 Python 包跑起来”，而是会议 bot、API、runtime、collector、对象存储和 transcription service 的组合。好消息是，Vexa 官方已经把 transcription 拆成独立网络单元：主栈通过 <code>TRANSCRIPTION_SERVICE_URL</code> 指向 STT service，bot 的 whisper client 再追加 <code>/v1/audio/transcriptions</code>。这意味着我们可以保留 Vexa 的会议 bot/API 层，把 ASR 换成外部 OpenAI-compatible STT gateway、Deepgram、AssemblyAI、Gladia、Speechmatics 或 DashScope adapter。</p>
-<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>在线会议实时转写、会议 bot API、后续接知识库/Agent</td></tr><tr><td>不适合</td><td>只是本地录音文件批量转写；只想要极简单容器 STT</td></tr><tr><td>API/集成</td><td>强，项目本身就是 API-first</td></tr><tr><td>运维面</td><td>中到高，完整栈和 bot fleet 是核心复杂度</td></tr><tr><td>初步结论</td><td><strong>如果目标是“会中自动获取 transcript”，第一优先级；但 STT 后端应 API-first</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="attendee把-meeting-bot-做成更小的-api-primitive">Attendee：把 meeting bot 做成更小的 API primitive<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#attendee%E6%8A%8A-meeting-bot-%E5%81%9A%E6%88%90%E6%9B%B4%E5%B0%8F%E7%9A%84-api-primitive" class="hash-link" aria-label="Attendee：把 meeting bot 做成更小的 API primitive的直接链接" title="Attendee：把 meeting bot 做成更小的 API primitive的直接链接" translate="no">​</a></h2>
-<p>Repo: <a href="https://github.com/attendee-labs/attendee" target="_blank" rel="noopener noreferrer" class="">attendee-labs/attendee</a></p>
-<p>本次更新新增了 Attendee。它的定位比 Vexa 更“底座”：README 把它称为 universal Meeting Bot API，目标是让应用通过 REST API 管理 Zoom / Google Meet bot，而不是自己维护浏览器自动化、入会状态、媒体捕获和 bot 生命周期。项目也提供 self-host 路径，并以 Django + Postgres + Redis 这类常见后端形态组织。</p>
-<p>它和 Vexa 的区别可以这样理解：</p>
-<table><thead><tr><th>维度</th><th>Vexa</th><th>Attendee</th></tr></thead><tbody><tr><td>产品边界</td><td>meeting bot + transcription API + Terminal / MCP / agent 方向</td><td>meeting bot API primitive</td></tr><tr><td>体验层</td><td>自带一定管理界面和平台叙事</td><td>更偏开发者 API</td></tr><tr><td>ASR/总结</td><td>Vexa 内部已有 transcription service 边界</td><td>更需要自己接 STT、摘要和会议笔记产品层</td></tr><tr><td>适合</td><td>想快速得到 transcript API 并继续接 Agent</td><td>想把“会议 bot 入会/媒体流”做成统一基础设施</td></tr></tbody></table>
-<p>因此，Attendee 不替代 Vexa，但应该进入同级 shortlist。我们可以把 Vexa 当“端到端更完整的自建会议转写平台”，把 Attendee 当“更薄的 meeting bot API”。如果后续要做自己的产品体验，Attendee 可能更灵活；如果要尽快打通会议转写链路，Vexa 仍更直接。</p>
+<p>它也有清晰的代价。README 标注 full Docker Compose stack 至少需要 8 vCPU / 16GB RAM；更小机器可以用 lighter path，但完整自托管仍不是“一个 Python 包跑起来”。默认 transcription 可以接 Vexa token；要完全 air-gap，需要把 GPU transcription unit 也自托管。</p>
+<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>在线会议实时转写、会议 bot API、后续接知识库/Agent</td></tr><tr><td>不适合</td><td>只是本地录音文件批量转写；只想要极简单容器 STT</td></tr><tr><td>API/集成</td><td>强，项目本身就是 API-first</td></tr><tr><td>运维面</td><td>中到高，完整栈和 bot fleet 是核心复杂度</td></tr><tr><td>初步结论</td><td><strong>如果目标是“会中自动获取 transcript”，第一优先级</strong></td></tr></tbody></table>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="scriberr自托管录音视频转写后台">Scriberr：自托管录音/视频转写后台<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#scriberr%E8%87%AA%E6%89%98%E7%AE%A1%E5%BD%95%E9%9F%B3%E8%A7%86%E9%A2%91%E8%BD%AC%E5%86%99%E5%90%8E%E5%8F%B0" class="hash-link" aria-label="Scriberr：自托管录音/视频转写后台的直接链接" title="Scriberr：自托管录音/视频转写后台的直接链接" translate="no">​</a></h2>
 <p>Repo: <a href="https://github.com/rishikanthc/Scriberr" target="_blank" rel="noopener noreferrer" class="">rishikanthc/Scriberr</a></p>
 <p>Scriberr 更像“把录音文件丢进去，它负责后续处理”的后台产品。README 说它可以本地转写 audio/video，支持 NVIDIA Parakeet、Canary 和 Whisper 模型，并提供 diarization、chat with audio、API、folder watcher、PWA、录音和笔记等能力。</p>
@@ -104,15 +92,7 @@
 </ul>
 <p>但它现在不应该直接被当成“成熟首选”。原因不是功能少，而是功能太多、社区规模还小，且 README 自述 99.9% written by AI using frontier models。对生产环境来说，权限模型、文件隔离、上传处理、队列恢复、prompt/LLM key 存储、OpenSearch/数据库配置、安全更新都需要代码级深审。</p>
 <table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>团队级媒体库、跨会议 speaker profile、搜索协作</td></tr><tr><td>不适合</td><td>想快速上线一个低运维转写服务</td></tr><tr><td>API/集成</td><td>中，偏平台内部能力，需继续深读 API/权限</td></tr><tr><td>运维面</td><td>高，组件多、权限面大</td></tr><tr><td>初步结论</td><td><strong>观察/深审候选：功能形态很对，但不能凭 README 上生产</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="桌面体验型会议助手微信会议和线下旁路录音更相关">桌面/体验型会议助手：微信会议和线下旁路录音更相关<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E6%A1%8C%E9%9D%A2%E4%BD%93%E9%AA%8C%E5%9E%8B%E4%BC%9A%E8%AE%AE%E5%8A%A9%E6%89%8B%E5%BE%AE%E4%BF%A1%E4%BC%9A%E8%AE%AE%E5%92%8C%E7%BA%BF%E4%B8%8B%E6%97%81%E8%B7%AF%E5%BD%95%E9%9F%B3%E6%9B%B4%E7%9B%B8%E5%85%B3" class="hash-link" aria-label="桌面/体验型会议助手：微信会议和线下旁路录音更相关的直接链接" title="桌面/体验型会议助手：微信会议和线下旁路录音更相关的直接链接" translate="no">​</a></h2>
-<p>如果用户说“开个手机或电脑放旁边录”，就不能只看服务端 bot 和 ASR provider。体验型项目通常不一定是最佳中心服务，但它们最能说明旁路录音会议笔记应该长什么样。</p>
-<table><thead><tr><th>项目</th><th>体验特征</th><th>API / provider 支持</th><th>选型判断</th></tr></thead><tbody><tr><td><a href="https://github.com/royisme/pikabaka" target="_blank" rel="noopener noreferrer" class="">Pikabaka</a></td><td>桌面 meeting/interview copilot；双通道采集 system audio 和 microphone，实时转写、AI suggested answers、截图理解、local RAG memory</td><td>README 声称任意 LLM / 任意 STT，可切 OpenAI、Claude、Gemini、Groq、Ollama、OpenAI-compatible；STT provider 包含 Deepgram、OpenAI Whisper、Groq Whisper、Azure 等</td><td><strong>最贴近微信会议/桌面会议旁路录音</strong>：能同时拿“别人声音”和“自己麦克风”，适合作为第一深读对象</td></tr><tr><td><a href="https://github.com/screenpipe/screenpipe" target="_blank" rel="noopener noreferrer" class="">screenpipe</a></td><td>24/7 捕获 screen + audio，本地保存，给 Agent 做 searchable memory、SOP 和 automation</td><td>README 明确捕获 system audio 和 microphone；可用本地 Whisper 或 Deepgram cloud transcription；能覆盖 Zoom、Google Meet、Teams 或任意应用</td><td><strong>最贴近“电脑旁路记录一切”</strong>，但它是持续记录/个人记忆平台，需注意隐私、授权和 license/source-available 边界</td></tr><tr><td><a href="https://github.com/cogniumhq/cognium-meet" target="_blank" rel="noopener noreferrer" class="">Cognium Meet</a></td><td>Chrome extension + local API；可录制 browser tab audio，包括 Google Meet；生成 notes、action items、decisions、open questions，并支持对历史会议 Ask/Q&amp;A</td><td>README 声称支持 OpenAI <code>whisper-1</code> 或 diarized transcription；AI notes 可接 OpenAI/Ollama</td><td>适合浏览器会议和网页录音入口；不直接覆盖微信桌面客户端</td></tr><tr><td><a href="https://github.com/thepersonalaicompany/amurex" target="_blank" rel="noopener noreferrer" class="">Amurex</a></td><td>Chrome extension meeting copilot；Google Meet、实时建议、摘要、late join recap、完整 transcript、follow-up email</td><td>自托管需要 extension + backend + web 三仓；README 更偏产品体验，ASR provider 契约需继续深审</td><td>late join recap / follow-up email 很值得借鉴；主要是 Google Meet/Teams 网页会议体验参考</td></tr><tr><td><a href="https://github.com/fastrepl/anarlog" target="_blank" rel="noopener noreferrer" class="">anarlog</a></td><td>开源 Granola alternative；local-first meeting notetaker；SQLite 保存 canonical meeting data，Markdown export</td><td>BYO LLM 支持 OpenAI、Anthropic、Gemini、OpenRouter、Ollama；但 README 明确本地转写</td><td>体验 benchmark 强，API-first STT 弱；适合借鉴 local-first / Markdown / SQLite，而不是直接当主线</td></tr><tr><td><a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" rel="noopener noreferrer" class="">Meetily</a></td><td>跨平台本地会议助手，实时转写和总结，并描述 microphone + system audio mixing</td><td>LLM provider 可接 Ollama、Claude、Groq、OpenRouter、OpenAI-compatible；转写主线偏本地模型</td><td>体验参考，不是“不跑本地模型”的首选</td></tr></tbody></table>
-<p>这组项目给出的产品启发是：会议笔记不只是 transcript，还包括录音入口、双通道音频、会中辅助、迟到补课、会后摘要、行动项、follow-up email、全文问答、Markdown/本地数据模型和团队共享。即使最终不用它们做底座，也应该把它们当体验标杆。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="asr-api-provider把模型运维移出第一阶段">ASR API provider：把模型运维移出第一阶段<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#asr-api-provider%E6%8A%8A%E6%A8%A1%E5%9E%8B%E8%BF%90%E7%BB%B4%E7%A7%BB%E5%87%BA%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5" class="hash-link" aria-label="ASR API provider：把模型运维移出第一阶段的直接链接" title="ASR API provider：把模型运维移出第一阶段的直接链接" translate="no">​</a></h2>
-<p>既然目标是不自己跑本地模型，ASR 层应该按 provider 实测，而不是按开源模型榜单讨论。</p>
-<table><thead><tr><th>Provider</th><th>更适合</th><th>注意点</th></tr></thead><tbody><tr><td><a href="https://developers.deepgram.com/docs/pre-recorded-audio" target="_blank" rel="noopener noreferrer" class="">Deepgram</a></td><td>预录音和实时流，低延迟，多语种，speaker diarization</td><td>diarization、smart formatting、流式返回适合会议场景；要用中文/中英混合样例实测</td></tr><tr><td><a href="https://www.assemblyai.com/docs/speech-to-text" target="_blank" rel="noopener noreferrer" class="">AssemblyAI</a></td><td>文件/录音批处理、稳定 speaker labels、后续摘要生态</td><td>上传/提交/轮询模型清晰；speaker diarization 返回 utterances/speaker labels</td></tr><tr><td><a href="https://docs.gladia.io/" target="_blank" rel="noopener noreferrer" class="">Gladia</a></td><td>多语种 meeting/video 转写，欧洲供应商备选</td><td>MeetingBaaS 示例里直接把 Gladia / Deepgram 放进 meeting agent pipeline</td></tr><tr><td><a href="https://docs.speechmatics.com/" target="_blank" rel="noopener noreferrer" class="">Speechmatics</a></td><td>企业级 batch + realtime、多区域/合规诉求</td><td>更偏企业 STT/TTS/voice-agent API，要核对中文、地区和价格</td></tr><tr><td><a href="https://platform.openai.com/docs/guides/speech-to-text" target="_blank" rel="noopener noreferrer" class="">OpenAI Speech-to-Text</a></td><td>最快接 OpenAI-compatible 生态或已有模型网关</td><td>集成简单，但原生 speaker diarization 不是强项</td></tr><tr><td><a href="https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-api" target="_blank" rel="noopener noreferrer" class="">DashScope Paraformer realtime</a></td><td>中文/中英混合、国内链路、阿里云生态</td><td>适合中文会议候选；需要真实样例测延迟、标点、说话人和长音频稳定性</td></tr></tbody></table>
-<p>这层的工程建议是做一个 <strong>STT adapter / gateway</strong>，向上暴露 OpenAI-compatible <code>/v1/audio/transcriptions</code> 或 Vexa 期望的接口，向下接不同 provider。这样上层 Vexa / Attendee / OpenTranscribe 不必绑定某一家供应商。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="docker-whisper-与-whisperlive当你只缺自建-stt-fallback">docker-whisper 与 WhisperLive：当你只缺自建 STT fallback<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#docker-whisper-%E4%B8%8E-whisperlive%E5%BD%93%E4%BD%A0%E5%8F%AA%E7%BC%BA%E8%87%AA%E5%BB%BA-stt-fallback" class="hash-link" aria-label="docker-whisper 与 WhisperLive：当你只缺自建 STT fallback的直接链接" title="docker-whisper 与 WhisperLive：当你只缺自建 STT fallback的直接链接" translate="no">​</a></h2>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="docker-whisper-与-whisperlive当你只缺-stt-服务">docker-whisper 与 WhisperLive：当你只缺 STT 服务<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#docker-whisper-%E4%B8%8E-whisperlive%E5%BD%93%E4%BD%A0%E5%8F%AA%E7%BC%BA-stt-%E6%9C%8D%E5%8A%A1" class="hash-link" aria-label="docker-whisper 与 WhisperLive：当你只缺 STT 服务的直接链接" title="docker-whisper 与 WhisperLive：当你只缺 STT 服务的直接链接" translate="no">​</a></h2>
 <p>Repo: <a href="https://github.com/hwdsl2/docker-whisper" target="_blank" rel="noopener noreferrer" class="">hwdsl2/docker-whisper</a>、<a href="https://github.com/hwdsl2/docker-whisper-live" target="_blank" rel="noopener noreferrer" class="">hwdsl2/docker-whisper-live</a>、<a href="https://github.com/collabora/WhisperLive" target="_blank" rel="noopener noreferrer" class="">collabora/WhisperLive</a></p>
 <p>这组更适合作为“服务底座”而不是会议笔记产品。</p>
 <p><code>docker-whisper</code> 把 faster-whisper 包成 OpenAI-compatible API，提供 <code>/v1/audio/transcriptions</code> 和 <code>/v1/audio/translations</code>，支持 JSON/text/verbose JSON/SRT/VTT、SSE streaming、CUDA image、air-gapped mode 和持久模型 cache。</p>
@@ -160,40 +140,22 @@
 <p>如果目标是把所有会议、访谈、音视频资料变成可搜索、可标注、可共享、可跨文件识别 speaker 的团队资产，OpenTranscribe 值得深读。但它应该先过安全/代码质量/部署复杂度审查，再做实践。</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-e自己做最小服务">路线 E：自己做最小服务<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-e%E8%87%AA%E5%B7%B1%E5%81%9A%E6%9C%80%E5%B0%8F%E6%9C%8D%E5%8A%A1" class="hash-link" aria-label="路线 E：自己做最小服务的直接链接" title="路线 E：自己做最小服务的直接链接" translate="no">​</a></h3>
 <p>如果现成产品都太重，最小自研可以从 docker-whisper 或 WhisperLive 开始，而不是直接从模型代码开始。这样至少保留一个稳定的 HTTP/WebSocket 边界。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="更新后的-shortlistapi-first--体验侧优先">更新后的 shortlist：API-first + 体验侧优先<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E6%9B%B4%E6%96%B0%E5%90%8E%E7%9A%84-shortlistapi-first--%E4%BD%93%E9%AA%8C%E4%BE%A7%E4%BC%98%E5%85%88" class="hash-link" aria-label="更新后的 shortlist：API-first + 体验侧优先的直接链接" title="更新后的 shortlist：API-first + 体验侧优先的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>场景</th><th>第一候选</th><th>第二候选</th><th>为什么</th></tr></thead><tbody><tr><td>线下会议，手机放桌上录</td><td><strong>Web/PWA recorder + STT API</strong></td><td>Scriberr / OpenTranscribe 做会后后台</td><td>开源现成端到端手机会议笔记较少，先把移动录音入口和后端 API 边界做薄</td></tr><tr><td>微信会议 / 桌面客户端</td><td><strong>Pikabaka / screenpipe</strong></td><td>Meetily</td><td>重点是系统音频 + 麦克风双通道采集，bot 入会不是主线</td></tr><tr><td>浏览器会议</td><td><strong>Cognium Meet</strong></td><td>Amurex</td><td>Chrome extension / tab audio 比 bot 更轻</td></tr><tr><td>已有录音/录屏后台</td><td><strong>OpenTranscribe</strong></td><td>Scriberr</td><td>API-first 口径下，OpenTranscribe 的 cloud ASR provider 抽象更重要</td></tr><tr><td>自建会议 bot + 实时 transcript API</td><td>Vexa</td><td>Attendee</td><td>只有明确要系统自动加入 Zoom/Meet/Teams 会议时才优先</td></tr><tr><td>媒体字幕和翻译</td><td><strong>Whishper</strong></td><td>Whisper-WebUI / Buzz</td><td>仍适合媒体/字幕，不是会议笔记主线</td></tr><tr><td>ASR provider 层</td><td><strong>Deepgram / AssemblyAI</strong></td><td>OpenAI / Gladia / Speechmatics / DashScope</td><td>用同一组样例实测 diarization、时间戳、标点、延迟、成本</td></tr><tr><td>自建 STT fallback</td><td>docker-whisper / WhisperLive</td><td>faster-whisper / WhisperX</td><td>只作为 fallback 或特殊隐私/离线场景</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="下一步实践先接-api再评体验">下一步实践：先接 API，再评体验<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%B8%8B%E4%B8%80%E6%AD%A5%E5%AE%9E%E8%B7%B5%E5%85%88%E6%8E%A5-api%E5%86%8D%E8%AF%84%E4%BD%93%E9%AA%8C" class="hash-link" aria-label="下一步实践：先接 API，再评体验的直接链接" title="下一步实践：先接 API，再评体验的直接链接" translate="no">​</a></h2>
-<p>下一步不应该继续在本地模型上消耗时间。更合理的实践顺序是：</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一轮-shortlist">第一轮 shortlist<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E7%AC%AC%E4%B8%80%E8%BD%AE-shortlist" class="hash-link" aria-label="第一轮 shortlist的直接链接" title="第一轮 shortlist的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>场景</th><th>第一候选</th><th>第二候选</th><th>暂不选原因</th></tr></thead><tbody><tr><td>自动入会 + 实时 transcript API</td><td><strong>Vexa</strong></td><td>joinly / Zoom Arlo 作参考</td><td>普通 WebUI 不负责进会</td></tr><tr><td>上传录音/录屏 + 摘要/问答</td><td><strong>Scriberr</strong></td><td>OpenTranscribe</td><td>Vexa 太重，Whishper 偏字幕</td></tr><tr><td>字幕/翻译/媒体处理</td><td><strong>Whishper</strong></td><td>Whisper-WebUI / Buzz</td><td>会议纪要要另补</td></tr><tr><td>团队媒体库 + speaker profile</td><td><strong>OpenTranscribe（观察）</strong></td><td>Scriberr</td><td>需要代码和安全深审</td></tr><tr><td>自建 STT API</td><td><strong>docker-whisper</strong></td><td>faster-whisper 自封装</td><td>不是会议产品</td></tr><tr><td>实时流式 STT</td><td><strong>WhisperLive / docker-whisper-live</strong></td><td>Vexa 的会议 API</td><td>没有会议文档层</td></tr><tr><td>自研 pipeline</td><td><strong>WhisperX + faster-whisper</strong></td><td>whisper.cpp</td><td>需要自己做产品层</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="下一步实践不要一次跑完所有项目">下一步实践不要一次跑完所有项目<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%B8%8B%E4%B8%80%E6%AD%A5%E5%AE%9E%E8%B7%B5%E4%B8%8D%E8%A6%81%E4%B8%80%E6%AC%A1%E8%B7%91%E5%AE%8C%E6%89%80%E6%9C%89%E9%A1%B9%E7%9B%AE" class="hash-link" aria-label="下一步实践不要一次跑完所有项目的直接链接" title="下一步实践不要一次跑完所有项目的直接链接" translate="no">​</a></h2>
+<p>静态调研已经足够把候选压到两个主线：<strong>Vexa</strong> 和 <strong>Scriberr</strong>。</p>
+<p>下一步如果要实践，建议拆成两个受控任务，而不是在本机把所有项目都启动一遍：</p>
 <ol>
-<li class=""><strong>先做旁路录音 MVP</strong>：手机/浏览器/桌面只负责录音和上传/stream，不做重模型；后端接 Deepgram、AssemblyAI、OpenAI 或 DashScope 做实时/准实时转写。</li>
-<li class=""><strong>桌面微信会议优先验证双通道采集</strong>：用 Pikabaka / screenpipe 的设计做参考，确认 macOS/Windows 上能否稳定采集 system audio + microphone，并区分“对方声音”和“自己声音”。</li>
-<li class=""><strong>做 provider 小样本实测</strong>：同一段线下中文会议、微信会议录音、多人对话样例，分别跑 Deepgram、AssemblyAI、OpenAI、DashScope；比较 diarization、时间戳、段落、标点、延迟、成本和摘要前处理质量。</li>
-<li class=""><strong>从体验型项目拆产品需求</strong>：Pikabaka / screenpipe / Cognium Meet / Amurex / anarlog 重点看录音入口、UI、数据模型、导出、会中辅助、Ask/Q&amp;A 和 follow-up workflow。</li>
-<li class=""><strong>Vexa / Attendee 保留为线上会议 bot 支线</strong>：只有当需求变成“给系统一个 Zoom/Meet/Teams 链接，让系统自己入会”时，再推进 bot stack。</li>
+<li class=""><strong>Vexa 实时会议 transcript smoke</strong>：指定一台有足够资源的 Linux 主机，定义一个测试会议平台、一个会议链接、一个最长运行时间、一个 API readback 标准和清理方式。</li>
+<li class=""><strong>Scriberr 录音文件后台 smoke</strong>：准备一段公开/自有测试音频，验证上传/转写/diarization/summary/API/folder watcher 中最关键的一条链路。</li>
 </ol>
+<p>只有当这两个都不能满足需求，才进入自研 pipeline：docker-whisper / WhisperLive / WhisperX / faster-whisper / whisper.cpp 的组合工程化。</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要一手来源">主要一手来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%B8%BB%E8%A6%81%E4%B8%80%E6%89%8B%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要一手来源的直接链接" title="主要一手来源的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="会议-bot--api">会议 bot / API<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%BC%9A%E8%AE%AE-bot--api" class="hash-link" aria-label="会议 bot / API的直接链接" title="会议 bot / API的直接链接" translate="no">​</a></h3>
 <ul>
 <li class=""><a href="https://github.com/Vexa-ai/vexa" target="_blank" rel="noopener noreferrer" class="">Vexa</a></li>
-<li class=""><a href="https://raw.githubusercontent.com/Vexa-ai/vexa/main/deploy/transcription/README.md" target="_blank" rel="noopener noreferrer" class="">Vexa transcription deployment README</a></li>
-<li class=""><a href="https://github.com/attendee-labs/attendee" target="_blank" rel="noopener noreferrer" class="">Attendee</a></li>
-<li class=""><a href="https://docs.recall.ai/docs/overview" target="_blank" rel="noopener noreferrer" class="">Recall.ai docs</a></li>
-<li class=""><a href="https://github.com/Meeting-BaaS/speaking-meeting-bot" target="_blank" rel="noopener noreferrer" class="">MeetingBaaS speaking meeting bot example</a></li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="体验型会议助手">体验型会议助手<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%BD%93%E9%AA%8C%E5%9E%8B%E4%BC%9A%E8%AE%AE%E5%8A%A9%E6%89%8B" class="hash-link" aria-label="体验型会议助手的直接链接" title="体验型会议助手的直接链接" translate="no">​</a></h3>
-<ul>
-<li class=""><a href="https://github.com/cogniumhq/cognium-meet" target="_blank" rel="noopener noreferrer" class="">Cognium Meet</a></li>
-<li class=""><a href="https://github.com/royisme/pikabaka" target="_blank" rel="noopener noreferrer" class="">Pikabaka</a></li>
-<li class=""><a href="https://github.com/screenpipe/screenpipe" target="_blank" rel="noopener noreferrer" class="">screenpipe</a></li>
-<li class=""><a href="https://github.com/thepersonalaicompany/amurex" target="_blank" rel="noopener noreferrer" class="">Amurex</a></li>
-<li class=""><a href="https://github.com/fastrepl/anarlog" target="_blank" rel="noopener noreferrer" class="">anarlog</a></li>
-<li class=""><a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" rel="noopener noreferrer" class="">Meetily</a></li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="文件后台--字幕--本地-fallback">文件后台 / 字幕 / 本地 fallback<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E6%96%87%E4%BB%B6%E5%90%8E%E5%8F%B0--%E5%AD%97%E5%B9%95--%E6%9C%AC%E5%9C%B0-fallback" class="hash-link" aria-label="文件后台 / 字幕 / 本地 fallback的直接链接" title="文件后台 / 字幕 / 本地 fallback的直接链接" translate="no">​</a></h3>
-<ul>
-<li class=""><a href="https://github.com/attevon-llc/OpenTranscribe" target="_blank" rel="noopener noreferrer" class="">OpenTranscribe</a></li>
 <li class=""><a href="https://github.com/rishikanthc/Scriberr" target="_blank" rel="noopener noreferrer" class="">Scriberr</a></li>
 <li class=""><a href="https://github.com/pluja/whishper" target="_blank" rel="noopener noreferrer" class="">Whishper</a></li>
+<li class=""><a href="https://github.com/attevon-llc/OpenTranscribe" target="_blank" rel="noopener noreferrer" class="">OpenTranscribe</a></li>
 <li class=""><a href="https://github.com/hwdsl2/docker-whisper" target="_blank" rel="noopener noreferrer" class="">docker-whisper</a></li>
 <li class=""><a href="https://github.com/hwdsl2/docker-whisper-live" target="_blank" rel="noopener noreferrer" class="">docker-whisper-live</a></li>
 <li class=""><a href="https://github.com/collabora/WhisperLive" target="_blank" rel="noopener noreferrer" class="">WhisperLive</a></li>
@@ -201,27 +163,150 @@
 <li class=""><a href="https://github.com/SYSTRAN/faster-whisper" target="_blank" rel="noopener noreferrer" class="">faster-whisper</a></li>
 <li class=""><a href="https://github.com/ggml-org/whisper.cpp" target="_blank" rel="noopener noreferrer" class="">whisper.cpp</a></li>
 <li class=""><a href="https://github.com/openai/whisper" target="_blank" rel="noopener noreferrer" class="">openai/whisper</a></li>
+<li class=""><a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" rel="noopener noreferrer" class="">Meetily</a></li>
 <li class=""><a href="https://github.com/chidiwilliams/buzz" target="_blank" rel="noopener noreferrer" class="">Buzz</a></li>
 <li class=""><a href="https://github.com/jhj0517/Whisper-WebUI" target="_blank" rel="noopener noreferrer" class="">Whisper-WebUI</a></li>
 <li class=""><a href="https://github.com/joinly-ai/joinly" target="_blank" rel="noopener noreferrer" class="">joinly</a></li>
 <li class=""><a href="https://github.com/zoom/arlo" target="_blank" rel="noopener noreferrer" class="">zoom/arlo</a></li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="asr-api-provider-文档">ASR API provider 文档<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#asr-api-provider-%E6%96%87%E6%A1%A3" class="hash-link" aria-label="ASR API provider 文档的直接链接" title="ASR API provider 文档的直接链接" translate="no">​</a></h3>
-<ul>
-<li class=""><a href="https://developers.deepgram.com/docs/pre-recorded-audio" target="_blank" rel="noopener noreferrer" class="">Deepgram prerecorded audio</a></li>
-<li class=""><a href="https://developers.deepgram.com/docs/diarization" target="_blank" rel="noopener noreferrer" class="">Deepgram diarization</a></li>
-<li class=""><a href="https://www.assemblyai.com/docs/speech-to-text" target="_blank" rel="noopener noreferrer" class="">AssemblyAI speech-to-text</a></li>
-<li class=""><a href="https://www.assemblyai.com/docs/speech-to-text/speaker-diarization" target="_blank" rel="noopener noreferrer" class="">AssemblyAI speaker diarization</a></li>
-<li class=""><a href="https://platform.openai.com/docs/guides/speech-to-text" target="_blank" rel="noopener noreferrer" class="">OpenAI speech-to-text</a></li>
-<li class=""><a href="https://docs.speechmatics.com/" target="_blank" rel="noopener noreferrer" class="">Speechmatics docs</a></li>
-<li class=""><a href="https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-api" target="_blank" rel="noopener noreferrer" class="">DashScope Paraformer realtime ASR</a></li>
 </ul>]]></content:encoded>
             <category>transcription</category>
             <category>meeting-notes</category>
             <category>self-hosted</category>
-            <category>api</category>
-            <category>ambient-recording</category>
+            <category>whisper</category>
             <category>open-source</category>
+        </item>
+        <item>
+            <title><![CDATA[Hermes 和 Codex 的 Computer Use：谁在做桌面控制，差别在哪里]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison</guid>
+            <pubDate>Fri, 07 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[对比 Hermes Agent、OpenAI Codex 与 CUA 社区在 Computer Use / desktop control / MCP plugin 上的源码、文档和 issue/PR 证据，判断 Hermes 是否已有对应能力，以及 Codex 与社区正在补哪些缺口。]]></description>
+            <content:encoded><![CDATA[<p>这篇文章回答一个具体问题：<strong>Codex 里的 Computer Use / bundled skill / plugin 在做什么，Hermes 有没有同类能力，社区有没有正在把这些东西打通的 PR 或 issue？</strong></p>
+<p>结论很直接：Hermes 已经把 Computer Use 做成了一个模型无关的 <code>computer_use</code> toolset，底层通过 MCP stdio 连接 <code>cua-driver</code>；Codex 也已经出现了 <code>computer_use</code> feature requirement、bundled plugin / skill 发现路径和桌面端问题单，但它现在更像是围绕 Codex Desktop 与 bundled plugins 演进的一套能力。CUA 社区正在推进一条更通用的路线：让 <code>cua-driver</code> 作为 MCP 层进入 Codex、Claude SDK 和其他 agent harness。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>Hermes 这边的主线是 <strong>通用 toolset + <code>cua-driver</code> backend + 任意 tool-calling 模型</strong>；Codex 这边的主线是 <strong>Codex 自身 feature requirements + bundled Computer Use plugin / skill</strong>；CUA 社区正在补一条 <strong>Codex plugin / MCP SDK</strong> 路线，让第三方 driver 能进入 Codex。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把三个对象分清楚">先把三个对象分清楚<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#%E5%85%88%E6%8A%8A%E4%B8%89%E4%B8%AA%E5%AF%B9%E8%B1%A1%E5%88%86%E6%B8%85%E6%A5%9A" class="hash-link" aria-label="先把三个对象分清楚的直接链接" title="先把三个对象分清楚的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>对象</th><th>公开入口</th><th>这次看到的关键证据</th></tr></thead><tbody><tr><td>Hermes Agent Computer Use</td><td><a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/computer-use" target="_blank" rel="noopener noreferrer" class="">Hermes Computer Use 文档</a></td><td>文档写明 <code>computer_use</code> toolset speaks MCP over stdio to <code>cua-driver</code>；工具参考列出 <code>computer_use</code>；CLI 文档列出 <code>hermes computer-use install/status</code>。</td></tr><tr><td>OpenAI Codex Computer Use</td><td><a href="https://github.com/openai/codex" target="_blank" rel="noopener noreferrer" class="">openai/codex</a></td><td>源码里有 <code>Feature::ComputerUse</code>、<code>computer_use</code> requirement、<code>computer-use@openai-bundled</code> discoverable plugin；issue 里集中出现插件不可用、Windows 枚举失败、显式 CUA Driver MCP 被内置 skill 抢路由等问题。</td></tr><tr><td>CUA / cua-driver</td><td><a href="https://github.com/trycua/cua" target="_blank" rel="noopener noreferrer" class="">trycua/cua</a></td><td><code>cua-driver</code> 提供跨平台桌面 driver；文档强调 no-foreground contract；examples 里明确 Codex SDK 走 MCP；issue/PR 正在推进 Codex plugin。</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="hermes已经是一个正式-toolset">Hermes：已经是一个正式 toolset<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#hermes%E5%B7%B2%E7%BB%8F%E6%98%AF%E4%B8%80%E4%B8%AA%E6%AD%A3%E5%BC%8F-toolset" class="hash-link" aria-label="Hermes：已经是一个正式 toolset的直接链接" title="Hermes：已经是一个正式 toolset的直接链接" translate="no">​</a></h2>
+<p>Hermes 文档里 Computer Use 的定位很清楚：它能在 macOS、Windows、Linux 上后台点击、输入、滚动、拖拽，同时维持用户光标、键盘焦点、虚拟桌面不被 agent 抢走。文档还强调它适用于任何 tool-capable model：Claude、GPT、Gemini 或本地 OpenAI-compatible endpoint。</p>
+<p>关键文档入口有三个：</p>
+<ul>
+<li class=""><a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/computer-use" target="_blank" rel="noopener noreferrer" class="">Computer Use 用户文档</a></li>
+<li class=""><a href="https://hermes-agent.nousresearch.com/docs/reference/tools-reference#computer_use-toolset" target="_blank" rel="noopener noreferrer" class="">tools reference: <code>computer_use</code> toolset</a></li>
+<li class=""><a href="https://hermes-agent.nousresearch.com/docs/reference/cli-commands#hermes-computer-use" target="_blank" rel="noopener noreferrer" class="">CLI command: <code>hermes computer-use</code></a></li>
+</ul>
+<p>源码也对应这套说法。<code>tools/computer_use_tool.py</code> 注册了名为 <code>computer_use</code>、toolset 也叫 <code>computer_use</code> 的工具，schema 来自 <code>tools/computer_use/schema.py</code>，handler 指向 <code>tools/computer_use/tool.py</code>，并带有 <code>check_computer_use_requirements</code>。公开源码入口：</p>
+<ul>
+<li class=""><a href="https://github.com/NousResearch/hermes-agent/blob/main/tools/computer_use_tool.py" target="_blank" rel="noopener noreferrer" class="">https://github.com/NousResearch/hermes-agent/blob/main/tools/computer_use_tool.py</a></li>
+<li class=""><a href="https://github.com/NousResearch/hermes-agent/blob/main/tools/computer_use/schema.py" target="_blank" rel="noopener noreferrer" class="">https://github.com/NousResearch/hermes-agent/blob/main/tools/computer_use/schema.py</a></li>
+<li class=""><a href="https://github.com/NousResearch/hermes-agent/tree/main/tools/computer_use" target="_blank" rel="noopener noreferrer" class="">https://github.com/NousResearch/hermes-agent/tree/main/tools/computer_use</a></li>
+<li class=""><a href="https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/tools_config.py" target="_blank" rel="noopener noreferrer" class="">https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/tools_config.py</a></li>
+<li class=""><a href="https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/main.py" target="_blank" rel="noopener noreferrer" class="">https://github.com/NousResearch/hermes-agent/blob/main/hermes_cli/main.py</a></li>
+</ul>
+<p><code>schema.py</code> 的设计重点是“一个合并工具 + action discriminator”：<code>capture</code>、<code>click</code>、<code>drag</code>、<code>scroll</code>、<code>type</code>、<code>key</code>、<code>list_apps</code>、<code>focus_app</code>，以及 browser route 相关 action 都聚合在一个 <code>computer_use</code> schema 里。这样做的好处是模型看见的是 Hermes 的统一工具，而不是直接暴露一组平台 SDK 函数。</p>
+<p>Hermes 文档还把安装和诊断做成 CLI 入口：</p>
+<ul>
+<li class=""><code>hermes computer-use install</code></li>
+<li class=""><code>hermes computer-use status</code></li>
+<li class=""><code>hermes computer-use doctor</code></li>
+</ul>
+<p>所以，<strong>Hermes 不是“等 Codex 有了再接”，它已经有自己的 Computer Use 控制面</strong>。它借 <code>cua-driver</code> 做跨平台后台输入与可视状态采集，再把这层能力包装成 Hermes 的工具契约。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="codex源码里已经有-computer-use-requirement-和-bundled-plugin-线索">Codex：源码里已经有 Computer Use requirement 和 bundled plugin 线索<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#codex%E6%BA%90%E7%A0%81%E9%87%8C%E5%B7%B2%E7%BB%8F%E6%9C%89-computer-use-requirement-%E5%92%8C-bundled-plugin-%E7%BA%BF%E7%B4%A2" class="hash-link" aria-label="Codex：源码里已经有 Computer Use requirement 和 bundled plugin 线索的直接链接" title="Codex：源码里已经有 Computer Use requirement 和 bundled plugin 线索的直接链接" translate="no">​</a></h2>
+<p>Codex 这边的证据分成三类。</p>
+<p>第一类是 feature registry。<code>codex-rs/features/src/lib.rs</code> 里有 <code>Feature::ComputerUse</code>，注释写的是 “Allow Codex Computer Use”，并且 feature spec 使用 key <code>computer_use</code>，stage 是 <code>Stable</code>，default enabled 是 <code>true</code>。</p>
+<ul>
+<li class=""><a href="https://github.com/openai/codex/blob/main/codex-rs/features/src/lib.rs" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/blob/main/codex-rs/features/src/lib.rs</a></li>
+</ul>
+<p>第二类是 requirements schema。<code>codex-rs/config/src/config_requirements.rs</code> 里有 <code>computer_use: Option&lt;Sourced&lt;ComputerUseRequirementsToml&gt;&gt;</code>，<code>ComputerUseRequirementsToml</code> 当前包含 <code>allow_locked_computer_use</code>。app-server protocol 也生成了 TypeScript 类型 <code>ComputerUseRequirements = { allowLockedComputerUse: boolean | null }</code>。</p>
+<ul>
+<li class=""><a href="https://github.com/openai/codex/blob/main/codex-rs/config/src/config_requirements.rs" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/blob/main/codex-rs/config/src/config_requirements.rs</a></li>
+<li class=""><a href="https://github.com/openai/codex/blob/main/codex-rs/app-server-protocol/schema/typescript/v2/ComputerUseRequirements.ts" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/blob/main/codex-rs/app-server-protocol/schema/typescript/v2/ComputerUseRequirements.ts</a></li>
+</ul>
+<p>第三类是 bundled plugin 发现。<code>codex-rs/core-plugins/src/discoverable.rs</code> 的 allowlist 里同时出现了 <code>chrome@openai-bundled</code> 和 <code>computer-use@openai-bundled</code>。这说明 Codex 桌面端的 Computer Use 更接近“Codex 自己可发现、可注入、可受 requirement 约束的 bundled plugin / skill”。</p>
+<ul>
+<li class=""><a href="https://github.com/openai/codex/blob/main/codex-rs/core-plugins/src/discoverable.rs" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/blob/main/codex-rs/core-plugins/src/discoverable.rs</a></li>
+</ul>
+<p>把这三类源码证据放在一起看，Codex 已经把 Computer Use 放进了自己的功能开关、配置要求和 plugin discovery 系统。它不是普通 MCP server 配置那么简单，而是 Codex 产品内部的一条能力通道。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="codex-issue现在卡在插件注入windows-和路由优先级">Codex issue：现在卡在插件注入、Windows 和路由优先级<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#codex-issue%E7%8E%B0%E5%9C%A8%E5%8D%A1%E5%9C%A8%E6%8F%92%E4%BB%B6%E6%B3%A8%E5%85%A5windows-%E5%92%8C%E8%B7%AF%E7%94%B1%E4%BC%98%E5%85%88%E7%BA%A7" class="hash-link" aria-label="Codex issue：现在卡在插件注入、Windows 和路由优先级的直接链接" title="Codex issue：现在卡在插件注入、Windows 和路由优先级的直接链接" translate="no">​</a></h2>
+<p>Codex 公开 issue 里，Computer Use 相关问题集中在几个方向。</p>
+<p>插件不可用或没有注入 callable tools：</p>
+<ul>
+<li class=""><a href="https://github.com/openai/codex/issues/29137" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/29137</a></li>
+<li class=""><a href="https://github.com/openai/codex/issues/36377" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/36377</a></li>
+<li class=""><a href="https://github.com/openai/codex/issues/33619" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/33619</a></li>
+</ul>
+<p>Windows Computer Use 在枚举窗口前失败或枚举不到窗口：</p>
+<ul>
+<li class=""><a href="https://github.com/openai/codex/issues/37306" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/37306</a></li>
+<li class=""><a href="https://github.com/openai/codex/issues/37255" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/37255</a></li>
+<li class=""><a href="https://github.com/openai/codex/issues/37043" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/37043</a></li>
+</ul>
+<p>最值得注意的是路由优先级问题：</p>
+<ul>
+<li class=""><a href="https://github.com/openai/codex/issues/36741" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/36741</a></li>
+</ul>
+<p>这个 issue 的标题是 “Let explicit user tool/MCP choice override auto-triggered bundled skills”。它对应的场景是：用户显式要求使用 CUA Driver MCP，但 Codex 自动触发 bundled Computer Use skill，导致用户选择的外部工具没有成为主路径。这个问题正好说明 Codex 的内置 Computer Use 和第三方 MCP driver 之间存在路由优先级问题。</p>
+<p>Codex 相关 PR 里，<code>#19071</code> 已经合并，标题是 “Add computer_use feature requirement key”：</p>
+<ul>
+<li class=""><a href="https://github.com/openai/codex/pull/19071" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/pull/19071</a></li>
+</ul>
+<p>这说明 Codex 的 Computer Use 不是单个 UI bug，而是已经进入 requirement / managed configuration 体系。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="cua-社区正在做-codex-plugin--mcp-sdk-这条桥">CUA 社区：正在做 Codex plugin / MCP SDK 这条桥<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#cua-%E7%A4%BE%E5%8C%BA%E6%AD%A3%E5%9C%A8%E5%81%9A-codex-plugin--mcp-sdk-%E8%BF%99%E6%9D%A1%E6%A1%A5" class="hash-link" aria-label="CUA 社区：正在做 Codex plugin / MCP SDK 这条桥的直接链接" title="CUA 社区：正在做 Codex plugin / MCP SDK 这条桥的直接链接" translate="no">​</a></h2>
+<p>CUA 的公开文档把核心理念叫 no-foreground contract：agent 可以观察并操作桌面，同时维持用户前台体验稳定。</p>
+<ul>
+<li class=""><a href="https://cua.ai/docs" target="_blank" rel="noopener noreferrer" class="">https://cua.ai/docs</a></li>
+<li class=""><a href="https://cua.ai/docs/explanation/the-no-foreground-contract" target="_blank" rel="noopener noreferrer" class="">https://cua.ai/docs/explanation/the-no-foreground-contract</a></li>
+</ul>
+<p><code>trycua/cua</code> 里 <code>libs/cua-driver/examples/agent-sdks/README.md</code> 对 Codex 的描述也很关键：Codex SDK 不暴露直接 custom-tool callbacks，所以 CUA 的 Codex examples 使用 MCP，而不是发明一个 native adapter。</p>
+<ul>
+<li class=""><a href="https://github.com/trycua/cua/blob/main/libs/cua-driver/examples/agent-sdks/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua/blob/main/libs/cua-driver/examples/agent-sdks/README.md</a></li>
+</ul>
+<p>社区 issue/PR 也在补 Codex 路线：</p>
+<ul>
+<li class=""><a href="https://github.com/trycua/cua/issues/2813" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua/issues/2813</a></li>
+<li class=""><a href="https://github.com/trycua/cua/issues/2663" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua/issues/2663</a></li>
+<li class=""><a href="https://github.com/trycua/cua/pull/1726" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua/pull/1726</a></li>
+<li class=""><a href="https://github.com/trycua/cua/pull/2109" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua/pull/2109</a></li>
+<li class=""><a href="https://github.com/trycua/cua/pull/1502" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua/pull/1502</a></li>
+</ul>
+<p>其中 <code>#2813</code> 标题就是 “feat(cua-driver): ship an OpenAI Codex plugin (MCP + focused skills)”。<code>#2663</code> 对应 Codex 把显式 cua-driver 请求路由到内置 computer-use skill 的冲突。几个 PR 则分别围绕 embedded CUA Driver MCP SDK、System Events permission handling、TypeScript computer test contract 等方向推进。</p>
+<p>这条线和 Hermes 的选择相当接近：把桌面控制能力沉到通用 driver / MCP 层，而不是让每个 agent 产品把跨平台 desktop automation 从头做一遍。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="对比hermes-和-codex-不是同一层">对比：Hermes 和 Codex 不是同一层<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#%E5%AF%B9%E6%AF%94hermes-%E5%92%8C-codex-%E4%B8%8D%E6%98%AF%E5%90%8C%E4%B8%80%E5%B1%82" class="hash-link" aria-label="对比：Hermes 和 Codex 不是同一层的直接链接" title="对比：Hermes 和 Codex 不是同一层的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>维度</th><th>Hermes</th><th>Codex</th></tr></thead><tbody><tr><td>对外形态</td><td><code>computer_use</code> toolset</td><td>Codex feature requirement + bundled plugin / skill</td></tr><tr><td>底层 driver</td><td><code>cua-driver</code>，通过 MCP stdio 连接</td><td>Codex Desktop / bundled Computer Use plugin；外部 CUA Driver 通过 MCP 进入时涉及路由优先级</td></tr><tr><td>模型假设</td><td>任意 tool-calling 模型</td><td>Codex 产品和 Codex SDK 语境</td></tr><tr><td>安装/诊断</td><td><code>hermes computer-use install/status/doctor</code></td><td>Codex Desktop/plugin availability 和 requirements 层</td></tr><tr><td>当前风险</td><td>backend、权限、平台实现要随 <code>cua-driver</code> 版本同步</td><td>plugin 注入、Windows 枚举、内置 skill 与显式 MCP choice 的优先级</td></tr><tr><td>对 ChatArch 的意义</td><td>可以直接作为 Hermes 工具能力启用</td><td>值得跟踪其 Computer Use UX、requirement 管理和 plugin 生态</td></tr></tbody></table>
+<p>换句话说，Hermes 的 Computer Use 更像“agent runtime 的通用桌面工具”；Codex 的 Computer Use 更像“Codex 产品内置的桌面能力模块”。它们会在底层能力上相遇，尤其是通过 MCP 和 <code>cua-driver</code>，但上层产品边界不同。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="chatarch-应该怎么判断">ChatArch 应该怎么判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#chatarch-%E5%BA%94%E8%AF%A5%E6%80%8E%E4%B9%88%E5%88%A4%E6%96%AD" class="hash-link" aria-label="ChatArch 应该怎么判断的直接链接" title="ChatArch 应该怎么判断的直接链接" translate="no">​</a></h2>
+<p>第一，Hermes 侧无需等待 Codex。Hermes 文档、tools reference、CLI 和源码已经说明 <code>computer_use</code> 是一条现成路线。下一步的重点是 backend 安装、权限诊断和真实平台 smoke，而不是重新定义产品方向。</p>
+<p>第二，Codex 侧值得继续跟 issue/PR。Codex 的 requirement key、bundled plugin 发现和 Desktop 体验会影响用户对“Computer Use 应该怎么被 agent 调用”的预期；特别是 <code>#36741</code> 这种显式工具选择优先级问题，会直接影响 CUA Driver MCP 进入 Codex 的体验。</p>
+<p>第三，CUA 是连接层。Hermes 已经走 <code>cua-driver</code>，CUA 社区又在给 Codex 做 plugin / MCP SDK，这意味着未来更可能出现一个跨 agent 的 desktop control driver contract，而不是每个 agent 各自封闭实现。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最后结论">最后结论<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#%E6%9C%80%E5%90%8E%E7%BB%93%E8%AE%BA" class="hash-link" aria-label="最后结论的直接链接" title="最后结论的直接链接" translate="no">​</a></h2>
+<p>这次调研的答案可以压缩成三句话：</p>
+<ol>
+<li class=""><strong>Hermes 已有 Computer Use</strong>：<code>computer_use</code> toolset、文档、CLI、源码注册都存在，底层通过 <code>cua-driver</code> 提供后台桌面控制。</li>
+<li class=""><strong>Codex 也在做 Computer Use</strong>：源码里有 <code>computer_use</code> feature requirement 和 bundled plugin 发现路径，公开 issue 显示插件注入、Windows 和路由优先级仍在演进。</li>
+<li class=""><strong>社区桥是 CUA Driver + MCP</strong>：<code>trycua/cua</code> 正在推进 Codex plugin / MCP SDK，和 Hermes 的底层路线高度相关。</li>
+</ol>
+<p>对 ChatArch/Hermes 来说，最实际的路线是：把 Hermes 的 <code>computer_use</code> 当作已经存在的能力继续补安装、权限、诊断和平台回归；同时跟踪 Codex bundled skill 与 CUA Codex plugin 的进展，尤其是显式 MCP 工具选择和内置 skill 自动触发的冲突。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="关键-url">关键 URL<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/hermes-codex-computer-use-comparison#%E5%85%B3%E9%94%AE-url" class="hash-link" aria-label="关键 URL的直接链接" title="关键 URL的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/computer-use" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/features/computer-use</a></li>
+<li class=""><a href="https://hermes-agent.nousresearch.com/docs/reference/tools-reference#computer_use-toolset" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/reference/tools-reference#computer_use-toolset</a></li>
+<li class=""><a href="https://hermes-agent.nousresearch.com/docs/reference/cli-commands#hermes-computer-use" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/reference/cli-commands#hermes-computer-use</a></li>
+<li class=""><a href="https://github.com/NousResearch/hermes-agent" target="_blank" rel="noopener noreferrer" class="">https://github.com/NousResearch/hermes-agent</a></li>
+<li class=""><a href="https://github.com/openai/codex" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex</a></li>
+<li class=""><a href="https://github.com/openai/codex/pull/19071" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/pull/19071</a></li>
+<li class=""><a href="https://github.com/openai/codex/issues/36741" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/36741</a></li>
+<li class=""><a href="https://github.com/openai/codex/issues/29137" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/29137</a></li>
+<li class=""><a href="https://github.com/openai/codex/issues/33619" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/33619</a></li>
+<li class=""><a href="https://github.com/openai/codex/issues/37306" target="_blank" rel="noopener noreferrer" class="">https://github.com/openai/codex/issues/37306</a></li>
+<li class=""><a href="https://github.com/trycua/cua" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua</a></li>
+<li class=""><a href="https://cua.ai/docs/explanation/the-no-foreground-contract" target="_blank" rel="noopener noreferrer" class="">https://cua.ai/docs/explanation/the-no-foreground-contract</a></li>
+<li class=""><a href="https://github.com/trycua/cua/issues/2813" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua/issues/2813</a></li>
+<li class=""><a href="https://github.com/trycua/cua/issues/2663" target="_blank" rel="noopener noreferrer" class="">https://github.com/trycua/cua/issues/2663</a></li>
+</ul>]]></content:encoded>
+            <category>hermes</category>
+            <category>codex</category>
+            <category>computer-use</category>
+            <category>cua</category>
+            <category>agent</category>
         </item>
         <item>
             <title><![CDATA[王虹的菲尔兹奖：从波的平滑到三维 Kakeya]]></title>
@@ -3807,243 +3892,6 @@
             <category>automation</category>
             <category>browser-extension</category>
             <category>content-distribution</category>
-        </item>
-        <item>
-            <title><![CDATA[我们真的被 Lean 锁定了吗？Mathlib、soundness 与证明可移植性]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability</guid>
-            <pubDate>Fri, 31 Jul 2026 05:40:00 GMT</pubDate>
-            <description><![CDATA[从 MathOverflow 的 Are we stuck with Lean 讨论出发，拆解 kernel、foundation、Mathlib、tooling、community 与 funding 六层锁定，并探索独立 checker、跨系统复核和替代生态的现实路线。]]></description>
-            <content:encoded><![CDATA[<p>2026 年 7 月 30 日，Timothy Chow 在 MathOverflow 发了一个标题很直接的问题：<a href="https://mathoverflow.net/questions/513742/are-we-stuck-with-lean" target="_blank" rel="noopener noreferrer" class=""><em>Are we stuck with Lean?</em></a></p>
-<p>截至本文抓取页面时，这个刚出现一天的问题已有 39 票、超过 1.6 万次浏览、6 个回答。它紧跟在 Lean 的 Collatz-themed soundness 事件之后：一份 AI 参与生成的 artifact 同时穿过了当时的 Lean kernel 与旧版 nanoda。于是一个工程事故很快被推到更大的问题上：</p>
-<blockquote>
-<p>Are there any prospects for any organization to seriously support an alternative to Lean?</p>
-</blockquote>
-<p>如果只按标题回答，讨论很容易变成两种口号：Lean 已经赢了，接受现实；或者 Lean 有过 soundness bug，应该换成 Metamath。六个回答和几十条评论真正说明的是：<strong>“被 Lean 锁定”不是一个 yes/no 问题，因为这里至少有六种不同的锁。</strong></p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>先给结论</div><div class="admonitionContent_BuS1"><p>短期内，数学形式化确实在 Mathlib、工具链和共同体层面形成了很高的 switching cost；但这不等于 Lean 的 kernel、逻辑基础或今天的实现会永远不可替代。比“全部迁移”更现实的目标，是降低不可逆性：让重要证明能被独立 checker 复核、能跨系统重建，让替代生态得到长期工程投入。</p></div></div>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>关于来源</div><div class="admonitionContent_BuS1"><p>MathOverflow 讨论仍在变化。本文中的票数、浏览量和回答数是 2026 年 7 月 31 日的快照；观点均按作者归属，不代表 MathOverflow、Lean 社区或本文的共同结论。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="原问题并不是要不要抛弃-lean">原问题并不是“要不要抛弃 Lean”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E5%8E%9F%E9%97%AE%E9%A2%98%E5%B9%B6%E4%B8%8D%E6%98%AF%E8%A6%81%E4%B8%8D%E8%A6%81%E6%8A%9B%E5%BC%83-lean" class="hash-link" aria-label="原问题并不是“要不要抛弃 Lean”的直接链接" title="原问题并不是“要不要抛弃 Lean”的直接链接" translate="no">​</a></h2>
-<p>Chow 回忆，三年前他曾把那一刻称作一个 “<a href="https://en.wikipedia.org/wiki/Arnold_Dumey" target="_blank" rel="noopener noreferrer" class="">Dumey microsecond</a>”：数学界或许还来得及把资源投向自己选择的 proof assistant。当时 Mathlib 刚完成 Lean 3 到 Lean 4 的迁移，Lean FRO 刚成立，Terry Tao 也还没有自学 Lean。今天，Lean 看起来远比当时不可避免。</p>
-<p>他提出 Metamath 作为具体候选，理由有两类：</p>
-<ol>
-<li class=""><a href="https://arxiv.org/abs/1910.10703" target="_blank" rel="noopener noreferrer" class="">Metamath Zero</a> 提供了一条不同的高 assurance 路线；</li>
-<li class="">Metamath 可以使用 set-theoretic foundation，为 propositions-as-types 之外保留一条路线。</li>
-</ol>
-<p>但他也明确说自己不是 Metamath 的利益相关者，更没有主张“ditch Lean”。他的实际诉求是：数学界是否会从一个<strong>可用、持续维护、基础不同的第二生态</strong>中受益，以及谁愿意为此提供 institutional support。</p>
-<p>这句话里混着四个本该分开的问题：</p>
-<ul>
-<li class=""><strong>Assurance</strong>：怎样相信 AI 或其他 adversarial source 生成的 proof artifact？</li>
-<li class=""><strong>Foundation</strong>：dependent type theory、HOL、set theory 各自适合承担什么？</li>
-<li class=""><strong>Ecosystem</strong>：谁能提供 Mathlib、editor、package manager、教程与 review？</li>
-<li class=""><strong>Institution</strong>：谁能连续多年支付开发、维护和基础设施成本？</li>
-</ul>
-<p>如果不拆开，kernel bug 会被误写成 foundational inconsistency，缺少 VS Code 插件会被误写成逻辑不够好，社区网络效应又会被误写成几位名人的偶然选择。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="六个回答其实在回答六种锁定">六个回答，其实在回答六种“锁定”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E5%85%AD%E4%B8%AA%E5%9B%9E%E7%AD%94%E5%85%B6%E5%AE%9E%E5%9C%A8%E5%9B%9E%E7%AD%94%E5%85%AD%E7%A7%8D%E9%94%81%E5%AE%9A" class="hash-link" aria-label="六个回答，其实在回答六种“锁定”的直接链接" title="六个回答，其实在回答六种“锁定”的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>回答</th><th>主要视角</th><th>对问题的贡献</th></tr></thead><tbody><tr><td><a href="https://mathoverflow.net/a/513746" target="_blank" rel="noopener noreferrer" class="">Jacques Carette</a></td><td>社会学</td><td>工具选择有趋势、声望与协调效应，主导地位不是自然定律</td></tr><tr><td><a href="https://mathoverflow.net/a/513774" target="_blank" rel="noopener noreferrer" class="">James E Hanson</a></td><td>资金与 UX</td><td>好用的 proof assistant 需要全职团队、服务、教程和 library design，不只需要好 kernel</td></tr><tr><td><a href="https://mathoverflow.net/a/513761" target="_blank" rel="noopener noreferrer" class="">Lawrence Paulson</a></td><td>逻辑与工程</td><td>真正的替代路线也许是 Isabelle/HOL，而不是另一套 dependent type theory 或直接使用 set theory</td></tr><tr><td><a href="https://mathoverflow.net/a/513745" target="_blank" rel="noopener noreferrer" class="">Ricky</a></td><td>实用主义</td><td>Lean 目前是高 confidence、可理解性与可用性的折中；多元化值得，但成本很高</td></tr><tr><td><a href="https://mathoverflow.net/a/513762" target="_blank" rel="noopener noreferrer" class="">Jason Rute</a></td><td>AI 与转换</td><td>AI 可能先让跨系统翻译和重要证明的多重复核变得可行</td></tr><tr><td><a href="https://mathoverflow.net/a/513743" target="_blank" rel="noopener noreferrer" class="">Stanley Yao Xiao</a></td><td>经济史</td><td>领先产品可能被后来者取代，但市场类比低估了 formal library 的不可移植性</td></tr></tbody></table>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="工具是社会现象但-proof-assistant-不是浏览器">“工具是社会现象”，但 proof assistant 不是浏览器<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E5%B7%A5%E5%85%B7%E6%98%AF%E7%A4%BE%E4%BC%9A%E7%8E%B0%E8%B1%A1%E4%BD%86-proof-assistant-%E4%B8%8D%E6%98%AF%E6%B5%8F%E8%A7%88%E5%99%A8" class="hash-link" aria-label="“工具是社会现象”，但 proof assistant 不是浏览器的直接链接" title="“工具是社会现象”，但 proof assistant 不是浏览器的直接链接" translate="no">​</a></h3>
-<p>Carette 的回答只有几段，最重要的一句是：</p>
-<blockquote>
-<p>The tools we use are a <em>sociological</em> phenomenon.</p>
-</blockquote>
-<p>这提醒我们，Lean 的位置不是纯粹跑分结果。Buzzard、Scholze、Tao、Hales 的可见度，Mathlib contributor 的响应速度，课程、Zulip 与合作项目都会制造正反馈。</p>
-<p>Chow 后来在<a href="https://mathoverflow.net/questions/513742/are-we-stuck-with-lean#comment1341125_513742" target="_blank" rel="noopener noreferrer" class="">评论</a>中转述 Kevin Buzzard 的解释：他选择 Lean 的一个重要原因，是 Lean community 当时是唯一愿意支持“形式化全部本科数学”这个项目的社区。这个细节比“名人带动 herd”更有解释力——社区对一个具体 contributor 说 yes，本身就是产品能力。</p>
-<p>但评论很快指出 Internet Explorer 类比的边界。换浏览器不会让你失去过去写过的网页；换 foundation 却可能让 definitions、theorem statements 与整个 library graph 都无法直接复用。Emil Jeřábek 的评论把它说得很具体：你不能把“Ford proof assistant”换成“Toyota proof assistant”，同时保留此前形式化的所有证明。</p>
-<p>更接近的类比或许是 HTML、JavaScript 或 LaTeX：实现和工具可以更换，但共享 artifact、接口与社会惯例会长期留下。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="真正昂贵的是持续的工程组织">真正昂贵的是持续的工程组织<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E7%9C%9F%E6%AD%A3%E6%98%82%E8%B4%B5%E7%9A%84%E6%98%AF%E6%8C%81%E7%BB%AD%E7%9A%84%E5%B7%A5%E7%A8%8B%E7%BB%84%E7%BB%87" class="hash-link" aria-label="真正昂贵的是持续的工程组织的直接链接" title="真正昂贵的是持续的工程组织的直接链接" translate="no">​</a></h3>
-<p>Hanson 的回答把标题改写成一个更可操作的问题：这里的 “seriously” 是指有组织愿意做，还是指能吸引足够多数学家形成 viable alternative？</p>
-<p>前者已经存在。Rocq、Isabelle、Mizar、Metamath 都不是业余玩具。后者要求的东西要多得多：</p>
-<ul>
-<li class="">安装和升级不要折磨用户；</li>
-<li class="">editor response、autocomplete 与 diagnostics 足够好；</li>
-<li class="">有教程、文档和 onboarding；</li>
-<li class="">library 的 definitions 与 APIs 适合实际数学；</li>
-<li class="">CI、package hosting、web editor 和 review queue 有人维护；</li>
-<li class="">破坏性 migration 时有能力带着生态一起走。</li>
-</ul>
-<p>Hanson 因此认为，一个有竞争力的新项目更像 <a href="https://lean-lang.org/fro/about/" target="_blank" rel="noopener noreferrer" class="">Lean FRO</a>、CoCalc 或 Overleaf，而不是给几位 academic researchers 发几笔短期 grant。</p>
-<p>他还提出了一个很重要的架构分离：数学家使用的 frontend 可以从数学 UX “top down” 设计，最终再编译到一个极小、Metamath-like 的 checking backend。用户看到什么，与 root of trust 用什么逻辑，不必是同一个决策。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="替代-dependent-types不等于默认选择-set-theory">替代 dependent types，不等于默认选择 set theory<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E6%9B%BF%E4%BB%A3-dependent-types%E4%B8%8D%E7%AD%89%E4%BA%8E%E9%BB%98%E8%AE%A4%E9%80%89%E6%8B%A9-set-theory" class="hash-link" aria-label="替代 dependent types，不等于默认选择 set theory的直接链接" title="替代 dependent types，不等于默认选择 set theory的直接链接" translate="no">​</a></h3>
-<p>Paulson 直接把问题推广成：“Are we stuck with dependent types?” 他批评 proof objects、kernel complexity 和 dependent equality 带来的成本，并建议读者看看 Isabelle/HOL 与 <a href="https://www.cl.cam.ac.uk/~lp15/Grants/Alexandria/" target="_blank" rel="noopener noreferrer" class="">Alexandria project</a>。</p>
-<p>但这条讨论里最值得保留的材料来自他在问题下的评论。作为 Isabelle/ZF 的作者，Paulson 明确说自己<strong>不建议</strong>把 set theory 当作日常形式化数学的默认环境：types 能简化 notation、排除荒谬项；很多数学用 Isabelle/HOL 的 simple type theory 已经足够，只有数学本身涉及 ordinals 等对象时才加载 ZFC library。</p>
-<p>与此同时，Jean Abou Samra 也反对“dependent types 必然需要大 kernel”的定论：toy MLTT 可以很小，proof-irrelevant proposition 与 weak type theory 仍有未充分探索的设计空间。</p>
-<p>因此，这里的合理结论不是 “DTT bad, ZFC good”，而是：<strong>proof assistant 的 design space 远未收敛，而今天主流实现的复杂度不等于逻辑路线的理论下界。</strong></p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="lean-的-practical-compromise">Lean 的 practical compromise<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#lean-%E7%9A%84-practical-compromise" class="hash-link" aria-label="Lean 的 practical compromise的直接链接" title="Lean 的 practical compromise的直接链接" translate="no">​</a></h3>
-<p>Mathlib maintainer Ricky 的回答最接近日常使用者的判断：Lean 不是唯一实践选择，也绝不完美；但对很多人，它目前确实更好用，benefit 超过 drawback。</p>
-<p>他还把 AI proof verification 分成两个目标：只需要一个 oracle，还是想理解 proof？Lean 的价值之一，是当 proof 没有偏离 Mathlib idiom 太远时，人仍有机会理解它，同时获得很高但非绝对的 confidence。</p>
-<p>这个回答也纠正了“没有组织认真支持 alternatives”的说法。Rocq 已获得 Inria 的长期支持。缺失的不是 seriousness 本身，而是 Lean 目前在 pure-math mind share、library coordination 与 contributor growth 上形成的组合优势。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-最可能先改变翻译而不是重造一切">AI 最可能先改变翻译，而不是重造一切<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#ai-%E6%9C%80%E5%8F%AF%E8%83%BD%E5%85%88%E6%94%B9%E5%8F%98%E7%BF%BB%E8%AF%91%E8%80%8C%E4%B8%8D%E6%98%AF%E9%87%8D%E9%80%A0%E4%B8%80%E5%88%87" class="hash-link" aria-label="AI 最可能先改变翻译，而不是重造一切的直接链接" title="AI 最可能先改变翻译，而不是重造一切的直接链接" translate="no">​</a></h3>
-<p>Rute 给出了一条不要求选出唯一赢家的路线：为特别重要的证明，在 Lean、HOL 和 Metamath 等不同 foundations 中保留可复核版本。</p>
-<p>他认为，AI 可能很快擅长把 formal mathematics 从一种系统翻译到另一种系统。即使 symbolic conversion 生成的代码难看，它仍可能适合 machine checking；如果追求可维护性，再让模型做 target-idiomatic reconstruction。</p>
-<p>这比“从空白开始在第二个系统重证全部 Mathlib”现实得多。它把投资单位从整套生态改成：</p>
-<ul>
-<li class="">基础 definitions 的对应关系；</li>
-<li class="">高价值 theorem 的 statement mapping；</li>
-<li class="">landmark proof 的独立重建；</li>
-<li class="">能持续运行的 cross-check pipeline。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="市场会带来后来者吗">市场会带来后来者吗？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E5%B8%82%E5%9C%BA%E4%BC%9A%E5%B8%A6%E6%9D%A5%E5%90%8E%E6%9D%A5%E8%80%85%E5%90%97" class="hash-link" aria-label="市场会带来后来者吗？的直接链接" title="市场会带来后来者吗？的直接链接" translate="no">​</a></h3>
-<p>Xiao 用汽车、搜索引擎和电动车说明先发者常被取代。评论指出一个事实错误：Lean 根本不是 proof assistant 的 first mover；它相对较晚出现，强调 usability 与 setup 正是后来居上的原因之一。</p>
-<p>这个回答仍触及一个真实问题：谁为“更好但免费”的数学基础设施付费？传统 consumer-software 市场未必会自动产生答案。潜在资金可能来自 research infrastructure、philanthropy、government strategy 或需要可靠 formal reasoning 的 AI/technology companies。</p>
-<p>市场可能带来竞争者，但 formal mathematics 的 switching cost 使“产品更好自然获胜”远不像浏览器或汽车那么简单。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我们到底被什么锁住了">我们到底被什么锁住了<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E6%88%91%E4%BB%AC%E5%88%B0%E5%BA%95%E8%A2%AB%E4%BB%80%E4%B9%88%E9%94%81%E4%BD%8F%E4%BA%86" class="hash-link" aria-label="我们到底被什么锁住了的直接链接" title="我们到底被什么锁住了的直接链接" translate="no">​</a></h2>
-<p>Julia M. Himmel 在<a href="https://mathoverflow.net/questions/513742/are-we-stuck-with-lean#comment1341000_513742" target="_blank" rel="noopener noreferrer" class="">评论</a>里提醒：proof assistant 不只是 kernel 和 mathematical library，还包括 incremental elaborator、tactics、typeclasses、linting、language server、package manager、documentation 与 compiler。</p>
-<p>把这条提醒和六组观点放在一起，可以得到一个六层模型：</p>
-<!-- -->
-<table><thead><tr><th>层与切换成本</th><th>被固定的东西</th><th>可行的减锁方式</th></tr></thead><tbody><tr><td>Kernel implementation（低—中）</td><td>checker 行为、bugs、binary 与版本</td><td>independent kernels、conformance tests、version pin</td></tr><tr><td>Logical foundation（高）</td><td>universes、inductives、equality、axioms</td><td>formal specification、受限片段翻译、跨 foundation replay</td></tr><tr><td>Library ontology（很高）</td><td>definitions、statement shapes、instances、APIs</td><td>aligned core libraries、schema 与 statement mapping</td></tr><tr><td>Proof engineering（中—高）</td><td>tactics、automation、idioms、proof terms</td><td>AI translation、target-side reconstruction、proof exchange</td></tr><tr><td>Tooling（高）</td><td>editor、package manager、docs、build、CI</td><td>全职工程、开放协议、可复现环境</td></tr><tr><td>Community/institution（很高）</td><td>maintainers、review、课程、协作、资金</td><td>长期组织、plural funding、共享 benchmarks</td></tr></tbody></table>
-<p>这个表解释了两件看似矛盾的事：</p>
-<ol>
-<li class=""><strong>更换 Lean kernel 并没有想象中困难。</strong> 同一份 export 可以交给独立 checker；nanoda 就是例子。</li>
-<li class=""><strong>更换 Lean/Mathlib 生态比更换 kernel 困难得多。</strong> 最贵的是大家已经共同接受的 definitions、APIs、review norms 与协作网络。</li>
-</ol>
-<p>所以“Lean lock-in”不是一块石头。kernel 层可以今天就多元化；foundation 和 library 层需要多年映射；community 层不能靠 transpiler 搬运。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最近的-soundness-bug-改变了什么">最近的 soundness bug 改变了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E6%9C%80%E8%BF%91%E7%9A%84-soundness-bug-%E6%94%B9%E5%8F%98%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="最近的 soundness bug 改变了什么的直接链接" title="最近的 soundness bug 改变了什么的直接链接" translate="no">​</a></h2>
-<p>本轮 MathOverflow 讨论的直接导火索，是我们此前详细复盘的 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/lean-conjecture-soundness-bug-collatz-comparator-nanoda">Lean Conjecture soundness 事件</a>。那份 Collatz 外衣下的 artifact 同时组合了 Lean nested-inductive 漏检与旧版 nanoda 的另一处 projection bug。</p>
-<p>事件真正改变的是 threat model：</p>
-<ul>
-<li class="">AI-authored proof 必须按 adversarial artifact 处理；</li>
-<li class="">checker、toolchain、config 和 artifact 都必须 versioned；</li>
-<li class="">一套实现是一个 single failure point；</li>
-<li class="">绿色 build 不是脱离版本和信任链的永久证书。</li>
-</ul>
-<p>但它没有证明：</p>
-<ul>
-<li class="">Lean 的 idealized type theory 本身不一致；</li>
-<li class="">set-theoretic checker 不会有 implementation bug；</li>
-<li class="">dependent type theory 必然需要 Lean 当前这套 kernel architecture；</li>
-<li class="">换掉整个 ecosystem 比增加 independent verification 更便宜；</li>
-<li class="">LLM 已被证实自主发现并主动利用了公开漏洞。</li>
-</ul>
-<p>社区的实际响应也不是迁移：Lean 修复 kernel，nanoda 修复自身漏洞，<a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/lean-comparator-trust-boundary-guide">Comparator</a> 开启 external checking，LeanEval 强制 standard kernel 与 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/nanoda-lean-external-kernel-guide">nanoda</a> 同时接受。</p>
-<p>这覆盖的是 kernel-implementation layer。它不能替代长期 foundation pluralism，却说明<strong>提升 assurance 并不要求先复制 Mathlib</strong>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="metamath-与-mm0-为什么仍然重要">Metamath 与 MM0 为什么仍然重要<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#metamath-%E4%B8%8E-mm0-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BB%8D%E7%84%B6%E9%87%8D%E8%A6%81" class="hash-link" aria-label="Metamath 与 MM0 为什么仍然重要的直接链接" title="Metamath 与 MM0 为什么仍然重要的直接链接" translate="no">​</a></h2>
-<p><a href="https://us.metamath.org/" target="_blank" rel="noopener noreferrer" class="">Metamath</a> 的官方说明强调几件与 Lean 很不同的事：</p>
-<ul>
-<li class="">language specification 很小，axioms 由各 database 定义；</li>
-<li class="">proof 写出每一步，而不是在验证时重新运行 <code>simp</code> 或 <code>auto</code>；</li>
-<li class="">有多种语言的独立 verifier；</li>
-<li class="">discovery 与 verification 分离，目标之一是长期归档。</li>
-</ul>
-<p>这使它很适合作为“一个 proof 到底依赖哪些 primitive steps”的极简参照系。</p>
-<p><a href="https://arxiv.org/abs/1910.10703" target="_blank" rel="noopener noreferrer" class="">Metamath Zero</a> 又向前走了一步。Mario Carneiro 将其描述为追求 logic 与 implementation simplicity、支持其他 proof language 的双向 translation，并希望最终把 verifier 自身一路验证到 executable binary 的 root of trust。</p>
-<p>这是很强的 assurance story。但它没有自动回答另一组问题：数学家愿不愿意在它的 frontend 里工作？category theory 是否好写？editor feedback、search、package management、documentation 和 review workflow 谁来维护？</p>
-<p>换句话说，MM0 可以成为一条优秀的 checking backend，而不必要求每位数学家把它当作日常 authoring environment。Hanson 的 top-down 设想与 MM0 并不冲突：<strong>丰富、typeful、符合数学习惯的 frontend，完全可以向更小、甚至不同 foundation 的 proof format 编译。</strong></p>
-<p>这也是为什么“foundation 之争”和“UX 之争”不应该绑定销售。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-已经存在缺少的是可比较">Alternatives 已经存在，缺少的是“可比较”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#alternatives-%E5%B7%B2%E7%BB%8F%E5%AD%98%E5%9C%A8%E7%BC%BA%E5%B0%91%E7%9A%84%E6%98%AF%E5%8F%AF%E6%AF%94%E8%BE%83" class="hash-link" aria-label="Alternatives 已经存在，缺少的是“可比较”的直接链接" title="Alternatives 已经存在，缺少的是“可比较”的直接链接" translate="no">​</a></h2>
-<p>把问题理解成“Lean 之外有没有 serious proof assistant”，答案显然是有。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="rocq">Rocq<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#rocq" class="hash-link" aria-label="Rocq的直接链接" title="Rocq的直接链接" translate="no">​</a></h3>
-<p><a href="https://rocq-prover.org/about" target="_blank" rel="noopener noreferrer" class="">Rocq</a> 已有四十多年历史，提供 Gallina、interactive proof、相对小的 certification kernel、program extraction、package ecosystem 与长期 research lineage。<a href="https://rocq-prover.org/consortium" target="_blank" rel="noopener noreferrer" class="">Rocq Consortium</a> 由 Inria 托管，以 membership、donation 与 support subscription 为维护和工程资源提供制度入口。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="isabelle">Isabelle<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#isabelle" class="hash-link" aria-label="Isabelle的直接链接" title="Isabelle的直接链接" translate="no">​</a></h3>
-<p><a href="https://isabelle.in.tum.de/" target="_blank" rel="noopener noreferrer" class="">Isabelle</a> 是 generic proof assistant，Isabelle/HOL 拥有独立的 formalization tradition、PIDE、jEdit/VSCode 环境和 <a href="https://www.isa-afp.org/" target="_blank" rel="noopener noreferrer" class="">Archive of Formal Proofs</a>。它不是“没人维护的理论备选”，而是另一套成熟实践。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="mizar">Mizar<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#mizar" class="hash-link" aria-label="Mizar的直接链接" title="Mizar的直接链接" translate="no">​</a></h3>
-<p><a href="https://mizar.uwb.edu.pl/" target="_blank" rel="noopener noreferrer" class="">Mizar</a> 有五十年左右的历史、持续发布的 Mizar system 和 Mizar Mathematical Library。它证明了接近数学 prose 的 authoring tradition 可以长期存在，但其 tooling、贡献流程与当下 Lean 社区的协作方式不同。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="metamath">Metamath<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#metamath" class="hash-link" aria-label="Metamath的直接链接" title="Metamath的直接链接" translate="no">​</a></h3>
-<p>Metamath Proof Explorer 从 ZFC axioms 开始，官方页面列出四万余 proof，并有十余种 verifier。它的 verification surface 极简，但交互式 authoring、automation 与现代 pure-math API 不是 Mathlib 的等价替身。</p>
-<p>因此，真正的问题不是 alternative 是否存在，甚至也不是有没有机构支持。问题是能否同时具备：</p>
-<ul>
-<li class="">pure mathematics 所需 library coverage；</li>
-<li class="">足够顺滑的 daily UX；</li>
-<li class="">持续 review 与 migration 能力；</li>
-<li class="">能让协作者聚到同一处的 mind share。</li>
-</ul>
-<p>“认真存在”和“可与 Lean 当前协调点比较”之间，还有很长一段工程与社会距离。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-能复制代码行不能直接复制-library">AI 能复制代码行，不能直接复制 library<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#ai-%E8%83%BD%E5%A4%8D%E5%88%B6%E4%BB%A3%E7%A0%81%E8%A1%8C%E4%B8%8D%E8%83%BD%E7%9B%B4%E6%8E%A5%E5%A4%8D%E5%88%B6-library" class="hash-link" aria-label="AI 能复制代码行，不能直接复制 library的直接链接" title="AI 能复制代码行，不能直接复制 library的直接链接" translate="no">​</a></h2>
-<p>Rute 的回答提到，一个 AI-authored Lean project 已达到 120 万行，而 Mathlib 大约 250 万行。这个数量级很有启发，但 line count 不是 library quality 的代理。</p>
-<p><a href="https://leanprover-community.github.io/mathlib_stats.html" target="_blank" rel="noopener noreferrer" class="">Mathlib statistics</a> 在本文写作时列出：</p>
-<ul>
-<li class="">134,859 个 definitions；</li>
-<li class="">283,710 个 theorems；</li>
-<li class="">772 名 contributors。</li>
-</ul>
-<p>更关键的证据来自 <a href="https://mathlib-initiative.org/about/" target="_blank" rel="noopener noreferrer" class="">Mathlib Initiative</a> 对自身任务的描述：PR 会等待 review，new contributors 遇到 documentation gap，ecosystem updates 需要协调。它提供 professional editorial support、infrastructure development 与 ecosystem coordination，正是因为 volunteer code generation 不足以维持当前规模。</p>
-<p>AI 很可能降低这些成本：</p>
-<ul>
-<li class="">routine declaration 和局部 proof obligation；</li>
-<li class="">对应 lemma 搜索；</li>
-<li class="">naming/API adapter；</li>
-<li class="">跨系统的初稿翻译；</li>
-<li class="">在第二个 checker 中重建 proof。</li>
-</ul>
-<p>但它不会自动消除这些成本：</p>
-<ul>
-<li class="">什么 definitions 应当 canonical；</li>
-<li class="">两个 statement 是否表达同一数学命题；</li>
-<li class="">如何避免重复、冲突和 API fragmentation；</li>
-<li class="">provenance、license 与 review accountability；</li>
-<li class="">source/target library 更新后的持续 migration；</li>
-<li class="">documentation、teaching 与 governance。</li>
-</ul>
-<p>生成 100 万行代码是 throughput。Mathlib 的 moat 是长期形成的 ontology、reviewed interfaces、discoverability 与一群能够协商 breaking change 的人。</p>
-<p>因此，AI 可能先让<strong>核心库和 landmark theorems 的跨系统 mirror</strong>变得经济，再让完整第二个 Mathlib 变得经济。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="proof-portability其实有五个等级">“Proof portability”其实有五个等级<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#proof-portability%E5%85%B6%E5%AE%9E%E6%9C%89%E4%BA%94%E4%B8%AA%E7%AD%89%E7%BA%A7" class="hash-link" aria-label="“Proof portability”其实有五个等级的直接链接" title="“Proof portability”其实有五个等级的直接链接" translate="no">​</a></h2>
-<p>人们说“把 Lean proof 翻译到另一系统”时，可能在说完全不同的事情。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-翻译-surface-syntax-与-tactics">1. 翻译 surface syntax 与 tactics<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#1-%E7%BF%BB%E8%AF%91-surface-syntax-%E4%B8%8E-tactics" class="hash-link" aria-label="1. 翻译 surface syntax 与 tactics的直接链接" title="1. 翻译 surface syntax 与 tactics的直接链接" translate="no">​</a></h3>
-<p>这是最像 programming-language transpilation 的一层。AI 可以把 <code>simp</code> 风格重写成目标系统的 automation，但成功编译只说明目标系统接受某个结果，不保证 formal statement 与原 statement 语义相同。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-同-foundation-家族内交换-theory-packages">2. 同 foundation 家族内交换 theory packages<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#2-%E5%90%8C-foundation-%E5%AE%B6%E6%97%8F%E5%86%85%E4%BA%A4%E6%8D%A2-theory-packages" class="hash-link" aria-label="2. 同 foundation 家族内交换 theory packages的直接链接" title="2. 同 foundation 家族内交换 theory packages的直接链接" translate="no">​</a></h3>
-<p><a href="https://www.gilith.com/opentheory/" target="_blank" rel="noopener noreferrer" class="">OpenTheory</a> 的目标，是在 HOL Light、HOL4、ProofPower 等 higher-order logic prover 之间共享 specifications 与 proofs；Isabelle 也有 read interface。共同 foundation 和相近 primitive concepts 大幅降低了 mapping 成本。</p>
-<p>这同时说明：可移植性不是幻想，但越接近共同逻辑 core，越容易做。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-编译到-common-logical-framework">3. 编译到 common logical framework<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#3-%E7%BC%96%E8%AF%91%E5%88%B0-common-logical-framework" class="hash-link" aria-label="3. 编译到 common logical framework的直接链接" title="3. 编译到 common logical framework的直接链接" translate="no">​</a></h3>
-<p><a href="https://github.com/Deducteam/Dedukti" target="_blank" rel="noopener noreferrer" class="">Dedukti</a> 是 λΠ-calculus modulo rewriting 的 type checker。不同逻辑可以通过 encoding 进入同一 framework，再由一个小 checker 验证。</p>
-<p>这里的 trust 从原系统转移到 encoding、translation 与 Dedukti checker。它是桥，不是“任何两边天然语义相同”的魔法。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-导出到-root-of-trust-format">4. 导出到 root-of-trust format<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#4-%E5%AF%BC%E5%87%BA%E5%88%B0-root-of-trust-format" class="hash-link" aria-label="4. 导出到 root-of-trust format的直接链接" title="4. 导出到 root-of-trust format的直接链接" translate="no">​</a></h3>
-<p>MM0 的设计明确包含与其他 proof languages 的 translation。这样的格式可以把复杂 authoring system 的最终 artifact 交给更小 verifier，但仍要说明 source logic 如何映射到目标 primitive rules。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-跨-foundation-独立重建">5. 跨 foundation 独立重建<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#5-%E8%B7%A8-foundation-%E7%8B%AC%E7%AB%8B%E9%87%8D%E5%BB%BA" class="hash-link" aria-label="5. 跨 foundation 独立重建的直接链接" title="5. 跨 foundation 独立重建的直接链接" translate="no">​</a></h3>
-<p>最强的多样性，是让同一 informal theorem 在 Lean、HOL、Metamath 或 Rocq 中分别形成 statement 和 proof。它最能降低 common-mode failure，也最昂贵，因为 statement equivalence 本身需要审查。</p>
-<p>这五层不应混称为 “export”。把同一 byte stream 交给两个 checker，解决 implementation diversity；在不同 foundations 中重建同一数学结论，解决 specification diversity。两者都重要，但不是同一种保证。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="认真支持-alternative需要资助什么">认真支持 alternative，需要资助什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E8%AE%A4%E7%9C%9F%E6%94%AF%E6%8C%81-alternative%E9%9C%80%E8%A6%81%E8%B5%84%E5%8A%A9%E4%BB%80%E4%B9%88" class="hash-link" aria-label="认真支持 alternative，需要资助什么的直接链接" title="认真支持 alternative，需要资助什么的直接链接" translate="no">​</a></h2>
-<p>现有组织已经给出很清楚的成本清单。</p>
-<p><a href="https://lean-lang.org/fro/about/" target="_blank" rel="noopener noreferrer" class="">Lean FRO</a> 是一个 nonprofit focused research organization，有明确的五年 mission 和 researcher/engineer team，目标包括 scalability、usability、documentation 与 proof automation。</p>
-<p><a href="https://mathlib-initiative.org/about/" target="_blank" rel="noopener noreferrer" class="">Mathlib Initiative</a> 则把资源放在 editorial support、infrastructure 和 ecosystem coordination，避免 proof projects 被 review bottleneck 卡住。</p>
-<p><a href="https://rocq-prover.org/consortium" target="_blank" rel="noopener noreferrer" class="">Rocq Consortium</a> 由 Inria 托管，让 stakeholder 通过 donation、membership 和 support subscription 参与维护，并影响一部分 engineering resource 的配置。</p>
-<p>这些案例说明，一个 serious alternative 需要的不是只有：</p>
-<ul>
-<li class="">一篇新的 foundation paper；</li>
-<li class="">一个漂亮的 kernel prototype；</li>
-<li class="">一次把现有 library 批量翻译过去的 grant。</li>
-</ul>
-<p>它还需要多年运营：release engineering、editor integration、package hosting、docs、reviewers、migration、community support 与稳定治理。</p>
-<p>更好的 institutional question 也许不是“谁来选出 Lean 的对手”，而是：</p>
-<blockquote>
-<p>谁愿意长期资助形式化数学的可移植性、独立复核和第二生态，使未来的选择不必从零开始？</p>
-</blockquote>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="不要发迁移令做一个组合投资">不要发迁移令，做一个组合投资<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E4%B8%8D%E8%A6%81%E5%8F%91%E8%BF%81%E7%A7%BB%E4%BB%A4%E5%81%9A%E4%B8%80%E4%B8%AA%E7%BB%84%E5%90%88%E6%8A%95%E8%B5%84" class="hash-link" aria-label="不要发迁移令，做一个组合投资的直接链接" title="不要发迁移令，做一个组合投资的直接链接" translate="no">​</a></h2>
-<p>如果目标是避免单一生态成为永久的 trust 和 coordination bottleneck，可以同时做五件事。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-保留今天最好用的-frontend">1. 保留今天最好用的 frontend<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#1-%E4%BF%9D%E7%95%99%E4%BB%8A%E5%A4%A9%E6%9C%80%E5%A5%BD%E7%94%A8%E7%9A%84-frontend" class="hash-link" aria-label="1. 保留今天最好用的 frontend的直接链接" title="1. 保留今天最好用的 frontend的直接链接" translate="no">​</a></h3>
-<p>在 Lean/Mathlib 最有效的地方继续使用它。Pluralism 不需要先让当前用户承担一次大迁移。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-多元化-trusted-backend">2. 多元化 trusted backend<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#2-%E5%A4%9A%E5%85%83%E5%8C%96-trusted-backend" class="hash-link" aria-label="2. 多元化 trusted backend的直接链接" title="2. 多元化 trusted backend的直接链接" translate="no">​</a></h3>
-<p>资助 nanoda、Lean4Lean、small checkers、formal kernel specifications 和 Lean Kernel Arena 一类 adversarial conformance tests。让一个 kernel bug 不再等于所有 verification 都失效。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-为高价值结果维护跨-foundation-版本">3. 为高价值结果维护跨 foundation 版本<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#3-%E4%B8%BA%E9%AB%98%E4%BB%B7%E5%80%BC%E7%BB%93%E6%9E%9C%E7%BB%B4%E6%8A%A4%E8%B7%A8-foundation-%E7%89%88%E6%9C%AC" class="hash-link" aria-label="3. 为高价值结果维护跨 foundation 版本的直接链接" title="3. 为高价值结果维护跨 foundation 版本的直接链接" translate="no">​</a></h3>
-<p>不必镜像全部 Mathlib。先选 foundational libraries、著名定理和 AI-generated high-stakes proofs，在 HOL、Metamath/MM0、Rocq 或另一 genuinely independent system 中重建。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-把替代系统的-ux-当基础设施">4. 把替代系统的 UX 当基础设施<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#4-%E6%8A%8A%E6%9B%BF%E4%BB%A3%E7%B3%BB%E7%BB%9F%E7%9A%84-ux-%E5%BD%93%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD" class="hash-link" aria-label="4. 把替代系统的 UX 当基础设施的直接链接" title="4. 把替代系统的 UX 当基础设施的直接链接" translate="no">​</a></h3>
-<p>长期资助 editor、package manager、documentation、web environment、CI、search 和 maintainer time。没有这些，kernel 再优雅也无法形成数学共同体。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-建立可移植性的公共层">5. 建立可移植性的公共层<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#5-%E5%BB%BA%E7%AB%8B%E5%8F%AF%E7%A7%BB%E6%A4%8D%E6%80%A7%E7%9A%84%E5%85%AC%E5%85%B1%E5%B1%82" class="hash-link" aria-label="5. 建立可移植性的公共层的直接链接" title="5. 建立可移植性的公共层的直接链接" translate="no">​</a></h3>
-<p>维护 statement manifests、definition mappings、proof provenance、shared benchmarks 和 export specifications。即使未来没有发生迁移，这些资产也能改进 audit、reproducibility 和 cross-checking。</p>
-<!-- -->
-<p>这不是要求所有 proof 同时走五条路径。它是一种分级策略：普通开发保持低成本；重要程度、对抗性和长期保存价值越高，独立路径越多。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="那么我们被-lean-锁定了吗">那么，我们被 Lean 锁定了吗？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E9%82%A3%E4%B9%88%E6%88%91%E4%BB%AC%E8%A2%AB-lean-%E9%94%81%E5%AE%9A%E4%BA%86%E5%90%97" class="hash-link" aria-label="那么，我们被 Lean 锁定了吗？的直接链接" title="那么，我们被 Lean 锁定了吗？的直接链接" translate="no">​</a></h2>
-<p><strong>短期、在生态层面：是。</strong> Mathlib 的 definitions、APIs、automation、review culture 与 contributor network 形成了真实 switching cost。不能靠一段 transpiler 或一笔短 grant 重建。</p>
-<p><strong>长期、在技术和社会层面：不是。</strong> Rocq、Isabelle、Mizar、Metamath 已证明其他传统可以长期存在；OpenTheory、Dedukti、MM0 和 independent kernels 说明 proof artifact 也并非注定只能活在一个 implementation 里。</p>
-<p><strong>但“找到赢家替换 Lean”是错的问题。</strong> 更有价值的目标，是降低不可逆性：如果 kernel 改写、foundation 改变、社区迁移或技术风潮反转，重要数学仍能被理解、复核和带走。</p>
-<p>Lean 不必输，proof-assistant pluralism 才能赢。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/are-we-stuck-with-lean-mathlib-proof-portability#%E4%B8%BB%E8%A6%81%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://mathoverflow.net/questions/513742/are-we-stuck-with-lean" target="_blank" rel="noopener noreferrer" class="">Timothy Chow, <em>Are we stuck with Lean?</em></a></li>
-<li class=""><a href="https://mathoverflow.net/questions/513540/should-we-trust-ai-generated-formal-proofs-in-lean-4" target="_blank" rel="noopener noreferrer" class="">MathOverflow: <em>Should we trust AI-generated formal proofs in Lean 4?</em></a></li>
-<li class=""><a href="https://us.metamath.org/" target="_blank" rel="noopener noreferrer" class="">Metamath 官方介绍</a></li>
-<li class=""><a href="https://arxiv.org/abs/1910.10703" target="_blank" rel="noopener noreferrer" class="">Metamath Zero paper</a></li>
-<li class=""><a href="https://lean-lang.org/fro/about/" target="_blank" rel="noopener noreferrer" class="">Lean FRO</a></li>
-<li class=""><a href="https://mathlib-initiative.org/about/" target="_blank" rel="noopener noreferrer" class="">Mathlib Initiative</a></li>
-<li class=""><a href="https://rocq-prover.org/about" target="_blank" rel="noopener noreferrer" class="">Rocq overview</a> 与 <a href="https://rocq-prover.org/consortium" target="_blank" rel="noopener noreferrer" class="">Rocq Consortium</a></li>
-<li class=""><a href="https://isabelle.in.tum.de/" target="_blank" rel="noopener noreferrer" class="">Isabelle</a> 与 <a href="https://www.isa-afp.org/" target="_blank" rel="noopener noreferrer" class="">Archive of Formal Proofs</a></li>
-<li class=""><a href="https://mizar.uwb.edu.pl/" target="_blank" rel="noopener noreferrer" class="">Mizar</a></li>
-<li class=""><a href="https://www.gilith.com/opentheory/" target="_blank" rel="noopener noreferrer" class="">OpenTheory</a></li>
-<li class=""><a href="https://github.com/Deducteam/Dedukti" target="_blank" rel="noopener noreferrer" class="">Dedukti</a></li>
-<li class=""><a href="https://leanprover-community.github.io/mathlib_stats.html" target="_blank" rel="noopener noreferrer" class="">Mathlib statistics</a></li>
-</ul>]]></content:encoded>
-            <category>lean</category>
-            <category>proof-assistants</category>
-            <category>formal-verification</category>
-            <category>mathlib</category>
-            <category>ai</category>
         </item>
     </channel>
 </rss>
