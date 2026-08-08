@@ -3,7 +3,7 @@ title: "把 Agent 放进自己的实时工作间：Mattermost、Hermes 与 ChatA
 date: 2026-08-08
 slug: mattermost-hermes-agent-workspace
 tags: [mattermost, hermes, agent, chatarch, self-hosted]
-description: 介绍 ChatArch 为什么把 Mattermost 作为自托管实时 Agent 工作间，lean4web 上这次二进制部署验证了什么，以及 Hermes 如何通过 Mattermost Gateway 进入频道、线程和团队协作流。
+description: 介绍 ChatArch 为什么把 Mattermost 作为自托管实时 Agent 工作间，当前 matter.public.wzhecnu.cn 入口验证了什么，以及 Hermes 如何通过 Mattermost Gateway 进入频道、线程和团队协作流。
 ---
 
 # 把 Agent 放进自己的实时工作间：Mattermost、Hermes 与 ChatArch 的下一块拼图
@@ -12,7 +12,7 @@ description: 介绍 ChatArch 为什么把 Mattermost 作为自托管实时 Agent
 
 这篇文章回答三个问题：
 
-1. 为什么我们要在 lean4web 上部署 Mattermost，而不是继续只依赖飞书、Discourse 或 Zulip？
+1. 为什么我们要维护 Mattermost 这个自托管实时工作间，而不是继续只依赖飞书、Discourse 或 Zulip？
 2. Hermes 要怎样接入这个 Mattermost，成为频道里的 Agent，而不是另一个需要人手工转发消息的工具？
 3. 像 CC Connect 这类项目接 Slack、未来接 Mattermost，本质上是在接什么？
 
@@ -23,7 +23,7 @@ Mattermost 适合承担 ChatArch 的 **自托管实时 Agent 工作间**：人�
 :::
 
 :::info 证据口径
-本文使用三类来源：一是 lean4web 上 Mattermost 的公网回读和部署验收；二是 Hermes 官方 Mattermost 文档（[Mattermost | Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/)）；三是 ChatArch 前面关于 Hermes 平台入口、ChatRSS TriggerEvent 和 Agent Community 的实践文章。文中只写公开 URL、公开 API health、产品架构和非敏感配置项，不写凭据、密码或私有运维细节。
+本文使用三类来源：一是 `matter.public.wzhecnu.cn` 的公网回读和入口验证；二是 Hermes 官方 Mattermost 文档（[Mattermost | Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/)）；三是 ChatArch 前面关于 Hermes 平台入口、ChatRSS TriggerEvent 和 Agent Community 的实践文章。文中只写公开 URL、公开 API health、产品架构和非敏感配置项，不写凭据、密码或私有运维细节。
 :::
 
 ## 为什么是 Mattermost
@@ -47,38 +47,29 @@ Mattermost 的价值不是“又多一个聊天软件”，而是它把几个条
 
 这让 Mattermost 很适合做一个“Agent 工作间”：人不必离开聊天语境，就可以 @ 一个 Agent；Agent 不必伪装成人的浏览器操作，而是通过平台 API 拿到结构化事件，再用同一个平台写回结果。
 
-## lean4web 上这次实际部署了什么
+## 当前维护的 Mattermost 入口
 
-这次部署不是概念设计，而是已经在 lean4web 上跑起来的服务。
+这篇文章里使用的 Mattermost 入口是 ChatArch 当前维护的 local/public 服务入口：
 
-可打开入口：
-
-https://mattermost.lookeng.cn/
+https://matter.public.wzhecnu.cn/
 
 外部回读结果：
 
 ```text
-mattermost.lookeng.cn -> 14.103.8.233
-GET https://mattermost.lookeng.cn/api/v4/system/ping -> {"status":"OK"}
-X-Version-Id: 11.9.0...
+GET https://matter.public.wzhecnu.cn/api/v4/system/ping -> {"status":"OK"}
 ```
 
-部署方式上，我们刻意没有走 Docker。原因很简单：如果一个服务可以稳定地以官方二进制方式运行，就优先减少容器层和 Compose 图谱，把服务更清楚地放进 ChatArch 的管理边界里。
+这段信息只表达两件事：第一，ChatArch 有一个可公开访问、可被 API 回读的 Mattermost 工作间；第二，后续 Hermes / ChatRSS / connector 讨论应围绕这个稳定入口展开。
 
-本次落地的形态是：
-
-| 层 | 实际选择 |
+| 层 | 公开文章里需要保留的口径 |
 | --- | --- |
-| 应用 | Mattermost 11.9.0 官方 Linux amd64 二进制 |
-| 安装模式 | binary-first，不用 Docker 跑 Mattermost app |
-| 应用目录 | ChatArch 管理的服务目录 |
-| 数据库 | Host PostgreSQL 16 |
-| 进程管理 | user-level systemd `mattermost.service` |
-| 公网入口 | Nginx HTTPS `mattermost.lookeng.cn` |
-| 初始空间 | `chatarch` team / `chatrss-triggers` channel |
-| 注册与凭据 | 初始系统管理员已创建，私有授权材料留在 service credential store，不进入公开文档 |
+| 服务角色 | ChatArch 维护的自托管 Mattermost 工作间 |
+| 公网入口 | `https://matter.public.wzhecnu.cn/` |
+| 健康检查 | `/api/v4/system/ping` 返回 `status=OK` |
+| 协作语义 | channel / thread / bot account / WebSocket / REST API |
+| 凭据与运维细节 | 留在私有运维记录，不进入公开文档 |
 
-这里的关键不是端口号或某个文件路径，而是部署边界：**Mattermost 作为长期服务存在于 ChatArch 的服务目录和 host integration 里，不混进一次性任务目录，也不把 credential 细节写进博客。**
+这里的关键不是某个主机、端口或文件路径，而是产品边界：**Mattermost 是 ChatArch 维护的长期实时房间；公开文章只记录可打开的入口、API health 和 connector 架构，不把私有运维细节写进博客。**
 
 ## Hermes 怎么接到 Mattermost
 
@@ -116,7 +107,7 @@ Mattermost 侧需要允许 bot account，并为 Hermes 创建一个 bot 用户�
 文章里不应该写凭据值，也不应该写私有授权材料的文件名；只需要记录状态：
 
 ```text
-Mattermost server: https://mattermost.lookeng.cn
+Mattermost server: https://matter.public.wzhecnu.cn
 Bot account: enabled / created
 Bot credential: stored in Hermes private credential store
 ```
@@ -126,7 +117,7 @@ Bot credential: stored in Hermes private credential store
 Hermes Gateway 支持 Mattermost 平台。配置的核心字段是：
 
 ```text
-server URL: https://mattermost.lookeng.cn
+server URL: https://matter.public.wzhecnu.cn
 bot credential: stored privately, never printed in docs
 allow policy: restrict who / which channels can wake the bot
 reply policy: prefer thread replies for channel messages
@@ -369,7 +360,7 @@ TriggerEvent(source="mattermost", type="post.mention", subject=..., actor=...)
 
 ## 当前还没有完成的事
 
-这次已经完成的是 Mattermost 服务本身：公网入口、HTTPS、数据库、服务进程、初始 team/channel 都已可用。
+当前已经确认的是 Mattermost 工作间入口：公网 HTTPS 入口和 `/api/v4/system/ping` 都已可回读。
 
 接下来还需要完成 Hermes 接入层：
 
@@ -414,4 +405,4 @@ Mattermost 实时房间
 - [Hermes 支持平台图鉴：从聊天窗口到 Agent 工作间](/blog/hermes-supported-platforms-field-guide)
 - [RSS 与 RSSHub 入门：把网页更新变成可订阅的信息流](/blog/rss-and-rsshub-foundation-for-chatrss)
 - [Agent Community 应该如何工作：Human Admin、任务流与自治闭环](/blog/agent-community-human-admin-autonomy-loop)
-- Mattermost public service readback: https://mattermost.lookeng.cn/api/v4/system/ping
+- Mattermost public service readback: https://matter.public.wzhecnu.cn/api/v4/system/ping
