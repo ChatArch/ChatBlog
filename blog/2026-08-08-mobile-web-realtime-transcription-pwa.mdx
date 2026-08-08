@@ -1,171 +1,265 @@
 ---
-title: "网页按钮实时录音转写：主流开源与官方方案怎么选"
+title: "网页录音到 AI 纪要：先选成熟 ASR，再看现成产品"
 date: 2026-08-08
 slug: mobile-web-realtime-transcription-pwa
-tags: [transcription, realtime, speech-to-text, web, meeting-notes, self-hosted]
-description: 重新把需求收窄到一个网页按钮：打开页面、点击录音、实时显示字幕，再把 transcript 交给 AI 做会议笔记；优先比较 Deepgram、AssemblyAI、OpenAI Realtime、Azure Speech、Amazon Transcribe、Web Speech API 和 WhisperLive 这些主流/官方路线。
+tags: [transcription, realtime, speech-to-text, asr, web, meeting-notes, self-hosted]
+description: 把录音转写需求拆成网页录音、成熟 ASR、AI 纠错/纪要三层；同时评估 ASR API、自托管 ASR runtime，以及 Speakr、Scriberr、Meetily、Minutes 等已经串起录音转写和总结的开源项目。
 toc_max_heading_level: 2
 ---
 
-# 网页按钮实时录音转写：主流开源与官方方案怎么选
+# 网页录音到 AI 纪要：先选成熟 ASR，再看现成产品
 
-先纠正前一版：我不应该把问题先扩成“找一个完整手机 PWA 会议笔记产品”，然后把一堆低星 demo 放进主表。这个需求其实更简单，也更常见：**部署一个网页，用户打开页面，点击录音按钮，浏览器麦克风开始采集，页面实时显示他说的话；停止后，把 transcript 交给 LLM 生成会议笔记、想法笔记或行动项。**
-
-这不是 meeting bot，不需要自动加入 Zoom / Teams / Google Meet；也不是桌面系统音频管道。核心只有两步：
+这次把问题重新收窄：目标不是先找一个“会议笔记大平台”，而是要确认能不能稳定搭出这一条链路：
 
 ```text
-网页录音按钮 -> 实时 speech-to-text 字幕 -> AI 笔记/归档
+网页录音按钮 -> ASR 实时/准实时转文字 -> AI 纠错/摘要/会议纪要
 ```
+
+这里的关键不是 UI 有多复杂，而是 **ASR 是否足够成熟**：中文识别、实时 partial/final、低延迟、长录音稳定性、标点断句、说话人、成本、以及能否安全接到浏览器。
 
 :::info 同主题前情
 - [录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座](/blog/audio-transcription-meeting-notes-open-source)：那篇是大地图，覆盖 meeting bot、录音文件后台、字幕工具和本地 ASR 底座。
 
-本文重写后只看一个更窄、更实际的入口：**网页上一颗录音按钮，实时出字幕。**
+本文只回答一个更具体的问题：**如果要做“一个网页，点录音，实时出字，最后自动生成 AI 笔记”，应该先选哪个 ASR 路线？有没有现成项目已经打通整个流程？**
 :::
 
 <!-- truncate -->
 
 :::tip 一句话结论
-如果要最快做出靠谱 MVP，优先看 **Deepgram 官方 Next.js Live Transcription starter** 或 **AssemblyAI 官方 browser realtime WebSocket 示例**。如果要 OpenAI 生态，参考 **openai-realtime-console**；如果偏企业云/中文可控，参考 **Azure Speech SDK JS / Azure Samples**；如果只做浏览器原型，可以用 **react-speech-recognition / Web Speech API**；如果必须自托管 ASR，再看 **WhisperLive**。
+先不要从论文列表或低星 demo 开始。第一轮应该同时看两条线：
+
+1. **成熟 ASR 线**：最快试 Deepgram / AssemblyAI / Azure Speech / OpenAI Realtime / 国内云 ASR；如果要自托管，再测 FunASR、sherpa-onnx、WhisperLive、faster-whisper / whisper.cpp。
+2. **现成产品线**：优先看 [Speakr](https://github.com/murtaza-nasir/speakr)，它最接近“自托管网页录音 + 可插拔 ASR + 自动总结/聊天/导出”；[Scriberr](https://github.com/rishikanthc/Scriberr) 次之；Meetily / Minutes / Muesli / Natively 更像桌面会议助手，不是网页按钮产品。
 :::
 
 :::info 证据口径
-本文快照日期为 **2026-08-08**。主表只放主流 SDK、官方 starter、官方 sample 或高星项目；不再把零星个人 demo 当候选主线。Stars 是 GitHub API 当日快照，只用来判断项目是否属于主流参考，不作为唯一质量指标。
+快照时间为 **2026-08-09 CST**。本文参考 GitHub repo 元信息、README 自述和官方 starter/sample；stars 只作为“是否值得纳入第一轮”的热度信号，不等于质量结论。像 [awesome-speech-recognition-speech-synthesis-papers](https://github.com/zzw922cn/awesome-speech-recognition-speech-synthesis-papers) 这类列表是论文/技术路线地图，不是可直接部署的工程清单。
 :::
 
-![网页按钮实时录音转写主流架构](/img/mobile-web-realtime-transcription/mobile-web-realtime-architecture.svg)
+![网页录音到 AI 纪要主流架构](/img/mobile-web-realtime-transcription/mobile-web-realtime-architecture.svg)
 
-*原创架构图：一颗网页录音按钮到实时字幕，再到 AI 笔记。重点是成熟 ASR streaming SDK / 官方 starter，而不是 meeting bot 或低星 demo。*
+*原创架构图：一颗网页录音按钮先进入成熟 ASR，再把 transcript 交给 AI 做实时纠错、术语修正、总结和纪要。*
 
-## 需求重新定位
+## 先把 ASR 和“完整产品”分开
 
-你要的不是“会议系统”，而是一个普通网页：
+ASR 是 **Automatic Speech Recognition**，也就是“语音转文字”。它只负责把音频变成 transcript：
 
-1. 用户打开一个 URL；
-2. 点“开始录音”；
-3. 浏览器请求麦克风权限；
-4. 前端用 `getUserMedia` / `MediaRecorder` / `AudioWorklet` 采集音频；
-5. 音频实时送到 ASR；
-6. 页面不断显示 partial / final transcript；
-7. 停止后，把 transcript 交给 LLM 做会议笔记、想法笔记、行动项和归档。
+```text
+音频 -> ASR -> 文本
+```
 
-所以选型不应该先找“完整会议笔记 SaaS 的开源替代品”。正确问题是：**哪条成熟实时 ASR Web 路线最容易部署成我们自己的网页？**
+AI 纪要是下一层：
 
-## 直接推荐排序
+```text
+文本 -> LLM -> 摘要 / 行动项 / 会议纪要 / 纠错 / 术语统一
+```
 
-| 排名 | 路线 / 项目 | 成熟度依据 | 适合怎么用 | 主要注意点 |
+所以这件事应该分两路推进：
+
+| 路线 | 要回答的问题 | 代表候选 |
+|---|---|---|
+| **ASR 主线** | 哪个 ASR 最成熟、效果最好、最适合网页实时输入？ | Deepgram、AssemblyAI、Azure Speech、OpenAI Realtime、FunASR、sherpa-onnx、WhisperLive、faster-whisper、whisper.cpp |
+| **成品项目线** | 有没有已经把录音、转写、总结、搜索/导出串起来的项目？ | Speakr、Scriberr、Meetily、Minutes、Muesli、Natively、call.md |
+
+如果成品项目已经足够接近需求，就优先改成品；如果成品项目都偏桌面、偏上传、偏 meeting bot，再回到 ASR 主线，自己包一个薄网页。
+
+## 你发的 Awesome ASR 列表怎么用
+
+[zzw922cn/awesome-speech-recognition-speech-synthesis-papers](https://github.com/zzw922cn/awesome-speech-recognition-speech-synthesis-papers) 我拉下来读了：它大约 681 行，结构是 Text to Audio、Automatic Speech Recognition、Speaker Verification、Voice Conversion、Speech Synthesis 等论文入口。
+
+它的价值在于帮我们理解 ASR 的上游技术路线，比如：
+
+- CTC；
+- neural transducer / online transducer；
+- wav2vec；
+- Conformer；
+- Whisper 论文；
+- online / streaming ASR 相关论文。
+
+但它不是工程选型清单。比如它不会系统列出今天真正要部署的工程项目：FunASR、sherpa-onnx、WhisperLive、faster-whisper、Deepgram starter、AssemblyAI browser example、Azure Speech JS SDK 等。
+
+因此正确用法是：
+
+```text
+Awesome papers
+  -> 理解 ASR 技术路线
+  -> 顺着模型/论文找 runtime/toolkit/provider
+  -> 再看它能不能接网页实时音频
+```
+
+不能停在 papers；落地要看 SDK、WebSocket、runtime、服务化能力和中文效果。
+
+## 路线一：成熟 ASR API，最快做出网页实时字幕
+
+如果目标是快速验证产品体验，第一阶段最现实的是：
+
+```text
+自建网页
+  -> 后端签发临时 token / session
+  -> 浏览器把麦克风音频送到 ASR provider
+  -> 页面显示 partial / final transcript
+  -> 停止后把 final transcript 给 LLM 总结
+```
+
+主候选如下：
+
+| 优先级 | 方案 | 为什么放第一轮 | 适合场景 | 注意点 |
 |---|---|---|---|---|
-| 1 | [deepgram-devs/nextjs-live-transcription](https://github.com/deepgram-devs/nextjs-live-transcription) | Deepgram 官方开发者仓库；Next.js demo；约 272 stars / 275 forks；2026 仍更新 | **最快 MVP**：网页录音按钮 + Deepgram live transcription，直接改成自己的 UI 和后续 AI notes | 绑定 Deepgram；生产要做好 token/后端代理、费用和语言效果验证 |
-| 2 | [AssemblyAI/realtime-transcription-browser-js-example](https://github.com/AssemblyAI/realtime-transcription-browser-js-example) | AssemblyAI 官方仓库；浏览器 JavaScript 调 Real-Time WebSocket API；约 135 stars / 42 forks | **最直观浏览器实时字幕示例**：适合抄最小交互和 WebSocket 流程 | 不要把长期 API key 暴露在浏览器；生产要加临时 token / backend broker |
-| 3 | [openai/openai-realtime-console](https://github.com/openai/openai-realtime-console) | OpenAI 官方 React app；Realtime API 调试/构建工具；约 3.6k stars / 1.4k forks | **OpenAI 生态首选参考**：实时语音输入、实时事件流、后续直接接 LLM/notes | 它偏 Realtime API 调试台，不是纯 STT 产品；需要裁剪成单按钮录音页 |
-| 4 | [Azure-Samples/cognitive-services-speech-sdk](https://github.com/Azure-Samples/cognitive-services-speech-sdk) + [microsoft/cognitive-services-speech-sdk-js](https://github.com/microsoft/cognitive-services-speech-sdk-js) | Azure 官方 samples 约 3.4k stars；JS SDK 仓库持续更新 | **企业云/中文/多语言路线**：浏览器连续识别、稳定 SDK、云厂商 SLA | SDK 示例不是产品；生产要后端签发 token，不能把 subscription key 放前端 |
-| 5 | [amazon-archives/amazon-transcribe-websocket-static](https://github.com/amazon-archives/amazon-transcribe-websocket-static) | Amazon 官方/历史 sample；静态站点演示 Transcribe WebSocket 实时转写；约 206 stars / 459 forks | **协议参考**：说明“静态网页 + 麦克风 + Transcribe WebSocket”这条路很早就成立 | 已归档，不应作为新项目直接 fork；AWS 签名和凭据要后端化 |
-| 6 | [JamesBrill/react-speech-recognition](https://github.com/JamesBrill/react-speech-recognition) | React 生态常用 Web Speech API 包；约 842 stars | **最快纯前端原型**：没有后端也能演示网页按钮实时出字 | 依赖浏览器内置 Web Speech API；生产可控性、语言、隐私和兼容性不如云 ASR |
-| 7 | [collabora/WhisperLive](https://github.com/collabora/WhisperLive) | 高星 nearly-live Whisper 项目；约 4.2k stars / 578 forks；2026 仍更新 | **必须自托管 ASR 时再看**：WebSocket server + Whisper 近实时转写 | 这回不是首选，因为你说不想维护完整 ASR 模型链路；需要模型/GPU/CPU 资源 |
+| 1 | [Deepgram Next.js Live Transcription](https://github.com/deepgram-devs/nextjs-live-transcription) | 官方 Next.js live transcription starter；就是网页实时转写形态 | 最快做 MVP：网页按钮、实时字幕、后续 AI notes | 绑定 Deepgram；需要测中文、费用、稳定性；生产不能暴露 API key |
+| 2 | [AssemblyAI realtime browser JS example](https://github.com/AssemblyAI/realtime-transcription-browser-js-example) | 官方浏览器 JavaScript WebSocket 示例；最小流程直观 | 看清 browser microphone -> WebSocket -> transcript 的代码 | 长期 key 不能放前端；要做 backend broker / 临时 token |
+| 3 | [Azure Speech SDK Samples](https://github.com/Azure-Samples/cognitive-services-speech-sdk) + [JS SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js) | 企业云 SDK 成熟，浏览器 JS 支持完整 | 中文、多语言、企业稳定性、云厂商 SLA | 示例不是产品；要后端签发 token，不能前端放 subscription key |
+| 4 | [OpenAI Realtime Console](https://github.com/openai/openai-realtime-console) | 官方 Realtime API 调试/构建 React app；容易把语音和 LLM 统一 | 如果实时转写、实时纠错、AI 反馈都想走 OpenAI 生态 | 它不是传统纯 ASR；需要裁剪成单按钮录音页 |
+| 5 | Amazon / Google / Gladia / Speechmatics / 国内云 ASR | 多数都有 streaming STT 或实时语音识别能力 | 当合规、地域、中文价格、企业账号是关键约束 | GitHub starter 不一定强；要自己写 provider adapter |
 
-如果只选一个开始，我会选 **Deepgram Next.js Live Transcription**；如果 Deepgram 不适合中文/成本/合规，再平移到 **Azure Speech SDK** 或国内云 ASR，但网页形态仍然是一样的。
+这一条线的优点是：**ASR 成熟度高，网页层很薄，能最快验证真实体验。**
 
-## 为什么 Deepgram / AssemblyAI 这类官方 starter 更对题
+它的代价是：会依赖外部 provider，必须认真处理费用、key 安全、网络延迟、数据合规和 provider lock-in。
 
-你要的是一颗按钮，不是一个大平台。Deepgram 和 AssemblyAI 的官方 starter 正好给了最小闭环：
+## 路线二：自托管 ASR，自己掌握模型和数据
 
-```text
-Browser microphone
-  -> WebSocket / live transcription SDK
-  -> partial transcript on screen
-  -> final transcript segments
-```
+如果不想把音频发给外部 ASR provider，就走自托管 ASR。这个方向要看 runtime/toolkit，而不是只看论文。
 
-这类 starter 的价值不是 stars 特别高，而是：
+| 优先级 | 项目 | 工程定位 | 为什么值得看 | 注意点 |
+|---|---|---|---|---|
+| 1 | [modelscope/FunASR](https://github.com/modelscope/FunASR) | 开源 ASR toolkit；README 明确覆盖 offline、streaming、edge、VAD、punctuation、speaker pipelines、OpenAI-compatible serving | 中文场景优先级最高之一；转写、VAD、标点、说话人链路比较完整 | 需要实际部署测试模型、GPU/CPU、并发、中文会议噪声 |
+| 2 | [k2-fsa/sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) | ONNX runtime ASR/TTS/diarization/VAD；支持 streaming/non-streaming、WebSocket、Android/iOS/嵌入式/服务器 | 适合离线、端侧、内网、自托管和多平台 | 工程能力强但产品壳要自己做；模型选择和效果要测 |
+| 3 | [collabora/WhisperLive](https://github.com/collabora/WhisperLive) | nearly-live Whisper 应用；支持 microphone、pre-recorded audio、WebSocket/clients | 比裸 Whisper 更接近实时服务 | Whisper 系做实时 partial 需要权衡延迟和准确率 |
+| 4 | [SYSTRAN/faster-whisper](https://github.com/SYSTRAN/faster-whisper) | CTranslate2 版 Whisper 推理；README 自述比 openai/whisper 更快、更省内存 | 适合做高效批量/准实时 Whisper 服务底座 | 本身不是完整网页实时产品；服务化和 streaming 要自己封装 |
+| 5 | [ggml-org/whisper.cpp](https://github.com/ggml-org/whisper.cpp) | C/C++ Whisper runtime；CPU/端侧友好，有实时麦克风示例 | 轻量、部署面广、本地/边缘设备友好 | 官方实时示例较朴素；生产 Web 服务仍要自建 |
+| 6 | [alphacep/vosk-api](https://github.com/alphacep/vosk-api)、[wenet-e2e/wenet](https://github.com/wenet-e2e/wenet)、[espnet/espnet](https://github.com/espnet/espnet)、[kaldi-asr/kaldi](https://github.com/kaldi-asr/kaldi)、[NVIDIA NeMo](https://github.com/NVIDIA/NeMo)、[SpeechBrain](https://github.com/speechbrain/speechbrain) | ASR toolkit / research / production base | 适合深入工程或研究评估 | 对“先做网页按钮产品”来说不是最快路径 |
 
-- 它们是 ASR provider 官方维护或官方示例；
-- API 本来就是实时转写；
-- 前端交互就是网页麦克风 + 实时字幕；
-- 代码量通常不大，容易改成自己的页面；
-- 后面接 AI notes 很自然：把 final transcript segments 存起来，停止录音后调用 LLM。
+自托管 ASR 的优势是数据和成本可控；缺点是你要自己维护模型、资源、GPU/CPU、并发、实时性和服务稳定性。
 
-这比拿一个“会议笔记全家桶”硬改成实时网页录音靠谱，也比把零星个人 demo 放进主表靠谱。
+如果中文是第一优先，我会先测 **FunASR** 和 **sherpa-onnx**；如果要沿 Whisper 生态走，再测 **WhisperLive / faster-whisper / whisper.cpp**。
 
-## 推荐实现形态
+## 路线三：现成产品项目，先看有没有已经打通
 
-实际产品可以非常薄：
+除了 ASR 本身，还要看有没有项目已经做了这条产品链：
 
 ```text
-Web page
-  - Start / Stop recording button
-  - live transcript area
-  - final transcript list
-  - note template selector
-
-Backend
-  - create ephemeral ASR token / session
-  - never expose provider API key to browser
-  - receive final transcript segments
-  - call LLM to generate notes after stop
-
-ASR provider
-  - Deepgram / AssemblyAI / Azure / OpenAI / Amazon / 国内云
-  - returns partial + final transcript events
+录音 / 上传 -> ASR -> speaker / transcript -> summary / chat / export
 ```
 
-第一版甚至不必做复杂录音库。先把“点按钮实时出字”做稳，再做后续：保存录音、保存 transcript、AI 纪要、搜索、导出飞书/Markdown。
+这一轮最值得认真看的不是低星 PWA demo，而是这些：
 
-## Provider 怎么选
+| 优先级 | 项目 | 它打通了什么 | 和当前需求的差距 |
+|---|---|---|---|
+| 1 | [Speakr](https://github.com/murtaza-nasir/speakr) | 自托管网页应用；README 明确说 in-app recordings 会在录制中 stream 到服务器，支持自托管 WhisperX、OpenAI、Mistral/Voxtral、AssemblyAI 或 custom ASR；有 summaries、event extraction、per-recording chat、exports | 最接近“自建网页录音 + ASR + AI 笔记”。需要确认 live subtitle UI 是否满足需求；否则可作为后端/产品壳改造 |
+| 2 | [Scriberr](https://github.com/rishikanthc/Scriberr) | 自托管 AI audio transcription；有内置 audio recorder、speaker diarization、Chat with your Audio、summaries，支持 Ollama / OpenAI-compatible provider | 更偏录音/上传后的管理与聊天，不一定是实时字幕优先 |
+| 3 | [Meetily](https://github.com/Zackriya-Solutions/meetily) | 高星自托管/本地会议助手；描述包含 Parakeet/Whisper live transcription、speaker diarization、Ollama summarization | 更偏 macOS/Windows 桌面会议助手，不是手机网页按钮入口 |
+| 4 | [Minutes](https://github.com/silverstein/minutes) | 本地 conversation memory；录音、Whisper、本地 Markdown、AI 客户端/MCP 工作流 | 很适合“会议记忆层”，但不是普通网页/PWA 产品 |
+| 5 | [Muesli](https://github.com/Muesli-HQ/muesli) | macOS 本地 dictation + meeting transcription；live transcript、meeting export、summary | 强桌面路线；不解决手机网页入口 |
+| 6 | [Natively](https://github.com/Natively-AI-assistant/natively-cluely-ai-assistant)、[call.md](https://github.com/video-db/call.md) | 实时会议助手、录音、转写、AI 建议/总结 | 更偏桌面/会议中助手或 agent loop，和“网页录音按钮”不同 |
+| 对照 | [Vexa](https://github.com/Vexa-ai/vexa)、[screenpipe](https://github.com/screenpipe/screenpipe)、[Whishper](https://github.com/pluja/whishper) | Vexa 是 meeting bot；screenpipe 是桌面全天候记录；Whishper 主要是上传文件转写，浏览器录音仍在 TODO | 都不是第一版网页按钮方案 |
 
-| 场景 | 首选 |
-|---|---|
-| 最快网页 MVP | Deepgram Next.js live transcription starter |
-| 想看最小浏览器 WebSocket 代码 | AssemblyAI browser JS realtime example |
-| 已经决定 OpenAI 生态，想把实时语音和 LLM 放一起 | OpenAI Realtime Console / Realtime API |
-| 企业云、中文、多语言、稳定 SDK | Azure Speech SDK JS / Azure Samples |
-| AWS 体系内 | Amazon Transcribe WebSocket sample 作为协议参考 |
-| 内部演示、无需后端 | react-speech-recognition / Web Speech API |
-| 不想依赖外部 ASR，愿意维护模型 | WhisperLive |
+这里的初步判断是：
 
-国内云如讯飞、腾讯云、DashScope 也可以接，但它们更像 provider adapter，不一定有同样好用的开源 Web starter。架构上仍然一样：浏览器采集音频，后端保管 key 和签名，前端只拿临时 session 或连接地址。
+> 如果要先试“现成产品”，**Speakr 最值得第一优先实测**。它不是纯实时字幕 demo，但它已经把自托管网页、长录音、可插拔 ASR、总结、聊天、导出这些产品能力串起来了。
 
-## 不再主推哪些东西
+如果 Speakr 的实时字幕体验不足，再把它降级为产品壳参考，回到 Deepgram / AssemblyAI / Azure / FunASR / sherpa-onnx 的 ASR 主线自己搭前端。
 
-前一版把一些低星或个人 vibe-coding 项目放进主表，这是不对的。它们可以作为灵感，但不应该成为选型结论。
+## AI 可以在实时转文字过程中做什么
 
-这次主线不再放：
+AI 不一定只在录音结束后总结。更好的链路是两层 AI：
 
-- 只有零星 stars 的个人 demo；
-- meeting bot：Vexa、Attendee、Recall、MeetingBaaS 这类自动入会方案；
-- 桌面系统音频/全天候记录：screenpipe、Pikabaka 这类；
-- 录音文件后台：OpenTranscribe、Scriberr、Whishper 这类，它们适合上传/归档，不是“一颗网页按钮实时字幕”的第一步；
-- 完整本地模型链路：除非我们决定自托管 ASR，否则 Whisper/faster-whisper 系列只作为备选底座。
+```text
+实时层：partial transcript -> 轻量纠错 / 术语替换 / 标点补全 / 段落提示
+结束层：final transcript -> 摘要 / 纪要 / 行动项 / 待办 / 标签 / 搜索索引
+```
 
-## 最小落地顺序
+但要注意：**实时层不能随意改 ASR 原文**。产品里最好同时保留：
 
-我建议按这个顺序做：
+1. ASR 原始 transcript；
+2. AI 修订后的 readable transcript；
+3. AI notes / summary；
+4. 每段 transcript 的时间戳和来源 provider。
 
-1. **先 fork / 参考 Deepgram Next.js Live Transcription**，跑通网页按钮实时字幕。
-2. 增加后端 token broker，避免前端暴露 API key。
-3. 把 transcript event 标准化成：
+这样后面可以回放、纠错、审计，也方便替换 ASR provider。
+
+## 推荐的验证顺序
+
+我会按下面顺序推进，而不是再泛泛搜“录音转写项目”：
+
+### 第一步：实测成品线
+
+先看 **Speakr**：
+
+- 能不能一条命令或 Docker 跑起来；
+- 浏览器里能不能录音；
+- 录音是否边录边上传到服务器；
+- ASR backend 能否切到 OpenAI / AssemblyAI / custom；
+- 是否自动生成 summary / chat / export；
+- 是否能加 live transcript UI。
+
+如果 Speakr 不合适，再看 Scriberr；如果两者都不满足实时网页入口，就不再纠结成品壳。
+
+### 第二步：实测外部 ASR provider
+
+并行做一个极薄 demo：
+
+```text
+网页 Start 按钮
+  -> Deepgram 或 AssemblyAI realtime
+  -> partial/final transcript
+  -> stop 后 OpenAI / Claude / Qwen 总结
+```
+
+这个 demo 不是最终产品，而是用来测：中文、延迟、断句、标点、噪声、成本和移动端浏览器兼容性。
+
+### 第三步：实测自托管 ASR
+
+如果外部 API 的成本/隐私/合规不满意，再测：
+
+1. FunASR：中文和全链路能力；
+2. sherpa-onnx：离线/端侧/内网/实时；
+3. WhisperLive：Whisper 近实时服务；
+4. faster-whisper / whisper.cpp：自建 Whisper 底座。
+
+### 第四步：统一产品接口
+
+无论选哪个 ASR，产品里都统一成一个事件协议：
 
 ```ts
 type TranscriptEvent =
-  | { type: 'partial'; text: string; startMs?: number; endMs?: number }
-  | { type: 'final'; text: string; startMs?: number; endMs?: number }
-  | { type: 'error'; message: string }
+  | { type: 'partial'; text: string; startMs?: number; endMs?: number; provider: string }
+  | { type: 'final'; text: string; startMs?: number; endMs?: number; provider: string }
+  | { type: 'correction'; original: string; revised: string; reason?: string }
+  | { type: 'error'; message: string; provider?: string }
 ```
 
-4. 停止录音后，把 final segments 合并，调用 LLM 生成会议纪要。
-5. 再换第二个 provider，比如 Azure 或国内 ASR，验证 provider adapter 是否可替换。
-6. 最后才做录音库、权限、搜索、飞书/Markdown 导出。
+这样后面可以替换 Deepgram、AssemblyAI、Azure、FunASR 或 sherpa-onnx，而不用重写 UI 和笔记层。
 
 ## 最终判断
 
-这类项目当然有，而且很多年前就成熟了。只是它成熟的形态通常不是“一个完整开源会议笔记产品”，而是**成熟 ASR 厂商的实时 Web SDK / 官方 starter**。
+这次的主线应该是：
 
-如果要我给一个最短答案：
+> **先确认成熟 ASR，再看有没有现成产品能复用；如果成品项目不满足实时网页入口，就自己做一层薄网页。**
 
-> **先用 Deepgram 官方 Next.js Live Transcription 做第一版网页实时字幕；备选 AssemblyAI browser realtime example。产品层自己做一张网页和一个 token/notes 后端。需要企业云或中文稳定性时，再换 Azure Speech SDK 或国内 ASR provider。**
+我现在的排序是：
 
-这才是“部署一个网页，点录音，实时显示文字，后面接 AI 笔记”的正路。
+1. **先实测 Speakr**：它最接近“网页录音 + 可插拔 ASR + AI 总结/聊天/导出”的成品路线。
+2. **并行实测 Deepgram / AssemblyAI**：它们最适合验证“网页按钮实时字幕”的 ASR 路线。
+3. **中文/自托管重点测 FunASR 和 sherpa-onnx**：如果要把 ASR 掌握在自己服务器或内网，这两个比单纯看 Whisper 更值得优先试。
+4. **WhisperLive / faster-whisper / whisper.cpp 作为 Whisper 自托管路线**：适合长期底座，不一定是第一版最快方案。
+5. **Meetily / Minutes / Muesli / Natively 作为桌面会议助手参考**：它们证明“录音转写 + AI 纪要”很成熟，但不直接满足手机/网页按钮入口。
+
+所以不是“没有成熟项目”，而是成熟能力分布在两层：
+
+```text
+ASR 成熟能力：Deepgram / AssemblyAI / Azure / FunASR / sherpa-onnx / Whisper 系
+产品成品能力：Speakr / Scriberr / Meetily / Minutes 等
+```
+
+最稳的落地方式，是先用这些成熟 ASR 和成品项目做实测筛选，再决定是改 Speakr，还是自己搭一个薄网页产品。
 
 ## 资料入口
+
+### ASR 论文/技术路线
+
+- [zzw922cn/awesome-speech-recognition-speech-synthesis-papers](https://github.com/zzw922cn/awesome-speech-recognition-speech-synthesis-papers)
+- [sindresorhus/awesome-whisper](https://github.com/sindresorhus/awesome-whisper)
+
+### 外部 ASR / 官方网页实时示例
 
 - [deepgram-devs/nextjs-live-transcription](https://github.com/deepgram-devs/nextjs-live-transcription)
 - [deepgram-starters/node-live-transcription](https://github.com/deepgram-starters/node-live-transcription)
@@ -176,5 +270,28 @@ type TranscriptEvent =
 - [Azure-Samples/cognitive-services-speech-sdk](https://github.com/Azure-Samples/cognitive-services-speech-sdk)
 - [microsoft/cognitive-services-speech-sdk-js](https://github.com/microsoft/cognitive-services-speech-sdk-js)
 - [amazon-archives/amazon-transcribe-websocket-static](https://github.com/amazon-archives/amazon-transcribe-websocket-static)
-- [JamesBrill/react-speech-recognition](https://github.com/JamesBrill/react-speech-recognition)
+
+### 自托管 ASR runtime / toolkit
+
+- [modelscope/FunASR](https://github.com/modelscope/FunASR)
+- [k2-fsa/sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)
 - [collabora/WhisperLive](https://github.com/collabora/WhisperLive)
+- [ufal/whisper_streaming](https://github.com/ufal/whisper_streaming)
+- [SYSTRAN/faster-whisper](https://github.com/SYSTRAN/faster-whisper)
+- [ggml-org/whisper.cpp](https://github.com/ggml-org/whisper.cpp)
+- [alphacep/vosk-api](https://github.com/alphacep/vosk-api)
+- [wenet-e2e/wenet](https://github.com/wenet-e2e/wenet)
+- [espnet/espnet](https://github.com/espnet/espnet)
+- [NVIDIA/NeMo](https://github.com/NVIDIA/NeMo)
+- [speechbrain/speechbrain](https://github.com/speechbrain/speechbrain)
+
+### 已串起录音转写和 AI 笔记的项目
+
+- [murtaza-nasir/speakr](https://github.com/murtaza-nasir/speakr)
+- [rishikanthc/Scriberr](https://github.com/rishikanthc/Scriberr)
+- [Zackriya-Solutions/meetily](https://github.com/Zackriya-Solutions/meetily)
+- [silverstein/minutes](https://github.com/silverstein/minutes)
+- [Muesli-HQ/muesli](https://github.com/Muesli-HQ/muesli)
+- [Natively-AI-assistant/natively-cluely-ai-assistant](https://github.com/Natively-AI-assistant/natively-cluely-ai-assistant)
+- [video-db/call.md](https://github.com/video-db/call.md)
+- [riffado/riffado](https://github.com/riffado/riffado)
