@@ -1,109 +1,125 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
-  <title id="title">手机网页实时录音转写自建架构</title>
-  <desc id="desc">从手机浏览器 PWA 录音，到 WebSocket 或分片上传，再到 ASR Provider、LLM 会议纪要和知识归档的架构图。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">网页录音到 AI 纪要主流架构</title>
+  <desc id="desc">从网页录音按钮开始，分成熟 ASR API、自托管 ASR 和现成产品三条路线，最终进入实时字幕、AI 纠错和会议纪要。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#061325"/>
-      <stop offset="0.55" stop-color="#0f172a"/>
-      <stop offset="1" stop-color="#111827"/>
+      <stop offset="0%" stop-color="#101827"/>
+      <stop offset="100%" stop-color="#17233a"/>
     </linearGradient>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1f2937" stroke-width="0.7" opacity="0.65"/>
-    </pattern>
-    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-      <path d="M2,2 L10,6 L2,10 Z" fill="#67e8f9"/>
-    </marker>
-    <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-      <path d="M2,2 L10,6 L2,10 Z" fill="#34d399"/>
-    </marker>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"/>
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.26"/>
     </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#93a4bd"/>
+    </marker>
     <style>
-      .title{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;font-size:34px;font-weight:800;fill:#f8fafc;letter-spacing:.5px}
-      .subtitle{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;font-size:16px;fill:#cbd5e1}
-      .label{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;font-size:20px;font-weight:750;fill:#f8fafc}
-      .sub{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;font-size:14px;fill:#cbd5e1}
-      .tiny{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;font-size:12px;fill:#94a3b8}
-      .lane{fill:rgba(15,23,42,.68);stroke:#334155;stroke-width:1.2;rx:22}
-      .frontend{fill:rgba(8,51,68,.62);stroke:#22d3ee;stroke-width:2;rx:14;filter:url(#shadow)}
-      .backend{fill:rgba(6,78,59,.58);stroke:#34d399;stroke-width:2;rx:14;filter:url(#shadow)}
-      .provider{fill:rgba(120,53,15,.50);stroke:#fbbf24;stroke-width:2;rx:14;filter:url(#shadow)}
-      .store{fill:rgba(76,29,149,.50);stroke:#a78bfa;stroke-width:2;rx:14;filter:url(#shadow)}
-      .risk{fill:rgba(136,19,55,.46);stroke:#fb7185;stroke-width:2;rx:14;filter:url(#shadow)}
-      .line{fill:none;stroke:#67e8f9;stroke-width:3;marker-end:url(#arrow)}
-      .lineGreen{fill:none;stroke:#34d399;stroke-width:3;marker-end:url(#arrowGreen)}
-      .dash{fill:none;stroke:#fb7185;stroke-width:2.5;stroke-dasharray:8 8}
+      .title { font: 700 34px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #f8fafc; }
+      .subtitle { font: 500 17px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #b6c2d6; }
+      .cardTitle { font: 700 21px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #f8fafc; }
+      .cardText { font: 500 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #d7e0ef; }
+      .small { font: 500 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #aab7ca; }
+      .label { font: 700 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #0f172a; }
+      .muted { fill: #aab7ca; }
+      .arrow { stroke: #93a4bd; stroke-width: 2.6; fill: none; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 7 7; }
     </style>
   </defs>
-  <rect width="1400" height="860" fill="url(#bg)"/>
-  <rect width="1400" height="860" fill="url(#grid)" opacity="0.72"/>
-  <text x="60" y="70" class="title">手机网页实时录音转写：自建产品壳 + API Provider</text>
-  <text x="60" y="104" class="subtitle">目标不是 meeting bot，也不是纯 ASR 厂商清单；而是手机浏览器点录音，实时/准实时出字，再接 AI 纪要。</text>
 
-  <rect x="50" y="145" width="400" height="610" class="lane"/>
-  <rect x="500" y="145" width="405" height="610" class="lane"/>
-  <rect x="955" y="145" width="395" height="610" class="lane"/>
-  <text x="80" y="185" class="label">1. 手机网页入口</text>
-  <text x="530" y="185" class="label">2. 自建实时转写服务</text>
-  <text x="985" y="185" class="label">3. AI 笔记与归档</text>
+  <rect width="1280" height="760" rx="28" fill="url(#bg)"/>
+  <circle cx="1160" cy="80" r="170" fill="#2563eb" opacity="0.09"/>
+  <circle cx="80" cy="690" r="210" fill="#22c55e" opacity="0.07"/>
 
-  <rect x="80" y="225" width="330" height="94" class="frontend"/>
-  <text x="106" y="260" class="label">PWA / Mobile Web</text>
-  <text x="106" y="286" class="sub">HTTPS 打开页面，点击录音</text>
-  <text x="106" y="308" class="tiny">DiScribeWeb / Rec.AI 作为产品壳参考</text>
+  <text x="58" y="62" class="title">网页录音到 AI 纪要：先选成熟 ASR</text>
+  <text x="58" y="94" class="subtitle">一个网页按钮不是难点；真正要验证的是实时 ASR 成熟度，以及有没有现成产品已经打通录音、转写、总结。</text>
 
-  <rect x="80" y="365" width="330" height="94" class="frontend"/>
-  <text x="106" y="400" class="label">MediaRecorder</text>
-  <text x="106" y="426" class="sub">手机麦克风授权，5–10 秒分片</text>
-  <text x="106" y="448" class="tiny">audio/webm/opus 或 PCM；断点与重试</text>
+  <!-- Browser input -->
+  <g filter="url(#shadow)">
+    <rect x="58" y="150" width="260" height="150" rx="22" fill="#1f2a44" stroke="#334155"/>
+    <circle cx="98" cy="199" r="26" fill="url(#blue)"/>
+    <text x="90" y="208" class="label">REC</text>
+    <text x="136" y="188" class="cardTitle">网页录音入口</text>
+    <text x="82" y="235" class="cardText">getUserMedia / AudioWorklet</text>
+    <text x="82" y="260" class="cardText">Start / Stop / 实时字幕区域</text>
+    <text x="82" y="283" class="small">手机或电脑浏览器打开 URL</text>
+  </g>
 
-  <rect x="80" y="505" width="330" height="120" class="risk"/>
-  <text x="106" y="540" class="label">移动端关键风险</text>
-  <text x="106" y="568" class="sub">锁屏 / 切后台 / 网络抖动</text>
-  <text x="106" y="590" class="sub">iOS Safari 行为、长录音恢复</text>
-  <text x="106" y="612" class="tiny">先做真机 30–60 分钟 smoke</text>
+  <!-- Route A provider -->
+  <g filter="url(#shadow)">
+    <rect x="405" y="128" width="330" height="162" rx="22" fill="#1e3a5f" stroke="#3b82f6"/>
+    <rect x="430" y="153" width="112" height="26" rx="13" fill="url(#blue)"/>
+    <text x="449" y="172" class="label">路线 A</text>
+    <text x="430" y="207" class="cardTitle">成熟 ASR API</text>
+    <text x="430" y="236" class="cardText">Deepgram / AssemblyAI / Azure</text>
+    <text x="430" y="260" class="cardText">OpenAI Realtime / 国内云 ASR</text>
+    <text x="430" y="282" class="small">最快验证网页实时字幕体验</text>
+  </g>
 
-  <rect x="535" y="225" width="330" height="94" class="backend"/>
-  <text x="561" y="260" class="label">Session + Chunk API</text>
-  <text x="561" y="286" class="sub">session_id / chunk_index / progress</text>
-  <text x="561" y="308" class="tiny">上传保存、去重、失败片段重试</text>
+  <!-- Route B self hosted -->
+  <g filter="url(#shadow)">
+    <rect x="405" y="335" width="330" height="172" rx="22" fill="#163d34" stroke="#10b981"/>
+    <rect x="430" y="360" width="112" height="26" rx="13" fill="url(#green)"/>
+    <text x="449" y="379" class="label">路线 B</text>
+    <text x="430" y="414" class="cardTitle">自托管 ASR runtime</text>
+    <text x="430" y="443" class="cardText">FunASR / sherpa-onnx</text>
+    <text x="430" y="467" class="cardText">WhisperLive / faster-whisper</text>
+    <text x="430" y="491" class="small">数据可控，但要维护模型和算力</text>
+  </g>
 
-  <rect x="535" y="365" width="330" height="94" class="backend"/>
-  <text x="561" y="400" class="label">WebSocket / SSE</text>
-  <text x="561" y="426" class="sub">partial / final transcript 推回页面</text>
-  <text x="561" y="448" class="tiny">参考 gtselentis realtime-transcription</text>
+  <!-- Route C product -->
+  <g filter="url(#shadow)">
+    <rect x="405" y="552" width="330" height="144" rx="22" fill="#3b2a63" stroke="#8b5cf6"/>
+    <rect x="430" y="577" width="112" height="26" rx="13" fill="url(#purple)"/>
+    <text x="449" y="596" class="label">路线 C</text>
+    <text x="430" y="631" class="cardTitle">现成产品优先试</text>
+    <text x="430" y="660" class="cardText">Speakr / Scriberr / Meetily</text>
+    <text x="430" y="684" class="small">能复用就不要从零造产品壳</text>
+  </g>
 
-  <rect x="535" y="505" width="330" height="120" class="provider"/>
-  <text x="561" y="540" class="label">ASR Provider Adapter</text>
-  <text x="561" y="568" class="sub">腾讯云 / 讯飞 / DashScope / Azure</text>
-  <text x="561" y="590" class="sub">Amazon / Deepgram / OpenAI-compatible</text>
-  <text x="561" y="612" class="tiny">Provider 是插件，不是产品本身</text>
+  <!-- transcript bus -->
+  <g filter="url(#shadow)">
+    <rect x="830" y="238" width="340" height="160" rx="22" fill="#202b45" stroke="#475569"/>
+    <text x="858" y="280" class="cardTitle">Transcript Event Bus</text>
+    <text x="858" y="315" class="cardText">partial：边说边显示</text>
+    <text x="858" y="340" class="cardText">final：稳定片段入库</text>
+    <text x="858" y="365" class="cardText">timecode / provider / speaker</text>
+  </g>
 
-  <rect x="990" y="225" width="320" height="94" class="store"/>
-  <text x="1016" y="260" class="label">Transcript Store</text>
-  <text x="1016" y="286" class="sub">segments、timestamps、speaker hints</text>
-  <text x="1016" y="308" class="tiny">保留原始分片和最终合并稿</text>
+  <!-- AI notes -->
+  <g filter="url(#shadow)">
+    <rect x="830" y="465" width="340" height="166" rx="22" fill="#2b314d" stroke="#64748b"/>
+    <text x="858" y="508" class="cardTitle">AI 纠错与会议纪要</text>
+    <text x="858" y="542" class="cardText">实时：术语修正 / 标点 / 段落</text>
+    <text x="858" y="568" class="cardText">结束：摘要 / 行动项 / 标签</text>
+    <text x="858" y="594" class="cardText">保留原文 + 修订稿 + 笔记</text>
+  </g>
 
-  <rect x="990" y="365" width="320" height="94" class="store"/>
-  <text x="1016" y="400" class="label">LLM Notes</text>
-  <text x="1016" y="426" class="sub">会议纪要、行动项、想法笔记</text>
-  <text x="1016" y="448" class="tiny">模板化 prompt，可按场景定制</text>
+  <!-- arrows -->
+  <path class="arrow" d="M318 225 C350 225, 365 209, 400 209"/>
+  <path class="arrow" d="M318 225 C360 270, 365 421, 400 421"/>
+  <path class="arrow dash" d="M318 225 C350 360, 350 625, 400 625"/>
+  <path class="arrow" d="M735 209 C780 215, 800 285, 827 305"/>
+  <path class="arrow" d="M735 421 C783 421, 800 358, 827 340"/>
+  <path class="arrow dash" d="M735 625 C788 605, 808 396, 827 360"/>
+  <path class="arrow" d="M1000 398 L1000 462"/>
 
-  <rect x="990" y="505" width="320" height="120" class="store"/>
-  <text x="1016" y="540" class="label">知识工作流</text>
-  <text x="1016" y="568" class="sub">Markdown / 飞书文档 / 搜索</text>
-  <text x="1016" y="590" class="sub">任务、决策、问题、后续 Agent</text>
-  <text x="1016" y="612" class="tiny">接 ChatArch workspace / 文档沉淀</text>
+  <!-- bottom note -->
+  <g>
+    <rect x="58" y="642" width="260" height="54" rx="18" fill="#111827" stroke="#334155"/>
+    <text x="82" y="667" class="small">决策顺序：先试 Speakr 成品，</text>
+    <text x="82" y="687" class="small">并行测 ASR；不行再自建薄网页。</text>
+  </g>
 
-  <path class="line" d="M410 272 C460 272 480 272 535 272"/>
-  <path class="line" d="M410 412 C470 412 477 412 535 412"/>
-  <path class="lineGreen" d="M865 272 C918 272 940 272 990 272"/>
-  <path class="lineGreen" d="M865 412 C918 412 940 412 990 412"/>
-  <path class="lineGreen" d="M865 565 C918 565 940 565 990 565"/>
-  <path class="dash" d="M245 459 C245 484 245 494 245 505"/>
-
-  <rect x="80" y="675" width="1230" height="54" rx="16" fill="rgba(15,23,42,.78)" stroke="#475569"/>
-  <text x="110" y="708" class="sub">落地顺序：先验证手机录音稳定性和实时 partial transcript，再替换中文 ASR Provider，最后做 LLM 纪要模板和知识归档。</text>
-  <text x="60" y="810" class="tiny">原创图：ChatBlog / ChatArch。用于解释本篇的推荐组合，不表示任何单个 GitHub 项目已完整覆盖全部模块。</text>
+  <text x="58" y="732" class="small muted">核心判断：ASR 是成熟能力；产品层要么复用 Speakr/Scriberr，要么围绕成熟 ASR 自建一层很薄的网页与 notes 后端。</text>
 </svg>
