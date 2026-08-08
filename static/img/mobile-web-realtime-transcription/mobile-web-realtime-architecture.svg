@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
-  <title id="title">手机网页实时录音转写自建架构</title>
-  <desc id="desc">从手机浏览器 PWA 录音，到 WebSocket 或分片上传，再到 ASR Provider、LLM 会议纪要和知识归档的架构图。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+  <title id="title">网页按钮实时录音转写主流架构</title>
+  <desc id="desc">一个网页录音按钮，通过浏览器麦克风采集音频，连接成熟实时 ASR provider，显示实时字幕，并在停止后生成 AI 笔记。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#061325"/>
@@ -30,80 +30,66 @@
       .backend{fill:rgba(6,78,59,.58);stroke:#34d399;stroke-width:2;rx:14;filter:url(#shadow)}
       .provider{fill:rgba(120,53,15,.50);stroke:#fbbf24;stroke-width:2;rx:14;filter:url(#shadow)}
       .store{fill:rgba(76,29,149,.50);stroke:#a78bfa;stroke-width:2;rx:14;filter:url(#shadow)}
-      .risk{fill:rgba(136,19,55,.46);stroke:#fb7185;stroke-width:2;rx:14;filter:url(#shadow)}
       .line{fill:none;stroke:#67e8f9;stroke-width:3;marker-end:url(#arrow)}
       .lineGreen{fill:none;stroke:#34d399;stroke-width:3;marker-end:url(#arrowGreen)}
-      .dash{fill:none;stroke:#fb7185;stroke-width:2.5;stroke-dasharray:8 8}
     </style>
   </defs>
-  <rect width="1400" height="860" fill="url(#bg)"/>
-  <rect width="1400" height="860" fill="url(#grid)" opacity="0.72"/>
-  <text x="60" y="70" class="title">手机网页实时录音转写：自建产品壳 + API Provider</text>
-  <text x="60" y="104" class="subtitle">目标不是 meeting bot，也不是纯 ASR 厂商清单；而是手机浏览器点录音，实时/准实时出字，再接 AI 纪要。</text>
+  <rect width="1400" height="760" fill="url(#bg)"/>
+  <rect width="1400" height="760" fill="url(#grid)" opacity="0.72"/>
+  <text x="60" y="70" class="title">网页按钮实时录音转写：成熟路线不是 Bot，而是 Live ASR Web SDK</text>
+  <text x="60" y="104" class="subtitle">打开网页 → 点录音 → 实时字幕 → 停止后 AI 笔记。产品壳可以很薄，关键是选成熟实时转写 provider / 官方 starter。</text>
 
-  <rect x="50" y="145" width="400" height="610" class="lane"/>
-  <rect x="500" y="145" width="405" height="610" class="lane"/>
-  <rect x="955" y="145" width="395" height="610" class="lane"/>
-  <text x="80" y="185" class="label">1. 手机网页入口</text>
-  <text x="530" y="185" class="label">2. 自建实时转写服务</text>
-  <text x="985" y="185" class="label">3. AI 笔记与归档</text>
+  <rect x="50" y="145" width="300" height="460" class="lane"/>
+  <rect x="390" y="145" width="300" height="460" class="lane"/>
+  <rect x="730" y="145" width="300" height="460" class="lane"/>
+  <rect x="1070" y="145" width="280" height="460" class="lane"/>
 
-  <rect x="80" y="225" width="330" height="94" class="frontend"/>
-  <text x="106" y="260" class="label">PWA / Mobile Web</text>
-  <text x="106" y="286" class="sub">HTTPS 打开页面，点击录音</text>
-  <text x="106" y="308" class="tiny">DiScribeWeb / Rec.AI 作为产品壳参考</text>
+  <text x="80" y="185" class="label">1. 一颗网页按钮</text>
+  <rect x="80" y="225" width="240" height="105" class="frontend"/>
+  <text x="104" y="260" class="label">Start Recording</text>
+  <text x="104" y="288" class="sub">getUserMedia / 麦克风权限</text>
+  <text x="104" y="310" class="tiny">手机/电脑浏览器都可以打开</text>
+  <rect x="80" y="375" width="240" height="105" class="frontend"/>
+  <text x="104" y="410" class="label">Audio Stream</text>
+  <text x="104" y="438" class="sub">MediaRecorder / AudioWorklet</text>
+  <text x="104" y="460" class="tiny">WebSocket 或 provider SDK</text>
 
-  <rect x="80" y="365" width="330" height="94" class="frontend"/>
-  <text x="106" y="400" class="label">MediaRecorder</text>
-  <text x="106" y="426" class="sub">手机麦克风授权，5–10 秒分片</text>
-  <text x="106" y="448" class="tiny">audio/webm/opus 或 PCM；断点与重试</text>
+  <text x="420" y="185" class="label">2. 成熟实时 ASR</text>
+  <rect x="420" y="225" width="240" height="105" class="provider"/>
+  <text x="444" y="260" class="label">Official Starters</text>
+  <text x="444" y="288" class="sub">Deepgram / AssemblyAI</text>
+  <text x="444" y="310" class="tiny">网页实时字幕最快 MVP</text>
+  <rect x="420" y="375" width="240" height="105" class="provider"/>
+  <text x="444" y="410" class="label">Cloud SDKs</text>
+  <text x="444" y="438" class="sub">Azure / OpenAI / Amazon</text>
+  <text x="444" y="460" class="tiny">中文/企业云/生态选择</text>
 
-  <rect x="80" y="505" width="330" height="120" class="risk"/>
-  <text x="106" y="540" class="label">移动端关键风险</text>
-  <text x="106" y="568" class="sub">锁屏 / 切后台 / 网络抖动</text>
-  <text x="106" y="590" class="sub">iOS Safari 行为、长录音恢复</text>
-  <text x="106" y="612" class="tiny">先做真机 30–60 分钟 smoke</text>
+  <text x="760" y="185" class="label">3. 页面实时显示</text>
+  <rect x="760" y="225" width="240" height="105" class="backend"/>
+  <text x="784" y="260" class="label">Partial Text</text>
+  <text x="784" y="288" class="sub">边说边改，上文可修正</text>
+  <text x="784" y="310" class="tiny">interim transcript events</text>
+  <rect x="760" y="375" width="240" height="105" class="backend"/>
+  <text x="784" y="410" class="label">Final Segments</text>
+  <text x="784" y="438" class="sub">稳定字幕片段 + 时间戳</text>
+  <text x="784" y="460" class="tiny">停止后合并全文</text>
 
-  <rect x="535" y="225" width="330" height="94" class="backend"/>
-  <text x="561" y="260" class="label">Session + Chunk API</text>
-  <text x="561" y="286" class="sub">session_id / chunk_index / progress</text>
-  <text x="561" y="308" class="tiny">上传保存、去重、失败片段重试</text>
+  <text x="1100" y="185" class="label">4. AI 笔记</text>
+  <rect x="1100" y="225" width="220" height="105" class="store"/>
+  <text x="1124" y="260" class="label">LLM Notes</text>
+  <text x="1124" y="288" class="sub">会议纪要 / 行动项</text>
+  <text x="1124" y="310" class="tiny">停止后生成即可</text>
+  <rect x="1100" y="375" width="220" height="105" class="store"/>
+  <text x="1124" y="410" class="label">Archive</text>
+  <text x="1124" y="438" class="sub">Markdown / 飞书 / 搜索</text>
+  <text x="1124" y="460" class="tiny">后续工作流再扩展</text>
 
-  <rect x="535" y="365" width="330" height="94" class="backend"/>
-  <text x="561" y="400" class="label">WebSocket / SSE</text>
-  <text x="561" y="426" class="sub">partial / final transcript 推回页面</text>
-  <text x="561" y="448" class="tiny">参考 gtselentis realtime-transcription</text>
+  <path class="line" d="M320 278 C355 278 378 278 420 278"/>
+  <path class="line" d="M660 278 C695 278 718 278 760 278"/>
+  <path class="lineGreen" d="M1000 278 C1035 278 1058 278 1100 278"/>
+  <path class="lineGreen" d="M1000 428 C1035 428 1058 428 1100 428"/>
 
-  <rect x="535" y="505" width="330" height="120" class="provider"/>
-  <text x="561" y="540" class="label">ASR Provider Adapter</text>
-  <text x="561" y="568" class="sub">腾讯云 / 讯飞 / DashScope / Azure</text>
-  <text x="561" y="590" class="sub">Amazon / Deepgram / OpenAI-compatible</text>
-  <text x="561" y="612" class="tiny">Provider 是插件，不是产品本身</text>
-
-  <rect x="990" y="225" width="320" height="94" class="store"/>
-  <text x="1016" y="260" class="label">Transcript Store</text>
-  <text x="1016" y="286" class="sub">segments、timestamps、speaker hints</text>
-  <text x="1016" y="308" class="tiny">保留原始分片和最终合并稿</text>
-
-  <rect x="990" y="365" width="320" height="94" class="store"/>
-  <text x="1016" y="400" class="label">LLM Notes</text>
-  <text x="1016" y="426" class="sub">会议纪要、行动项、想法笔记</text>
-  <text x="1016" y="448" class="tiny">模板化 prompt，可按场景定制</text>
-
-  <rect x="990" y="505" width="320" height="120" class="store"/>
-  <text x="1016" y="540" class="label">知识工作流</text>
-  <text x="1016" y="568" class="sub">Markdown / 飞书文档 / 搜索</text>
-  <text x="1016" y="590" class="sub">任务、决策、问题、后续 Agent</text>
-  <text x="1016" y="612" class="tiny">接 ChatArch workspace / 文档沉淀</text>
-
-  <path class="line" d="M410 272 C460 272 480 272 535 272"/>
-  <path class="line" d="M410 412 C470 412 477 412 535 412"/>
-  <path class="lineGreen" d="M865 272 C918 272 940 272 990 272"/>
-  <path class="lineGreen" d="M865 412 C918 412 940 412 990 412"/>
-  <path class="lineGreen" d="M865 565 C918 565 940 565 990 565"/>
-  <path class="dash" d="M245 459 C245 484 245 494 245 505"/>
-
-  <rect x="80" y="675" width="1230" height="54" rx="16" fill="rgba(15,23,42,.78)" stroke="#475569"/>
-  <text x="110" y="708" class="sub">落地顺序：先验证手机录音稳定性和实时 partial transcript，再替换中文 ASR Provider，最后做 LLM 纪要模板和知识归档。</text>
-  <text x="60" y="810" class="tiny">原创图：ChatBlog / ChatArch。用于解释本篇的推荐组合，不表示任何单个 GitHub 项目已完整覆盖全部模块。</text>
+  <rect x="80" y="640" width="1240" height="54" rx="16" fill="rgba(15,23,42,.78)" stroke="#475569"/>
+  <text x="110" y="673" class="sub">推荐起步：Deepgram Next.js Live Transcription 或 AssemblyAI Browser Realtime Example；再加自己的 token broker 和 AI notes 后端。</text>
+  <text x="60" y="724" class="tiny">原创图：ChatBlog / ChatArch。用于解释重写后的主线：成熟实时 ASR Web SDK / 官方 starter + 自建薄网页壳。</text>
 </svg>
