@@ -147,7 +147,7 @@ wss://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference
 双向流式优化版：  wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async
 ```
 
-文档说明双向流式会尽快返回识别到的字符，流式输入模式准确率更高；音频单包建议 100~200ms，发包间隔建议 100~200ms，双向流式模式推荐 200ms 分包。它还提供二遍识别、ITN、标点、顺滑、说话人等参数，适合认真测试“快”和“准”的折中。
+文档说明双向流式会尽快返回识别到的字符，流式输入模式准确率更高；音频单包建议 100–200ms，发包间隔建议 100–200ms，双向流式模式推荐 200ms 分包。它还提供二遍识别、ITN、标点、顺滑、说话人等参数，适合认真测试“快”和“准”的折中。
 
 ### 怎么做
 
@@ -156,7 +156,7 @@ wss://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference
 3. 选择资源 ID：文档列出小时版和并发版，例如 `volc.bigasr.sauc.duration`、`volc.seedasr.sauc.duration` 等。
 4. 后端连接 `bigmodel_async` 或 `bigmodel`，并在 HTTP header 中放入鉴权和资源 ID。
 5. WebSocket 建连后，先发送 full client request，再持续发送 audio only request。
-6. 浏览器音频按 100~200ms 分包；后端负责二进制 header、压缩、序列号、错误码解析。
+6. 浏览器音频按 100–200ms 分包；后端负责二进制 header、压缩、序列号、错误码解析。
 7. 页面显示快速结果；如果开启二遍识别，最终结果要覆盖临时结果。
 
 ### 需要在哪里操作
@@ -264,7 +264,7 @@ https://realtime-asr.local.wzhecnu.cn/
 
 不要直接宣布“某一家最好”。没有拿你的真实音频跑过，任何效果排名都只是厂商宣传或经验印象。更稳的做法是：
 
-1. **先开低成本 smoke**：四家各跑 1~3 分钟同一段中文读稿。
+1. **先开低成本 smoke**：四家各跑 1–3 分钟同一段中文读稿。
 2. **先测效果，再谈价格**：如果 transcript 不准，便宜也没意义。
 3. **把火山和讯飞放第一批实测**：一个是中文 ASR 老牌强项，一个是大模型流式能力值得看。
 4. **阿里云作为工程化路线对照**：如果团队已经有阿里云/百炼账号，集成和治理会顺。
