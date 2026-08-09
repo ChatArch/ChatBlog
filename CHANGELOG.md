@@ -33,6 +33,7 @@
 
 ### Changed
 
+- Expanded the mail service deployment guide with a concrete Docker Mailserver / DMS path derived from the prior Butterfly blog note, including DNS, TLS, DKIM, users, ports, and verification steps.
 - Replaced the placeholder Python package scaffold with a static site source tree.
 - Updated the Docusaurus canonical site URL to the ChatArch shared Pages domain.
 - Clarified the CCF deadline guide's counting units, source hierarchy, and submission terminology.
