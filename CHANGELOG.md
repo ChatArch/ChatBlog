@@ -31,6 +31,7 @@
 - Added a review draft on the Agent Community operating model, connecting Human Admin, community infrastructure, long-lived Profiles, task gates, and the `Detect -> Judge -> Action` autonomy loop.
 - Added a practical mail service deployment guide comparing hosted SMTP/API, self-hosted gateways, direct-send MTAs, and full mail-server stacks.
 - Added a Speakr practice guide showing the exact post-recording upload step, transcription/detail page, AI Summary/Minutes location, and realtime-ASR boundary.
+- Added a domestic realtime ASR provider integration guide covering iFlytek, Alibaba Cloud Paraformer, Volcengine Doubao Speech, and Tencent Cloud WebSocket routes.
 
 ### Changed
 
