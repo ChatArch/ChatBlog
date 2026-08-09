@@ -29,6 +29,7 @@
 - Added a long-form guide to the ten Astra math problems, summarizing each problem's research background, historical bottlenecks, Astra result, proof route, limitations, and verification status.
 - Added a static ChatShare backend survey covering 16 direct-path file servers, temporary sharing systems, and S3/object-storage candidates, with sourced screenshots and a category-aware shortlist.
 - Added a review draft on the Agent Community operating model, connecting Human Admin, community infrastructure, long-lived Profiles, task gates, and the `Detect -> Judge -> Action` autonomy loop.
+- Added a practical mail service deployment guide comparing hosted SMTP/API, self-hosted gateways, direct-send MTAs, and full mail-server stacks.
 
 ### Changed
 

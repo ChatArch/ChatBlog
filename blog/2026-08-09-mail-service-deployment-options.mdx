@@ -1,0 +1,329 @@
+---
+title: "自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择"
+date: 2026-08-09
+slug: mail-service-deployment-options
+tags: [email, smtp, mail-server, devops, chatarch]
+description: "解释自建发信服务到底包含哪些组件、邮件从应用到收件箱的过程、Postfix/全家桶/托管 SMTP/混合网关等常见方案，以及部署和验收清单。"
+---
+
+前一篇 [SMTP 入门](https://arch.gh.wzhecnu.cn/ChatBlog/blog/smtp-email-delivery-basics-and-provider-configuration) 讲的是“SMTP 是什么、邮件怎样发出去、常见平台怎么配置”。这一篇往下一层：如果我们要给自己的服务部署一个 **mail service**，甚至自建一个能发邮件的服务器，到底要部署哪些东西？
+
+结论先说：**自建发信服务不是把 Postfix 跑起来就结束了，而是要同时交付协议链路、域名身份、IP 信誉和运维闭环。**
+
+<!-- truncate -->
+
+对大多数产品团队来说，最稳妥的起点不是“完全自建直连全网收件服务器”，而是先做一个自己可控的发信网关：应用统一提交邮件到内部 SMTP/API，由这个网关负责模板、限流、日志、队列、退信处理，再转交给 SES、SendGrid、Mailgun、Postmark、Resend 或企业邮箱这类上游发信服务。只有当你能控制 25 端口、PTR/rDNS、IP 信誉、退信投诉和 7x24 运维时，才值得进一步做 direct-send 的自建 MTA。
+
+## 先拆清楚：你要自建的是哪一层？
+
+“自建邮件服务器”容易混在一起说，但实际至少有三种目标：
+
+| 目标 | 你真正要交付的东西 | 是否需要收信 | 典型场景 |
+|---|---|---:|---|
+| **只发系统邮件** | 应用发信入口、队列、日志、模板、上游 SMTP/API 凭据 | 否 | 注册验证、通知、告警、账单 |
+| **自建出站 MTA** | Postfix/Exim/OpenSMTPD 等直接投递到收件方 MX | 可选 | 需要控制投递链路、减少第三方依赖 |
+| **完整邮箱系统** | SMTP submission、MX、IMAP/POP3、Webmail、账号、反垃圾、备份 | 是 | 团队邮箱、社区域名邮箱、个人邮箱托管 |
+
+这三个目标的难度差很多。只发系统邮件时，最重要的是“应用怎么可靠地把邮件交出去”；完整邮箱系统还要负责“别人怎么给你发、用户怎么收、垃圾邮件怎么挡、数据怎么备份”。
+
+## 一封邮件从应用到收件箱的过程
+
+可以把发信路径理解成六段：
+
+```text
+业务系统
+  -> 发信入口（SMTP submission 或 HTTP API）
+  -> 发信队列 / MSA / MTA
+  -> DNS 查询收件域名 MX
+  -> 连接对方 MX（通常是 SMTP port 25）
+  -> 对方反垃圾、身份认证、收件规则
+  -> 收件箱 / 垃圾箱 / 退信 / 延迟重试
+```
+
+这里有两个常被混淆的 SMTP 角色：
+
+1. **Message submission**：应用或邮件客户端把邮件“提交”给自己的发信服务器。RFC 6409 明确把 message submission 和 message relay 分开，并说明 submission 通常使用 587 端口。[2]
+2. **Message relay / transfer**：MTA 之间把邮件从一个域投递到另一个域。RFC 6409 同时说明 relay 仍然使用 SMTP 的 25 端口。[2]
+
+所以，常见端口可以这样记：
+
+| 端口 | 常见用途 | 部署含义 |
+|---:|---|---|
+| 25 | MTA 到 MTA 的服务器间投递 | direct-send 必须能从服务器出站访问；收信服务器也通常要入站开放 |
+| 587 | 邮件客户端/应用提交邮件，通常 STARTTLS + 认证 | 推荐给业务系统或用户客户端使用 |
+| 465 | implicit TLS 的 SMTP submission，也常叫 submissions | RFC 8314 将 implicit TLS submission 放回标准化轨道，并记录 `submissions` 端口 465。[3] |
+
+如果你只是给应用发验证码，业务系统不应该直接连全世界的 MX。更好的方式是连自己的 submission/gateway，认证后入队，由后端统一决定是直投还是走上游 relay。
+
+## 发信服务的最低可用架构
+
+一个最低可用的发信服务，至少要有下面几块：
+
+| 层 | 组件 | 最低要求 |
+|---|---|---|
+| 应用入口 | SMTP submission 或 HTTP API | 认证、TLS、请求日志、合理超时 |
+| 队列 | MTA 队列或任务队列 | 可重试、可观察、失败不丢信 |
+| 投递 | Postfix/Exim/OpenSMTPD/maddy 或上游 SMTP/API | 不能变成 open relay；能区分本地域和外部域 |
+| 身份 | SPF、DKIM、DMARC、PTR/rDNS、HELO/EHLO hostname | From 域名与认证域名要对齐 |
+| 信誉 | 发送频率、退信率、投诉率、内容质量 | 有限流、退订、suppression list 和监控 |
+| 运维 | 日志、队列查看、告警、备份、密钥轮换 | 能解释“这封邮件为什么没到” |
+
+Postfix 的官方文档把 `myhostname`、`mydomain`、`myorigin` 等作为基础配置核心：它们决定服务器的 FQDN、默认域名以及出站邮件显示的域名。[7] 这些不是装饰项。收件方会把你的 HELO/EHLO、PTR、From 域、SPF、DKIM、DMARC 和内容一起看。
+
+最危险的反例是 open relay：任何外部机器都能借你的服务器发邮件。Postfix 2.10 以后推荐把“谁有权 relay”放在 `smtpd_relay_restrictions`，默认策略包含 `permit_mynetworks`、`permit_sasl_authenticated` 和对未授权目的地的拒绝/延迟拒绝。[8] 换句话说，**只有可信网段或通过 SASL 认证的客户端可以借你转发外部邮件**。
+
+## 常见方案怎么选
+
+### 方案 A：完全托管 SMTP/API 服务
+
+代表：Amazon SES、SendGrid、Mailgun、Postmark、Resend、企业邮箱 SMTP、云厂商 DirectMail。
+
+这是最适合产品早期的方案。你不自建 MTA，而是把发信身份、DKIM、退信、投诉、配额、信誉爬坡交给服务商。SES 的 deliverability 文档把退信、投诉、suppression list、认证、发送配额、内容过滤、信誉和通知作为发信可达率的核心概念。[14]
+
+优点：
+
+- 起步快，通常不需要自己维护 25 端口、IP 信誉和收件方兼容性。
+- 有 bounce/complaint webhook、统计、模板、配额和 suppression list。
+- 适合验证码、交易邮件、系统通知、营销邮件的早期阶段。
+
+缺点：
+
+- 依赖第三方账号和规则；风控、审核、额度可能影响发信。
+- 上游服务的 API/SMTP 形状会进入你的业务系统，后续迁移有成本。
+- 需要注意数据合规和邮件内容合规。
+
+适合：**绝大多数业务系统的第一版发信能力**。
+
+### 方案 B：自建发信网关 + 上游 relay
+
+这是我最推荐的工程化折中：你部署一个内部 mail gateway，业务系统只认它；gateway 再把邮件交给 SES、Mailgun、企业邮箱或备用上游。
+
+```text
+业务系统 -> 内部 SMTP/API Gateway -> 队列/模板/限流/日志 -> 上游 SMTP/API -> 收件方
+```
+
+优点：
+
+- 业务系统不直接散落一堆 SMTP 密码和供应商 SDK。
+- 可以统一模板、审计、限流、重试、去重、退信处理和 provider failover。
+- 将来要从 SES 换到 Postmark，或从企业邮箱换到自建直投，业务侧改动小。
+
+缺点：
+
+- 你仍然需要维护一个小服务和队列。
+- 如果 gateway 只做同步转发，没有持久队列，故障时仍然会丢邮件。
+
+适合：**ChatArch 这类多服务、多机器人、多社区入口共享一套通知能力的场景**。
+
+### 方案 C：自建 direct-send 出站 MTA
+
+代表：Postfix、Exim、OpenSMTPD、maddy 的出站能力。
+
+这种方案会由你的服务器直接查收件域 MX，然后连对方 25 端口投递。它看起来“最独立”，但实际门槛最高。AWS EC2 默认就会阻止到公网 IPv4/IPv6 的 25 端口出站流量，需要申请解除限制。[15] 很多云厂商、住宅网络和企业网络也会限制 25 端口，原因很简单：垃圾邮件滥用风险太高。
+
+要做 direct-send，至少先确认：
+
+- 你的服务器能稳定出站访问 25 端口。
+- 服务器有静态公网 IP，且可配置 PTR/rDNS。
+- PTR 指向的主机名有正向 A/AAAA 记录回到同一个 IP。
+- HELO/EHLO hostname、From 域名、DKIM d= 域、SPF include/ip、DMARC alignment 能解释清楚。
+- 有退信和投诉处理；不能对 hard bounce 地址反复发送。
+- 有队列监控、速率控制、灰名单/临时失败重试策略。
+
+Gmail 的 sender guidelines 明确要求或建议 SPF/DKIM、DMARC、有效的正向/反向 DNS、TLS、低 spam rate；对于每天发给 Gmail 超过 5,000 封的发送方，还要求 SPF、DKIM、DMARC、From 对齐、一键退订等更严格条件。[16]
+
+适合：**对投递链路控制有强需求、能长期维护邮件基础设施、并愿意承担信誉冷启动的团队**。
+
+### 方案 D：完整自托管邮箱套件
+
+代表：Mail-in-a-Box、mailcow、Mailu、Docker Mailserver、Modoboa、iRedMail。
+
+这类方案不是只解决“发系统邮件”，而是把邮箱系统完整打包：Postfix、Dovecot、Webmail、反垃圾、TLS、DKIM、DMARC、账号管理、备份、管理后台等。
+
+- Docker Mailserver 自称是 production-ready、fullstack 但 simple 的容器化邮件服务器，包含 SMTP、IMAP、LDAP、反垃圾、反病毒等；README 列出的组件包括 Postfix、Dovecot、Rspamd、ClamAV、OpenDKIM/OpenDMARC、Fail2ban 和证书支持。[17]
+- Mailu 是一组 Docker images，目标是易安装、易维护、功能完整的邮件服务器；它列出的能力包括 IMAP、SMTP、Submission、Webmail/Admin、TLS、DANE、MTA-STS、outgoing DKIM、DMARC/SPF、反垃圾等。[19]
+- Mail-in-a-Box 更像“把整台机器变成一台邮箱盒子”。它的 setup guide 明确不建议在家用网络运行，因为住宅网络常见 25 端口阻断、黑名单、动态 IP 和不可配置 reverse DNS；同时它要求安装在全新的专用机器上，并会自管理配置。[13]
+
+优点：
+
+- 收信、发信、Webmail、账号、反垃圾、证书等开箱集成。
+- 对个人域名邮箱、小组织邮箱、社区邮箱比较友好。
+- 文档会覆盖 DNS、证书、账号、Webmail 等完整路径。
+
+缺点：
+
+- 不是“轻量发验证码”的方案；运维面比单纯发信大很多。
+- 容器编排、升级、备份、磁盘、日志、反垃圾策略都要长期维护。
+- 一旦作为正式邮箱使用，数据可靠性和迁移成本会变高。
+
+适合：**真的要拥有邮箱账户和收信能力，而不是只给业务系统发通知**。
+
+### 方案 E：一体化轻量服务器 / 内部测试 mail sink
+
+maddy 是另一个有意思的方向：它把 SMTP MTA、MX、IMAP、DKIM/SPF/DMARC/DANE/MTA-STS 等功能整合到一个 daemon，目标是用统一配置替代 Postfix、Dovecot、OpenDKIM、OpenSPF、OpenDMARC 等多组件组合。[12] 但它也在首页提醒 IMAP storage 仍是 beta，若需要稳定、功能丰富的 IMAP，可能仍应选择 Dovecot。[12]
+
+另外，开发环境里经常需要的不是“发到真实互联网”，而是 mail sink：Mailpit、MailHog、smtp4dev 这类工具可以接收测试邮件、展示 HTML、检查 headers，但不会真正投递。它们适合 CI、预发和本地调试，不应该被误认为生产发信服务。
+
+## DNS 和身份认证：为什么它决定到达率
+
+发信服务器的技术栈可以换，但下面这些 DNS/身份项绕不开：
+
+| 项 | 作用 | 常见错误 |
+|---|---|---|
+| MX | 告诉别人你的域名收信服务器是谁 | 只发信不收信时不一定要接管 MX；完整邮箱必须配置 |
+| A/AAAA | 服务器主机名解析到 IP | 主机名和 PTR 对不上 |
+| PTR/rDNS | IP 反查到主机名 | 云厂商不支持或没申请，导致信誉差 |
+| SPF | 声明哪些服务器/服务商可以代表域名发信 | 忘记 include 上游；记录超过 DNS lookup 限制 |
+| DKIM | 用域名私钥给邮件签名，收件方用 DNS 公钥验证 | key 太短、selector 错、签名域与 From 不对齐 |
+| DMARC | 告诉收件方 SPF/DKIM 失败时怎么处理，并要求 alignment | 一上来 `p=reject`，但还没盘点所有合法发信源 |
+| TLS | 传输过程加密 | submission 端口没强制 TLS；证书和 hostname 不匹配 |
+| List-Unsubscribe | 批量/订阅邮件退订 | 营销邮件没有清晰退订，投诉率升高 |
+
+Google 的 guidelines 直接把 SPF/DKIM、DMARC、正反向 DNS、TLS、From alignment 和低 spam rate 放在发件方要求中。[16] 这说明“邮件能不能进 inbox”不是单点配置，而是身份、网络、内容和行为共同决定。
+
+一个稳妥的上线顺序是：
+
+1. 先给域名加 SPF，把现有所有合法发信源列进去。
+2. 为新发信服务生成 DKIM selector，先只让少量邮件使用它。
+3. 添加 `v=DMARC1; p=none; rua=mailto:dmarc-report@example.com` 观察报告。
+4. 确认所有合法来源都能 SPF 或 DKIM pass，并且与 From 域名 alignment。
+5. 再逐步收紧到 `quarantine` 或 `reject`。
+
+## 一条可执行的部署路径
+
+下面按“自建发信网关，必要时可升级到 direct-send”的思路走。
+
+### 1. 明确边界
+
+先写下四个决策：
+
+- 是只发系统邮件，还是要收信？
+- 预计每天发送多少封？是否包含营销/订阅？
+- 是否必须 direct-send，还是可以走上游 SMTP/API？
+- 失败邮件要进入哪里：日志、队列、人工工单，还是自动 suppression list？
+
+如果答案是“只发验证码和通知”，不要一开始就上完整 mailcow/Mailu。先做发信网关 + 上游 relay。
+
+### 2. 选主机和域名
+
+主机最好满足：
+
+- 静态公网 IP。
+- 可配置 PTR/rDNS。
+- 可开放/申请开放 25 出站；如果只走上游 relay，至少要能访问 587/465/HTTPS。
+- 不在住宅宽带、动态 IP、廉价高滥用段上。
+- 有监控、备份、日志保留和系统更新机制。
+
+域名建议单独用子域，例如：
+
+- `mail.example.com`：服务器主机名。
+- `bounce.example.com`：退信域。
+- `notifications.example.com`：系统通知 From 域。
+
+这样可以把主站域名、营销域名、事务邮件域名隔离，减少一个通道出问题时影响全部邮件。
+
+### 3. 部署 submission/gateway
+
+如果用 Postfix 做 gateway，核心原则是：
+
+```ini
+# /etc/postfix/main.cf 示例，只表达形状，不可直接复制上线
+myhostname = mail.example.com
+mydomain = example.com
+myorigin = $mydomain
+inet_interfaces = all
+
+# 只允许本机、内网或认证用户提交外部 relay
+mynetworks = 127.0.0.0/8 [::1]/128 10.0.0.0/24
+smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination
+
+# 如果走上游 SMTP relay
+relayhost = [email-smtp.region.amazonaws.com]:587
+smtp_tls_security_level = encrypt
+smtp_sasl_auth_enable = yes
+smtp_sasl_password_maps = lmdb:/etc/postfix/sasl_passwd
+smtp_sasl_security_options = noanonymous
+```
+
+上线前要特别检查两件事：
+
+1. 未认证外部客户端不能向任意外部域 relay。
+2. 业务系统连接 submission 时必须走 TLS 和认证，不能把 SMTP 密码写进前端或公开仓库。
+
+如果你更偏应用层，也可以自写一个 HTTP mail gateway：业务系统 POST 到 gateway，gateway 写队列，再调用 SES/SendGrid API。这比让每个业务服务各自接 SMTP 更容易做审计、幂等、限流和多 provider 切换。
+
+### 4. 配 DNS 和密钥
+
+至少要配置：
+
+```dns
+mail.example.com.        A      203.0.113.10
+10.113.0.203.in-addr.arpa. PTR  mail.example.com.
+example.com.             TXT    "v=spf1 include:amazonses.com -all"
+selector1._domainkey.example.com. TXT "v=DKIM1; k=rsa; p=..."
+_dmarc.example.com.      TXT    "v=DMARC1; p=none; rua=mailto:dmarc-report@example.com"
+```
+
+如果 direct-send，不要忽略 PTR：Gmail guidelines 明确要求发送 IP 有对应 PTR，且 PTR hostname 的正向 A/AAAA 要回到同一个发送 IP。[16]
+
+### 5. 做 warm-up 和限流
+
+新 IP、新域名、新 DKIM selector 都需要信誉爬坡。不要第一天就把所有通知、营销、批量任务都切过来。
+
+建议：
+
+- 先发内部测试和低风险事务邮件。
+- 按域名限速，例如 Gmail、Outlook、企业域分别限制。
+- hard bounce 立即进入 suppression list，不要反复尝试。[14]
+- 投诉地址和 abuse/postmaster 邮箱要有人看。
+- 营销/订阅邮件要有退订，且尊重退订。
+
+### 6. 验收不是“收到了我自己的测试邮件”
+
+真正的验收清单应该是：
+
+| 检查 | 怎么看 |
+|---|---|
+| SMTP submission | 认证、TLS、错误密码拒绝、外部未认证 relay 被拒绝 |
+| 队列 | 模拟上游故障后邮件入队，恢复后能重试 |
+| DNS | SPF/DKIM/DMARC/PTR/正向解析全部一致 |
+| Headers | 收件箱里 `Authentication-Results` 显示 SPF/DKIM/DMARC pass |
+| 退信 | 不存在邮箱触发 hard bounce，系统能记录并停止后续发送 |
+| 投诉 | abuse/postmaster/feedback loop 或 provider webhook 有入口 |
+| 限流 | 单域名、单用户、单模板、全局频率都有限制 |
+| 观测 | 能按 message-id 查到提交、入队、投递、退信全过程 |
+| 安全 | 不是 open relay；凭据可轮换；日志不泄露 token/验证码全文 |
+
+## 方案对比表
+
+| 方案 | 自控程度 | 到达率起步 | 运维成本 | 最适合 |
+|---|---:|---:|---:|---|
+| 托管 SMTP/API | 低到中 | 高 | 低 | 产品早期、交易邮件、告警 |
+| 自建 gateway + 上游 relay | 中 | 高 | 中 | 多服务共享发信能力、需要审计/模板/限流 |
+| 自建 direct-send MTA | 高 | 低到中，需要爬坡 | 高 | 明确要控制投递链路且有运维能力 |
+| 完整邮箱套件 | 高 | 中，取决于 IP/DNS/策略 | 高 | 自托管团队邮箱、社区邮箱 |
+| mail sink / 测试 SMTP | 仅内部 | 不投递 | 低 | 本地、CI、预发测试 |
+
+## 我的建议
+
+如果目标是给 ChatArch 这类服务发邮件，我会按三阶段做：
+
+1. **第一阶段：托管 SMTP/API 直连**。先把 SPF/DKIM/DMARC 和 bounce webhook 打通，确保产品能发验证码、通知、告警。
+2. **第二阶段：自建 mail gateway**。所有服务只连 gateway；gateway 统一模板、限流、队列、日志、退信和 provider 路由。
+3. **第三阶段：选择性 direct-send 或完整邮箱**。只有当确实需要摆脱上游、拥有固定 IP/PTR、能维护 reputation 和反垃圾体系时，再引入 Postfix direct-send 或 mailcow/Mailu/Docker Mailserver 这类完整套件。
+
+换句话说，“自建 mail service”的正确起点通常不是“我要拥有一台全功能邮箱服务器”，而是“我要拥有一条可观测、可替换、不会丢信、不会变成 open relay 的发信链路”。
+
+## Sources
+
+[2] https://www.rfc-editor.org/rfc/rfc6409.html — RFC 6409: Message Submission for Mail
+[3] https://www.rfc-editor.org/rfc/rfc8314.html — RFC 8314: Cleartext Considered Obsolete
+[7] https://www.postfix.org/BASIC_CONFIGURATION_README.html — Postfix Basic Configuration
+[8] https://www.postfix.org/postconf.5.html — Postfix smtpd_relay_restrictions
+[12] https://maddy.email — maddy documentation
+[13] https://mailinabox.email/guide.html — Mail-in-a-Box guide
+[14] https://docs.aws.amazon.com/ses/latest/dg/send-email-concepts-deliverability.html — Amazon SES deliverability concepts
+[15] https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html — AWS EC2 port 25 throttling
+[16] https://support.google.com/a/answer/81126 — Google email sender guidelines
+[17] https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/README.md — Docker Mailserver README
+[19] https://raw.githubusercontent.com/Mailu/Mailu/master/README.md — Mailu README
