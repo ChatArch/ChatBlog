@@ -1,0 +1,289 @@
+---
+title: "实时语音转录怎么接：讯飞、阿里云、火山引擎、腾讯云四条路线"
+date: 2026-08-10
+slug: domestic-realtime-asr-provider-integration
+tags: [transcription, realtime, asr, speech-to-text, cloud, web]
+description: 只看“边说边出字”的实时 ASR，把科大讯飞、阿里云 Paraformer、火山引擎豆包语音、腾讯云实时语音识别拆成控制台开通、API 鉴权、WebSocket relay、部署位置、计费和 A/B 实测流程。
+toc_max_heading_level: 2
+---
+
+# 实时语音转录怎么接：讯飞、阿里云、火山引擎、腾讯云四条路线
+
+这次先把问题收窄到最核心的一层：**不要会议纪要，不要 AI 总结，不要录音上传后处理，只要“边说边出字”的实时语音转录**。
+
+这件事不是去 GitHub 找一个 Whisper WebUI 就能解决。真正的实时 ASR 交付，是浏览器或客户端持续推送音频流，ASR 服务持续返回 partial/final transcript。中文场景里，第一轮应该直接测成熟云服务：科大讯飞、阿里云、火山引擎、腾讯云。
+
+:::info 同主题前情
+- [网页录音到 AI 纪要：先选成熟 ASR，再看现成产品](/blog/mobile-web-realtime-transcription-pwa)：讲的是“网页录音 + ASR + AI 纪要”的整体路线。
+- [Speakr 实操：录完之后，转写和 AI 纪要到底在哪里](/blog/speakr-recording-ai-notes-practice)：确认了 Speakr 是录完/上传后处理，不是实时字幕。
+
+本文只回答下一步：**四家国内实时 ASR 分别怎么接、在哪里操作、需不需要服务器、我能帮你做到哪一步。**
+:::
+
+<!-- truncate -->
+
+:::tip 一句话结论
+四家接入形态本质一致：
+
+```text
+浏览器麦克风
+  -> 自建后端保护密钥 / 签名 / relay
+  -> 厂商 WebSocket 实时 ASR
+  -> partial/final transcript 实时上屏
+```
+
+如果目标是中文实时转录效果，第一轮不要急着押唯一赢家。建议按同一套页面同时测 **讯飞实时语音转写、火山豆包大模型流式语音识别、阿里云 Paraformer、腾讯云实时语音识别**，用真实会议/口述音频比较首字延迟、final 准确率、标点断句、中英混杂和成本。
+:::
+
+:::info 证据口径
+快照时间为 **2026-08-10 CST**。本文依据四家官方 API 文档和计费说明做静态接入分析，没有使用任何账号密钥，也没有发起付费调用。价格、免费额度、模型版本和资源包规格会变化，落地前必须以各家控制台和计费页为准。
+:::
+
+## 先看统一架构：为什么不能只写前端
+
+实时转录产品至少分四层：
+
+| 层 | 做什么 | 是否必须 |
+|---|---|---|
+| 浏览器/客户端 | 请求麦克风权限，采集音频，切成厂商要求的音频包 | 必须 |
+| 自建后端 | 保存 API key/Secret，生成签名或临时 session，转发 WebSocket | 强烈建议必须 |
+| 厂商 ASR | 接收音频流，返回识别事件 | 必须 |
+| 展示层 | 根据 partial/final/replace 事件实时上屏 | 必须 |
+
+后端 relay 的核心价值不是“多写一层代码”，而是保护密钥。厂商 API key、SecretId、SecretKey、AppID 等都不能放进浏览器。后端还要统一日志、时长统计、限流、错误码、provider 切换和成本报警。
+
+所以一个最小可用 demo 应该长这样：
+
+```text
+Start Recording
+  -> POST /api/asr/sessions { provider: "iflytek" | "aliyun" | "volc" | "tencent" }
+  -> 浏览器建立 ws://our-server/realtime-asr/<session_id>
+  -> 后端连接厂商 wss://...
+  -> 浏览器每 40ms / 100ms / 200ms 发音频包
+  -> 页面收到 transcript.delta / transcript.final
+Stop
+  -> 后端关闭厂商 WebSocket
+  -> 保存完整 transcript 和调用时长
+```
+
+## 1. 科大讯飞：中文实时转写第一轮必测
+
+讯飞这里要先分清两个产品：
+
+| 产品 | 更像什么 | 文档要点 |
+|---|---|---|
+| [实时语音转写](https://www.xfyun.cn/doc/asr/rtasr/API.html) | 连续实时 transcript，适合会议/长语音流 | WebSocket 长连接，文档说明实时返回文字流；支持 16k、16bit、单声道 PCM，建议每 40ms 发送 1280 字节 |
+| [语音听写（流式版）](https://www.xfyun.cn/doc/asr/voicedictation/API.html) | 1 分钟内即时语音转文字 | 文档明确写到“一边上传音频一边获得识别文本”，并支持动态修正 |
+
+如果目标是“会议/长录音实时字幕”，优先看实时语音转写；如果目标是短语音输入、语音助手、表单输入，再看语音听写流式版。
+
+### 怎么做
+
+1. 在讯飞开放平台注册并进入控制台。
+2. 创建应用，开通实时语音转写或语音听写流式版。
+3. 拿到 AppID 和接口密钥材料。
+4. 后端根据文档生成签名，连接 `wss://rtasr.xfyun.cn/v1/ws?...` 或 `wss://iat-api.xfyun.cn/v2/iat`。
+5. 浏览器把麦克风音频转成 16k/16bit/mono PCM。
+6. 后端按文档节奏发包，接收 JSON 结果。
+7. 页面根据返回结果追加或替换实时字幕；如果启用动态修正，要支持“上一段文字被更新”。
+
+### 需要在哪里操作
+
+| 操作 | 位置 |
+|---|---|
+| 开通服务、购买/试用、查看方言语种 | 讯飞开放平台控制台 |
+| 写签名和 relay | 自建后端，推荐部署在 `recall.cube` 或云服务器 |
+| 前端录音页面 | 任意 HTTPS 站点；如果给手机用，需要公网 HTTPS |
+| 模型运行 | 不需要自己跑模型，由讯飞云端承担 |
+
+### 我能帮你做什么
+
+我可以做前端实时字幕页、后端签名/relay、统一 transcript event、时长统计和 smoke test。需要你提供讯飞账号里开通后的密钥，密钥只放服务器环境变量，不写进前端和文章。
+
+## 2. 阿里云 Paraformer：百炼体系里的实时 ASR
+
+阿里云的主线是 [Paraformer 实时语音识别](https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-api-reference/)。它的 [WebSocket API 文档](https://help.aliyun.com/zh/model-studio/websocket-for-paraformer-real-time-service) 说明：通过 WebSocket 访问实时语音识别服务，请求头使用 `Authorization: Bearer <api_key>`，并建议使用业务空间专属域名；文档给出的固定形态是：
+
+```text
+wss://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference
+```
+
+这条路线适合已经在阿里云/百炼/通义体系里管理模型和 API 的团队。
+
+### 怎么做
+
+1. 登录阿里云，进入百炼 / Model Studio。
+2. 创建或选择 Workspace。
+3. 开通 Paraformer 实时语音识别，创建 API Key。
+4. 后端用 API Key 连接 WebSocket，不把 key 暴露到浏览器。
+5. 按阿里事件协议发送开始、持续音频、结束事件。
+6. 把服务端事件转成统一的 `transcript.partial` / `transcript.final`。
+7. 页面实时显示，停止后关闭 session。
+
+### 需要在哪里操作
+
+| 操作 | 位置 |
+|---|---|
+| 开通百炼、Workspace、API Key | 阿里云控制台 |
+| relay 服务 | `recall.cube` 或云服务器 |
+| 前端页面 | HTTPS public/local 域名 |
+| 模型运行 | 阿里云托管，不需要本地 GPU |
+
+### 付费/API 注意点
+
+阿里云模型和价格会跟随百炼模型服务页更新，落地前要查 [模型大全功能规格与计费](https://help.aliyun.com/zh/model-studio/models)。代码里只应该记录 provider、model、调用时长和账单维度，不要把具体价格写死成业务逻辑。
+
+### 我能帮你做什么
+
+我可以封装阿里云 adapter，把前端音频流转成 Paraformer WebSocket 事件；同时写测试脚本，记录延迟、最终文本、错误码和调用时长。
+
+## 3. 火山引擎 / 豆包语音：大模型流式 ASR 值得重点测
+
+火山现在有 [大模型流式语音识别 API](https://docs.volcengine.com/docs/6561/1354869?lang=zh)。官方文档列出三种 WebSocket 地址：
+
+```text
+双向流式模式：    wss://openspeech.bytedance.com/api/v3/sauc/bigmodel
+流式输入模式：    wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_nostream
+双向流式优化版：  wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async
+```
+
+文档说明双向流式会尽快返回识别到的字符，流式输入模式准确率更高；音频单包建议 100~200ms，发包间隔建议 100~200ms，双向流式模式推荐 200ms 分包。它还提供二遍识别、ITN、标点、顺滑、说话人等参数，适合认真测试“快”和“准”的折中。
+
+### 怎么做
+
+1. 登录火山引擎控制台，开通豆包语音 / 语音识别大模型。
+2. 新版控制台获取 `X-Api-Key`；旧版控制台可能还涉及 App Key / Access Key。
+3. 选择资源 ID：文档列出小时版和并发版，例如 `volc.bigasr.sauc.duration`、`volc.seedasr.sauc.duration` 等。
+4. 后端连接 `bigmodel_async` 或 `bigmodel`，并在 HTTP header 中放入鉴权和资源 ID。
+5. WebSocket 建连后，先发送 full client request，再持续发送 audio only request。
+6. 浏览器音频按 100~200ms 分包；后端负责二进制 header、压缩、序列号、错误码解析。
+7. 页面显示快速结果；如果开启二遍识别，最终结果要覆盖临时结果。
+
+### 需要在哪里操作
+
+| 操作 | 位置 |
+|---|---|
+| 开通服务、API Key、资源包/后付费 | 火山引擎控制台 |
+| WebSocket 二进制协议封装 | 自建后端 |
+| 实时前端 | HTTPS 页面 |
+| 模型运行 | 火山云端，不需要自建 GPU |
+
+### 付费/API 注意点
+
+[火山计费说明](https://docs.volcengine.com/docs/6561/1359370?lang=zh) 在当前快照里列出资源包预付费和按调用后付费：豆包流式语音识别模型 2.0、以及大模型流式语音识别都有按小时计费项。文章里只适合引用“按音频时长折算小时、资源包/后付费并存”这个计费结构；具体价格要以控制台购买页为准。
+
+### 我能帮你做什么
+
+我可以实现火山二进制 WebSocket adapter，记录 `X-Tt-Logid` 方便排障，做小时版/并发版 resource id 配置，并把二遍识别结果映射成统一 final transcript。
+
+## 4. 腾讯云：控制台和计费体系清楚，适合已有腾讯云团队
+
+腾讯云官方 [实时语音识别 WebSocket](https://cloud.tencent.com/document/product/1093/48982) 文档明确写到：服务采用 WebSocket 协议，对实时音频流进行识别，同步返回识别结果，达到“边说边出文字”的效果。文档还说明使用前要开通语音识别服务，进入 API 密钥管理生成 AppID、SecretID 和 SecretKey，用于签名鉴权。
+
+文档给出的请求地址形态是：
+
+```text
+wss://asr.cloud.tencent.com/asr/v2/<appid>?{请求参数}
+```
+
+接口要求里还列出 16k 或 8k 采样率、16bits、单声道，以及 pcm、wav、opus、speex、silk、mp3、m4a、aac 等音频格式。
+
+### 怎么做
+
+1. 登录腾讯云并开通语音识别 ASR。
+2. 在 API 密钥管理里创建 AppID、SecretID、SecretKey。
+3. 后端按文档生成签名参数，连接 `wss://asr.cloud.tencent.com/asr/v2/<appid>?...`。
+4. 浏览器采集音频，转换成腾讯云支持的采样率/编码。
+5. 后端发送音频流，接收识别结果。
+6. 页面显示实时字幕，并在停止后关闭连接。
+
+### 需要在哪里操作
+
+| 操作 | 位置 |
+|---|---|
+| 开通 ASR、创建密钥、开启后付费 | 腾讯云控制台 |
+| 签名/relay | 自建后端 |
+| 前端页面 | HTTPS 域名 |
+| 模型运行 | 腾讯云托管，不需要本地 GPU |
+
+### 付费/API 注意点
+
+腾讯云 [计费概述](https://cloud.tencent.com/document/product/1093/35686) 说明语音识别提供预付费和后付费两种主要计费模式，开通后按“免费额度 > 预付费 > 后付费”的顺序扣费；后付费默认关闭，需要手动在控制台开启。这个设计适合做成本控制：先不开后付费，先用免费额度/小资源包跑 smoke test。
+
+### 我能帮你做什么
+
+我可以写腾讯云签名逻辑、WebSocket relay、统一事件映射和用量统计；同时在配置里默认关闭高风险自动扩容/无限后付费，避免测试阶段成本失控。
+
+## 到底需不需要云服务器
+
+| 场景 | 需要云服务器吗 | 推荐位置 | 说明 |
+|---|---|---|---|
+| 写博客/调研 | 不需要 | 本机 | 只读官方文档即可 |
+| 本机开发 demo | 不一定 | 本机 localhost | 浏览器允许 localhost 麦克风，但手机试用不方便 |
+| 手机/外部用户试用 | 需要公网 HTTPS | `recall.cube` + public/local 入口 | 麦克风权限需要安全上下文，API key 要留在后端 |
+| 内部长期服务 | 需要稳定服务机 | `recall.cube` 或云服务器 | 要跑 relay、日志、限流、成本统计 |
+| 高并发商用 | 需要云上扩容 | 云服务器/K8s | 需要监控、SLA、容量规划 |
+
+所以第一版不需要买 GPU，也不需要在本地跑大模型。真正需要的是一个很薄的服务：接收浏览器音频、保护密钥、连接厂商 WebSocket、把结果统一成页面能显示的事件。
+
+## 我能帮你做完整流程吗
+
+可以，但需要把“我能代办”和“必须由账号所有者完成”的边界分清：
+
+| 步骤 | 我能做吗 | 需要你做什么 |
+|---|---|---|
+| 官方文档调研、方案设计 | 可以 | 无 |
+| 云服务开通指引 | 可以 | 你登录对应控制台，完成实名/付费/协议确认 |
+| API key 创建 | 我可以指导，但不应接触明文长期密钥 | 你创建 key，按安全方式写入服务器 secret |
+| 后端 relay / 前端实时字幕 | 可以 | 确认部署域名和服务位置 |
+| 四家 A/B 测试 | 可以 | 提供可测试的真实中文音频/读稿，或授权现场麦克风测试 |
+| 成本统计和推荐报告 | 可以 | 提供账单/控制台用量截图或 API 结果，不提供密钥明文 |
+| 正式上线 | 可以 | 确认预算、并发、保留时长、合规和数据策略 |
+
+我建议服务地址按这类模式做：
+
+```text
+https://realtime-asr.public.wzhecnu.cn/
+https://realtime-asr.local.wzhecnu.cn/
+```
+
+页面里可以有一个 provider 下拉框：讯飞 / 阿里 / 火山 / 腾讯。每次测试保存同样的指标：
+
+| 指标 | 为什么重要 |
+|---|---|
+| 首字延迟 | 用户是否感觉“实时” |
+| partial 抖动 | 中间文字是否频繁大幅回改 |
+| final 准确率 | 最终 transcript 能不能用 |
+| 标点断句 | 是否接近可读稿 |
+| 中英混杂/术语 | ChatArch、GitHub、模型名、服务名能不能识别 |
+| 噪声/远场 | 会议室、扬声器外放、多人环境是否可靠 |
+| 成本 | 每小时、并发、资源包/后付费是否可接受 |
+| 接入复杂度 | 签名、SDK、错误码、日志是否好维护 |
+
+## 推荐的第一轮执行顺序
+
+不要直接宣布“某一家最好”。没有拿你的真实音频跑过，任何效果排名都只是厂商宣传或经验印象。更稳的做法是：
+
+1. **先开低成本 smoke**：四家各跑 1~3 分钟同一段中文读稿。
+2. **先测效果，再谈价格**：如果 transcript 不准，便宜也没意义。
+3. **把火山和讯飞放第一批实测**：一个是中文 ASR 老牌强项，一个是大模型流式能力值得看。
+4. **阿里云作为工程化路线对照**：如果团队已经有阿里云/百炼账号，集成和治理会顺。
+5. **腾讯云作为控制台/计费体系对照**：如果已有腾讯云账号和费用体系，它是自然候选。
+6. **最终只选 1 个主 provider + 1 个备 provider**：产品层保留 adapter，不把前端写死在某一家协议上。
+
+最后的落地判断应该基于实测表，而不是品牌印象：
+
+```text
+同一段音频
+  -> 四家同时或顺序识别
+  -> 统一 transcript event
+  -> 统一指标表
+  -> 选主 provider + 备 provider
+```
+
+## 资料来源
+
+- 科大讯飞：[实时语音转写 API](https://www.xfyun.cn/doc/asr/rtasr/API.html)、[语音听写（流式版）WebAPI](https://www.xfyun.cn/doc/asr/voicedictation/API.html)、[实时语音转写服务页](https://www.xfyun.cn/services/rtasr)
+- 阿里云：[Paraformer 实时语音识别 API 参考](https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-api-reference/)、[Paraformer WebSocket API](https://help.aliyun.com/zh/model-studio/websocket-for-paraformer-real-time-service)、[模型大全功能规格与计费](https://help.aliyun.com/zh/model-studio/models)
+- 火山引擎：[大模型流式语音识别 API](https://docs.volcengine.com/docs/6561/1354869?lang=zh)、[豆包语音计费说明](https://docs.volcengine.com/docs/6561/1359370?lang=zh)
+- 腾讯云：[实时语音识别（WebSocket）](https://cloud.tencent.com/document/product/1093/48982)、[语音识别计费概述](https://cloud.tencent.com/document/product/1093/35686)
