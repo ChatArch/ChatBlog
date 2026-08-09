@@ -87,10 +87,12 @@
 <p>代表：Mail-in-a-Box、mailcow、Mailu、Docker Mailserver、Modoboa、iRedMail。</p>
 <p>这类方案不是只解决“发系统邮件”，而是把邮箱系统完整打包：Postfix、Dovecot、Webmail、反垃圾、TLS、DKIM、DMARC、账号管理、备份、管理后台等。</p>
 <ul>
-<li class="">Docker Mailserver 自称是 production-ready、fullstack 但 simple 的容器化邮件服务器，包含 SMTP、IMAP、LDAP、反垃圾、反病毒等；README 列出的组件包括 Postfix、Dovecot、Rspamd、ClamAV、OpenDKIM/OpenDMARC、Fail2ban 和证书支持。[17]</li>
-<li class="">Mailu 是一组 Docker images，目标是易安装、易维护、功能完整的邮件服务器；它列出的能力包括 IMAP、SMTP、Submission、Webmail/Admin、TLS、DANE、MTA-STS、outgoing DKIM、DMARC/SPF、反垃圾等。[19]</li>
-<li class="">Mail-in-a-Box 更像“把整台机器变成一台邮箱盒子”。它的 setup guide 明确不建议在家用网络运行，因为住宅网络常见 25 端口阻断、黑名单、动态 IP 和不可配置 reverse DNS；同时它要求安装在全新的专用机器上，并会自管理配置。[13]</li>
+<li class=""><strong>Docker Mailserver / DMS</strong>：适合已经熟悉 Docker Compose、想要“文件配置、少 Web UI、可版本化”的人。DMS 自称是 production-ready、fullstack 但 simple 的容器化邮件服务器，包含 SMTP、IMAP、LDAP、反垃圾、反病毒等；README 列出的组件包括 Postfix、Dovecot、Rspamd、ClamAV、OpenDKIM/OpenDMARC、Fail2ban 和证书支持。[17] 它更像一套干净的邮件基础设施组件包，不像 mailcow 那样以管理后台和群件体验为中心。</li>
+<li class=""><strong>mailcow</strong>：适合想要完整 Web 管理体验的人。它通常包含 Postfix、Dovecot、SOGo、Rspamd、ACME、管理后台等，适合“我要运营一个团队邮箱系统”，而不只是“让应用能发邮件”。</li>
+<li class=""><strong>Mailu</strong>：适合想要容器化完整邮箱栈、并接受按组件理解配置的人。Mailu 是一组 Docker images，目标是易安装、易维护、功能完整的邮件服务器；它列出的能力包括 IMAP、SMTP、Submission、Webmail/Admin、TLS、DANE、MTA-STS、outgoing DKIM、DMARC/SPF、反垃圾等。[19]</li>
+<li class=""><strong>Mail-in-a-Box</strong>：适合“一台新机器专门做邮箱”的路径。它更像“把整台机器变成一台邮箱盒子”。它的 setup guide 明确不建议在家用网络运行，因为住宅网络常见 25 端口阻断、黑名单、动态 IP 和不可配置 reverse DNS；同时它要求安装在全新的专用机器上，并会自管理配置。[13]</li>
 </ul>
+<p>如果你脑子里第一个想到的是“Docker mail service”，大概率说的就是 Docker Mailserver 这一类。它可以作为自托管邮箱的最小具体方案，但前提是你真的要收信/管邮箱账号；如果只是产品验证码，DMS 反而会把 MX、IMAP、反垃圾、备份等问题也带进来。</p>
 <p>优点：</p>
 <ul>
 <li class="">收信、发信、Webmail、账号、反垃圾、证书等开箱集成。</li>
@@ -104,6 +106,35 @@
 <li class="">一旦作为正式邮箱使用，数据可靠性和迁移成本会变高。</li>
 </ul>
 <p>适合：<strong>真的要拥有邮箱账户和收信能力，而不是只给业务系统发通知</strong>。</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="docker-mailserver一条更具体的落地路线">Docker Mailserver：一条更具体的落地路线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/mail-service-deployment-options#docker-mailserver%E4%B8%80%E6%9D%A1%E6%9B%B4%E5%85%B7%E4%BD%93%E7%9A%84%E8%90%BD%E5%9C%B0%E8%B7%AF%E7%BA%BF" class="hash-link" aria-label="Docker Mailserver：一条更具体的落地路线的直接链接" title="Docker Mailserver：一条更具体的落地路线的直接链接" translate="no">​</a></h4>
+<p>Butterfly 旧文里写过一版 DMS 搭建教程，核心路径可以抽象成下面这 8 步。这里保留流程形状，域名、IP、密码和 DKIM key 都用占位符。</p>
+<ol>
+<li class=""><strong>准备主机名和目录</strong>：确定 <code>mail.example.com</code>，并把 DMS 配置、邮件数据、状态、日志放到可备份目录，例如 <code>./docker-data/dms/{config,mail-data,mail-state,mail-logs}</code>。</li>
+<li class=""><strong>下载官方 compose 和 env 模板</strong>：从 Docker Mailserver 官方仓库拿 <code>compose.yaml</code> 和 <code>mailserver.env</code>，不要从博客复制过期镜像 tag；上线前固定镜像版本。</li>
+<li class=""><strong>设置容器主机名</strong>：<code>hostname: mail.example.com</code>。这一步不是随便取名，它要和 A/PTR、证书、HELO/EHLO 解释得通。</li>
+<li class=""><strong>先配 DNS，再启动生产流量</strong>：</li>
+</ol>
+<div class="language-dns codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-dns codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">example.com.       MX 10 mail.example.com.</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">mail.example.com.  A     203.0.113.10</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">203.0.113.10       PTR   mail.example.com.</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">example.com.       TXT   "v=spf1 mx -all"</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">_dmarc.example.com. TXT  "v=DMARC1; p=none; rua=mailto:dmarc-report@example.com"</span><br></div></code></pre></div></div>
+<ol start="5">
+<li class=""><strong>配置 TLS 证书</strong>：可以让 DMS 使用 Let’s Encrypt 证书，例如 <code>SSL_TYPE=letsencrypt</code>，再把宿主机证书目录只读挂入容器。生产环境要保证证书域名就是 <code>mail.example.com</code>。</li>
+<li class=""><strong>启动服务并生成 DKIM</strong>：</li>
+</ol>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">docker compose up -d</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -it mailserver setup config dkim</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker compose restart mailserver</span><br></div></code></pre></div></div>
+<p>然后把生成的 <code>mail._domainkey.example.com</code> TXT 记录写入 DNS。不要把私钥或完整真实 DKIM 公钥贴进文章、Issue 或聊天。</p>
+<ol start="7">
+<li class=""><strong>添加邮箱用户</strong>：</li>
+</ol>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -ti mailserver setup email add user@example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -ti mailserver setup email update user@example.com</span><br></div></code></pre></div></div>
+<p>这一步意味着你已经在运营 mailbox，不只是发信 relay；后续要考虑密码策略、离职/禁用、备份恢复和 IMAP 客户端支持。</p>
+<ol start="8">
+<li class=""><strong>开放并验证端口</strong>：</li>
+</ol>
+<table><thead><tr><th style="text-align:right">端口</th><th>作用</th><th>DMS 里通常意味着什么</th></tr></thead><tbody><tr><td style="text-align:right">25</td><td>SMTP server-to-server</td><td>收外部邮件、direct-send 投递；常被云厂商限制</td></tr><tr><td style="text-align:right">465</td><td>implicit TLS submission</td><td>给客户端/应用安全提交邮件</td></tr><tr><td style="text-align:right">587</td><td>STARTTLS submission</td><td>推荐的客户端/应用提交入口</td></tr><tr><td style="text-align:right">143</td><td>IMAP + STARTTLS</td><td>明文连接后升级 TLS，很多场景可不公开</td></tr><tr><td style="text-align:right">993</td><td>IMAPS</td><td>客户端安全收信入口</td></tr></tbody></table>
+<p>最小验收不是“我给自己发了一封能收到”，而是同时检查：</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">dig +short MX example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">dig +short A mail.example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">dig +short -x 203.0.113.10</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">openssl s_client -connect mail.example.com:465 -servername mail.example.com &lt;/dev/null</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">openssl s_client -starttls smtp -connect mail.example.com:587 -servername mail.example.com &lt;/dev/null</span><br></div></code></pre></div></div>
+<p>再发一封到 Gmail/Outlook，查看原始邮件头里的 <code>Authentication-Results</code>，确认 SPF、DKIM、DMARC 至少在测试路径上 pass。</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="dms-之外什么时候换方案">DMS 之外什么时候换方案<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/mail-service-deployment-options#dms-%E4%B9%8B%E5%A4%96%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E6%8D%A2%E6%96%B9%E6%A1%88" class="hash-link" aria-label="DMS 之外什么时候换方案的直接链接" title="DMS 之外什么时候换方案的直接链接" translate="no">​</a></h4>
+<table><thead><tr><th>如果你真正想要</th><th>更合适的方案</th><th>原因</th></tr></thead><tbody><tr><td>只给业务系统发验证码/通知</td><td>托管 SMTP/API 或自建 gateway + 上游 relay</td><td>不需要接管 MX/IMAP/账号/反垃圾</td></tr><tr><td>Docker Compose 自托管完整邮箱，偏配置文件</td><td>Docker Mailserver</td><td>简洁、可版本化、少数据库依赖</td></tr><tr><td>完整后台、Webmail、管理体验</td><td>mailcow</td><td>更像成品邮箱系统</td></tr><tr><td>容器化完整邮箱栈，可按组件理解</td><td>Mailu</td><td>模块化 Docker images，功能覆盖完整</td></tr><tr><td>专用新机器一键托管个人/小组织邮箱</td><td>Mail-in-a-Box</td><td>opinionated，自动接管整机配置</td></tr><tr><td>学底层或做最小 direct-send</td><td>Postfix + Dovecot/Rspamd/OpenDKIM 或 maddy</td><td>更可控，但维护成本最高</td></tr></tbody></table>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-e一体化轻量服务器--内部测试-mail-sink">方案 E：一体化轻量服务器 / 内部测试 mail sink<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/mail-service-deployment-options#%E6%96%B9%E6%A1%88-e%E4%B8%80%E4%BD%93%E5%8C%96%E8%BD%BB%E9%87%8F%E6%9C%8D%E5%8A%A1%E5%99%A8--%E5%86%85%E9%83%A8%E6%B5%8B%E8%AF%95-mail-sink" class="hash-link" aria-label="方案 E：一体化轻量服务器 / 内部测试 mail sink的直接链接" title="方案 E：一体化轻量服务器 / 内部测试 mail sink的直接链接" translate="no">​</a></h3>
 <p>maddy 是另一个有意思的方向：它把 SMTP MTA、MX、IMAP、DKIM/SPF/DMARC/DANE/MTA-STS 等功能整合到一个 daemon，目标是用统一配置替代 Postfix、Dovecot、OpenDKIM、OpenSPF、OpenDMARC 等多组件组合。[12] 但它也在首页提醒 IMAP storage 仍是 beta，若需要稳定、功能丰富的 IMAP，可能仍应选择 Dovecot。[12]</p>
 <p>另外，开发环境里经常需要的不是“发到真实互联网”，而是 mail sink：Mailpit、MailHog、smtp4dev 这类工具可以接收测试邮件、展示 HTML、检查 headers，但不会真正投递。它们适合 CI、预发和本地调试，不应该被误认为生产发信服务。</p>
@@ -316,126 +347,6 @@
             <category>feishu</category>
             <category>agent</category>
             <category>chatarch</category>
-        </item>
-        <item>
-            <title><![CDATA[Speakr 实操：录完之后，转写和 AI 纪要到底在哪里]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice</guid>
-            <pubDate>Sun, 09 Aug 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[一次 Speakr 自托管实操复盘：它不是实时字幕工具，而是录音或上传后进入后台 ASR，再在详情页显示 Transcription 和 AI Summary / Minutes；重点说明录音后必须点 Upload Recording & Notes、AI 后处理入口在哪里，以及什么时候该换实时 ASR 路线。]]></description>
-            <content:encoded><![CDATA[<p>前两篇文章先做了大地图：<a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source">录音转写与会议笔记自建选型</a> 负责区分会议 bot、录音文件后台、字幕工具和 ASR 底座；<a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/mobile-web-realtime-transcription-pwa">网页录音到 AI 纪要</a> 负责把需求拆成网页录音、成熟 ASR 和 AI 后处理三层。</p>
-<p>这篇只补一个实操问题：<strong>如果先部署 Speakr，用户录完音以后，文字和 AI 纪要到底在哪里？</strong></p>
-<p>结论先说清楚：Speakr 不是“边说边实时出字”的字幕工具。它更像一个自托管的录音/上传后台：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">录音 / 上传音频</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 点击上传进入后台任务</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; ASR 生成 Transcription</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; LLM 基于 transcript 生成 Summary / Minutes</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 在 recording detail 里查看和导出</span><br></div></code></pre></div></div>
-<p>如果你期待的是打开网页、点录音、一边说一边看到 partial transcript，那应该换 Deepgram、AssemblyAI、Azure Speech、OpenAI Realtime、FunASR streaming、sherpa-onnx streaming、WhisperLive 这类实时 ASR 路线，而不是继续把 Speakr 当实时字幕用。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>Speakr 的 AI 后处理不是一个显眼的“AI 转写”按钮。**转写入口是录音/上传完成后的后台任务，结果在详情页左侧 <code>Transcription</code>；AI 会议记录在右侧 <code>Summary -&gt; Minutes</code>。**录音模式下最容易漏的一步，是 Stop 后还要点底部的 <strong>Upload Recording &amp; Notes</strong>。</p></div></div>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>实操口径</div><div class="admonitionContent_BuS1"><p>本文截图来自一次自托管 Speakr 测试实例。服务侧接了一个 OpenAI-Whisper-compatible ASR endpoint 和一个 LLM summary provider；文中不公开测试实例域名、账号、密码、API key、内部端口或服务目录。截图只展示产品 UI 和处理结果。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先纠正一个误解speakr-不是纯录音也不是实时字幕">先纠正一个误解：Speakr 不是纯录音，也不是实时字幕<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E5%85%88%E7%BA%A0%E6%AD%A3%E4%B8%80%E4%B8%AA%E8%AF%AF%E8%A7%A3speakr-%E4%B8%8D%E6%98%AF%E7%BA%AF%E5%BD%95%E9%9F%B3%E4%B9%9F%E4%B8%8D%E6%98%AF%E5%AE%9E%E6%97%B6%E5%AD%97%E5%B9%95" class="hash-link" aria-label="先纠正一个误解：Speakr 不是纯录音，也不是实时字幕的直接链接" title="先纠正一个误解：Speakr 不是纯录音，也不是实时字幕的直接链接" translate="no">​</a></h2>
-<p>Speakr 不是只能把音频录下来。它实际打通了这些层：</p>
-<table><thead><tr><th>层</th><th>在 Speakr 里的表现</th><th>容易误解的点</th></tr></thead><tbody><tr><td>录音 / 上传</td><td><code>New Recording</code> 弹窗里可以选文件、Microphone、System Audio</td><td>录音过程中不会持续显示 transcript</td></tr><tr><td>ASR 转写</td><td>上传后进入处理队列，完成后显示 <code>Transcription</code></td><td>不是一个叫“AI 转写”的按钮</td></tr><tr><td>AI 后处理</td><td>详情页右侧 <code>Summary</code> tab 里生成 <code>Minutes</code></td><td>前提是服务端已经配置 LLM provider</td></tr><tr><td>展示 / 导出</td><td>transcript、summary、notes、stats、复制/下载图标</td><td>详情页入口不明显，容易停在录音弹窗里</td></tr></tbody></table>
-<p>所以它不是“纯录音”，也不是“实时字幕”。更准确地说，它是 <strong>录音/上传后的转写与纪要工作台</strong>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="录音模式stop-之后还要点上传">录音模式：Stop 之后还要点上传<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E5%BD%95%E9%9F%B3%E6%A8%A1%E5%BC%8Fstop-%E4%B9%8B%E5%90%8E%E8%BF%98%E8%A6%81%E7%82%B9%E4%B8%8A%E4%BC%A0" class="hash-link" aria-label="录音模式：Stop 之后还要点上传的直接链接" title="录音模式：Stop 之后还要点上传的直接链接" translate="no">​</a></h2>
-<p>最容易踩坑的是录音模式。很多录音产品在你点 Stop 后就自动开始处理，但 Speakr 这一步更像“先把浏览器本地录音准备好，再由你确认上传”。</p>
-<p>录音停止后，页面会出现音频预览、Recording Notes、Upload Settings，以及底部蓝色按钮：</p>
-<p><img decoding="async" loading="lazy" alt="Speakr 录音停止后的上传按钮" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/recording-upload-action-1fdf46ad55c74fd2e087ea8289b882fb.png" width="896" height="876" class="img_ev3q"></p>
-<p>这里真正进入后端处理的是底部按钮：<strong>Upload Recording &amp; Notes</strong>。</p>
-<p>如果只点了 Stop，然后留在这个页面等，用户会觉得“录完什么都没有”。这不是 ASR 或 AI 一定坏了，而是音频还没有作为 recording 上传到服务器。正确流程是：</p>
-<ol>
-<li class="">点 <strong>New Recording</strong>；</li>
-<li class="">选择 <strong>Microphone</strong>，允许浏览器麦克风权限；</li>
-<li class="">说完后点 <strong>Stop Recording</strong>；</li>
-<li class="">如有需要，在 <strong>Recording Notes</strong> 填补充备注；</li>
-<li class="">点底部 <strong>Upload Recording &amp; Notes</strong>；</li>
-<li class="">等待后台处理完成；</li>
-<li class="">从左侧 recording 列表点进新记录。</li>
-</ol>
-<p>这一点要写进任何面向普通用户的 quick start，否则他们很容易把“还没上传”理解成“AI 没接上”。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="文件上传模式看左下角-processing-queue">文件上传模式：看左下角 Processing Queue<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%A8%A1%E5%BC%8F%E7%9C%8B%E5%B7%A6%E4%B8%8B%E8%A7%92-processing-queue" class="hash-link" aria-label="文件上传模式：看左下角 Processing Queue的直接链接" title="文件上传模式：看左下角 Processing Queue的直接链接" translate="no">​</a></h2>
-<p>文件上传模式更直观一些：在 <code>Upload Audio</code> 弹窗里选文件或拖拽文件，点 <strong>Upload Audio</strong> 后，左下角会出现 <code>Processing Queue</code>。</p>
-<p><img decoding="async" loading="lazy" alt="Speakr 上传后进入转写队列" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/upload-processing-queue-c91b9aa5cce82d96f2f6306ebe14a9d0.png" width="1110" height="888" class="img_ev3q"></p>
-<p>这个队列会显示当前任务，例如：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Processing Queue</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">1 transcribing</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Recording - jfk.flac</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Transcribing audio...</span><br></div></code></pre></div></div>
-<p>实操里还遇到一个典型运维问题：如果入口 Nginx 或前置反代没有放大 <code>client_max_body_size</code>，稍大一点的音频文件会被挡在入口层，浏览器只看到上传失败或 413。这种情况下 ASR 和 LLM 都还没被调用，不能从“没有 AI 结果”倒推出“AI 没配置”。</p>
-<p>对自托管服务，至少要检查三层：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">浏览器上传</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 公网/本地反代 body size</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; Speakr app MAX_CONTENT_LENGTH</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; ASR worker / summary worker</span><br></div></code></pre></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="完成后左边是-transcription右边是-summary--minutes">完成后：左边是 Transcription，右边是 Summary / Minutes<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E5%AE%8C%E6%88%90%E5%90%8E%E5%B7%A6%E8%BE%B9%E6%98%AF-transcription%E5%8F%B3%E8%BE%B9%E6%98%AF-summary--minutes" class="hash-link" aria-label="完成后：左边是 Transcription，右边是 Summary / Minutes的直接链接" title="完成后：左边是 Transcription，右边是 Summary / Minutes的直接链接" translate="no">​</a></h2>
-<p>后台处理完成后，左侧列表里会出现一条 recording。点进去后，详情页的核心区域是左右两栏：</p>
-<ul>
-<li class="">左侧：<code>Transcription</code>，ASR 识别出来的原文；</li>
-<li class="">右侧：<code>Summary</code>，里面会生成 <code>Minutes</code>；</li>
-<li class="">右侧还有 <code>Notes</code> 和 <code>Stats</code> tab；</li>
-<li class="">顶部和 tab 旁边有复制、下载、编辑等操作图标。</li>
-</ul>
-<p><img decoding="async" loading="lazy" alt="Speakr 详情页里的 Transcription 和 Summary Minutes" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/transcription-summary-minutes-42e50d18735917852741e3758cbacc52.png" width="1120" height="978" class="img_ev3q"></p>
-<p>这张截图里，左侧 transcript 是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">And so my fellow Americans, ask not what your country can do for you,</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ask what you can do for your country.</span><br></div></code></pre></div></div>
-<p>右侧 <code>Summary -&gt; Minutes</code> 则已经把它整理成会议纪要式结构，包括 participants、recording date/title、opening statement、key issues discussed 等。</p>
-<p>也就是说，Speakr 的 AI 后处理不是在录音弹窗里弹出一个“AI 转写”按钮，而是在 <strong>记录详情页</strong> 里显示成 <code>Summary / Minutes</code>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-转写这个说法要拆开">“AI 转写”这个说法要拆开<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#ai-%E8%BD%AC%E5%86%99%E8%BF%99%E4%B8%AA%E8%AF%B4%E6%B3%95%E8%A6%81%E6%8B%86%E5%BC%80" class="hash-link" aria-label="“AI 转写”这个说法要拆开的直接链接" title="“AI 转写”这个说法要拆开的直接链接" translate="no">​</a></h2>
-<p>实际产品里最好不要把所有东西都叫“AI 转写”。这里有三层：</p>
-<table><thead><tr><th>名称</th><th>做什么</th><th>在 Speakr 里怎么看</th></tr></thead><tbody><tr><td>ASR / speech-to-text</td><td>把音频变成文字</td><td><code>Transcription</code></td></tr><tr><td>AI summary / minutes</td><td>把 transcript 整理成摘要、纪要、要点</td><td><code>Summary -&gt; Minutes</code></td></tr><tr><td>Notes</td><td>用户自己补充的人工备注</td><td><code>Notes</code> tab 或录音上传前的 Recording Notes</td></tr></tbody></table>
-<p>如果用户问“AI 在哪里”，最准确的回答是：</p>
-<blockquote>
-<p>先等 ASR 转写完成，再打开 recording detail；左边看 ASR 原文，右边 <code>Summary</code> 里看 AI 会议纪要。</p>
-</blockquote>
-<p>如果右侧没有 Summary / Minutes，需要排查的不是录音按钮，而是：</p>
-<ol>
-<li class="">这条 recording 是否已经处理到 completed；</li>
-<li class="">ASR 是否返回了 transcript；</li>
-<li class="">LLM provider 是否配置成功；</li>
-<li class="">summary worker 是否执行成功；</li>
-<li class="">当前用户是否开启 auto summarization 或相关 summary 功能。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="bubble--chat-不要说过头">Bubble / Chat 不要说过头<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#bubble--chat-%E4%B8%8D%E8%A6%81%E8%AF%B4%E8%BF%87%E5%A4%B4" class="hash-link" aria-label="Bubble / Chat 不要说过头的直接链接" title="Bubble / Chat 不要说过头的直接链接" translate="no">​</a></h2>
-<p>Speakr UI 里有一个 <code>Bubble</code> 控件，也有项目文档提到 per-recording chat / inquire 之类能力。但在这次测试实例里，<code>Inquire Mode</code> 不是主验证对象；实际已验证的 AI 后处理是 <strong>Summary / Minutes</strong>。</p>
-<p>所以对用户交付时不要说“聊天已经完整打通”，除非你真的做到这几步：</p>
-<ol>
-<li class="">打开 recording 的 chat / inquire 面板；</li>
-<li class="">对当前 transcript 提问；</li>
-<li class="">收到 LLM 返回；</li>
-<li class="">回读页面或 API 确认答案来自该 recording。</li>
-</ol>
-<p>在这次实践里，稳妥表述是：<strong>转写和 AI Minutes 已打通；Chat/Inquire 需要单独启用和验证。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这条路线适合什么不适合什么">这条路线适合什么，不适合什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E8%BF%99%E6%9D%A1%E8%B7%AF%E7%BA%BF%E9%80%82%E5%90%88%E4%BB%80%E4%B9%88%E4%B8%8D%E9%80%82%E5%90%88%E4%BB%80%E4%B9%88" class="hash-link" aria-label="这条路线适合什么，不适合什么的直接链接" title="这条路线适合什么，不适合什么的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>需求</th><th>Speakr 是否合适</th><th>说明</th></tr></thead><tbody><tr><td>浏览器录音或上传音频</td><td>合适</td><td>UI 已经有 recording/upload</td></tr><tr><td>录完后后台转写</td><td>合适</td><td>需要配置 ASR endpoint/provider</td></tr><tr><td>自动生成会议纪要</td><td>合适</td><td>需要配置 LLM provider</td></tr><tr><td>管理历史录音、复制/导出</td><td>合适</td><td>这是产品壳的优势</td></tr><tr><td>边说边实时出字</td><td>不合适</td><td>这不是当前 UI 主线</td></tr><tr><td>实时纠错/实时字幕/会中辅助</td><td>不合适</td><td>应换 streaming ASR + 自研薄前端</td></tr></tbody></table>
-<p>因此，Speakr 可以作为第一版“录完后处理”的自托管产品壳：先让用户有一个网页，能录音、能上传、能生成 transcript 和 minutes。</p>
-<p>但如果真正目标是实时字幕，它应该降级成产品参考，而不是被硬拧成实时方案。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="自托管落地时的最小检查单">自托管落地时的最小检查单<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E8%87%AA%E6%89%98%E7%AE%A1%E8%90%BD%E5%9C%B0%E6%97%B6%E7%9A%84%E6%9C%80%E5%B0%8F%E6%A3%80%E6%9F%A5%E5%8D%95" class="hash-link" aria-label="自托管落地时的最小检查单的直接链接" title="自托管落地时的最小检查单的直接链接" translate="no">​</a></h2>
-<p>一次可交付的 Speakr 部署，不应该只检查登录页 200。至少要走完下面这条链：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">1. Web app 能登录</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">2. ASR endpoint 能处理一段短音频</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">3. Speakr 上传一段短音频</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">4. 任务进入 Processing Queue</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">5. recording 状态变成 completed</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">6. 详情页左侧出现 Transcription</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">7. 详情页右侧出现 Summary / Minutes</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">8. 反代允许目标音频大小，不再被 413 拦截</span><br></div></code></pre></div></div>
-<p>只有第 6、7 步都成立，才可以说“录音转文字 + AI 后处理”已经打通。</p>
-<p>如果只验证了 ASR endpoint，却没有通过 Speakr 自己上传一条 recording，那还不能说明产品体验可用；如果只打开了 Speakr 登录页，也更不能说明用户能看到文字和 AI 纪要。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="给用户的-quick-start-可以这么写">给用户的 quick start 可以这么写<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E7%BB%99%E7%94%A8%E6%88%B7%E7%9A%84-quick-start-%E5%8F%AF%E4%BB%A5%E8%BF%99%E4%B9%88%E5%86%99" class="hash-link" aria-label="给用户的 quick start 可以这么写的直接链接" title="给用户的 quick start 可以这么写的直接链接" translate="no">​</a></h2>
-<p>面向最终使用者，不要先讲模型、Docker、ASR provider。直接给这几句话更有效：</p>
-<ol>
-<li class="">打开服务并登录。</li>
-<li class="">点右上角 <strong>New Recording</strong>。</li>
-<li class="">如果是现场录音，选 <strong>Microphone</strong>，说完点 <strong>Stop Recording</strong>。</li>
-<li class="">Stop 后必须点底部 <strong>Upload Recording &amp; Notes</strong>。</li>
-<li class="">看左下角 <strong>Processing Queue</strong>，等转写/总结完成。</li>
-<li class="">左侧列表点进新 recording。</li>
-<li class="">左边 <strong>Transcription</strong> 是语音识别文字。</li>
-<li class="">右边 <strong>Summary -&gt; Minutes</strong> 是 AI 会议纪要。</li>
-<li class="">如果要实时字幕，不要用这条入口；那是另一条 streaming ASR 方案。</li>
-</ol>
-<p>这比“已经部署好了”“有 AI”更重要。用户真正要的是知道：<strong>录完以后点哪里、等什么、结果在哪里。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="下一步">下一步<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E4%B8%8B%E4%B8%80%E6%AD%A5" class="hash-link" aria-label="下一步的直接链接" title="下一步的直接链接" translate="no">​</a></h2>
-<p>我会把 Speakr 保留为“录完后转写 + AI 纪要”的候选产品壳。后续如果要继续满足“边说边实时出字”，应该单独做实时 ASR 实践：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">浏览器麦克风</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; WebSocket / realtime ASR</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; partial/final transcript</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; AI 实时纠错或会后总结</span><br></div></code></pre></div></div>
-<p>这条实时线可以从外部 provider 快速验证，也可以从 FunASR / sherpa-onnx / WhisperLive 自托管开始。但它应该作为另一条工程路线，不要再把 Speakr 的录完后处理误交付成实时字幕。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="资料入口">资料入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-recording-ai-notes-practice#%E8%B5%84%E6%96%99%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="资料入口的直接链接" title="资料入口的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://github.com/murtaza-nasir/speakr" target="_blank" rel="noopener noreferrer" class="">Speakr GitHub 仓库</a></li>
-<li class=""><a href="https://github.com/ahmetoner/whisper-asr-webservice" target="_blank" rel="noopener noreferrer" class="">OpenAI Whisper ASR Webservice</a></li>
-<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/mobile-web-realtime-transcription-pwa">网页录音到 AI 纪要：先选成熟 ASR，再看现成产品</a></li>
-<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source">录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座</a></li>
-</ul>]]></content:encoded>
-            <category>speakr</category>
-            <category>transcription</category>
-            <category>meeting-notes</category>
-            <category>self-hosted</category>
-            <category>asr</category>
-            <category>ai-notes</category>
         </item>
         <item>
             <title><![CDATA[把 Agent 放进自己的实时工作间：Mattermost、Hermes 与 ChatArch 的下一块拼图]]></title>
@@ -3456,6 +3367,320 @@
             <category>mathematics</category>
             <category>theoretical-computer-science</category>
             <category>lean</category>
+        </item>
+        <item>
+            <title><![CDATA[OpenAI Astra 真的解决了十道数学难题吗？逐项审计论文、Lean 证书与争议]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances</guid>
+            <pubDate>Sat, 01 Aug 2026 14:45:00 GMT</pubDate>
+            <description><![CDATA[逐项解释 Astra 在球堆积、非 sofic 群、量子并行重复、Ehrhart 猜想等方向的十项结果，并审计 249 页论文、47 万行 Lean、2000 美元成本说法、人类参与和同行评议边界。]]></description>
+            <content:encoded><![CDATA[<p>2025 年 10 月，OpenAI 曾闹过一次很难看的数学误报：公司高管把 GPT-5 找到十道 Erdős 问题的<strong>既有文献解答</strong>，说成了“解决十道此前未解的问题”。数学家 Thomas Bloom 当时称这是 “a dramatic misrepresentation”，相关帖子随后被删除。</p>
+<p>不到一年后，OpenAI 又带着“十道开放问题”回来了。</p>
+<p>这一次，材料完全不同：一份 <a href="https://cdn.openai.com/pdf/ten-proofs-oai.pdf" target="_blank" rel="noopener noreferrer" class="">249 页技术文稿</a>、一份 <a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">62 页思路说明</a>、十个大型 Lean 文件、十二组 Comparator challenge，以及 OpenAI 对正确性的公开责任声明。产生论证的模型叫 <strong>Astra</strong>，是 OpenAI 尚未发布的下一代内部模型。</p>
+<p>如果这些结果经受住外部审查，这会是 AI 数学从“偶尔参与一篇论文”跨向“同一个通用系统批量产生研究级新数学”的重要节点。</p>
+<p>但新闻标题“新模型解决十道著名数学题”仍然漏掉了几乎所有关键限定。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>这不是十道竞赛题，也不是十个千禧年难题。更准确地说，Astra 产生了<strong>十组数学与理论计算机科学新结果</strong>：其中有完整反例和长期猜想的解决，也有对上界、下界和复杂度结果的重大改进。公开证据远强于普通模型宣传，但数学界的独立逐项审查、模型实验的成功率和完整成本仍未公开。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>核验口径</div><div class="admonitionContent_BuS1"><p>本文动态资料核验至 <strong>2026-08-01</strong>。OpenAI 的证明仓库在发布当天仍持续更新，因此代码审计固定在 <a href="https://github.com/openai/ten-proofs/tree/1f16bdcd2f22137d294a5abd61278fa8205bfba3" target="_blank" rel="noopener noreferrer" class=""><code>openai/ten-proofs@1f16bdc</code></a>。“OpenAI 声称”“媒体报道”“公开反应”和本文分析会分开标注。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把七个最容易误解的说法改正">先把七个最容易误解的说法改正<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E5%85%88%E6%8A%8A%E4%B8%83%E4%B8%AA%E6%9C%80%E5%AE%B9%E6%98%93%E8%AF%AF%E8%A7%A3%E7%9A%84%E8%AF%B4%E6%B3%95%E6%94%B9%E6%AD%A3" class="hash-link" aria-label="先把七个最容易误解的说法改正的直接链接" title="先把七个最容易误解的说法改正的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>流行说法</th><th>更准确的表述</th></tr></thead><tbody><tr><td>OpenAI 发布了 Astra</td><td>**没有。**官方只确认一个内部版本产生了这些结果；没有 API、模型权重、系统卡或发布日期</td></tr><tr><td>Astra 解完了十道著名难题</td><td>它产生了十组新结果；有些完整解决猜想，有些只改进一侧的界或复杂度下界</td></tr><tr><td>这是十道 Erdős 问题</td><td>明确对应 Erdős 编号的只有 <strong>146、180、183</strong>；其余来自不同领域</td></tr><tr><td>这是千禧年大奖级突破</td><td>OpenAI 研究员 Noam Brown 明确说：<strong>没有千禧年问题</strong></td></tr><tr><td>十项研究总共只花 2,000 美元</td><td>这是成功解法 token 按 Sol API 价格的折算，不包括训练、失败尝试、基础设施、人类工资、整理和验证</td></tr><tr><td>AI 完全无人参与地写出十篇论文</td><td>OpenAI 说数学论证来自 Astra；人类与模型共同整理文稿，并帮助完成 Lean 形式化</td></tr><tr><td>公开了完整思考过程</td><td>公开的是模型在事后读取原始轨迹和成稿后写出的<strong>重建叙事</strong>，不是完整原始运行日志</td></tr></tbody></table>
+<p>最重要的修正是：<strong>“解决”不是一个二值标签。</strong></p>
+<p>证明一个猜想、推翻一个猜想、把指数上界从 0.599 改到 0.604、证明某种近似问题更难、确定一个方法本身的极限，都是新数学，但它们回答的问题层级不同。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这件事是怎么一步步发生的">这件事是怎么一步步发生的<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E8%BF%99%E4%BB%B6%E4%BA%8B%E6%98%AF%E6%80%8E%E4%B9%88%E4%B8%80%E6%AD%A5%E6%AD%A5%E5%8F%91%E7%94%9F%E7%9A%84" class="hash-link" aria-label="这件事是怎么一步步发生的的直接链接" title="这件事是怎么一步步发生的的直接链接" translate="no">​</a></h2>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2025-年的误报为什么必须重提">2025 年的误报为什么必须重提<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#2025-%E5%B9%B4%E7%9A%84%E8%AF%AF%E6%8A%A5%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E9%87%8D%E6%8F%90" class="hash-link" aria-label="2025 年的误报为什么必须重提的直接链接" title="2025 年的误报为什么必须重提的直接链接" translate="no">​</a></h3>
+<p><a href="https://techcrunch.com/2025/10/19/openais-embarrassing-math/" target="_blank" rel="noopener noreferrer" class="">TechCrunch 对 2025 年事件的回顾</a>记录了当时的原话：OpenAI VP Kevin Weil 宣称 GPT-5 “found solutions to 10 previously unsolved Erdős problems”。</p>
+<p>Bloom 随后解释，<code>erdosproblems.com</code> 上的 <code>Open</code> 只代表<strong>维护者尚不知道解答</strong>，不是一份经过穷尽文献审查的世界真理。GPT-5 找到的是 Bloom 不知道的旧论文。OpenAI 研究员 Sébastien Bubeck 后来也承认，模型只找到了文献中的既有解法。</p>
+<p>这个插曲留下了两条教训：</p>
+<ol>
+<li class="">proof checker 只能检查 correctness，不能检查 novelty；</li>
+<li class="">“数据库写着开放”不能替代系统性的文献审查。</li>
+</ol>
+<p>当前这批材料显然是在更高证据标准下发布的：不是只发推文，而是同时给出完整论证和形式化证书。但它仍需要外部专家确认文献新颖性和领域意义。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2026-年-5-月第一次真正扭转可信度">2026 年 5 月：第一次真正扭转可信度<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#2026-%E5%B9%B4-5-%E6%9C%88%E7%AC%AC%E4%B8%80%E6%AC%A1%E7%9C%9F%E6%AD%A3%E6%89%AD%E8%BD%AC%E5%8F%AF%E4%BF%A1%E5%BA%A6" class="hash-link" aria-label="2026 年 5 月：第一次真正扭转可信度的直接链接" title="2026 年 5 月：第一次真正扭转可信度的直接链接" translate="no">​</a></h3>
+<p>OpenAI 随后公布了一个内部模型对 <a href="https://openai.com/index/model-disproves-discrete-geometry-conjecture/" target="_blank" rel="noopener noreferrer" class="">Erdős 单位距离猜想的反例</a>。这一次有外部数学家检查、配套论文和后续改进；Tim Gowers 将其称为 AI 数学的一个里程碑。</p>
+<p>8 月 1 日的官方文章也特别强调，单位距离工作已经引出多篇后续研究。它不属于今天这“十项结果”，而是当前发布方式的前奏。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2026-年-7-月-31-日至-8-月-1-日astra-首次被确认">2026 年 7 月 31 日至 8 月 1 日：Astra 首次被确认<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#2026-%E5%B9%B4-7-%E6%9C%88-31-%E6%97%A5%E8%87%B3-8-%E6%9C%88-1-%E6%97%A5astra-%E9%A6%96%E6%AC%A1%E8%A2%AB%E7%A1%AE%E8%AE%A4" class="hash-link" aria-label="2026 年 7 月 31 日至 8 月 1 日：Astra 首次被确认的直接链接" title="2026 年 7 月 31 日至 8 月 1 日：Astra 首次被确认的直接链接" translate="no">​</a></h3>
+<p><a href="https://www.theinformation.com/briefings/exclusive-openai-previews-astra-ai-model-dc" target="_blank" rel="noopener noreferrer" class="">The Information</a>先报道 Sam Altman 在华盛顿向政策制定者演示 Astra。<a href="https://the-decoder.com/openai-announces-its-next-major-model-astra-by-dropping-ten-previously-unsolved-math-solutions/" target="_blank" rel="noopener noreferrer" class="">The Decoder 的转述</a>称，它可能协调多个 Agent，持续数小时或数天处理复杂项目。</p>
+<p>一天后，<a href="https://openai.com/index/ten-advances-in-mathematics/" target="_blank" rel="noopener noreferrer" class="">OpenAI 官方公告</a>第一次确认 Astra 名称，并称内部版本在十个至少十年没有主要进展的问题上取得结果。</p>
+<p>注意证据边界：</p>
+<ul>
+<li class=""><strong>官方确认</strong>：内部 Astra、下一代主要模型、十项结果、约 2,000 美元成功 token、论文与 Lean；</li>
+<li class=""><strong>媒体报道</strong>：长时程、多 Agent、华盛顿演示；</li>
+<li class=""><strong>仍属猜测</strong>：最终会叫 GPT-6、GPT-5.7，还是另一条产品线。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="openai-实际公开了什么">OpenAI 实际公开了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#openai-%E5%AE%9E%E9%99%85%E5%85%AC%E5%BC%80%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="OpenAI 实际公开了什么的直接链接" title="OpenAI 实际公开了什么的直接链接" translate="no">​</a></h2>
+<p>这不是只有一篇博客。</p>
+<ol>
+<li class=""><strong>技术文稿</strong>：249 页，作者写作 <code>OpenAI</code>，包含十章数学论文；</li>
+<li class=""><strong>思路说明</strong>：62 页、十二章——permanent 被拆为电路与公式两章，极值图论也拆成两章；</li>
+<li class=""><strong>Lean 仓库</strong>：十个结果文件，加一个统一 import 文件；</li>
+<li class=""><strong>Comparator challenges</strong>：十二组可信目标与 solution 对照配置；</li>
+<li class=""><strong>公开归因声明</strong>：OpenAI 说明数学论证来自 Astra，人类负责整理、形式化协助和正确性责任。</li>
+</ol>
+<p>“十项”只是发布包装。按独立 theorem family 计算，内容其实更多：编码理论有 binary/spherical 两支，最后一项又包含两个不同的 Erdős 猜想。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="十项结果的全景地图">十项结果的全景地图<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E5%8D%81%E9%A1%B9%E7%BB%93%E6%9E%9C%E7%9A%84%E5%85%A8%E6%99%AF%E5%9C%B0%E5%9B%BE" class="hash-link" aria-label="十项结果的全景地图的直接链接" title="十项结果的全景地图的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th style="text-align:right">#</th><th>方向</th><th>结果类型</th><th>到底完成了什么</th><th>没有完成什么</th></tr></thead><tbody><tr><td style="text-align:right">1</td><td>高维球堆积</td><td>精确方法极限 + 新上界</td><td>确定 Cohn–Elkies 线性规划的渐近极限，并改进一般上界</td><td>没求出真实最优堆积密度</td></tr><tr><td style="text-align:right">2</td><td>二进制码、球面码</td><td>严格改进指数界</td><td>对每个固定参数都改进经典 MRRW / KL 指数</td><td>没给出精确码率或新解码器</td></tr><tr><td style="text-align:right">3</td><td>非 sofic 群</td><td>反例 / 存在性</td><td>构造非 sofic 群，否定“所有可数群都 sofic”</td><td>没解决 hyperlinear、surjunctive 等相邻问题</td></tr><tr><td style="text-align:right">4</td><td>Connes 刚性</td><td>无限反例族</td><td>不同性质 (T) 群可有相同群 von Neumann 代数</td><td>没否定所有更强的 W*-刚性现象</td></tr><tr><td style="text-align:right">5</td><td>Permanent 复杂度</td><td>新下界</td><td>电路达 <code>Omega(n^2 log log n)</code>，公式达 <code>Omega(n^4 / log n)</code></td><td>没证明超多项式下界或 VP≠VNP</td></tr><tr><td style="text-align:right">6</td><td>量子并行重复</td><td>一般定理</td><td>所有有限双人单轮纠缠博弈都指数衰减</td><td>定量指数不最优，范围不是所有量子协议</td></tr><tr><td style="text-align:right">7</td><td>最近向量问题</td><td>近似困难性</td><td>确定性证明 <code>n^(1/400)</code> 因子下仍 NP-hard</td><td>没攻破现实格密码，也没逼近平方根屏障</td></tr><tr><td style="text-align:right">8</td><td>Ehrhart 体积猜想</td><td>尖锐上界</td><td>所有维度证明 <code>(n+1)^n / n!</code> 的最佳体积界</td><td>没完成全部等号情形分类</td></tr><tr><td style="text-align:right">9</td><td>多色 Ramsey 数</td><td>渐近阶</td><td>证明 <code>R_k(3) = k^Theta(k)</code>，解决 Erdős #183</td><td>仍不知道精确指数和常数</td></tr><tr><td style="text-align:right">10</td><td>极值图论</td><td>两个反例</td><td>推翻 compactness 与 degeneracy 猜想，解决 #180、#146</td><td>是两个专业极值数命题，不是“图论全部解决”</td></tr></tbody></table>
+<p>下面逐项解释它们为什么重要。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-高维球堆积改进的是上界也证明了这套方法的天花板">1. 高维球堆积：改进的是上界，也证明了这套方法的天花板<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#1-%E9%AB%98%E7%BB%B4%E7%90%83%E5%A0%86%E7%A7%AF%E6%94%B9%E8%BF%9B%E7%9A%84%E6%98%AF%E4%B8%8A%E7%95%8C%E4%B9%9F%E8%AF%81%E6%98%8E%E4%BA%86%E8%BF%99%E5%A5%97%E6%96%B9%E6%B3%95%E7%9A%84%E5%A4%A9%E8%8A%B1%E6%9D%BF" class="hash-link" aria-label="1. 高维球堆积：改进的是上界，也证明了这套方法的天花板的直接链接" title="1. 高维球堆积：改进的是上界，也证明了这套方法的天花板的直接链接" translate="no">​</a></h2>
+<p>球堆积问的是：同样大小的球最多能多密地塞进空间。二维是硬币，三维像炮弹；维度升高后，它同时连接编码理论、离散几何和信息论。</p>
+<p>Cohn–Elkies 方法把几何问题转成 Fourier 分析的线性规划。设 <code>LP_d</code> 是这套方法在 <code>d</code> 维能给出的最佳密度上界，新结果证明</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">lim_(d -&gt; infinity) LP_d^(1/d) = sqrt(e / (2 pi))</span><br></div></code></pre></div></div>
+<p>因此球堆积密度满足</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Delta_d &lt;= 2^(-(0.6044... + o(1))d)</span><br></div></code></pre></div></div>
+<p>经典 Kabatianskii–Levenshtein 指数约为 <code>0.599055</code>。数值变化看起来不大，但论文称这是 <strong>1978 年以来一般高维球堆积指数的首次改进</strong>。</p>
+<p>它还有双重意义：不仅给出更强上界，也证明在指数尺度上，任何 Cohn–Elkies 辅助函数都不可能继续超过这个阈值。换句话说，它既推进了方法，也找到了方法的天花板。</p>
+<p>但真实最优密度仍然未知；“球堆积问题被解决”仍是错误标题。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-二进制码与球面码近半个世纪没动的通用指数被严格推进">2. 二进制码与球面码：近半个世纪没动的通用指数被严格推进<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#2-%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%A0%81%E4%B8%8E%E7%90%83%E9%9D%A2%E7%A0%81%E8%BF%91%E5%8D%8A%E4%B8%AA%E4%B8%96%E7%BA%AA%E6%B2%A1%E5%8A%A8%E7%9A%84%E9%80%9A%E7%94%A8%E6%8C%87%E6%95%B0%E8%A2%AB%E4%B8%A5%E6%A0%BC%E6%8E%A8%E8%BF%9B" class="hash-link" aria-label="2. 二进制码与球面码：近半个世纪没动的通用指数被严格推进的直接链接" title="2. 二进制码与球面码：近半个世纪没动的通用指数被严格推进的直接链接" translate="no">​</a></h2>
+<p>二进制码要在 <code>{0,1}^n</code> 中放尽量多的码字，同时保证任意两者 Hamming 距离足够大。球面码则把点放在高维球面上，要求点与点的内积不能太高。</p>
+<p>它们共同描述一个核心权衡：<strong>信息数量与抗噪间隔不能同时无限增长。</strong></p>
+<p>新论文不只是找到某个参数上的小改进，而是证明：</p>
+<ul>
+<li class="">每个固定相对距离 <code>0 &lt; delta &lt; 1/2</code>，都严格改进完整优化后的 MRRW 指数；</li>
+<li class="">每个固定最大内积 <code>0 &lt; s &lt; 1</code>，都严格改进包含 spherical-cap 优化的 KL 指数；</li>
+<li class="">这是两条一般高维指数自 1977、1978 年以来第一次整体推进。</li>
+</ul>
+<p>技术上的新自由度，是不再只给每个码点附一个向量，而是附一个随码点移动的高维 harmonic subspace。指数级大的 projection rank 最后变成更小的码规模上界。</p>
+<p>这仍然是<strong>上界理论</strong>，并不直接给工程上可部署的新编码或解码算法。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-非-sofic-群十项里最像一个世界里此前不知道对象是否存在的结果">3. 非 sofic 群：十项里最像“一个世界里此前不知道对象是否存在”的结果<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#3-%E9%9D%9E-sofic-%E7%BE%A4%E5%8D%81%E9%A1%B9%E9%87%8C%E6%9C%80%E5%83%8F%E4%B8%80%E4%B8%AA%E4%B8%96%E7%95%8C%E9%87%8C%E6%AD%A4%E5%89%8D%E4%B8%8D%E7%9F%A5%E9%81%93%E5%AF%B9%E8%B1%A1%E6%98%AF%E5%90%A6%E5%AD%98%E5%9C%A8%E7%9A%84%E7%BB%93%E6%9E%9C" class="hash-link" aria-label="3. 非 sofic 群：十项里最像“一个世界里此前不知道对象是否存在”的结果的直接链接" title="3. 非 sofic 群：十项里最像“一个世界里此前不知道对象是否存在”的结果的直接链接" translate="no">​</a></h2>
+<p>一个群是 sofic 的，大意是它的任意有限乘法片段都可以被有限集合上的置换近似。有限群、amenable 群、residually finite 群以及大量熟悉的群都属于这个世界。</p>
+<p>自 Gromov 与 Weiss 在 1999–2000 年提出问题后，数学家一直不知道：<strong>是否所有可数群都是 sofic？</strong></p>
+<p>Astra 的论证证明二元 Leavitt 代数 <code>L_F2(1,2)</code> 的单位群不是 sofic。核心材料包括：</p>
+<ul>
+<li class="">Kazhdan 性质 (T) 与 expander；</li>
+<li class="">Kun 的 expander decomposition；</li>
+<li class="">Kun–Thom centralizer obstruction；</li>
+<li class="">Thompson 群 <code>V</code>；</li>
+<li class="">Leavitt 代数的二进制自相似结构。</li>
+</ul>
+<p>纸面论文给出一个具体非 sofic 群；Lean 文件还从有限 obstruction 推出“存在有限表示的非 sofic 群”。</p>
+<p>这个结论的边界也写得很清楚：它没有顺手解决该群是否 hyperlinear、surjunctive，也没有解决 Kaplansky 直接有限性等相邻猜想。一个核心存在性问题结束后，新的研究树才刚长出来。</p>
+<p>曼彻斯特大学数学家、<code>erdosproblems.com</code> 维护者 <a href="https://x.com/thomasfbloom/status/2083442290735902937" target="_blank" rel="noopener noreferrer" class="">Thomas Bloom 称其为 “Big news”</a>，并认为它比 5 月的单位距离反例更大；他同时说明这不是自己的专业方向。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-connes-刚性同一个算子代数影子不再唯一确定原群">4. Connes 刚性：同一个“算子代数影子”不再唯一确定原群<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#4-connes-%E5%88%9A%E6%80%A7%E5%90%8C%E4%B8%80%E4%B8%AA%E7%AE%97%E5%AD%90%E4%BB%A3%E6%95%B0%E5%BD%B1%E5%AD%90%E4%B8%8D%E5%86%8D%E5%94%AF%E4%B8%80%E7%A1%AE%E5%AE%9A%E5%8E%9F%E7%BE%A4" class="hash-link" aria-label="4. Connes 刚性：同一个“算子代数影子”不再唯一确定原群的直接链接" title="4. Connes 刚性：同一个“算子代数影子”不再唯一确定原群的直接链接" translate="no">​</a></h2>
+<p>给一个可数离散群 <code>G</code>，可以构造它的群 von Neumann 代数 <code>L(G)</code>。Connes 的问题是：如果 <code>G</code> 具有 ICC 与性质 (T)，这个算子代数对象是否足以反推出原群？</p>
+<p>Astra 构造了</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Lambda, Gamma_0, Gamma_1, ...</span><br></div></code></pre></div></div>
+<p>它们彼此不同、都是有限生成 ICC 性质 (T) 群，却满足</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">L(Gamma_n) ≅ L(Lambda)</span><br></div></code></pre></div></div>
+<p>而且这些群两两 commensurable。结果不只给 Connes 猜想一个反例，还说明把“唯一”放宽为“有限多个可能”仍然不成立：同一个 group factor 有可数无限多个实现。</p>
+<p>这并不意味着刚性理论失效。论文特别指出，某些群仍是 W*-superrigid；被推翻的是“性质 (T) 本身就足以保证恢复原群”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-permanent-下界重大进展但离-vpvnp-仍很远">5. Permanent 下界：重大进展，但离 VP≠VNP 仍很远<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#5-permanent-%E4%B8%8B%E7%95%8C%E9%87%8D%E5%A4%A7%E8%BF%9B%E5%B1%95%E4%BD%86%E7%A6%BB-vpvnp-%E4%BB%8D%E5%BE%88%E8%BF%9C" class="hash-link" aria-label="5. Permanent 下界：重大进展，但离 VP≠VNP 仍很远的直接链接" title="5. Permanent 下界：重大进展，但离 VP≠VNP 仍很远的直接链接" translate="no">​</a></h2>
+<p>Permanent 与 determinant 只差置换项前面的正负号，但 determinant 有高效算法，permanent 则是代数复杂性理论的核心困难对象。</p>
+<p>新结果研究精确符号计算：</p>
+<ul>
+<li class="">允许任意复用中间结果、但不允许除法的一般算术电路，需要 <code>Omega(n^2 log log n)</code> 个门；</li>
+<li class="">树状算术公式需要 <code>Omega(n^4 / log n)</code> 个变量叶；</li>
+<li class="">即使允许合法除法，公式仍保留同阶下界，只改变常数。</li>
+</ul>
+<p>相对于输入变量数 <code>N = n^2</code>，这是 <code>Omega(N log log N)</code> 的电路下界和 <code>Omega(N^2 / log N)</code> 的公式下界。</p>
+<p>这里必须压住最容易出现的夸张：这些仍是<strong>多项式下界</strong>。它没有证明 permanent 需要超多项式电路，因此没有解决 VP 与 VNP，更没有解决 P 与 NP。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-量子并行重复把-raz-的经典原则推到一般纠缠博弈">6. 量子并行重复：把 Raz 的经典原则推到一般纠缠博弈<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#6-%E9%87%8F%E5%AD%90%E5%B9%B6%E8%A1%8C%E9%87%8D%E5%A4%8D%E6%8A%8A-raz-%E7%9A%84%E7%BB%8F%E5%85%B8%E5%8E%9F%E5%88%99%E6%8E%A8%E5%88%B0%E4%B8%80%E8%88%AC%E7%BA%A0%E7%BC%A0%E5%8D%9A%E5%BC%88" class="hash-link" aria-label="6. 量子并行重复：把 Raz 的经典原则推到一般纠缠博弈的直接链接" title="6. 量子并行重复：把 Raz 的经典原则推到一般纠缠博弈的直接链接" translate="no">​</a></h2>
+<p>在双人博弈里，裁判分别给 Alice 和 Bob 发问题；两人不能通信，但可以提前共享量子纠缠。如果单局不能总赢，把同一游戏独立重复 <code>n</code> 次并要求全部获胜，成功概率是否一定指数下降？</p>
+<p>经典情形由 Raz 在 1990 年代解决。量子情形因为跨局联合测量与纠缠，可以产生远比独立策略复杂的相关性。一般问题至少从 2004 年起就被明确列为开放问题。</p>
+<p>新定理证明，对任意有限双人单轮纠缠博弈，只要原始纠缠值小于 1，重复值就以 <code>exp(-c_G n)</code> 的速度下降。此前一般结果只有多项式衰减，指数定理只对特殊或修改后的游戏成立。</p>
+<p>论文中的 <code>epsilon^13</code> 定量损失并不声称最优；真正的突破是“一般游戏也指数衰减”这个定性结论。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-最近向量问题是最坏情形困难性不是格密码被破解">7. 最近向量问题：是最坏情形困难性，不是格密码被破解<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#7-%E6%9C%80%E8%BF%91%E5%90%91%E9%87%8F%E9%97%AE%E9%A2%98%E6%98%AF%E6%9C%80%E5%9D%8F%E6%83%85%E5%BD%A2%E5%9B%B0%E9%9A%BE%E6%80%A7%E4%B8%8D%E6%98%AF%E6%A0%BC%E5%AF%86%E7%A0%81%E8%A2%AB%E7%A0%B4%E8%A7%A3" class="hash-link" aria-label="7. 最近向量问题：是最坏情形困难性，不是格密码被破解的直接链接" title="7. 最近向量问题：是最坏情形困难性，不是格密码被破解的直接链接" translate="no">​</a></h2>
+<p>Closest Vector Problem 给出一个整数格和目标点，要求找到最近格点。它既是几何数论与算法理论的基础问题，也与格密码处在同一大类数学工具中。</p>
+<p>论文给出从 3SAT 到 Euclidean GapCVP 的确定性多项式归约，证明在格秩为 <code>n</code> 时，近似因子达到</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">n^(1/400)</span><br></div></code></pre></div></div>
+<p>仍然 NP-hard。</p>
+<p>此前无条件结果虽超过任意固定多对数，却形如 <code>n^(a / log log n)</code>，指数趋于零；固定多项式因子的相关结果依赖更强猜想。新结论把它推进为无条件、确定性的固定正指数。</p>
+<p>但部署中的格密码依赖结构化或平均情形假设，不是把最坏情形 CVP 实例直接塞进协议。这个结果增强理论困难性地图，不是“后量子密码破了”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="8-ehrhart-体积猜想解决-1964-年提出的尖锐不等式">8. Ehrhart 体积猜想：解决 1964 年提出的尖锐不等式<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#8-ehrhart-%E4%BD%93%E7%A7%AF%E7%8C%9C%E6%83%B3%E8%A7%A3%E5%86%B3-1964-%E5%B9%B4%E6%8F%90%E5%87%BA%E7%9A%84%E5%B0%96%E9%94%90%E4%B8%8D%E7%AD%89%E5%BC%8F" class="hash-link" aria-label="8. Ehrhart 体积猜想：解决 1964 年提出的尖锐不等式的直接链接" title="8. Ehrhart 体积猜想：解决 1964 年提出的尖锐不等式的直接链接" translate="no">​</a></h2>
+<p>考虑一个 <code>n</code> 维凸体：它的重心在原点，原点还是唯一内部格点。这样的凸体最多能有多大体积？</p>
+<p>Ehrhart 在 1964 年猜测，中心化单纯形达到最大值。Astra 的证明给出所有维度的尖锐界：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">vol(K) &lt;= (n+1)^n / n!</span><br></div></code></pre></div></div>
+<p>等号确实由中心化单纯形达到。证明把凸体、Monge–Ampère transport、复环面上的 Laurent monomial、Bergman kernel 和 vanishing order 联系起来。</p>
+<p>论文保留了一个明确未解部分：是否所有极值体都必须是该单纯形的 unimodular 像，仍未分类完成。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="9-多色-ramsey-数终于知道它是超指数增长">9. 多色 Ramsey 数：终于知道它是超指数增长<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#9-%E5%A4%9A%E8%89%B2-ramsey-%E6%95%B0%E7%BB%88%E4%BA%8E%E7%9F%A5%E9%81%93%E5%AE%83%E6%98%AF%E8%B6%85%E6%8C%87%E6%95%B0%E5%A2%9E%E9%95%BF" class="hash-link" aria-label="9. 多色 Ramsey 数：终于知道它是超指数增长的直接链接" title="9. 多色 Ramsey 数：终于知道它是超指数增长的直接链接" translate="no">​</a></h2>
+<p>把完全图的边涂成 <code>k</code> 种颜色，<code>R_k(3)</code> 是保证出现同色三角形所需的最少顶点数。</p>
+<p>过去的下界基本是常数的 <code>k</code> 次方，上界则接近 <code>k!</code>。于是一个长期问题是：<code>R_k(3)</code> 到底只是指数增长，还是超指数增长？</p>
+<p>新结果证明存在绝对常数 <code>c &gt; 0</code>，使得</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">R_k(3) &gt;= (c k^(1/3) / log k)^k</span><br></div></code></pre></div></div>
+<p>结合经典阶乘上界，得到</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">R_k(3) = k^Theta(k)</span><br></div></code></pre></div></div>
+<p>这解决 Erdős 问题 183，并推出 independence number 为 2 的图也可以有任意大的 Shannon capacity。</p>
+<p>它确定了增长类别，但上下界指数仍在大约 <code>1/3</code> 与 <code>1</code> 之间，远没有精确渐近式。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="10-一个编号下其实藏着两个-erdős-反例">10. 一个编号下其实藏着两个 Erdős 反例<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#10-%E4%B8%80%E4%B8%AA%E7%BC%96%E5%8F%B7%E4%B8%8B%E5%85%B6%E5%AE%9E%E8%97%8F%E7%9D%80%E4%B8%A4%E4%B8%AA-erd%C5%91s-%E5%8F%8D%E4%BE%8B" class="hash-link" aria-label="10. 一个编号下其实藏着两个 Erdős 反例的直接链接" title="10. 一个编号下其实藏着两个 Erdős 反例的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="101-erdőssimonovits-compactness-猜想">10.1 Erdős–Simonovits compactness 猜想<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#101-erd%C5%91ssimonovits-compactness-%E7%8C%9C%E6%83%B3" class="hash-link" aria-label="10.1 Erdős–Simonovits compactness 猜想的直接链接" title="10.1 Erdős–Simonovits compactness 猜想的直接链接" translate="no">​</a></h3>
+<p>对有限 forbidden family <code>F</code>，同时禁止所有成员，是否总与禁止其中某一个成员的 extremal number 同阶？修正后的猜想要求每个 forbidden graph 都含环，以排除简单的森林反例。</p>
+<p>论文构造一个有限 family，其中每个图都 connected、bipartite 且含环，但</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n, F) = O(n^(4/3 - 1/48))</span><br></div></code></pre></div></div>
+<p>而对每个单独的 <code>F</code>，仍有</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n, F) = Omega(n^(4/3))</span><br></div></code></pre></div></div>
+<p>所以整个 family 的约束确实比任何单一成员强一个幂次，推翻 compactness，解决 Erdős #180。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="102-退化度猜想">10.2 退化度猜想<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#102-%E9%80%80%E5%8C%96%E5%BA%A6%E7%8C%9C%E6%83%B3" class="hash-link" aria-label="10.2 退化度猜想的直接链接" title="10.2 退化度猜想的直接链接" translate="no">​</a></h3>
+<p>Erdős 猜测固定 bipartite <code>r</code>-degenerate graph 的 extremal number 至多为 <code>O(n^(2 - 1/r))</code>。</p>
+<p>Astra 构造一个固定、connected、bipartite、2-degenerate 的图 <code>H</code>，却有</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n, H) &gt;= c n^(3/2 + epsilon)</span><br></div></code></pre></div></div>
+<p>反例在 <code>r = 2</code> 就出现，解决 Erdős #146。</p>
+<p>因此媒体所说的“十项”并不等于十个独立题目：第十项自己就结束了两个不同猜想。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="lean-证书让这次发布比普通-press-release-强在哪里">Lean 证书让这次发布比普通 press release 强在哪里<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#lean-%E8%AF%81%E4%B9%A6%E8%AE%A9%E8%BF%99%E6%AC%A1%E5%8F%91%E5%B8%83%E6%AF%94%E6%99%AE%E9%80%9A-press-release-%E5%BC%BA%E5%9C%A8%E5%93%AA%E9%87%8C" class="hash-link" aria-label="Lean 证书让这次发布比普通 press release 强在哪里的直接链接" title="Lean 证书让这次发布比普通 press release 强在哪里的直接链接" translate="no">​</a></h2>
+<p>固定提交 <code>1f16bdc</code> 的仓库包含：</p>
+<ul>
+<li class="">10 个结果文件和 <code>All.lean</code>；</li>
+<li class=""><strong>474,731 行</strong>顶层 Lean 源码，约 18.3 MB；</li>
+<li class="">12 个 Comparator JSON 配置；</li>
+<li class="">Lean 4.32.0、固定 mathlib 与 Comparator 依赖；</li>
+<li class="">全部配置启用 <code>nanoda</code> external checker；</li>
+<li class="">允许的 axiom 只有 <code>propext</code>、<code>Classical.choice</code>、<code>Quot.sound</code>。</li>
+</ul>
+<p>我对十个顶层结果文件做了字面扫描，没有发现 <code>sorry</code>、<code>admit</code>、自定义 <code>axiom</code> 或 <code>unsafe</code>。Comparator 的 Challenge 文件里出现 <code>sorry</code> 是正常设计：可信题面先留洞，再检查 Solution 是否证明了同一个 elaborated statement。</p>
+<!-- -->
+<p>这套栈把“能编译”提升为更强的问题：</p>
+<ol>
+<li class="">Solution 证明的是不是 Challenge 中同一个 theorem；</li>
+<li class="">是否偷换 definition 或传递依赖；</li>
+<li class="">是否使用允许范围外的 axiom；</li>
+<li class="">proof term 是否同时被 Lean 与另一个 checker 接受。</li>
+</ol>
+<p>如果想理解这条信任边界，可以参看本站的 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/lean-comparator-trust-boundary-guide">Comparator 详解</a> 与 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/nanoda-lean-external-kernel-guide">nanoda 外部内核指南</a>。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="机器检查仍留下什么">机器检查仍留下什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E6%9C%BA%E5%99%A8%E6%A3%80%E6%9F%A5%E4%BB%8D%E7%95%99%E4%B8%8B%E4%BB%80%E4%B9%88" class="hash-link" aria-label="机器检查仍留下什么的直接链接" title="机器检查仍留下什么的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>层次</th><th>能确认</th><th>仍不能自动确认</th></tr></thead><tbody><tr><td>自然语言论文</td><td>论证可供人阅读</td><td>每一步是否无误、引用是否完整</td></tr><tr><td>Lean typecheck</td><td>形式 theorem 在固定环境可推出</td><td>theorem 是否忠实表达原猜想</td></tr><tr><td>Comparator</td><td>Challenge 与 Solution statement/依赖一致</td><td>Challenge 本身是否写对</td></tr><tr><td>Lean + nanoda</td><td>两个实现都接受 proof term</td><td>两个实现之外的共同假设、数学意义</td></tr><tr><td>文献审查</td><td>是否真是新结果</td><td>无法被 kernel 代替</td></tr><tr><td>领域同行评议</td><td>正确性、深度、可读性和影响</td><td>发布当天尚未完成</td></tr></tbody></table>
+<p>尤其要注意：这些 Challenge 也是 OpenAI 随仓库一起写的，不是外部数学家独立提供的题面。它们让审计具体、可重跑，却不自动构成第三方背书。</p>
+<p><code>GapCVP</code> 的四个 definition holes 也需要额外语义检查：Comparator 能校验它们的签名、依赖和 proof，但无法替人判断这些定义是否完整捕捉了复杂性理论中想表达的归约。</p>
+<p>发布快照的 <code>formalization.yaml</code> 把 review 状态写为 <code>agent-reviewed</code>。仓库当时没有 GitHub Actions 运行记录，因此“公开可构建”与“官方仓库已经公开跑过 CI”也要分开。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="62-页思考过程不是原始-chain-of-thought">62 页“思考过程”不是原始 chain of thought<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#62-%E9%A1%B5%E6%80%9D%E8%80%83%E8%BF%87%E7%A8%8B%E4%B8%8D%E6%98%AF%E5%8E%9F%E5%A7%8B-chain-of-thought" class="hash-link" aria-label="62 页“思考过程”不是原始 chain of thought的直接链接" title="62 页“思考过程”不是原始 chain of thought的直接链接" translate="no">​</a></h2>
+<p>OpenAI 官方称同时发布“模型对思考过程的叙述”。但 <a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">PDF 的摘要</a>说得更精确：这些 notes 是一个 AI 模型读取<strong>原始 chains of thought、最终论文和 writeups 之后</strong>写出的重建。</p>
+<p>它记录了许多有价值的失败路线、转向和最终洞见，例如：</p>
+<ul>
+<li class="">编码界中第一次 recurrence 为什么不对；</li>
+<li class="">Ehrhart 证明为何放弃 harmonic symmetrization；</li>
+<li class="">CVP 如何从 signed moment histogram 转向 characteristic-two reconstruction；</li>
+<li class="">quantum repetition 如何从条件化障碍转向 postselection-stable sampleability。</li>
+</ul>
+<p>但它不是完整实验日志。我们仍然看不到：</p>
+<ul>
+<li class="">每个问题的原始 prompt；</li>
+<li class="">tool、检索、代码执行和多 Agent 调度记录；</li>
+<li class="">每次失败尝试及停止标准；</li>
+<li class="">人类在运行过程中是否给过中间反馈；</li>
+<li class="">候选证明被筛选和淘汰的完整轨迹。</li>
+</ul>
+<p>因此这些 notes 很适合<strong>理解最后的数学想法</strong>，不够用来独立复现实验中的“Astra 能力”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2000-美元到底说明了什么">2,000 美元到底说明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#2000-%E7%BE%8E%E5%85%83%E5%88%B0%E5%BA%95%E8%AF%B4%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="2,000 美元到底说明了什么的直接链接" title="2,000 美元到底说明了什么的直接链接" translate="no">​</a></h2>
+<p><a href="https://openai.com/index/ten-advances-in-mathematics/" target="_blank" rel="noopener noreferrer" class="">官方原话</a>是：找到十项 solution 所需 token，按 Sol API 价格大约值 2,000 美元。</p>
+<p>它支持一个重要结论：<strong>成功轨迹的边际推理 token 可能已经很便宜。</strong></p>
+<p>但它不支持“十项研究的总成本只有 2,000 美元”，因为至少缺少：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Astra 训练与后训练</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 失败问题的全部推理</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 每题未成功的分支和重试</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 问题筛选、数据与检索基础设施</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 人类研究员工资</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 文稿整理与引用核查</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 47 万行 Lean 的生成、构建和审计</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 计算集群、存储和组织成本</span><br></div></code></pre></div></div>
+<p>Noam Brown 随后承认，他们确实尝试过其他重大问题而没有成功；但没有给出总题数、成功率和失败 compute。他还说每题没有投入很多，test-time compute 可以继续扩大。</p>
+<p>这让 <code>2,000 美元</code> 更像成功样本的<strong>numerator</strong>，而不是完整实验的 denominator。</p>
+<p><a href="https://news.ycombinator.com/item?id=49132058" target="_blank" rel="noopener noreferrer" class="">Hacker News 的首发讨论</a>很快集中到三个问题：到底尝试了多少题、每题多少次、失败分支花了多少。科学漫画作者 <a href="https://bsky.app/profile/zachweinersmith.bsky.social/post/3mrzhh7lhls25" target="_blank" rel="noopener noreferrer" class="">Zach Weinersmith</a>也指出，若不报告失败尝试，成本数字会带有明显宣传色彩。</p>
+<p>这些疑问不否定数学定理，但会影响我们如何解读模型效率、可扩展性与经济意义。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么成功集中在可明确验证的数学形态">为什么成功集中在“可明确验证”的数学形态<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%90%E5%8A%9F%E9%9B%86%E4%B8%AD%E5%9C%A8%E5%8F%AF%E6%98%8E%E7%A1%AE%E9%AA%8C%E8%AF%81%E7%9A%84%E6%95%B0%E5%AD%A6%E5%BD%A2%E6%80%81" class="hash-link" aria-label="为什么成功集中在“可明确验证”的数学形态的直接链接" title="为什么成功集中在“可明确验证”的数学形态的直接链接" translate="no">​</a></h2>
+<p>十项结果横跨八个领域，看起来非常分散；它们的目标形态却有共同点：</p>
+<ul>
+<li class="">构造一个反例或对象；</li>
+<li class="">证明一个明确不等式；</li>
+<li class="">优化一个渐近指数；</li>
+<li class="">给出一个确定性归约；</li>
+<li class="">证明一类博弈的统一衰减定理。</li>
+</ul>
+<p>这些问题很难生成答案，却相对容易定义“什么算成功”，并能压缩成稳定 theorem statement。它们具有很高的 <strong>verification leverage</strong>：候选生成昂贵，最终检查比发现便宜。</p>
+<p>这并不削弱结果。恰恰相反，它解释了 AI 数学最可能先在哪里改变研究：不是一上来替代所有抽象判断，而是在<strong>目标明确、反馈严格、长链条可以被形式验证</strong>的领域，搜索并组合人类一个世纪积累的理论。</p>
+<p>但“selection of ten results”里的 <code>selection</code> 也很重要。数学家 <a href="https://bsky.app/profile/robinhouston.mathstodon.xyz.ap.brid.gy/post/3mrzanwxzuug2" target="_blank" rel="noopener noreferrer" class="">Robin Houston</a>注意到这个措辞，并追问 OpenAI 还保留了哪些结果。没有完整题库与失败集，我们不能从十个成功案例推出总体成功率。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="数学界与公共讨论现在分成三条线">数学界与公共讨论现在分成三条线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E6%95%B0%E5%AD%A6%E7%95%8C%E4%B8%8E%E5%85%AC%E5%85%B1%E8%AE%A8%E8%AE%BA%E7%8E%B0%E5%9C%A8%E5%88%86%E6%88%90%E4%B8%89%E6%9D%A1%E7%BA%BF" class="hash-link" aria-label="数学界与公共讨论现在分成三条线的直接链接" title="数学界与公共讨论现在分成三条线的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-对结果本身的震动">1. 对结果本身的震动<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#1-%E5%AF%B9%E7%BB%93%E6%9E%9C%E6%9C%AC%E8%BA%AB%E7%9A%84%E9%9C%87%E5%8A%A8" class="hash-link" aria-label="1. 对结果本身的震动的直接链接" title="1. 对结果本身的震动的直接链接" translate="no">​</a></h3>
+<p>Bloom 对非 sofic 群的反应最直接：“Big news”。一些理论计算机科学方向的公开讨论也强调，CVP 和 permanent 下界都是被顶尖研究者追了几十年的问题。</p>
+<p>重要的是，这种震动主要针对<strong>具体 theorem</strong>，不是针对“模型是不是 AGI”的营销推论。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-ai-替代数学家的反对意见">2. “AI 替代数学家”的反对意见<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#2-ai-%E6%9B%BF%E4%BB%A3%E6%95%B0%E5%AD%A6%E5%AE%B6%E7%9A%84%E5%8F%8D%E5%AF%B9%E6%84%8F%E8%A7%81" class="hash-link" aria-label="2. “AI 替代数学家”的反对意见的直接链接" title="2. “AI 替代数学家”的反对意见的直接链接" translate="no">​</a></h3>
+<p>Bloom <a href="https://x.com/thomasfbloom/status/2083444983592284465" target="_blank" rel="noopener noreferrer" class="">随后专门反驳</a>“GPT 正在替代数学家”的说法。他的理由是：猜想由数学家提出，工具建立在一个多世纪的理论上，系统由数学家与工程师构建，又阅读了数学家写下的材料。</p>
+<p>更准确的变化是职责重新分配：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">过去：人类选题 + 找路线 + 写证明 + 检查 + 写论文</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">现在：人类选题/建理论/定标准</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      + 模型搜索、组合、形式化</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      + kernel 机械检查</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      + 人类消化、归因、评估意义</span><br></div></code></pre></div></div>
+<p>当生成证明变快，审读、文献查新、问题选择与解释反而成为更紧的瓶颈。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-对评议制度和权力集中的担心">3. 对评议制度和权力集中的担心<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#3-%E5%AF%B9%E8%AF%84%E8%AE%AE%E5%88%B6%E5%BA%A6%E5%92%8C%E6%9D%83%E5%8A%9B%E9%9B%86%E4%B8%AD%E7%9A%84%E6%8B%85%E5%BF%83" class="hash-link" aria-label="3. 对评议制度和权力集中的担心的直接链接" title="3. 对评议制度和权力集中的担心的直接链接" translate="no">​</a></h3>
+<p>单日释放 249 页跨领域新数学，会把验证成本外包给许多学术共同体。模型是私有的，成功 proof 是开放的；这形成一种不对称：公司可以高并发地产生结果，公共数学界却要用稀缺专家时间逐篇消化。</p>
+<p>这也会改变研究议程。哪些问题被送给模型、哪些结果值得发布、哪些失败永远不可见，暂时都由 OpenAI 决定。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="openai-为什么引用-leiden-declaration又和它存在张力">OpenAI 为什么引用 Leiden Declaration，又和它存在张力<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#openai-%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BC%95%E7%94%A8-leiden-declaration%E5%8F%88%E5%92%8C%E5%AE%83%E5%AD%98%E5%9C%A8%E5%BC%A0%E5%8A%9B" class="hash-link" aria-label="OpenAI 为什么引用 Leiden Declaration，又和它存在张力的直接链接" title="OpenAI 为什么引用 Leiden Declaration，又和它存在张力的直接链接" translate="no">​</a></h2>
+<p><a href="https://leidendeclaration.ai/" target="_blank" rel="noopener noreferrer" class="">Leiden Declaration on AI and Mathematics</a>由数学界社区发起，并获得 International Mathematical Union 背书。它强调 proof、透明、独立验证、人类责任、正确归因、开放科学和正常同行评议。</p>
+<p>OpenAI 在公告里主动引用它，但双方并非完全一致。</p>
+<table><thead><tr><th>议题</th><th>OpenAI 这次做法</th><th>Leiden Declaration 的要求</th></tr></thead><tbody><tr><td>工具披露</td><td>明确说论证由 Astra 生成</td><td>支持透明披露自动化工具</td></tr><tr><td>证明开放</td><td>论文与 Lean 公开</td><td>支持开放科学、形式验证和独立检查</td></tr><tr><td>正确性责任</td><td>OpenAI 表示承担责任</td><td>责任应由具体人类作者承担</td></tr><tr><td>作者身份</td><td>文稿作者写作 <code>OpenAI</code>，并反对把 AI 论证写成人类原创</td><td>credit 与 responsibility 不应赋给自动系统</td></tr><tr><td>发布渠道</td><td>公司博客、CDN 文稿与 GitHub 首发</td><td>press release 不能替代同行评议</td></tr><tr><td>获取能力</td><td>proof 开放，Astra 私有</td><td>担忧工业资源不对称和数学自治</td></tr></tbody></table>
+<p>OpenAI 的观点是：若人类在没有生成核心论证的情况下署名，会歪曲真实贡献。Declaration 的观点则是：AI 不是能承担学术责任的作者，数学仍应由具体人类负责。</p>
+<p>这不是一个格式问题，而是未来论文制度必须回答的难题：</p>
+<blockquote>
+<p>如果机器生成核心 idea，人类验证并对它负责，credit、authorship、liability 和 prior human work 应该如何拆分？</p>
+</blockquote>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这件事真正改变了什么">这件事真正改变了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E8%BF%99%E4%BB%B6%E4%BA%8B%E7%9C%9F%E6%AD%A3%E6%94%B9%E5%8F%98%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="这件事真正改变了什么的直接链接" title="这件事真正改变了什么的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-研究级-ai-数学不再只是零散案例">1. “研究级 AI 数学”不再只是零散案例<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#1-%E7%A0%94%E7%A9%B6%E7%BA%A7-ai-%E6%95%B0%E5%AD%A6%E4%B8%8D%E5%86%8D%E5%8F%AA%E6%98%AF%E9%9B%B6%E6%95%A3%E6%A1%88%E4%BE%8B" class="hash-link" aria-label="1. “研究级 AI 数学”不再只是零散案例的直接链接" title="1. “研究级 AI 数学”不再只是零散案例的直接链接" translate="no">​</a></h3>
+<p>此前强案例通常是一项构造、一个反例或一篇有人类深度参与的论文。现在同一个内部系统横跨几何、群论、算子代数、复杂性、量子信息和组合数学，产生一整批可形式化的结果。</p>
+<p>即使十项中只有一部分最终被评为领域重大突破，<strong>跨领域吞吐本身</strong>也值得重视。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-证明资产开始和新闻同时发布">2. 证明资产开始和新闻同时发布<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#2-%E8%AF%81%E6%98%8E%E8%B5%84%E4%BA%A7%E5%BC%80%E5%A7%8B%E5%92%8C%E6%96%B0%E9%97%BB%E5%90%8C%E6%97%B6%E5%8F%91%E5%B8%83" class="hash-link" aria-label="2. 证明资产开始和新闻同时发布的直接链接" title="2. 证明资产开始和新闻同时发布的直接链接" translate="no">​</a></h3>
+<p>2025 年误报的问题是“一个社交媒体判断先跑出去，证据跟不上”。这一次 paper、Lean、Comparator 和 reasoning notes 同时出现，使争论可以落到具体 theorem、definition 和 proof term 上。</p>
+<p>这应当成为未来 AI 数学发布的最低模板，而不是额外加分项。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-数学研究的瓶颈正在从生成转向验证与消化">3. 数学研究的瓶颈正在从生成转向验证与消化<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#3-%E6%95%B0%E5%AD%A6%E7%A0%94%E7%A9%B6%E7%9A%84%E7%93%B6%E9%A2%88%E6%AD%A3%E5%9C%A8%E4%BB%8E%E7%94%9F%E6%88%90%E8%BD%AC%E5%90%91%E9%AA%8C%E8%AF%81%E4%B8%8E%E6%B6%88%E5%8C%96" class="hash-link" aria-label="3. 数学研究的瓶颈正在从生成转向验证与消化的直接链接" title="3. 数学研究的瓶颈正在从生成转向验证与消化的直接链接" translate="no">​</a></h3>
+<p>47 万行 Lean 并不等于 47 万行人类可理解的解释。机器可以检查 theorem 是否推出，但数学共同体仍要回答：</p>
+<ul>
+<li class="">证明的核心新 idea 是什么？</li>
+<li class="">哪些引理值得复用？</li>
+<li class="">与现有文献的关系是否准确？</li>
+<li class="">哪项结果真正改变领域，哪项只是技术性改进？</li>
+<li class="">新定理又打开了哪些问题？</li>
+</ul>
+<p>未来稀缺资源可能不是 proof token，而是 domain-expert attention。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-闭源模型与开放-proof-可以同时存在">4. 闭源模型与开放 proof 可以同时存在<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#4-%E9%97%AD%E6%BA%90%E6%A8%A1%E5%9E%8B%E4%B8%8E%E5%BC%80%E6%94%BE-proof-%E5%8F%AF%E4%BB%A5%E5%90%8C%E6%97%B6%E5%AD%98%E5%9C%A8" class="hash-link" aria-label="4. 闭源模型与开放 proof 可以同时存在的直接链接" title="4. 闭源模型与开放 proof 可以同时存在的直接链接" translate="no">​</a></h3>
+<p>数学结论可以独立检查，不要求 Astra 本身开源。这比只能相信闭源 benchmark 分数更好。</p>
+<p>但若要把这次发布当成“模型能力实验”，闭源仍是根本限制：外界不能用同一模型、同一 scaffold、同一预算复现成功率。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="它没有证明什么">它没有证明什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E5%AE%83%E6%B2%A1%E6%9C%89%E8%AF%81%E6%98%8E%E4%BB%80%E4%B9%88" class="hash-link" aria-label="它没有证明什么的直接链接" title="它没有证明什么的直接链接" translate="no">​</a></h2>
+<p>截至发布当天，这批结果没有证明：</p>
+<ul>
+<li class="">Astra 已经公开可用；</li>
+<li class="">十项都属于同一等级的“著名难题”；</li>
+<li class="">AI 已解决千禧年问题；</li>
+<li class="">2,000 美元是完整研发成本；</li>
+<li class="">模型能以稳定成功率处理任意开放问题；</li>
+<li class="">形式化 statement 已经得到所有相关领域专家的语义确认；</li>
+<li class="">249 页材料已经完成传统同行评议；</li>
+<li class="">数学家从此只剩下替 AI 检查答案的工作。</li>
+</ul>
+<p>Noam Brown 的一句话反而最诚实：他们尝试了其他重大问题，也失败了；只是 test-time compute 还能继续推高。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="接下来应该盯什么">接下来应该盯什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E6%8E%A5%E4%B8%8B%E6%9D%A5%E5%BA%94%E8%AF%A5%E7%9B%AF%E4%BB%80%E4%B9%88" class="hash-link" aria-label="接下来应该盯什么的直接链接" title="接下来应该盯什么的直接链接" translate="no">​</a></h2>
+<p>判断这是不是一次长期转折，未来几周和几个月至少要看七件事：</p>
+<ol>
+<li class=""><strong>领域专家逐项审查</strong>：尤其是 non-sofic、Connes rigidity 和 quantum parallel repetition；</li>
+<li class=""><strong>Lean challenge 的独立 semantic audit</strong>：statement 是否忠实、definitions 是否存在弱化；</li>
+<li class=""><strong>仓库 errata 与 commit 变化</strong>：发布首日已经持续更新；</li>
+<li class=""><strong>期刊或会议投稿</strong>：能否进入正常同行评议，而不只停在公司 CDN；</li>
+<li class=""><strong>文献新颖性检查</strong>：避免重演 2025 年“旧论文被当成新解”的问题；</li>
+<li class=""><strong>实验 denominator</strong>：总题数、失败率、每题尝试次数与总 compute；</li>
+<li class=""><strong>Astra 产品化</strong>：模型是否发布、第三方能否在相近预算下复现研究能力。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最后的判断">最后的判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E6%9C%80%E5%90%8E%E7%9A%84%E5%88%A4%E6%96%AD" class="hash-link" aria-label="最后的判断的直接链接" title="最后的判断的直接链接" translate="no">​</a></h2>
+<p>这次不应该被缩成“ChatGPT 又做对了十道题”。</p>
+<p>它更像一个新的研究生产方式第一次以足够大的规模公开出现：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">人类积累理论与提出问题</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">        ↓</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">长时程模型搜索、组合和修订论证</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">        ↓</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Lean / Comparator / external kernel 压缩逻辑信任边界</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">        ↓</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">人类负责语义、文献、意义、归因和公共判断</span><br></div></code></pre></div></div>
+<p>与 2025 年那次误报相比，OpenAI 这次提供了真正可以被反驳、复算和审计的对象。这一点非常重要。</p>
+<p>但最准确的当前时态仍然是：</p>
+<blockquote>
+<p><strong>Astra 已经产生了十组高度实质性的数学与理论计算机科学结果，并公开了异常完整的证明资产；它们是否全部成为被数学共同体接受的定理，独立审查才刚刚开始。</strong></p>
+</blockquote>
+<p>如果这些证明顺利通过消化，数学史记住的可能不只是十个 theorem，而是 2026 年开始成形的一种分工：机器大规模探索证明空间，形式系统检查逻辑，人类重新集中到问题、意义、理解与责任。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E4%B8%BB%E8%A6%81%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="一手材料">一手材料<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E4%B8%80%E6%89%8B%E6%9D%90%E6%96%99" class="hash-link" aria-label="一手材料的直接链接" title="一手材料的直接链接" translate="no">​</a></h3>
+<ul>
+<li class=""><a href="https://openai.com/index/ten-advances-in-mathematics/" target="_blank" rel="noopener noreferrer" class="">OpenAI：Ten advances in mathematics and theoretical computer science</a></li>
+<li class=""><a href="https://cdn.openai.com/pdf/ten-proofs-oai.pdf" target="_blank" rel="noopener noreferrer" class="">完整技术文稿：Ten Advances in Mathematics and Theoretical Computer Science</a></li>
+<li class=""><a href="https://github.com/openai/ten-proofs" target="_blank" rel="noopener noreferrer" class="">Lean 形式化仓库：openai/ten-proofs</a></li>
+<li class=""><a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">How the Ideas Came Together：思路重建说明</a></li>
+<li class=""><a href="https://openai.com/index/model-disproves-discrete-geometry-conjecture/" target="_blank" rel="noopener noreferrer" class="">OpenAI 2026 年 5 月单位距离结果</a></li>
+<li class=""><a href="https://leidendeclaration.ai/" target="_blank" rel="noopener noreferrer" class="">Leiden Declaration on AI and Mathematics</a></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="报道与公开讨论">报道与公开讨论<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/openai-astra-ten-math-advances#%E6%8A%A5%E9%81%93%E4%B8%8E%E5%85%AC%E5%BC%80%E8%AE%A8%E8%AE%BA" class="hash-link" aria-label="报道与公开讨论的直接链接" title="报道与公开讨论的直接链接" translate="no">​</a></h3>
+<ul>
+<li class=""><a href="https://www.theinformation.com/briefings/exclusive-openai-previews-astra-ai-model-dc" target="_blank" rel="noopener noreferrer" class="">The Information：Exclusive: OpenAI Previews ‘Astra’ AI Model in DC</a></li>
+<li class=""><a href="https://the-decoder.com/openai-announces-its-next-major-model-astra-by-dropping-ten-previously-unsolved-math-solutions/" target="_blank" rel="noopener noreferrer" class="">The Decoder：Astra 与十项数学结果</a></li>
+<li class=""><a href="https://techcrunch.com/2025/10/19/openais-embarrassing-math/" target="_blank" rel="noopener noreferrer" class="">TechCrunch：OpenAI 2025 年 Erdős 误报回顾</a></li>
+<li class=""><a href="https://x.com/thomasfbloom/status/2083442290735902937" target="_blank" rel="noopener noreferrer" class="">Thomas Bloom：对 non-sofic 结果的评价</a></li>
+<li class=""><a href="https://x.com/thomasfbloom/status/2083444983592284465" target="_blank" rel="noopener noreferrer" class="">Thomas Bloom：为什么不能叫“替代数学家”</a></li>
+<li class=""><a href="https://x.com/polynoamial/status/2083467194663571701" target="_blank" rel="noopener noreferrer" class="">Noam Brown：Astra 与科学推理</a></li>
+<li class=""><a href="https://x.com/polynoamial/status/2083478171975082334" target="_blank" rel="noopener noreferrer" class="">Noam Brown：失败问题与可扩大的 test-time compute</a></li>
+<li class=""><a href="https://news.ycombinator.com/item?id=49132058" target="_blank" rel="noopener noreferrer" class="">Hacker News 首发讨论</a></li>
+</ul>
+<p>延伸阅读：本站此前的 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/ai-math-open-conjectures-icm-2026">2025–2026 AI 数学开放问题全景</a>，解释了为什么奥赛成绩、形式化已知定理、新构造、开放问题和里程碑猜想必须分层评价。</p>]]></content:encoded>
+            <category>ai-math</category>
+            <category>openai</category>
+            <category>astra</category>
+            <category>lean</category>
+            <category>formal-verification</category>
+            <category>open-problems</category>
         </item>
     </channel>
 </rss>
