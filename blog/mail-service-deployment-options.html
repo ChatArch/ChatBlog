@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-Hans" dir="ltr" class="blog-wrapper blog-post-page plugin-blog plugin-id-default" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择 | ChatBlog</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://arch.gh.wzhecnu.cn/ChatBlog/img/social-card.svg"><meta data-rh="true" name="twitter:image" content="https://arch.gh.wzhecnu.cn/ChatBlog/img/social-card.svg"><meta data-rh="true" property="og:url" content="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options"><meta data-rh="true" property="og:locale" content="zh_Hans"><meta data-rh="true" name="docusaurus_locale" content="zh-Hans"><meta data-rh="true" name="docusaurus_tag" content="default"><meta data-rh="true" name="docsearch:language" content="zh-Hans"><meta data-rh="true" name="docsearch:docusaurus_tag" content="default"><meta data-rh="true" property="og:title" content="自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择 | ChatBlog"><meta data-rh="true" name="description" content="解释自建发信服务到底包含哪些组件、邮件从应用到收件箱的过程、Postfix/全家桶/托管 SMTP/混合网关等常见方案，以及部署和验收清单。"><meta data-rh="true" property="og:description" content="解释自建发信服务到底包含哪些组件、邮件从应用到收件箱的过程、Postfix/全家桶/托管 SMTP/混合网关等常见方案，以及部署和验收清单。"><meta data-rh="true" property="og:type" content="article"><meta data-rh="true" property="article:published_time" content="2026-08-09T00:00:00.000Z"><meta data-rh="true" property="article:tag" content="email,smtp,mail-server,devops,chatarch"><link data-rh="true" rel="icon" href="/ChatBlog/img/favicon.svg"><link data-rh="true" rel="canonical" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options"><link data-rh="true" rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options" hreflang="zh-Hans"><link data-rh="true" rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","@id":"https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options","mainEntityOfPage":"https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options","url":"https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options","headline":"自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择","name":"自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择","description":"解释自建发信服务到底包含哪些组件、邮件从应用到收件箱的过程、Postfix/全家桶/托管 SMTP/混合网关等常见方案，以及部署和验收清单。","datePublished":"2026-08-09T00:00:00.000Z","author":[],"keywords":[],"isPartOf":{"@type":"Blog","@id":"https://arch.gh.wzhecnu.cn/ChatBlog/blog","name":"ChatBlog 博客"}}</script><link rel="alternate" type="application/rss+xml" href="/ChatBlog/blog/rss.xml" title="ChatBlog RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/ChatBlog/blog/atom.xml" title="ChatBlog Atom Feed"><link rel="stylesheet" href="/ChatBlog/assets/css/styles.4e7bb395.css">
+<script src="/ChatBlog/assets/js/runtime~main.c4a486b8.js" defer="defer"></script>
+<script src="/ChatBlog/assets/js/main.1ef256d1.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ChatBlog/img/logo.svg"><div role="region" aria-label="跳到主要内容"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">跳到主要内容</a></div><nav aria-label="主导航" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="切换导航栏" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ChatBlog/"><div class="navbar__logo"><img src="/ChatBlog/img/logo.svg" alt="ChatBlog logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ChatBlog/img/logo.svg" alt="ChatBlog logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">ChatBlog</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ChatBlog/blog">博客</a><a class="navbar__item navbar__link" href="/ChatBlog/slides">Slides</a><a class="navbar__item navbar__link" href="/ChatBlog/blog/archive">时间轴</a><a class="navbar__item navbar__link" href="/ChatBlog/blog/tags">标签</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/ChatArch/ChatBlog" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="切换浅色/暗黑模式（当前为system mode）"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="container margin-vert--lg"><div class="row"><aside class="col col--3"><nav class="sidebar_re4s thin-scrollbar" aria-label="最近博文导航"><div class="sidebarItemTitle_pO2u margin-bottom--md">Recent posts</div><div role="group"><h3 class="yearGroupHeading_rMGB">2026</h3><ul class="sidebarItemList_Yudw clean-list"><li class="sidebarItem__DBe"><a aria-current="page" class="sidebarItemLink_mo7H sidebarItemLinkActive_I1ZP" href="/ChatBlog/blog/mail-service-deployment-options">自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/blog/mattermost-posting-model-slack-comparison">看懂 Mattermost：频道、帖子、Thread、私聊，以及它和 Slack/飞书哪里不一样</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/blog/mattermost-hermes-agent-workspace">把 Agent 放进自己的实时工作间：Mattermost、Hermes 与 ChatArch 的下一块拼图</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/blog/mobile-web-realtime-transcription-pwa">网页录音到 AI 纪要：先选成熟 ASR，再看现成产品</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/blog/audio-transcription-meeting-notes-open-source">录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座</a></li></ul></div></nav></aside><main class="col col--7"><article class=""><header><h1 class="title_f1Hy">自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择</h1><div class="container_mt6G margin-vert--md"><time datetime="2026-08-09T00:00:00.000Z">2026年8月9日</time> · <!-- -->阅读需 16 分钟</div></header><div id="__blog-post-container" class="markdown"><p>前一篇 <a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/smtp-email-delivery-basics-and-provider-configuration" target="_blank" rel="noopener noreferrer" class="">SMTP 入门</a> 讲的是“SMTP 是什么、邮件怎样发出去、常见平台怎么配置”。这一篇往下一层：如果我们要给自己的服务部署一个 <strong>mail service</strong>，甚至自建一个能发邮件的服务器，到底要部署哪些东西？</p>
+<p>结论先说：<strong>自建发信服务不是把 Postfix 跑起来就结束了，而是要同时交付协议链路、域名身份、IP 信誉和运维闭环。</strong></p>
+<p>对大多数产品团队来说，最稳妥的起点不是“完全自建直连全网收件服务器”，而是先做一个自己可控的发信网关：应用统一提交邮件到内部 SMTP/API，由这个网关负责模板、限流、日志、队列、退信处理，再转交给 SES、SendGrid、Mailgun、Postmark、Resend 或企业邮箱这类上游发信服务。只有当你能控制 25 端口、PTR/rDNS、IP 信誉、退信投诉和 7x24 运维时，才值得进一步做 direct-send 的自建 MTA。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先拆清楚你要自建的是哪一层">先拆清楚：你要自建的是哪一层？<a href="#先拆清楚你要自建的是哪一层" class="hash-link" aria-label="先拆清楚：你要自建的是哪一层？的直接链接" title="先拆清楚：你要自建的是哪一层？的直接链接" translate="no">​</a></h2>
+<p>“自建邮件服务器”容易混在一起说，但实际至少有三种目标：</p>
+<table><thead><tr><th>目标</th><th>你真正要交付的东西</th><th style="text-align:right">是否需要收信</th><th>典型场景</th></tr></thead><tbody><tr><td><strong>只发系统邮件</strong></td><td>应用发信入口、队列、日志、模板、上游 SMTP/API 凭据</td><td style="text-align:right">否</td><td>注册验证、通知、告警、账单</td></tr><tr><td><strong>自建出站 MTA</strong></td><td>Postfix/Exim/OpenSMTPD 等直接投递到收件方 MX</td><td style="text-align:right">可选</td><td>需要控制投递链路、减少第三方依赖</td></tr><tr><td><strong>完整邮箱系统</strong></td><td>SMTP submission、MX、IMAP/POP3、Webmail、账号、反垃圾、备份</td><td style="text-align:right">是</td><td>团队邮箱、社区域名邮箱、个人邮箱托管</td></tr></tbody></table>
+<p>这三个目标的难度差很多。只发系统邮件时，最重要的是“应用怎么可靠地把邮件交出去”；完整邮箱系统还要负责“别人怎么给你发、用户怎么收、垃圾邮件怎么挡、数据怎么备份”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一封邮件从应用到收件箱的过程">一封邮件从应用到收件箱的过程<a href="#一封邮件从应用到收件箱的过程" class="hash-link" aria-label="一封邮件从应用到收件箱的过程的直接链接" title="一封邮件从应用到收件箱的过程的直接链接" translate="no">​</a></h2>
+<p>可以把发信路径理解成六段：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">业务系统</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 发信入口（SMTP submission 或 HTTP API）</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 发信队列 / MSA / MTA</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; DNS 查询收件域名 MX</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 连接对方 MX（通常是 SMTP port 25）</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 对方反垃圾、身份认证、收件规则</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 收件箱 / 垃圾箱 / 退信 / 延迟重试</span><br></div></code></pre></div></div>
+<p>这里有两个常被混淆的 SMTP 角色：</p>
+<ol>
+<li class=""><strong>Message submission</strong>：应用或邮件客户端把邮件“提交”给自己的发信服务器。RFC 6409 明确把 message submission 和 message relay 分开，并说明 submission 通常使用 587 端口。[2]</li>
+<li class=""><strong>Message relay / transfer</strong>：MTA 之间把邮件从一个域投递到另一个域。RFC 6409 同时说明 relay 仍然使用 SMTP 的 25 端口。[2]</li>
+</ol>
+<p>所以，常见端口可以这样记：</p>
+<table><thead><tr><th style="text-align:right">端口</th><th>常见用途</th><th>部署含义</th></tr></thead><tbody><tr><td style="text-align:right">25</td><td>MTA 到 MTA 的服务器间投递</td><td>direct-send 必须能从服务器出站访问；收信服务器也通常要入站开放</td></tr><tr><td style="text-align:right">587</td><td>邮件客户端/应用提交邮件，通常 STARTTLS + 认证</td><td>推荐给业务系统或用户客户端使用</td></tr><tr><td style="text-align:right">465</td><td>implicit TLS 的 SMTP submission，也常叫 submissions</td><td>RFC 8314 将 implicit TLS submission 放回标准化轨道，并记录 <code>submissions</code> 端口 465。[3]</td></tr></tbody></table>
+<p>如果你只是给应用发验证码，业务系统不应该直接连全世界的 MX。更好的方式是连自己的 submission/gateway，认证后入队，由后端统一决定是直投还是走上游 relay。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="发信服务的最低可用架构">发信服务的最低可用架构<a href="#发信服务的最低可用架构" class="hash-link" aria-label="发信服务的最低可用架构的直接链接" title="发信服务的最低可用架构的直接链接" translate="no">​</a></h2>
+<p>一个最低可用的发信服务，至少要有下面几块：</p>
+<table><thead><tr><th>层</th><th>组件</th><th>最低要求</th></tr></thead><tbody><tr><td>应用入口</td><td>SMTP submission 或 HTTP API</td><td>认证、TLS、请求日志、合理超时</td></tr><tr><td>队列</td><td>MTA 队列或任务队列</td><td>可重试、可观察、失败不丢信</td></tr><tr><td>投递</td><td>Postfix/Exim/OpenSMTPD/maddy 或上游 SMTP/API</td><td>不能变成 open relay；能区分本地域和外部域</td></tr><tr><td>身份</td><td>SPF、DKIM、DMARC、PTR/rDNS、HELO/EHLO hostname</td><td>From 域名与认证域名要对齐</td></tr><tr><td>信誉</td><td>发送频率、退信率、投诉率、内容质量</td><td>有限流、退订、suppression list 和监控</td></tr><tr><td>运维</td><td>日志、队列查看、告警、备份、密钥轮换</td><td>能解释“这封邮件为什么没到”</td></tr></tbody></table>
+<p>Postfix 的官方文档把 <code>myhostname</code>、<code>mydomain</code>、<code>myorigin</code> 等作为基础配置核心：它们决定服务器的 FQDN、默认域名以及出站邮件显示的域名。[7] 这些不是装饰项。收件方会把你的 HELO/EHLO、PTR、From 域、SPF、DKIM、DMARC 和内容一起看。</p>
+<p>最危险的反例是 open relay：任何外部机器都能借你的服务器发邮件。Postfix 2.10 以后推荐把“谁有权 relay”放在 <code>smtpd_relay_restrictions</code>，默认策略包含 <code>permit_mynetworks</code>、<code>permit_sasl_authenticated</code> 和对未授权目的地的拒绝/延迟拒绝。[8] 换句话说，<strong>只有可信网段或通过 SASL 认证的客户端可以借你转发外部邮件</strong>。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="常见方案怎么选">常见方案怎么选<a href="#常见方案怎么选" class="hash-link" aria-label="常见方案怎么选的直接链接" title="常见方案怎么选的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-a完全托管-smtpapi-服务">方案 A：完全托管 SMTP/API 服务<a href="#方案-a完全托管-smtpapi-服务" class="hash-link" aria-label="方案 A：完全托管 SMTP/API 服务的直接链接" title="方案 A：完全托管 SMTP/API 服务的直接链接" translate="no">​</a></h3>
+<p>代表：Amazon SES、SendGrid、Mailgun、Postmark、Resend、企业邮箱 SMTP、云厂商 DirectMail。</p>
+<p>这是最适合产品早期的方案。你不自建 MTA，而是把发信身份、DKIM、退信、投诉、配额、信誉爬坡交给服务商。SES 的 deliverability 文档把退信、投诉、suppression list、认证、发送配额、内容过滤、信誉和通知作为发信可达率的核心概念。[14]</p>
+<p>优点：</p>
+<ul>
+<li class="">起步快，通常不需要自己维护 25 端口、IP 信誉和收件方兼容性。</li>
+<li class="">有 bounce/complaint webhook、统计、模板、配额和 suppression list。</li>
+<li class="">适合验证码、交易邮件、系统通知、营销邮件的早期阶段。</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li class="">依赖第三方账号和规则；风控、审核、额度可能影响发信。</li>
+<li class="">上游服务的 API/SMTP 形状会进入你的业务系统，后续迁移有成本。</li>
+<li class="">需要注意数据合规和邮件内容合规。</li>
+</ul>
+<p>适合：<strong>绝大多数业务系统的第一版发信能力</strong>。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-b自建发信网关--上游-relay">方案 B：自建发信网关 + 上游 relay<a href="#方案-b自建发信网关--上游-relay" class="hash-link" aria-label="方案 B：自建发信网关 + 上游 relay的直接链接" title="方案 B：自建发信网关 + 上游 relay的直接链接" translate="no">​</a></h3>
+<p>这是我最推荐的工程化折中：你部署一个内部 mail gateway，业务系统只认它；gateway 再把邮件交给 SES、Mailgun、企业邮箱或备用上游。</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">业务系统 -&gt; 内部 SMTP/API Gateway -&gt; 队列/模板/限流/日志 -&gt; 上游 SMTP/API -&gt; 收件方</span><br></div></code></pre></div></div>
+<p>优点：</p>
+<ul>
+<li class="">业务系统不直接散落一堆 SMTP 密码和供应商 SDK。</li>
+<li class="">可以统一模板、审计、限流、重试、去重、退信处理和 provider failover。</li>
+<li class="">将来要从 SES 换到 Postmark，或从企业邮箱换到自建直投，业务侧改动小。</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li class="">你仍然需要维护一个小服务和队列。</li>
+<li class="">如果 gateway 只做同步转发，没有持久队列，故障时仍然会丢邮件。</li>
+</ul>
+<p>适合：<strong>ChatArch 这类多服务、多机器人、多社区入口共享一套通知能力的场景</strong>。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-c自建-direct-send-出站-mta">方案 C：自建 direct-send 出站 MTA<a href="#方案-c自建-direct-send-出站-mta" class="hash-link" aria-label="方案 C：自建 direct-send 出站 MTA的直接链接" title="方案 C：自建 direct-send 出站 MTA的直接链接" translate="no">​</a></h3>
+<p>代表：Postfix、Exim、OpenSMTPD、maddy 的出站能力。</p>
+<p>这种方案会由你的服务器直接查收件域 MX，然后连对方 25 端口投递。它看起来“最独立”，但实际门槛最高。AWS EC2 默认就会阻止到公网 IPv4/IPv6 的 25 端口出站流量，需要申请解除限制。[15] 很多云厂商、住宅网络和企业网络也会限制 25 端口，原因很简单：垃圾邮件滥用风险太高。</p>
+<p>要做 direct-send，至少先确认：</p>
+<ul>
+<li class="">你的服务器能稳定出站访问 25 端口。</li>
+<li class="">服务器有静态公网 IP，且可配置 PTR/rDNS。</li>
+<li class="">PTR 指向的主机名有正向 A/AAAA 记录回到同一个 IP。</li>
+<li class="">HELO/EHLO hostname、From 域名、DKIM d= 域、SPF include/ip、DMARC alignment 能解释清楚。</li>
+<li class="">有退信和投诉处理；不能对 hard bounce 地址反复发送。</li>
+<li class="">有队列监控、速率控制、灰名单/临时失败重试策略。</li>
+</ul>
+<p>Gmail 的 sender guidelines 明确要求或建议 SPF/DKIM、DMARC、有效的正向/反向 DNS、TLS、低 spam rate；对于每天发给 Gmail 超过 5,000 封的发送方，还要求 SPF、DKIM、DMARC、From 对齐、一键退订等更严格条件。[16]</p>
+<p>适合：<strong>对投递链路控制有强需求、能长期维护邮件基础设施、并愿意承担信誉冷启动的团队</strong>。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-d完整自托管邮箱套件">方案 D：完整自托管邮箱套件<a href="#方案-d完整自托管邮箱套件" class="hash-link" aria-label="方案 D：完整自托管邮箱套件的直接链接" title="方案 D：完整自托管邮箱套件的直接链接" translate="no">​</a></h3>
+<p>代表：Mail-in-a-Box、mailcow、Mailu、Docker Mailserver、Modoboa、iRedMail。</p>
+<p>这类方案不是只解决“发系统邮件”，而是把邮箱系统完整打包：Postfix、Dovecot、Webmail、反垃圾、TLS、DKIM、DMARC、账号管理、备份、管理后台等。</p>
+<ul>
+<li class="">Docker Mailserver 自称是 production-ready、fullstack 但 simple 的容器化邮件服务器，包含 SMTP、IMAP、LDAP、反垃圾、反病毒等；README 列出的组件包括 Postfix、Dovecot、Rspamd、ClamAV、OpenDKIM/OpenDMARC、Fail2ban 和证书支持。[17]</li>
+<li class="">Mailu 是一组 Docker images，目标是易安装、易维护、功能完整的邮件服务器；它列出的能力包括 IMAP、SMTP、Submission、Webmail/Admin、TLS、DANE、MTA-STS、outgoing DKIM、DMARC/SPF、反垃圾等。[19]</li>
+<li class="">Mail-in-a-Box 更像“把整台机器变成一台邮箱盒子”。它的 setup guide 明确不建议在家用网络运行，因为住宅网络常见 25 端口阻断、黑名单、动态 IP 和不可配置 reverse DNS；同时它要求安装在全新的专用机器上，并会自管理配置。[13]</li>
+</ul>
+<p>优点：</p>
+<ul>
+<li class="">收信、发信、Webmail、账号、反垃圾、证书等开箱集成。</li>
+<li class="">对个人域名邮箱、小组织邮箱、社区邮箱比较友好。</li>
+<li class="">文档会覆盖 DNS、证书、账号、Webmail 等完整路径。</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li class="">不是“轻量发验证码”的方案；运维面比单纯发信大很多。</li>
+<li class="">容器编排、升级、备份、磁盘、日志、反垃圾策略都要长期维护。</li>
+<li class="">一旦作为正式邮箱使用，数据可靠性和迁移成本会变高。</li>
+</ul>
+<p>适合：<strong>真的要拥有邮箱账户和收信能力，而不是只给业务系统发通知</strong>。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-e一体化轻量服务器--内部测试-mail-sink">方案 E：一体化轻量服务器 / 内部测试 mail sink<a href="#方案-e一体化轻量服务器--内部测试-mail-sink" class="hash-link" aria-label="方案 E：一体化轻量服务器 / 内部测试 mail sink的直接链接" title="方案 E：一体化轻量服务器 / 内部测试 mail sink的直接链接" translate="no">​</a></h3>
+<p>maddy 是另一个有意思的方向：它把 SMTP MTA、MX、IMAP、DKIM/SPF/DMARC/DANE/MTA-STS 等功能整合到一个 daemon，目标是用统一配置替代 Postfix、Dovecot、OpenDKIM、OpenSPF、OpenDMARC 等多组件组合。[12] 但它也在首页提醒 IMAP storage 仍是 beta，若需要稳定、功能丰富的 IMAP，可能仍应选择 Dovecot。[12]</p>
+<p>另外，开发环境里经常需要的不是“发到真实互联网”，而是 mail sink：Mailpit、MailHog、smtp4dev 这类工具可以接收测试邮件、展示 HTML、检查 headers，但不会真正投递。它们适合 CI、预发和本地调试，不应该被误认为生产发信服务。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="dns-和身份认证为什么它决定到达率">DNS 和身份认证：为什么它决定到达率<a href="#dns-和身份认证为什么它决定到达率" class="hash-link" aria-label="DNS 和身份认证：为什么它决定到达率的直接链接" title="DNS 和身份认证：为什么它决定到达率的直接链接" translate="no">​</a></h2>
+<p>发信服务器的技术栈可以换，但下面这些 DNS/身份项绕不开：</p>
+<table><thead><tr><th>项</th><th>作用</th><th>常见错误</th></tr></thead><tbody><tr><td>MX</td><td>告诉别人你的域名收信服务器是谁</td><td>只发信不收信时不一定要接管 MX；完整邮箱必须配置</td></tr><tr><td>A/AAAA</td><td>服务器主机名解析到 IP</td><td>主机名和 PTR 对不上</td></tr><tr><td>PTR/rDNS</td><td>IP 反查到主机名</td><td>云厂商不支持或没申请，导致信誉差</td></tr><tr><td>SPF</td><td>声明哪些服务器/服务商可以代表域名发信</td><td>忘记 include 上游；记录超过 DNS lookup 限制</td></tr><tr><td>DKIM</td><td>用域名私钥给邮件签名，收件方用 DNS 公钥验证</td><td>key 太短、selector 错、签名域与 From 不对齐</td></tr><tr><td>DMARC</td><td>告诉收件方 SPF/DKIM 失败时怎么处理，并要求 alignment</td><td>一上来 <code>p=reject</code>，但还没盘点所有合法发信源</td></tr><tr><td>TLS</td><td>传输过程加密</td><td>submission 端口没强制 TLS；证书和 hostname 不匹配</td></tr><tr><td>List-Unsubscribe</td><td>批量/订阅邮件退订</td><td>营销邮件没有清晰退订，投诉率升高</td></tr></tbody></table>
+<p>Google 的 guidelines 直接把 SPF/DKIM、DMARC、正反向 DNS、TLS、From alignment 和低 spam rate 放在发件方要求中。[16] 这说明“邮件能不能进 inbox”不是单点配置，而是身份、网络、内容和行为共同决定。</p>
+<p>一个稳妥的上线顺序是：</p>
+<ol>
+<li class="">先给域名加 SPF，把现有所有合法发信源列进去。</li>
+<li class="">为新发信服务生成 DKIM selector，先只让少量邮件使用它。</li>
+<li class="">添加 <code>v=DMARC1; p=none; rua=mailto:dmarc-report@example.com</code> 观察报告。</li>
+<li class="">确认所有合法来源都能 SPF 或 DKIM pass，并且与 From 域名 alignment。</li>
+<li class="">再逐步收紧到 <code>quarantine</code> 或 <code>reject</code>。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一条可执行的部署路径">一条可执行的部署路径<a href="#一条可执行的部署路径" class="hash-link" aria-label="一条可执行的部署路径的直接链接" title="一条可执行的部署路径的直接链接" translate="no">​</a></h2>
+<p>下面按“自建发信网关，必要时可升级到 direct-send”的思路走。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-明确边界">1. 明确边界<a href="#1-明确边界" class="hash-link" aria-label="1. 明确边界的直接链接" title="1. 明确边界的直接链接" translate="no">​</a></h3>
+<p>先写下四个决策：</p>
+<ul>
+<li class="">是只发系统邮件，还是要收信？</li>
+<li class="">预计每天发送多少封？是否包含营销/订阅？</li>
+<li class="">是否必须 direct-send，还是可以走上游 SMTP/API？</li>
+<li class="">失败邮件要进入哪里：日志、队列、人工工单，还是自动 suppression list？</li>
+</ul>
+<p>如果答案是“只发验证码和通知”，不要一开始就上完整 mailcow/Mailu。先做发信网关 + 上游 relay。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-选主机和域名">2. 选主机和域名<a href="#2-选主机和域名" class="hash-link" aria-label="2. 选主机和域名的直接链接" title="2. 选主机和域名的直接链接" translate="no">​</a></h3>
+<p>主机最好满足：</p>
+<ul>
+<li class="">静态公网 IP。</li>
+<li class="">可配置 PTR/rDNS。</li>
+<li class="">可开放/申请开放 25 出站；如果只走上游 relay，至少要能访问 587/465/HTTPS。</li>
+<li class="">不在住宅宽带、动态 IP、廉价高滥用段上。</li>
+<li class="">有监控、备份、日志保留和系统更新机制。</li>
+</ul>
+<p>域名建议单独用子域，例如：</p>
+<ul>
+<li class=""><code>mail.example.com</code>：服务器主机名。</li>
+<li class=""><code>bounce.example.com</code>：退信域。</li>
+<li class=""><code>notifications.example.com</code>：系统通知 From 域。</li>
+</ul>
+<p>这样可以把主站域名、营销域名、事务邮件域名隔离，减少一个通道出问题时影响全部邮件。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-部署-submissiongateway">3. 部署 submission/gateway<a href="#3-部署-submissiongateway" class="hash-link" aria-label="3. 部署 submission/gateway的直接链接" title="3. 部署 submission/gateway的直接链接" translate="no">​</a></h3>
+<p>如果用 Postfix 做 gateway，核心原则是：</p>
+<div class="language-ini codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-ini codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain"># /etc/postfix/main.cf 示例，只表达形状，不可直接复制上线</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">myhostname = mail.example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">mydomain = example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">myorigin = $mydomain</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">inet_interfaces = all</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"># 只允许本机、内网或认证用户提交外部 relay</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">mynetworks = 127.0.0.0/8 [::1]/128 10.0.0.0/24</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"># 如果走上游 SMTP relay</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">relayhost = [email-smtp.region.amazonaws.com]:587</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtp_tls_security_level = encrypt</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtp_sasl_auth_enable = yes</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtp_sasl_password_maps = lmdb:/etc/postfix/sasl_passwd</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtp_sasl_security_options = noanonymous</span><br></div></code></pre></div></div>
+<p>上线前要特别检查两件事：</p>
+<ol>
+<li class="">未认证外部客户端不能向任意外部域 relay。</li>
+<li class="">业务系统连接 submission 时必须走 TLS 和认证，不能把 SMTP 密码写进前端或公开仓库。</li>
+</ol>
+<p>如果你更偏应用层，也可以自写一个 HTTP mail gateway：业务系统 POST 到 gateway，gateway 写队列，再调用 SES/SendGrid API。这比让每个业务服务各自接 SMTP 更容易做审计、幂等、限流和多 provider 切换。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-配-dns-和密钥">4. 配 DNS 和密钥<a href="#4-配-dns-和密钥" class="hash-link" aria-label="4. 配 DNS 和密钥的直接链接" title="4. 配 DNS 和密钥的直接链接" translate="no">​</a></h3>
+<p>至少要配置：</p>
+<div class="language-dns codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-dns codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">mail.example.com.        A      203.0.113.10</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">10.113.0.203.in-addr.arpa. PTR  mail.example.com.</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">example.com.             TXT    &quot;v=spf1 include:amazonses.com -all&quot;</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">selector1._domainkey.example.com. TXT &quot;v=DKIM1; k=rsa; p=...&quot;</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">_dmarc.example.com.      TXT    &quot;v=DMARC1; p=none; rua=mailto:dmarc-report@example.com&quot;</span><br></div></code></pre></div></div>
+<p>如果 direct-send，不要忽略 PTR：Gmail guidelines 明确要求发送 IP 有对应 PTR，且 PTR hostname 的正向 A/AAAA 要回到同一个发送 IP。[16]</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-做-warm-up-和限流">5. 做 warm-up 和限流<a href="#5-做-warm-up-和限流" class="hash-link" aria-label="5. 做 warm-up 和限流的直接链接" title="5. 做 warm-up 和限流的直接链接" translate="no">​</a></h3>
+<p>新 IP、新域名、新 DKIM selector 都需要信誉爬坡。不要第一天就把所有通知、营销、批量任务都切过来。</p>
+<p>建议：</p>
+<ul>
+<li class="">先发内部测试和低风险事务邮件。</li>
+<li class="">按域名限速，例如 Gmail、Outlook、企业域分别限制。</li>
+<li class="">hard bounce 立即进入 suppression list，不要反复尝试。[14]</li>
+<li class="">投诉地址和 abuse/postmaster 邮箱要有人看。</li>
+<li class="">营销/订阅邮件要有退订，且尊重退订。</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-验收不是收到了我自己的测试邮件">6. 验收不是“收到了我自己的测试邮件”<a href="#6-验收不是收到了我自己的测试邮件" class="hash-link" aria-label="6. 验收不是“收到了我自己的测试邮件”的直接链接" title="6. 验收不是“收到了我自己的测试邮件”的直接链接" translate="no">​</a></h3>
+<p>真正的验收清单应该是：</p>
+<table><thead><tr><th>检查</th><th>怎么看</th></tr></thead><tbody><tr><td>SMTP submission</td><td>认证、TLS、错误密码拒绝、外部未认证 relay 被拒绝</td></tr><tr><td>队列</td><td>模拟上游故障后邮件入队，恢复后能重试</td></tr><tr><td>DNS</td><td>SPF/DKIM/DMARC/PTR/正向解析全部一致</td></tr><tr><td>Headers</td><td>收件箱里 <code>Authentication-Results</code> 显示 SPF/DKIM/DMARC pass</td></tr><tr><td>退信</td><td>不存在邮箱触发 hard bounce，系统能记录并停止后续发送</td></tr><tr><td>投诉</td><td>abuse/postmaster/feedback loop 或 provider webhook 有入口</td></tr><tr><td>限流</td><td>单域名、单用户、单模板、全局频率都有限制</td></tr><tr><td>观测</td><td>能按 message-id 查到提交、入队、投递、退信全过程</td></tr><tr><td>安全</td><td>不是 open relay；凭据可轮换；日志不泄露 token/验证码全文</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案对比表">方案对比表<a href="#方案对比表" class="hash-link" aria-label="方案对比表的直接链接" title="方案对比表的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>方案</th><th style="text-align:right">自控程度</th><th style="text-align:right">到达率起步</th><th style="text-align:right">运维成本</th><th>最适合</th></tr></thead><tbody><tr><td>托管 SMTP/API</td><td style="text-align:right">低到中</td><td style="text-align:right">高</td><td style="text-align:right">低</td><td>产品早期、交易邮件、告警</td></tr><tr><td>自建 gateway + 上游 relay</td><td style="text-align:right">中</td><td style="text-align:right">高</td><td style="text-align:right">中</td><td>多服务共享发信能力、需要审计/模板/限流</td></tr><tr><td>自建 direct-send MTA</td><td style="text-align:right">高</td><td style="text-align:right">低到中，需要爬坡</td><td style="text-align:right">高</td><td>明确要控制投递链路且有运维能力</td></tr><tr><td>完整邮箱套件</td><td style="text-align:right">高</td><td style="text-align:right">中，取决于 IP/DNS/策略</td><td style="text-align:right">高</td><td>自托管团队邮箱、社区邮箱</td></tr><tr><td>mail sink / 测试 SMTP</td><td style="text-align:right">仅内部</td><td style="text-align:right">不投递</td><td style="text-align:right">低</td><td>本地、CI、预发测试</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我的建议">我的建议<a href="#我的建议" class="hash-link" aria-label="我的建议的直接链接" title="我的建议的直接链接" translate="no">​</a></h2>
+<p>如果目标是给 ChatArch 这类服务发邮件，我会按三阶段做：</p>
+<ol>
+<li class=""><strong>第一阶段：托管 SMTP/API 直连</strong>。先把 SPF/DKIM/DMARC 和 bounce webhook 打通，确保产品能发验证码、通知、告警。</li>
+<li class=""><strong>第二阶段：自建 mail gateway</strong>。所有服务只连 gateway；gateway 统一模板、限流、队列、日志、退信和 provider 路由。</li>
+<li class=""><strong>第三阶段：选择性 direct-send 或完整邮箱</strong>。只有当确实需要摆脱上游、拥有固定 IP/PTR、能维护 reputation 和反垃圾体系时，再引入 Postfix direct-send 或 mailcow/Mailu/Docker Mailserver 这类完整套件。</li>
+</ol>
+<p>换句话说，“自建 mail service”的正确起点通常不是“我要拥有一台全功能邮箱服务器”，而是“我要拥有一条可观测、可替换、不会丢信、不会变成 open relay 的发信链路”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="sources">Sources<a href="#sources" class="hash-link" aria-label="Sources的直接链接" title="Sources的直接链接" translate="no">​</a></h2>
+<p>[2] <a href="https://www.rfc-editor.org/rfc/rfc6409.html" target="_blank" rel="noopener noreferrer" class="">https://www.rfc-editor.org/rfc/rfc6409.html</a> — RFC 6409: Message Submission for Mail
+[3] <a href="https://www.rfc-editor.org/rfc/rfc8314.html" target="_blank" rel="noopener noreferrer" class="">https://www.rfc-editor.org/rfc/rfc8314.html</a> — RFC 8314: Cleartext Considered Obsolete
+[7] <a href="https://www.postfix.org/BASIC_CONFIGURATION_README.html" target="_blank" rel="noopener noreferrer" class="">https://www.postfix.org/BASIC_CONFIGURATION_README.html</a> — Postfix Basic Configuration
+[8] <a href="https://www.postfix.org/postconf.5.html" target="_blank" rel="noopener noreferrer" class="">https://www.postfix.org/postconf.5.html</a> — Postfix smtpd_relay_restrictions
+[12] <a href="https://maddy.email" target="_blank" rel="noopener noreferrer" class="">https://maddy.email</a> — maddy documentation
+[13] <a href="https://mailinabox.email/guide.html" target="_blank" rel="noopener noreferrer" class="">https://mailinabox.email/guide.html</a> — Mail-in-a-Box guide
+[14] <a href="https://docs.aws.amazon.com/ses/latest/dg/send-email-concepts-deliverability.html" target="_blank" rel="noopener noreferrer" class="">https://docs.aws.amazon.com/ses/latest/dg/send-email-concepts-deliverability.html</a> — Amazon SES deliverability concepts
+[15] <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html" target="_blank" rel="noopener noreferrer" class="">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html</a> — AWS EC2 port 25 throttling
+[16] <a href="https://support.google.com/a/answer/81126" target="_blank" rel="noopener noreferrer" class="">https://support.google.com/a/answer/81126</a> — Google email sender guidelines
+[17] <a href="https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/README.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/README.md</a> — Docker Mailserver README
+[19] <a href="https://raw.githubusercontent.com/Mailu/Mailu/master/README.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/Mailu/Mailu/master/README.md</a> — Mailu README</p></div><footer class="docusaurus-mt-lg"><div class="row margin-top--sm theme-blog-footer-edit-meta-row"><div class="col"><b>标签：</b><ul class="tags_jXut padding--none margin-left--sm"><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/email">email</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/smtp">smtp</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/mail-server">mail-server</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/devops">devops</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/chatarch">chatarch</a></li></ul></div></div><div class="row margin-top--sm theme-blog-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/ChatArch/ChatBlog/tree/main/blog/2026-08-09-mail-service-deployment-options.mdx" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>编辑此页</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="博文分页导航"><a class="pagination-nav__link pagination-nav__link--next" href="/ChatBlog/blog/mattermost-posting-model-slack-comparison"><div class="pagination-nav__sublabel">较旧一篇</div><div class="pagination-nav__label">看懂 Mattermost：频道、帖子、Thread、私聊，以及它和 Slack/飞书哪里不一样</div></a></nav></main><div class="col col--2"><div class="tableOfContents_bqdL thin-scrollbar"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#先拆清楚你要自建的是哪一层" class="table-of-contents__link toc-highlight">先拆清楚：你要自建的是哪一层？</a></li><li><a href="#一封邮件从应用到收件箱的过程" class="table-of-contents__link toc-highlight">一封邮件从应用到收件箱的过程</a></li><li><a href="#发信服务的最低可用架构" class="table-of-contents__link toc-highlight">发信服务的最低可用架构</a></li><li><a href="#常见方案怎么选" class="table-of-contents__link toc-highlight">常见方案怎么选</a><ul><li><a href="#方案-a完全托管-smtpapi-服务" class="table-of-contents__link toc-highlight">方案 A：完全托管 SMTP/API 服务</a></li><li><a href="#方案-b自建发信网关--上游-relay" class="table-of-contents__link toc-highlight">方案 B：自建发信网关 + 上游 relay</a></li><li><a href="#方案-c自建-direct-send-出站-mta" class="table-of-contents__link toc-highlight">方案 C：自建 direct-send 出站 MTA</a></li><li><a href="#方案-d完整自托管邮箱套件" class="table-of-contents__link toc-highlight">方案 D：完整自托管邮箱套件</a></li><li><a href="#方案-e一体化轻量服务器--内部测试-mail-sink" class="table-of-contents__link toc-highlight">方案 E：一体化轻量服务器 / 内部测试 mail sink</a></li></ul></li><li><a href="#dns-和身份认证为什么它决定到达率" class="table-of-contents__link toc-highlight">DNS 和身份认证：为什么它决定到达率</a></li><li><a href="#一条可执行的部署路径" class="table-of-contents__link toc-highlight">一条可执行的部署路径</a><ul><li><a href="#1-明确边界" class="table-of-contents__link toc-highlight">1. 明确边界</a></li><li><a href="#2-选主机和域名" class="table-of-contents__link toc-highlight">2. 选主机和域名</a></li><li><a href="#3-部署-submissiongateway" class="table-of-contents__link toc-highlight">3. 部署 submission/gateway</a></li><li><a href="#4-配-dns-和密钥" class="table-of-contents__link toc-highlight">4. 配 DNS 和密钥</a></li><li><a href="#5-做-warm-up-和限流" class="table-of-contents__link toc-highlight">5. 做 warm-up 和限流</a></li><li><a href="#6-验收不是收到了我自己的测试邮件" class="table-of-contents__link toc-highlight">6. 验收不是“收到了我自己的测试邮件”</a></li></ul></li><li><a href="#方案对比表" class="table-of-contents__link toc-highlight">方案对比表</a></li><li><a href="#我的建议" class="table-of-contents__link toc-highlight">我的建议</a></li><li><a href="#sources" class="table-of-contents__link toc-highlight">Sources</a></li></ul></div></div></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">内容</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/blog">最新博客</a></li><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/slides">Slides</a></li><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/blog/archive">时间轴</a></li><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/blog/tags">标签</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">源码</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/ChatArch/ChatBlog" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 ChatArch. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
