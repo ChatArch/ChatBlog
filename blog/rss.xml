@@ -4,10 +4,144 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Sun, 09 Aug 2026 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 10 Aug 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[实时语音转录怎么接：讯飞、阿里云、火山引擎、腾讯云四条路线]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration</guid>
+            <pubDate>Mon, 10 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[只看“边说边出字”的实时 ASR，把科大讯飞、阿里云 Paraformer、火山引擎豆包语音、腾讯云实时语音识别拆成控制台开通、API 鉴权、WebSocket relay、部署位置、计费和 A/B 实测流程。]]></description>
+            <content:encoded><![CDATA[<p>这次先把问题收窄到最核心的一层：<strong>不要会议纪要，不要 AI 总结，不要录音上传后处理，只要“边说边出字”的实时语音转录</strong>。</p>
+<p>这件事不是去 GitHub 找一个 Whisper WebUI 就能解决。真正的实时 ASR 交付，是浏览器或客户端持续推送音频流，ASR 服务持续返回 partial/final transcript。中文场景里，第一轮应该直接测成熟云服务：科大讯飞、阿里云、火山引擎、腾讯云。</p>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>同主题前情</div><div class="admonitionContent_BuS1"><ul>
+<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mobile-web-realtime-transcription-pwa">网页录音到 AI 纪要：先选成熟 ASR，再看现成产品</a>：讲的是“网页录音 + ASR + AI 纪要”的整体路线。</li>
+<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-recording-ai-notes-practice">Speakr 实操：录完之后，转写和 AI 纪要到底在哪里</a>：确认了 Speakr 是录完/上传后处理，不是实时字幕。</li>
+</ul><p>本文只回答下一步：<strong>四家国内实时 ASR 分别怎么接、在哪里操作、需不需要服务器、我能帮你做到哪一步。</strong></p></div></div>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>四家接入形态本质一致：</p><div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">浏览器麦克风</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 自建后端保护密钥 / 签名 / relay</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 厂商 WebSocket 实时 ASR</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; partial/final transcript 实时上屏</span><br></div></code></pre></div></div><p>如果目标是中文实时转录效果，第一轮不要急着押唯一赢家。建议按同一套页面同时测 <strong>讯飞实时语音转写、火山豆包大模型流式语音识别、阿里云 Paraformer、腾讯云实时语音识别</strong>，用真实会议/口述音频比较首字延迟、final 准确率、标点断句、中英混杂和成本。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>快照时间为 <strong>2026-08-10 CST</strong>。本文依据四家官方 API 文档和计费说明做静态接入分析，没有使用任何账号密钥，也没有发起付费调用。价格、免费额度、模型版本和资源包规格会变化，落地前必须以各家控制台和计费页为准。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先看统一架构为什么不能只写前端">先看统一架构：为什么不能只写前端<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E5%85%88%E7%9C%8B%E7%BB%9F%E4%B8%80%E6%9E%B6%E6%9E%84%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E8%83%BD%E5%8F%AA%E5%86%99%E5%89%8D%E7%AB%AF" class="hash-link" aria-label="先看统一架构：为什么不能只写前端的直接链接" title="先看统一架构：为什么不能只写前端的直接链接" translate="no">​</a></h2>
+<p>实时转录产品至少分四层：</p>
+<table><thead><tr><th>层</th><th>做什么</th><th>是否必须</th></tr></thead><tbody><tr><td>浏览器/客户端</td><td>请求麦克风权限，采集音频，切成厂商要求的音频包</td><td>必须</td></tr><tr><td>自建后端</td><td>保存 API key/Secret，生成签名或临时 session，转发 WebSocket</td><td>强烈建议必须</td></tr><tr><td>厂商 ASR</td><td>接收音频流，返回识别事件</td><td>必须</td></tr><tr><td>展示层</td><td>根据 partial/final/replace 事件实时上屏</td><td>必须</td></tr></tbody></table>
+<p>后端 relay 的核心价值不是“多写一层代码”，而是保护密钥。厂商 API key、SecretId、SecretKey、AppID 等都不能放进浏览器。后端还要统一日志、时长统计、限流、错误码、provider 切换和成本报警。</p>
+<p>所以一个最小可用 demo 应该长这样：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Start Recording</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; POST /api/asr/sessions { provider: "iflytek" | "aliyun" | "volc" | "tencent" }</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 浏览器建立 ws://our-server/realtime-asr/&lt;session_id&gt;</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 后端连接厂商 wss://...</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 浏览器每 40ms / 100ms / 200ms 发音频包</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 页面收到 transcript.delta / transcript.final</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Stop</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 后端关闭厂商 WebSocket</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 保存完整 transcript 和调用时长</span><br></div></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-科大讯飞中文实时转写第一轮必测">1. 科大讯飞：中文实时转写第一轮必测<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#1-%E7%A7%91%E5%A4%A7%E8%AE%AF%E9%A3%9E%E4%B8%AD%E6%96%87%E5%AE%9E%E6%97%B6%E8%BD%AC%E5%86%99%E7%AC%AC%E4%B8%80%E8%BD%AE%E5%BF%85%E6%B5%8B" class="hash-link" aria-label="1. 科大讯飞：中文实时转写第一轮必测的直接链接" title="1. 科大讯飞：中文实时转写第一轮必测的直接链接" translate="no">​</a></h2>
+<p>讯飞这里要先分清两个产品：</p>
+<table><thead><tr><th>产品</th><th>更像什么</th><th>文档要点</th></tr></thead><tbody><tr><td><a href="https://www.xfyun.cn/doc/asr/rtasr/API.html" target="_blank" rel="noopener noreferrer" class="">实时语音转写</a></td><td>连续实时 transcript，适合会议/长语音流</td><td>WebSocket 长连接，文档说明实时返回文字流；支持 16k、16bit、单声道 PCM，建议每 40ms 发送 1280 字节</td></tr><tr><td><a href="https://www.xfyun.cn/doc/asr/voicedictation/API.html" target="_blank" rel="noopener noreferrer" class="">语音听写（流式版）</a></td><td>1 分钟内即时语音转文字</td><td>文档明确写到“一边上传音频一边获得识别文本”，并支持动态修正</td></tr></tbody></table>
+<p>如果目标是“会议/长录音实时字幕”，优先看实时语音转写；如果目标是短语音输入、语音助手、表单输入，再看语音听写流式版。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="怎么做">怎么做<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%80%8E%E4%B9%88%E5%81%9A" class="hash-link" aria-label="怎么做的直接链接" title="怎么做的直接链接" translate="no">​</a></h3>
+<ol>
+<li class="">在讯飞开放平台注册并进入控制台。</li>
+<li class="">创建应用，开通实时语音转写或语音听写流式版。</li>
+<li class="">拿到 AppID 和接口密钥材料。</li>
+<li class="">后端根据文档生成签名，连接 <code>wss://rtasr.xfyun.cn/v1/ws?...</code> 或 <code>wss://iat-api.xfyun.cn/v2/iat</code>。</li>
+<li class="">浏览器把麦克风音频转成 16k/16bit/mono PCM。</li>
+<li class="">后端按文档节奏发包，接收 JSON 结果。</li>
+<li class="">页面根据返回结果追加或替换实时字幕；如果启用动态修正，要支持“上一段文字被更新”。</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="需要在哪里操作">需要在哪里操作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E9%9C%80%E8%A6%81%E5%9C%A8%E5%93%AA%E9%87%8C%E6%93%8D%E4%BD%9C" class="hash-link" aria-label="需要在哪里操作的直接链接" title="需要在哪里操作的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>操作</th><th>位置</th></tr></thead><tbody><tr><td>开通服务、购买/试用、查看方言语种</td><td>讯飞开放平台控制台</td></tr><tr><td>写签名和 relay</td><td>自建后端，推荐部署在 <code>recall.cube</code> 或云服务器</td></tr><tr><td>前端录音页面</td><td>任意 HTTPS 站点；如果给手机用，需要公网 HTTPS</td></tr><tr><td>模型运行</td><td>不需要自己跑模型，由讯飞云端承担</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="我能帮你做什么">我能帮你做什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%88%91%E8%83%BD%E5%B8%AE%E4%BD%A0%E5%81%9A%E4%BB%80%E4%B9%88" class="hash-link" aria-label="我能帮你做什么的直接链接" title="我能帮你做什么的直接链接" translate="no">​</a></h3>
+<p>我可以做前端实时字幕页、后端签名/relay、统一 transcript event、时长统计和 smoke test。需要你提供讯飞账号里开通后的密钥，密钥只放服务器环境变量，不写进前端和文章。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-阿里云-paraformer百炼体系里的实时-asr">2. 阿里云 Paraformer：百炼体系里的实时 ASR<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#2-%E9%98%BF%E9%87%8C%E4%BA%91-paraformer%E7%99%BE%E7%82%BC%E4%BD%93%E7%B3%BB%E9%87%8C%E7%9A%84%E5%AE%9E%E6%97%B6-asr" class="hash-link" aria-label="2. 阿里云 Paraformer：百炼体系里的实时 ASR的直接链接" title="2. 阿里云 Paraformer：百炼体系里的实时 ASR的直接链接" translate="no">​</a></h2>
+<p>阿里云的主线是 <a href="https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-api-reference/" target="_blank" rel="noopener noreferrer" class="">Paraformer 实时语音识别</a>。它的 <a href="https://help.aliyun.com/zh/model-studio/websocket-for-paraformer-real-time-service" target="_blank" rel="noopener noreferrer" class="">WebSocket API 文档</a> 说明：通过 WebSocket 访问实时语音识别服务，请求头使用 <code>Authorization: Bearer &lt;api_key&gt;</code>，并建议使用业务空间专属域名；文档给出的固定形态是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">wss://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference</span><br></div></code></pre></div></div>
+<p>这条路线适合已经在阿里云/百炼/通义体系里管理模型和 API 的团队。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="怎么做-1">怎么做<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%80%8E%E4%B9%88%E5%81%9A-1" class="hash-link" aria-label="怎么做的直接链接" title="怎么做的直接链接" translate="no">​</a></h3>
+<ol>
+<li class="">登录阿里云，进入百炼 / Model Studio。</li>
+<li class="">创建或选择 Workspace。</li>
+<li class="">开通 Paraformer 实时语音识别，创建 API Key。</li>
+<li class="">后端用 API Key 连接 WebSocket，不把 key 暴露到浏览器。</li>
+<li class="">按阿里事件协议发送开始、持续音频、结束事件。</li>
+<li class="">把服务端事件转成统一的 <code>transcript.partial</code> / <code>transcript.final</code>。</li>
+<li class="">页面实时显示，停止后关闭 session。</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="需要在哪里操作-1">需要在哪里操作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E9%9C%80%E8%A6%81%E5%9C%A8%E5%93%AA%E9%87%8C%E6%93%8D%E4%BD%9C-1" class="hash-link" aria-label="需要在哪里操作的直接链接" title="需要在哪里操作的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>操作</th><th>位置</th></tr></thead><tbody><tr><td>开通百炼、Workspace、API Key</td><td>阿里云控制台</td></tr><tr><td>relay 服务</td><td><code>recall.cube</code> 或云服务器</td></tr><tr><td>前端页面</td><td>HTTPS public/local 域名</td></tr><tr><td>模型运行</td><td>阿里云托管，不需要本地 GPU</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="付费api-注意点">付费/API 注意点<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E4%BB%98%E8%B4%B9api-%E6%B3%A8%E6%84%8F%E7%82%B9" class="hash-link" aria-label="付费/API 注意点的直接链接" title="付费/API 注意点的直接链接" translate="no">​</a></h3>
+<p>阿里云模型和价格会跟随百炼模型服务页更新，落地前要查 <a href="https://help.aliyun.com/zh/model-studio/models" target="_blank" rel="noopener noreferrer" class="">模型大全功能规格与计费</a>。代码里只应该记录 provider、model、调用时长和账单维度，不要把具体价格写死成业务逻辑。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="我能帮你做什么-1">我能帮你做什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%88%91%E8%83%BD%E5%B8%AE%E4%BD%A0%E5%81%9A%E4%BB%80%E4%B9%88-1" class="hash-link" aria-label="我能帮你做什么的直接链接" title="我能帮你做什么的直接链接" translate="no">​</a></h3>
+<p>我可以封装阿里云 adapter，把前端音频流转成 Paraformer WebSocket 事件；同时写测试脚本，记录延迟、最终文本、错误码和调用时长。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-火山引擎--豆包语音大模型流式-asr-值得重点测">3. 火山引擎 / 豆包语音：大模型流式 ASR 值得重点测<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#3-%E7%81%AB%E5%B1%B1%E5%BC%95%E6%93%8E--%E8%B1%86%E5%8C%85%E8%AF%AD%E9%9F%B3%E5%A4%A7%E6%A8%A1%E5%9E%8B%E6%B5%81%E5%BC%8F-asr-%E5%80%BC%E5%BE%97%E9%87%8D%E7%82%B9%E6%B5%8B" class="hash-link" aria-label="3. 火山引擎 / 豆包语音：大模型流式 ASR 值得重点测的直接链接" title="3. 火山引擎 / 豆包语音：大模型流式 ASR 值得重点测的直接链接" translate="no">​</a></h2>
+<p>火山现在有 <a href="https://docs.volcengine.com/docs/6561/1354869?lang=zh" target="_blank" rel="noopener noreferrer" class="">大模型流式语音识别 API</a>。官方文档列出三种 WebSocket 地址：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">双向流式模式：    wss://openspeech.bytedance.com/api/v3/sauc/bigmodel</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">流式输入模式：    wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_nostream</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">双向流式优化版：  wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async</span><br></div></code></pre></div></div>
+<p>文档说明双向流式会尽快返回识别到的字符，流式输入模式准确率更高；音频单包建议 100<del>200ms，发包间隔建议 100</del>200ms，双向流式模式推荐 200ms 分包。它还提供二遍识别、ITN、标点、顺滑、说话人等参数，适合认真测试“快”和“准”的折中。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="怎么做-2">怎么做<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%80%8E%E4%B9%88%E5%81%9A-2" class="hash-link" aria-label="怎么做的直接链接" title="怎么做的直接链接" translate="no">​</a></h3>
+<ol>
+<li class="">登录火山引擎控制台，开通豆包语音 / 语音识别大模型。</li>
+<li class="">新版控制台获取 <code>X-Api-Key</code>；旧版控制台可能还涉及 App Key / Access Key。</li>
+<li class="">选择资源 ID：文档列出小时版和并发版，例如 <code>volc.bigasr.sauc.duration</code>、<code>volc.seedasr.sauc.duration</code> 等。</li>
+<li class="">后端连接 <code>bigmodel_async</code> 或 <code>bigmodel</code>，并在 HTTP header 中放入鉴权和资源 ID。</li>
+<li class="">WebSocket 建连后，先发送 full client request，再持续发送 audio only request。</li>
+<li class="">浏览器音频按 100~200ms 分包；后端负责二进制 header、压缩、序列号、错误码解析。</li>
+<li class="">页面显示快速结果；如果开启二遍识别，最终结果要覆盖临时结果。</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="需要在哪里操作-2">需要在哪里操作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E9%9C%80%E8%A6%81%E5%9C%A8%E5%93%AA%E9%87%8C%E6%93%8D%E4%BD%9C-2" class="hash-link" aria-label="需要在哪里操作的直接链接" title="需要在哪里操作的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>操作</th><th>位置</th></tr></thead><tbody><tr><td>开通服务、API Key、资源包/后付费</td><td>火山引擎控制台</td></tr><tr><td>WebSocket 二进制协议封装</td><td>自建后端</td></tr><tr><td>实时前端</td><td>HTTPS 页面</td></tr><tr><td>模型运行</td><td>火山云端，不需要自建 GPU</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="付费api-注意点-1">付费/API 注意点<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E4%BB%98%E8%B4%B9api-%E6%B3%A8%E6%84%8F%E7%82%B9-1" class="hash-link" aria-label="付费/API 注意点的直接链接" title="付费/API 注意点的直接链接" translate="no">​</a></h3>
+<p><a href="https://docs.volcengine.com/docs/6561/1359370?lang=zh" target="_blank" rel="noopener noreferrer" class="">火山计费说明</a> 在当前快照里列出资源包预付费和按调用后付费：豆包流式语音识别模型 2.0、以及大模型流式语音识别都有按小时计费项。文章里只适合引用“按音频时长折算小时、资源包/后付费并存”这个计费结构；具体价格要以控制台购买页为准。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="我能帮你做什么-2">我能帮你做什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%88%91%E8%83%BD%E5%B8%AE%E4%BD%A0%E5%81%9A%E4%BB%80%E4%B9%88-2" class="hash-link" aria-label="我能帮你做什么的直接链接" title="我能帮你做什么的直接链接" translate="no">​</a></h3>
+<p>我可以实现火山二进制 WebSocket adapter，记录 <code>X-Tt-Logid</code> 方便排障，做小时版/并发版 resource id 配置，并把二遍识别结果映射成统一 final transcript。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-腾讯云控制台和计费体系清楚适合已有腾讯云团队">4. 腾讯云：控制台和计费体系清楚，适合已有腾讯云团队<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#4-%E8%85%BE%E8%AE%AF%E4%BA%91%E6%8E%A7%E5%88%B6%E5%8F%B0%E5%92%8C%E8%AE%A1%E8%B4%B9%E4%BD%93%E7%B3%BB%E6%B8%85%E6%A5%9A%E9%80%82%E5%90%88%E5%B7%B2%E6%9C%89%E8%85%BE%E8%AE%AF%E4%BA%91%E5%9B%A2%E9%98%9F" class="hash-link" aria-label="4. 腾讯云：控制台和计费体系清楚，适合已有腾讯云团队的直接链接" title="4. 腾讯云：控制台和计费体系清楚，适合已有腾讯云团队的直接链接" translate="no">​</a></h2>
+<p>腾讯云官方 <a href="https://cloud.tencent.com/document/product/1093/48982" target="_blank" rel="noopener noreferrer" class="">实时语音识别 WebSocket</a> 文档明确写到：服务采用 WebSocket 协议，对实时音频流进行识别，同步返回识别结果，达到“边说边出文字”的效果。文档还说明使用前要开通语音识别服务，进入 API 密钥管理生成 AppID、SecretID 和 SecretKey，用于签名鉴权。</p>
+<p>文档给出的请求地址形态是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">wss://asr.cloud.tencent.com/asr/v2/&lt;appid&gt;?{请求参数}</span><br></div></code></pre></div></div>
+<p>接口要求里还列出 16k 或 8k 采样率、16bits、单声道，以及 pcm、wav、opus、speex、silk、mp3、m4a、aac 等音频格式。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="怎么做-3">怎么做<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%80%8E%E4%B9%88%E5%81%9A-3" class="hash-link" aria-label="怎么做的直接链接" title="怎么做的直接链接" translate="no">​</a></h3>
+<ol>
+<li class="">登录腾讯云并开通语音识别 ASR。</li>
+<li class="">在 API 密钥管理里创建 AppID、SecretID、SecretKey。</li>
+<li class="">后端按文档生成签名参数，连接 <code>wss://asr.cloud.tencent.com/asr/v2/&lt;appid&gt;?...</code>。</li>
+<li class="">浏览器采集音频，转换成腾讯云支持的采样率/编码。</li>
+<li class="">后端发送音频流，接收识别结果。</li>
+<li class="">页面显示实时字幕，并在停止后关闭连接。</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="需要在哪里操作-3">需要在哪里操作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E9%9C%80%E8%A6%81%E5%9C%A8%E5%93%AA%E9%87%8C%E6%93%8D%E4%BD%9C-3" class="hash-link" aria-label="需要在哪里操作的直接链接" title="需要在哪里操作的直接链接" translate="no">​</a></h3>
+<table><thead><tr><th>操作</th><th>位置</th></tr></thead><tbody><tr><td>开通 ASR、创建密钥、开启后付费</td><td>腾讯云控制台</td></tr><tr><td>签名/relay</td><td>自建后端</td></tr><tr><td>前端页面</td><td>HTTPS 域名</td></tr><tr><td>模型运行</td><td>腾讯云托管，不需要本地 GPU</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="付费api-注意点-2">付费/API 注意点<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E4%BB%98%E8%B4%B9api-%E6%B3%A8%E6%84%8F%E7%82%B9-2" class="hash-link" aria-label="付费/API 注意点的直接链接" title="付费/API 注意点的直接链接" translate="no">​</a></h3>
+<p>腾讯云 <a href="https://cloud.tencent.com/document/product/1093/35686" target="_blank" rel="noopener noreferrer" class="">计费概述</a> 说明语音识别提供预付费和后付费两种主要计费模式，开通后按“免费额度 &gt; 预付费 &gt; 后付费”的顺序扣费；后付费默认关闭，需要手动在控制台开启。这个设计适合做成本控制：先不开后付费，先用免费额度/小资源包跑 smoke test。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="我能帮你做什么-3">我能帮你做什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%88%91%E8%83%BD%E5%B8%AE%E4%BD%A0%E5%81%9A%E4%BB%80%E4%B9%88-3" class="hash-link" aria-label="我能帮你做什么的直接链接" title="我能帮你做什么的直接链接" translate="no">​</a></h3>
+<p>我可以写腾讯云签名逻辑、WebSocket relay、统一事件映射和用量统计；同时在配置里默认关闭高风险自动扩容/无限后付费，避免测试阶段成本失控。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="到底需不需要云服务器">到底需不需要云服务器<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E5%88%B0%E5%BA%95%E9%9C%80%E4%B8%8D%E9%9C%80%E8%A6%81%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8" class="hash-link" aria-label="到底需不需要云服务器的直接链接" title="到底需不需要云服务器的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>场景</th><th>需要云服务器吗</th><th>推荐位置</th><th>说明</th></tr></thead><tbody><tr><td>写博客/调研</td><td>不需要</td><td>本机</td><td>只读官方文档即可</td></tr><tr><td>本机开发 demo</td><td>不一定</td><td>本机 localhost</td><td>浏览器允许 localhost 麦克风，但手机试用不方便</td></tr><tr><td>手机/外部用户试用</td><td>需要公网 HTTPS</td><td><code>recall.cube</code> + public/local 入口</td><td>麦克风权限需要安全上下文，API key 要留在后端</td></tr><tr><td>内部长期服务</td><td>需要稳定服务机</td><td><code>recall.cube</code> 或云服务器</td><td>要跑 relay、日志、限流、成本统计</td></tr><tr><td>高并发商用</td><td>需要云上扩容</td><td>云服务器/K8s</td><td>需要监控、SLA、容量规划</td></tr></tbody></table>
+<p>所以第一版不需要买 GPU，也不需要在本地跑大模型。真正需要的是一个很薄的服务：接收浏览器音频、保护密钥、连接厂商 WebSocket、把结果统一成页面能显示的事件。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我能帮你做完整流程吗">我能帮你做完整流程吗<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%88%91%E8%83%BD%E5%B8%AE%E4%BD%A0%E5%81%9A%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B%E5%90%97" class="hash-link" aria-label="我能帮你做完整流程吗的直接链接" title="我能帮你做完整流程吗的直接链接" translate="no">​</a></h2>
+<p>可以，但需要把“我能代办”和“必须由账号所有者完成”的边界分清：</p>
+<table><thead><tr><th>步骤</th><th>我能做吗</th><th>需要你做什么</th></tr></thead><tbody><tr><td>官方文档调研、方案设计</td><td>可以</td><td>无</td></tr><tr><td>云服务开通指引</td><td>可以</td><td>你登录对应控制台，完成实名/付费/协议确认</td></tr><tr><td>API key 创建</td><td>我可以指导，但不应接触明文长期密钥</td><td>你创建 key，按安全方式写入服务器 secret</td></tr><tr><td>后端 relay / 前端实时字幕</td><td>可以</td><td>确认部署域名和服务位置</td></tr><tr><td>四家 A/B 测试</td><td>可以</td><td>提供可测试的真实中文音频/读稿，或授权现场麦克风测试</td></tr><tr><td>成本统计和推荐报告</td><td>可以</td><td>提供账单/控制台用量截图或 API 结果，不提供密钥明文</td></tr><tr><td>正式上线</td><td>可以</td><td>确认预算、并发、保留时长、合规和数据策略</td></tr></tbody></table>
+<p>我建议服务地址按这类模式做：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://realtime-asr.public.wzhecnu.cn/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">https://realtime-asr.local.wzhecnu.cn/</span><br></div></code></pre></div></div>
+<p>页面里可以有一个 provider 下拉框：讯飞 / 阿里 / 火山 / 腾讯。每次测试保存同样的指标：</p>
+<table><thead><tr><th>指标</th><th>为什么重要</th></tr></thead><tbody><tr><td>首字延迟</td><td>用户是否感觉“实时”</td></tr><tr><td>partial 抖动</td><td>中间文字是否频繁大幅回改</td></tr><tr><td>final 准确率</td><td>最终 transcript 能不能用</td></tr><tr><td>标点断句</td><td>是否接近可读稿</td></tr><tr><td>中英混杂/术语</td><td>ChatArch、GitHub、模型名、服务名能不能识别</td></tr><tr><td>噪声/远场</td><td>会议室、扬声器外放、多人环境是否可靠</td></tr><tr><td>成本</td><td>每小时、并发、资源包/后付费是否可接受</td></tr><tr><td>接入复杂度</td><td>签名、SDK、错误码、日志是否好维护</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="推荐的第一轮执行顺序">推荐的第一轮执行顺序<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E6%8E%A8%E8%8D%90%E7%9A%84%E7%AC%AC%E4%B8%80%E8%BD%AE%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F" class="hash-link" aria-label="推荐的第一轮执行顺序的直接链接" title="推荐的第一轮执行顺序的直接链接" translate="no">​</a></h2>
+<p>不要直接宣布“某一家最好”。没有拿你的真实音频跑过，任何效果排名都只是厂商宣传或经验印象。更稳的做法是：</p>
+<ol>
+<li class=""><strong>先开低成本 smoke</strong>：四家各跑 1~3 分钟同一段中文读稿。</li>
+<li class=""><strong>先测效果，再谈价格</strong>：如果 transcript 不准，便宜也没意义。</li>
+<li class=""><strong>把火山和讯飞放第一批实测</strong>：一个是中文 ASR 老牌强项，一个是大模型流式能力值得看。</li>
+<li class=""><strong>阿里云作为工程化路线对照</strong>：如果团队已经有阿里云/百炼账号，集成和治理会顺。</li>
+<li class=""><strong>腾讯云作为控制台/计费体系对照</strong>：如果已有腾讯云账号和费用体系，它是自然候选。</li>
+<li class=""><strong>最终只选 1 个主 provider + 1 个备 provider</strong>：产品层保留 adapter，不把前端写死在某一家协议上。</li>
+</ol>
+<p>最后的落地判断应该基于实测表，而不是品牌印象：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">同一段音频</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 四家同时或顺序识别</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 统一 transcript event</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 统一指标表</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 选主 provider + 备 provider</span><br></div></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="资料来源">资料来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/domestic-realtime-asr-provider-integration#%E8%B5%84%E6%96%99%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="资料来源的直接链接" title="资料来源的直接链接" translate="no">​</a></h2>
+<ul>
+<li class="">科大讯飞：<a href="https://www.xfyun.cn/doc/asr/rtasr/API.html" target="_blank" rel="noopener noreferrer" class="">实时语音转写 API</a>、<a href="https://www.xfyun.cn/doc/asr/voicedictation/API.html" target="_blank" rel="noopener noreferrer" class="">语音听写（流式版）WebAPI</a>、<a href="https://www.xfyun.cn/services/rtasr" target="_blank" rel="noopener noreferrer" class="">实时语音转写服务页</a></li>
+<li class="">阿里云：<a href="https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-api-reference/" target="_blank" rel="noopener noreferrer" class="">Paraformer 实时语音识别 API 参考</a>、<a href="https://help.aliyun.com/zh/model-studio/websocket-for-paraformer-real-time-service" target="_blank" rel="noopener noreferrer" class="">Paraformer WebSocket API</a>、<a href="https://help.aliyun.com/zh/model-studio/models" target="_blank" rel="noopener noreferrer" class="">模型大全功能规格与计费</a></li>
+<li class="">火山引擎：<a href="https://docs.volcengine.com/docs/6561/1354869?lang=zh" target="_blank" rel="noopener noreferrer" class="">大模型流式语音识别 API</a>、<a href="https://docs.volcengine.com/docs/6561/1359370?lang=zh" target="_blank" rel="noopener noreferrer" class="">豆包语音计费说明</a></li>
+<li class="">腾讯云：<a href="https://cloud.tencent.com/document/product/1093/48982" target="_blank" rel="noopener noreferrer" class="">实时语音识别（WebSocket）</a>、<a href="https://cloud.tencent.com/document/product/1093/35686" target="_blank" rel="noopener noreferrer" class="">语音识别计费概述</a></li>
+</ul>]]></content:encoded>
+            <category>transcription</category>
+            <category>realtime</category>
+            <category>asr</category>
+            <category>speech-to-text</category>
+            <category>cloud</category>
+            <category>web</category>
+        </item>
         <item>
             <title><![CDATA[自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options</link>
@@ -3022,471 +3156,6 @@
             <category>self-hosted</category>
             <category>object-storage</category>
             <category>open-source</category>
-        </item>
-        <item>
-            <title><![CDATA[OpenAI Astra 的十个数学问题到底在研究什么？一篇读懂背景、难点与结果边界]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide</guid>
-            <pubDate>Sat, 01 Aug 2026 17:20:00 GMT</pubDate>
-            <description><![CDATA[把 OpenAI Astra 十项数学与理论计算机科学结果拆成十个完整概要：逐项解释题意、研究背景、历史难点、Astra 的证明思路、结果意义、没有解决什么，以及 Lean 与同行评议边界。]]></description>
-            <content:encoded><![CDATA[<p>上一篇我们做的是新闻核验：OpenAI 最近公开的 Astra 十项数学结果，究竟是不是“新模型解决了十道著名数学题”。结论是：事情基本属实，但流行说法太粗糙。</p>
-<p>这篇换一个问题：<strong>如果不看标题党，这十个问题本身到底在研究什么？</strong></p>
-<p>它们横跨高维几何、编码理论、群论、算子代数、代数复杂性、量子信息、格算法、凸几何和极值组合。读者很容易只记住“十个难题”，却不知道每一项究竟难在哪里、研究史卡在什么地方、Astra 到底推进了哪一层。</p>
-<p>所以这篇是总览：把此前十份专题调研压成一篇大博客，每一项都给一个相对完整的概要。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话总结</div><div class="admonitionContent_BuS1"><p>Astra 这批结果不是十道同质的竞赛题，而是十种不同类型的研究动作：有的完整推翻长期猜想，有的证明尖锐不等式，有的确定渐近增长阶，有的改进上界或下界，有的则证明某个强方法本身已经到达天花板。要理解它们，关键不是问“有没有解决”，而是问“解决的是哪个层级的问题”。</p></div></div>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>资料边界</div><div class="admonitionContent_BuS1"><p>本文基于 OpenAI 的 <a href="https://cdn.openai.com/pdf/ten-proofs-oai.pdf" target="_blank" rel="noopener noreferrer" class="">249 页技术文稿</a>、<a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">62 页思路重建</a>、<a href="https://github.com/openai/ten-proofs" target="_blank" rel="noopener noreferrer" class=""><code>openai/ten-proofs</code></a> 形式化仓库，以及此前完成的逐项本地调研。代码审计口径固定在 <code>openai/ten-proofs@1f16bdc</code>。思路重建不是原始 chain-of-thought；Lean 证书也不等于传统同行评议。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么需要第二篇">为什么需要第二篇<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E7%AC%AC%E4%BA%8C%E7%AF%87" class="hash-link" aria-label="为什么需要第二篇的直接链接" title="为什么需要第二篇的直接链接" translate="no">​</a></h2>
-<p>上一篇 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-advances">新闻核验文章</a> 主要回答四件事：</p>
-<ol>
-<li class="">Astra 是否真的存在；</li>
-<li class="">OpenAI 是否真的公开了论文与 Lean 证书；</li>
-<li class="">“十道著名数学题”这个说法哪里准确、哪里误导；</li>
-<li class="">这批结果与 2025 年 OpenAI 的 Erdős 问题误报有什么不同。</li>
-</ol>
-<p>但新闻核验只解决“可信度”的第一层。真正困难的是第二层：<strong>这些问题为什么重要？</strong></p>
-<p>比如：</p>
-<ul>
-<li class="">“球堆积”这项不是求出了高维最优堆积，而是求出了 Cohn–Elkies 线性规划方法的渐近极限；</li>
-<li class="">“Permanent 下界”很重要，但距离 VP≠VNP 仍很远；</li>
-<li class="">“非 sofic 群”看起来冷门，却是一个二十多年不知道反例是否存在的基础问题；</li>
-<li class="">“多色 Ramsey”解决了 Erdős #183，但不是求出了精确公式；</li>
-<li class="">第十项其实包含两个不同的 Erdős 极值图论反例。</li>
-</ul>
-<p>这就是本文的目标：<strong>逐项讲清楚问题、背景、难点、Astra 的贡献和边界。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先给十项结果分个类">先给十项结果分个类<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E5%85%88%E7%BB%99%E5%8D%81%E9%A1%B9%E7%BB%93%E6%9E%9C%E5%88%86%E4%B8%AA%E7%B1%BB" class="hash-link" aria-label="先给十项结果分个类的直接链接" title="先给十项结果分个类的直接链接" translate="no">​</a></h2>
-<p>OpenAI 的官方包装是“ten advances”，但这十项不是同一种成果。把它们放进同一个表，最容易看清它们的差异。</p>
-<table><thead><tr><th style="text-align:right">#</th><th>方向</th><th>最准确的结果类型</th><th>Astra 实际完成了什么</th><th>不应误写成</th></tr></thead><tbody><tr><td style="text-align:right">1</td><td>高维球堆积</td><td>方法极限 + 新上界</td><td>精确确定 Cohn–Elkies LP 的渐近能力，并改进一般高维上界指数</td><td>求出真实最优球堆积密度</td></tr><tr><td style="text-align:right">2</td><td>二进制码、球面码</td><td>严格改进通用指数界</td><td>对所有固定参数改进 MRRW / KL 经典上界指数</td><td>构造新码或求出精确容量</td></tr><tr><td style="text-align:right">3</td><td>非 sofic 群</td><td>反例 / 存在性定理</td><td>构造非 sofic 群，否定“所有可数群都 sofic”</td><td>同时解决 hyperlinear、surjunctive、Kaplansky 问题</td></tr><tr><td style="text-align:right">4</td><td>Connes 刚性</td><td>无限反例族</td><td>构造无限多个不同 property-(T) 群共享同一群 von Neumann 代数</td><td>否定所有 W*-刚性理论</td></tr><tr><td style="text-align:right">5</td><td>Permanent 复杂度</td><td>新算术下界</td><td>给出一般电路和公式模型的新多项式下界</td><td>证明 VP≠VNP 或 P≠NP</td></tr><tr><td style="text-align:right">6</td><td>量子并行重复</td><td>一般指数定理</td><td>证明有限双人单轮纠缠博弈的全赢概率指数衰减</td><td>覆盖所有量子交互协议，或给出最优指数</td></tr><tr><td style="text-align:right">7</td><td>GapCVP</td><td>固定多项式近似困难性</td><td>无条件确定性证明 <code>n^(1/400)</code> 近似仍 NP-hard</td><td>破解实际格密码</td></tr><tr><td style="text-align:right">8</td><td>Ehrhart 体积猜想</td><td>尖锐不等式</td><td>证明所有维度的 sharp volume bound</td><td>完成全部等号情形分类</td></tr><tr><td style="text-align:right">9</td><td>多色三角 Ramsey</td><td>渐近增长阶</td><td>证明 <code>R_k(3)=k^Theta(k)</code>，解决 Erdős #183</td><td>求出精确指数或常数</td></tr><tr><td style="text-align:right">10</td><td>极值图论</td><td>两个猜想反例</td><td>推翻 compactness 与 degeneracy 猜想，解决 Erdős #180、#146</td><td>分类所有 Turán 数或所有退化图</td></tr></tbody></table>
-<p>如果再按学科分，可以粗略分成四块：</p>
-<ul>
-<li class="">几何与分析：球堆积、编码界、Ehrhart；</li>
-<li class="">代数与刚性：非 sofic 群、Connes 刚性；</li>
-<li class="">理论计算机与量子：Permanent、量子并行重复、GapCVP；</li>
-<li class="">组合与极值图论：多色 Ramsey、compactness / degeneracy。</li>
-</ul>
-<p>这个分布本身很重要：它显示 Astra 不是只在一个窄领域做局部优化，而是跨越多个证明文化和技术栈。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="共同背景astra论文lean-和人类参与">共同背景：Astra、论文、Lean 和人类参与<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E5%85%B1%E5%90%8C%E8%83%8C%E6%99%AFastra%E8%AE%BA%E6%96%87lean-%E5%92%8C%E4%BA%BA%E7%B1%BB%E5%8F%82%E4%B8%8E" class="hash-link" aria-label="共同背景：Astra、论文、Lean 和人类参与的直接链接" title="共同背景：Astra、论文、Lean 和人类参与的直接链接" translate="no">​</a></h2>
-<p>OpenAI 这次公开的不是一个模型产品，而是一组研究资产：</p>
-<ol>
-<li class=""><a href="https://openai.com/index/ten-advances-in-mathematics/" target="_blank" rel="noopener noreferrer" class="">官方公告</a>；</li>
-<li class=""><a href="https://cdn.openai.com/pdf/ten-proofs-oai.pdf" target="_blank" rel="noopener noreferrer" class="">249 页技术文稿</a>；</li>
-<li class=""><a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">62 页思路重建说明</a>；</li>
-<li class=""><a href="https://github.com/openai/ten-proofs" target="_blank" rel="noopener noreferrer" class="">Lean 形式化仓库</a>；</li>
-<li class="">十二组 Comparator challenge。</li>
-</ol>
-<p>官方说法是：数学论证由内部 Astra 模型产生，人类和模型一起把结果整理成文稿，并帮助形式化。OpenAI 对正确性承担公开责任。</p>
-<p>这比普通模型宣传强很多，因为它给出了可检查对象：自然语言论文、形式化定理、proof term、Comparator 配置和外部 checker 路径。</p>
-<p>但它仍然留下三类边界：</p>
-<table><thead><tr><th>层次</th><th>已经公开</th><th>仍需等待</th></tr></thead><tbody><tr><td>数学证明</td><td>论文和 Lean 证书</td><td>领域专家逐项审读</td></tr><tr><td>形式验证</td><td>Lean / Comparator / nanoda 路线</td><td>statement 是否忠实表达自然语言问题</td></tr><tr><td>模型能力</td><td>成功结果和事后说明</td><td>原始 prompt、失败集、总尝试次数、完整成本</td></tr></tbody></table>
-<p>所以本文讨论每一项时都会刻意区分：<strong>定理层面做了什么，应用或哲学层面没有推出什么。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-高维球堆积改进上界也找到-cohnelkies-方法的天花板">1. 高维球堆积：改进上界，也找到 Cohn–Elkies 方法的天花板<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#1-%E9%AB%98%E7%BB%B4%E7%90%83%E5%A0%86%E7%A7%AF%E6%94%B9%E8%BF%9B%E4%B8%8A%E7%95%8C%E4%B9%9F%E6%89%BE%E5%88%B0-cohnelkies-%E6%96%B9%E6%B3%95%E7%9A%84%E5%A4%A9%E8%8A%B1%E6%9D%BF" class="hash-link" aria-label="1. 高维球堆积：改进上界，也找到 Cohn–Elkies 方法的天花板的直接链接" title="1. 高维球堆积：改进上界，也找到 Cohn–Elkies 方法的天花板的直接链接" translate="no">​</a></h2>
-<p>球堆积是最容易直观理解的一项：给定同样大小的球，怎样在空间里塞得最密？二维像硬币摆放，三维像炮弹堆叠。维度升高后，它不再只是几何图像，而会连接编码理论、离散几何和信息论。</p>
-<p>高维球堆积的经典任务是估计最优密度 <code>Delta_d</code>。下界告诉我们“至少可以塞这么密”，上界告诉我们“不可能比这更密”。Astra 这项结果属于上界方向。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>20 世纪以来，高维球堆积一直有两条主线：</p>
-<ul>
-<li class="">Minkowski、Rogers 等人的几何数论与覆盖方法；</li>
-<li class="">Kabatianskii–Levenshtein 在 1978 年给出的经典指数上界。</li>
-</ul>
-<p>2003 年，Cohn 和 Elkies 提出 Fourier 线性规划方法：寻找一个辅助函数 <code>f</code>，让 <code>f</code> 和 Fourier transform <code>hat f</code> 满足一组正负性条件，从而推出 packing density 上界。</p>
-<p>这套方法后来在 <code>d=8</code> 和 <code>d=24</code> 达到巅峰：Viazovska 及 Cohn、Kumar、Miller、Radchenko、Viazovska 用它解决了 E8 和 Leech lattice 的最优球堆积。</p>
-<p>但高维一般情形仍有两个问题：</p>
-<ol>
-<li class="">Cohn–Elkies 方法能否在高维指数上超过 KL 1978？</li>
-<li class="">这套方法本身的渐近极限到底在哪里？</li>
-</ol>
-<p>Astra 的结果同时回答了这两个问题。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>设 <code>LP_d</code> 是 <code>d</code> 维 Cohn–Elkies 线性规划能给出的最佳密度上界。新定理证明</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">lim_(d -&gt; infinity) LP_d^(1/d) = sqrt(e / (2 pi)).</span><br></div></code></pre></div></div>
-<p>由此推出球堆积密度满足</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Delta_d &lt;= 2^(-(0.6044... + o(1))d).</span><br></div></code></pre></div></div>
-<p>经典 KL 指数约为 <code>0.599055...</code>。数值只前进了一点点，但在高维指数问题里，这就是自 1978 年以来一般球堆积上界指数的首次推进。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="难点在哪里">难点在哪里<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E9%9A%BE%E7%82%B9%E5%9C%A8%E5%93%AA%E9%87%8C" class="hash-link" aria-label="难点在哪里的直接链接" title="难点在哪里的直接链接" translate="no">​</a></h3>
-<p>证明一个更好的上界已经很难；证明“这一整套方法不可能再好”更难。</p>
-<p>Astra 的路线把 Cohn–Elkies 辅助函数转成 Fourier sign uncertainty 问题。粗略地说，如果一个函数和它的 Fourier transform 具有特定符号约束，那么它的负质量不可能被压到太小半径里。</p>
-<p>最后两个 sign-uncertainty 常数都被证明为</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">(1 / pi + o(1)) sqrt(d).</span><br></div></code></pre></div></div>
-<p>上界部分需要构造接近最优的函数；下界部分需要证明任何函数都无法越过这个半径障碍。论文中用到 Mellin transform、Gamma 函数、saddle-point asymptotics 和最大值原理。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>它没有求出真实的高维最优球堆积密度。更准确地说，它告诉我们：</p>
-<ul>
-<li class="">Cohn–Elkies 方法可以超过 KL 指数；</li>
-<li class="">但在指数尺度上，这套方法最多也就到这里。</li>
-</ul>
-<p>所以这项结果既是推进，也是“方法论的封顶”。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-二进制码与球面码近半个世纪未动的通用指数被推进">2. 二进制码与球面码：近半个世纪未动的通用指数被推进<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#2-%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%A0%81%E4%B8%8E%E7%90%83%E9%9D%A2%E7%A0%81%E8%BF%91%E5%8D%8A%E4%B8%AA%E4%B8%96%E7%BA%AA%E6%9C%AA%E5%8A%A8%E7%9A%84%E9%80%9A%E7%94%A8%E6%8C%87%E6%95%B0%E8%A2%AB%E6%8E%A8%E8%BF%9B" class="hash-link" aria-label="2. 二进制码与球面码：近半个世纪未动的通用指数被推进的直接链接" title="2. 二进制码与球面码：近半个世纪未动的通用指数被推进的直接链接" translate="no">​</a></h2>
-<p>编码理论关心的是：如何在噪声中可靠传输信息。</p>
-<p>二进制码可以想象成 <code>{0,1}^n</code> 里的点集。码字越多，信息率越高；码字之间距离越远，抗噪能力越强。球面码则是在高维球面上放点，要求不同点之间夹角足够大。</p>
-<p>这两个问题形式不同，背后都在问：<strong>有限维空间里，最多能放多少个彼此足够分开的点？</strong></p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景-1">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF-1" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>二进制码的经典上界来自 Delsarte 线性规划，以及 McEliece–Rodemich–Rumsey–Welch，即 MRRW bound。球面码的经典通用上界来自 Delsarte–Goethals–Seidel 与 Kabatianskii–Levenshtein。</p>
-<p>这些界非常强，强到几十年没有被整体改进。很多后来的结果能在特殊参数、附加条件或有限维实验上更好，但要在所有固定参数上推进 general exponent，一直没有实现。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么-1">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88-1" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>对二进制码，Astra 证明：每个固定相对距离</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">0 &lt; delta &lt; 1/2</span><br></div></code></pre></div></div>
-<p>下，都能严格改进完整优化后的 MRRW 指数。</p>
-<p>对球面码，Astra 证明：每个固定最大内积</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">0 &lt; s &lt; 1</span><br></div></code></pre></div></div>
-<p>下，都能严格改进包含 spherical-cap 优化在内的 KL 指数。</p>
-<p>这不是某个点上的数值优化，而是全参数范围的严格推进。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="关键想法">关键想法<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E5%85%B3%E9%94%AE%E6%83%B3%E6%B3%95" class="hash-link" aria-label="关键想法的直接链接" title="关键想法的直接链接" translate="no">​</a></h3>
-<p>经典 Delsarte / MRRW / KL 方法大多给每个码点附一个向量或一个 zonal kernel，再用正定性推出约束。</p>
-<p>Astra 的新自由度是：给每个码点附一个会随码点移动的高维 harmonic subspace。这样得到的 projection rank 是指数级的，最后能转成码规模的指数级上界改进。</p>
-<p>直观说，它不是只看两个点之间的距离，而是把点附近一整块“谐波方向空间”也纳入证书。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-1">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-1" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>它仍是上界理论。</p>
-<p>它没有：</p>
-<ul>
-<li class="">构造更好的码；</li>
-<li class="">给出新的实际解码算法；</li>
-<li class="">求出 exact rate；</li>
-<li class="">解决所有有限长度编码问题。</li>
-</ul>
-<p>但在高维渐近通用界这个层面，它确实推进了半个世纪的基准线。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-非-sofic-群此前不知道反例是否存在的世界终于出现了反例">3. 非 sofic 群：此前不知道反例是否存在的世界，终于出现了反例<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#3-%E9%9D%9E-sofic-%E7%BE%A4%E6%AD%A4%E5%89%8D%E4%B8%8D%E7%9F%A5%E9%81%93%E5%8F%8D%E4%BE%8B%E6%98%AF%E5%90%A6%E5%AD%98%E5%9C%A8%E7%9A%84%E4%B8%96%E7%95%8C%E7%BB%88%E4%BA%8E%E5%87%BA%E7%8E%B0%E4%BA%86%E5%8F%8D%E4%BE%8B" class="hash-link" aria-label="3. 非 sofic 群：此前不知道反例是否存在的世界，终于出现了反例的直接链接" title="3. 非 sofic 群：此前不知道反例是否存在的世界，终于出现了反例的直接链接" translate="no">​</a></h2>
-<p>这项结果对普通读者最陌生，但它在群论和动力系统附近非常基础。</p>
-<p>一个群可以理解为一套对称操作。所谓 sofic，大意是：群的任意有限乘法片段，都可以由有限集合上的置换近似出来。</p>
-<p>如果一个无限群很复杂，但它的每一小块行为都能被有限置换近似，那么它就是 sofic。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景-2">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF-2" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>Gromov 和 Weiss 在 1999–2000 年前后提出 sofic 群的概念和问题。大量熟悉的群都是 sofic：</p>
-<ul>
-<li class="">finite groups；</li>
-<li class="">amenable groups；</li>
-<li class="">residually finite groups；</li>
-<li class="">很多由这些类构造出来的群。</li>
-</ul>
-<p>于是自然问题变成：</p>
-<blockquote>
-<p>是否所有可数群都是 sofic？</p>
-</blockquote>
-<p>二十多年里，没有人找到反例。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么-2">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88-2" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>Astra 证明二元 Leavitt 代数</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">L_F2(1,2)</span><br></div></code></pre></div></div>
-<p>的单位群不是 sofic。Lean 形式化中还推出：存在有限表示的非 sofic 群。</p>
-<p>这是否定 universal soficity conjecture 的完整反例。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="难点在哪里-1">难点在哪里<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E9%9A%BE%E7%82%B9%E5%9C%A8%E5%93%AA%E9%87%8C-1" class="hash-link" aria-label="难点在哪里的直接链接" title="难点在哪里的直接链接" translate="no">​</a></h3>
-<p>构造非 sofic 群很难，因为 soficity 过于宽泛：只要每个有限乘法片段能被近似，就算成功。你必须构造一个群，使得任何有限置换近似都会在某处自相矛盾。</p>
-<p>Astra 的证明把几个很远的工具放在一起：</p>
-<ul>
-<li class="">property (T) 与 expander；</li>
-<li class="">Kun 的 expander decomposition；</li>
-<li class="">Kun–Thom centralizer obstruction；</li>
-<li class="">Thompson 群 <code>V</code>；</li>
-<li class="">Leavitt 代数的二进制自相似结构。</li>
-</ul>
-<p>粗略图景是：property (T) 让近似行为变得刚性，Leavitt 代数和 Thompson 群提供自相似压缩结构，centralizer obstruction 则逼出一个有限近似世界里不该出现的结论。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-2">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-2" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>它没有自动推出：</p>
-<ul>
-<li class="">这个群非 hyperlinear；</li>
-<li class="">Gottschalk surjunctivity 被否定；</li>
-<li class="">Kaplansky 直接有限性问题被解决；</li>
-<li class="">所有与 soficity 相邻的猜想都倒下。</li>
-</ul>
-<p>它解决的是一个非常核心、非常具体的存在性问题：<strong>非 sofic 群确实存在。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-connes-刚性同一个算子代数影子不再唯一确定原群">4. Connes 刚性：同一个算子代数“影子”不再唯一确定原群<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#4-connes-%E5%88%9A%E6%80%A7%E5%90%8C%E4%B8%80%E4%B8%AA%E7%AE%97%E5%AD%90%E4%BB%A3%E6%95%B0%E5%BD%B1%E5%AD%90%E4%B8%8D%E5%86%8D%E5%94%AF%E4%B8%80%E7%A1%AE%E5%AE%9A%E5%8E%9F%E7%BE%A4" class="hash-link" aria-label="4. Connes 刚性：同一个算子代数“影子”不再唯一确定原群的直接链接" title="4. Connes 刚性：同一个算子代数“影子”不再唯一确定原群的直接链接" translate="no">​</a></h2>
-<p>这项来自算子代数和群论交界。</p>
-<p>给一个可数离散群 <code>G</code>，可以构造它的群 von Neumann 代数 <code>L(G)</code>。可以把它理解成群的一个分析化、算子化“影子”。Connes 的问题问的是：</p>
-<blockquote>
-<p>如果 <code>G</code> 是 ICC 且具有 property (T)，那么 <code>L(G)</code> 是否足以反推出 <code>G</code>？</p>
-</blockquote>
-<p>如果答案为真，那么这类群在算子代数层面具有很强的刚性。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景-3">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF-3" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>在 amenable ICC 群中，情况恰好相反：很多不同群都会给出同一个 hyperfinite factor，群信息严重丢失。</p>
-<p>Connes 希望 property (T) 能阻止这种坍缩。Popa 后来的刚性理论又提出更细的问题：即便不能唯一，是否至少只有有限多个群对应同一个 factor？</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么-3">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88-3" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>Astra 构造了可数无限多个群</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Gamma_0, Gamma_1, Gamma_2, ...</span><br></div></code></pre></div></div>
-<p>以及一个群 <code>Lambda</code>，满足：</p>
-<ul>
-<li class="">它们都是 finitely generated；</li>
-<li class="">都是 ICC；</li>
-<li class="">都有 property (T)；</li>
-<li class="">两两不 isomorphic；</li>
-<li class="">彼此 commensurable；</li>
-<li class="">但</li>
-</ul>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">L(Gamma_n) ≅ L(Lambda).</span><br></div></code></pre></div></div>
-<p>这不仅否定唯一恢复，也否定 finite-to-one 版本。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="证明路线的直觉">证明路线的直觉<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E8%AF%81%E6%98%8E%E8%B7%AF%E7%BA%BF%E7%9A%84%E7%9B%B4%E8%A7%89" class="hash-link" aria-label="证明路线的直觉的直接链接" title="证明路线的直觉的直接链接" translate="no">​</a></h3>
-<p>关键是构造一批不同群，它们在群结构上能被区分，但它们作用在某个概率空间上的 orbit-equivalence 数据足够相同，以至于给出同构的 group von Neumann algebra。</p>
-<p>论文中的一条主线是：<code>L(A semidirect K)</code> 在某些条件下只看 dual probability space 与 <code>K</code> 的作用，而不完全记住 compact group law。于是可以在同一底层空间上放入普通 law 和带 binary carry 的变体，再用 torsion / index 不变量区分这些群。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-3">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-3" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>它不是说 W*-刚性不存在。</p>
-<p>很多具体群仍然可能 W*-superrigid。被推翻的是：<strong>ICC + property (T) 这两个条件本身足以保证群由 group factor 唯一或有限确定。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-permanent-算术复杂度重要下界但不是-vpvnp">5. Permanent 算术复杂度：重要下界，但不是 VP≠VNP<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#5-permanent-%E7%AE%97%E6%9C%AF%E5%A4%8D%E6%9D%82%E5%BA%A6%E9%87%8D%E8%A6%81%E4%B8%8B%E7%95%8C%E4%BD%86%E4%B8%8D%E6%98%AF-vpvnp" class="hash-link" aria-label="5. Permanent 算术复杂度：重要下界，但不是 VP≠VNP的直接链接" title="5. Permanent 算术复杂度：重要下界，但不是 VP≠VNP的直接链接" translate="no">​</a></h2>
-<p>Permanent 和 determinant 形式上只差一个符号：determinant 对排列带正负号，permanent 全部取正号。</p>
-<p>这个小差别导致复杂性完全不同。determinant 有高效算法；permanent 是代数复杂性理论里的核心难题，与 Valiant 的 VNP-completeness 紧密相关。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景-4">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF-4" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>在布尔复杂性里，大家熟悉 P vs NP。在代数复杂性里，对应的深层问题是 VP vs VNP。Permanent 是 VNP-complete 的代表性多项式。</p>
-<p>如果能证明 permanent 需要超多项式大小的算术电路，就会得到 VP≠VNP。但这种目标远超当前技术。</p>
-<p>所以研究者长期积累的是各种模型下的下界：公式、受限电路、深度限制、电路是否允许除法等。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么-4">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88-4" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>Astra 给出三个主要下界：</p>
-<ul>
-<li class="">division-free 一般算术电路需要</li>
-</ul>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Omega(n^2 log log n)</span><br></div></code></pre></div></div>
-<p>个门；</p>
-<ul>
-<li class="">division-free 公式需要</li>
-</ul>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Omega(n^4 / log n)</span><br></div></code></pre></div></div>
-<p>个变量叶；</p>
-<ul>
-<li class="">即使允许合法除法，公式仍有同阶下界，只是常数变化。</li>
-</ul>
-<p>如果把输入变量数记作 <code>N=n^2</code>，这就是一般电路的 <code>Omega(N log log N)</code> 与公式的接近二次下界。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么难">为什么难<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9A%BE" class="hash-link" aria-label="为什么难的直接链接" title="为什么难的直接链接" translate="no">​</a></h3>
-<p>一般电路可以共享中间计算、制造 cancellation；公式不能共享但结构仍很灵活；允许除法后还会出现更多代数等价表达。</p>
-<p>Astra 的证明用到两套思路：</p>
-<ol>
-<li class="">对 specialization 后的 permanent 分析 critical locus，用 Bezout、Baur–Strassen 梯度技巧和 root-of-unity 构造得到电路下界；</li>
-<li class="">对公式下界，证明某些 complementary permanents 的系数具有代数独立性，再把 formula leaves 逐步 charge 到这些自由度上。</li>
-</ol>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-4">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-4" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>这些仍然都是多项式下界。</p>
-<p>它没有证明：</p>
-<ul>
-<li class="">permanent 需要超多项式电路；</li>
-<li class="">VP≠VNP；</li>
-<li class="">P≠NP；</li>
-<li class="">一般布尔电路下界。</li>
-</ul>
-<p>但在无条件一般模型下推进 permanent lower bounds，本身已经非常困难。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-量子并行重复经典-raz-定理的量子版终于覆盖一般纠缠博弈">6. 量子并行重复：经典 Raz 定理的量子版终于覆盖一般纠缠博弈<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#6-%E9%87%8F%E5%AD%90%E5%B9%B6%E8%A1%8C%E9%87%8D%E5%A4%8D%E7%BB%8F%E5%85%B8-raz-%E5%AE%9A%E7%90%86%E7%9A%84%E9%87%8F%E5%AD%90%E7%89%88%E7%BB%88%E4%BA%8E%E8%A6%86%E7%9B%96%E4%B8%80%E8%88%AC%E7%BA%A0%E7%BC%A0%E5%8D%9A%E5%BC%88" class="hash-link" aria-label="6. 量子并行重复：经典 Raz 定理的量子版终于覆盖一般纠缠博弈的直接链接" title="6. 量子并行重复：经典 Raz 定理的量子版终于覆盖一般纠缠博弈的直接链接" translate="no">​</a></h2>
-<p>并行重复定理问的是一个很自然的问题：</p>
-<p>如果一个游戏单局不能总赢，把它独立重复很多次并要求全部赢，成功概率会不会指数下降？</p>
-<p>经典两人博弈中，Raz 在 1990 年代证明了著名的 parallel repetition theorem。</p>
-<p>量子世界里，Alice 和 Bob 可以提前共享纠缠。即使重复游戏之间问题独立，玩家的测量策略也可以跨局纠缠，导致分析困难得多。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景-5">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF-5" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>量子并行重复至少从 2004 年起就是明确开放问题。此前有两类进展：</p>
-<ul>
-<li class="">对特殊游戏或修改后的规则证明指数衰减；</li>
-<li class="">对一般游戏证明多项式衰减。</li>
-</ul>
-<p>但“所有有限双人单轮纠缠博弈都指数衰减”一直没有解决。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么-5">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88-5" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>设单局纠缠值小于 1，也就是存在 <code>epsilon &gt; 0</code> 使单局最多赢 <code>1-epsilon</code>。Astra 证明重复 <code>n</code> 次并要求全部获胜时，成功概率以</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">exp(-c_G n)</span><br></div></code></pre></div></div>
-<p>的速度下降。</p>
-<p>这里 <code>c_G</code> 依赖原游戏。论文给出的定量包含 <code>epsilon^13</code> 一类损失，不声称最优。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="难点在哪里-2">难点在哪里<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E9%9A%BE%E7%82%B9%E5%9C%A8%E5%93%AA%E9%87%8C-2" class="hash-link" aria-label="难点在哪里的直接链接" title="难点在哪里的直接链接" translate="no">​</a></h3>
-<p>量子策略的难点不是“有随机性”，而是：</p>
-<ul>
-<li class="">多局之间可以联合测量；</li>
-<li class="">事后条件化可能把罕见事件放大；</li>
-<li class="">purification 选择可能出现 holonomy 障碍；</li>
-<li class="">有限维策略的维度会随重复次数增长。</li>
-</ul>
-<p>Astra 的路线用 resolvent purification 构造 postselection-stable sampleability，再用 size-biased martingale 控制罕见事件，最后通过 quantum correlated sampling 抽回一局，制造与单局最优值的矛盾。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-5">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-5" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>它覆盖的是论文定义下的有限、双人、单轮、经典问答、tensor-product entangled game。</p>
-<p>它不覆盖所有量子交互协议，也不声称指数常数最优。但在“一般量子并行重复是否指数下降”这个层面，它给出了完整正面 theorem。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-gapcvp最坏情形近似困难性增强不是格密码被破解">7. GapCVP：最坏情形近似困难性增强，不是格密码被破解<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#7-gapcvp%E6%9C%80%E5%9D%8F%E6%83%85%E5%BD%A2%E8%BF%91%E4%BC%BC%E5%9B%B0%E9%9A%BE%E6%80%A7%E5%A2%9E%E5%BC%BA%E4%B8%8D%E6%98%AF%E6%A0%BC%E5%AF%86%E7%A0%81%E8%A2%AB%E7%A0%B4%E8%A7%A3" class="hash-link" aria-label="7. GapCVP：最坏情形近似困难性增强，不是格密码被破解的直接链接" title="7. GapCVP：最坏情形近似困难性增强，不是格密码被破解的直接链接" translate="no">​</a></h2>
-<p>Closest Vector Problem，简称 CVP：给一个整数格和目标点，找最近格点。</p>
-<p>GapCVP 是它的判定近似版本：区分“有格点很近”和“所有格点都很远”。问题是：近似因子放宽到多大，问题仍然 NP-hard？</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景-6">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF-6" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>CVP 的 exact 版本很早就知道 NP-hard。近似版本更微妙。</p>
-<p>过去无条件结果可以达到超过任意固定多对数的因子，但形如</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">n^(a / log log n)</span><br></div></code></pre></div></div>
-<p>指数会趋于零。固定正多项式因子的困难性此前依赖更强复杂性假设。</p>
-<p>另一方面，<code>sqrt(n)</code> 附近又有 <code>NP cap coNP</code> 类型的屏障，说明现有技术很难直接逼近那里。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么-6">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88-6" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>Astra 给出从 3SAT 到 Euclidean GapCVP 的确定性多项式归约，证明在格秩为 <code>n</code> 时，近似因子</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">n^(1/400)</span><br></div></code></pre></div></div>
-<p>下仍然 NP-hard。</p>
-<p>它还推出 binary nearest codeword / syndrome decoding 的 <code>n^(1/200)</code> 困难性，以及固定有理 <code>ell_p</code> 范数下的相应变体。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="证明路线的直觉-1">证明路线的直觉<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E8%AF%81%E6%98%8E%E8%B7%AF%E7%BA%BF%E7%9A%84%E7%9B%B4%E8%A7%89-1" class="hash-link" aria-label="证明路线的直觉的直接链接" title="证明路线的直觉的直接链接" translate="no">​</a></h3>
-<p>核心是把布尔满足性编码成 Reed–Solomon / nearest-codeword 型问题，再把编码距离精确转成欧氏格距离。</p>
-<p>几个关键词是：</p>
-<ul>
-<li class="">characteristic-two Reed–Solomon evaluation；</li>
-<li class="">power sums；</li>
-<li class="">Hankel / Vandermonde 重建；</li>
-<li class="">valuations 锁定布尔一致性；</li>
-<li class="">parity-lift 把 Hamming weight 变成 squared Euclidean distance。</li>
-</ul>
-<p>直观地说，证明要防止一个近似解“局部看起来像多个不同 assignment 的拼接”。它必须把所有局部代数信息逼成同一个全局 assignment。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-6">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-6" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>这不是“格密码被破解”。</p>
-<p>现实中的格密码使用结构化格、平均情形假设和具体参数安全性。Astra 的结果是 worst-case general lattice hardness。它增强理论困难性地图，但不直接攻击 ML-KEM、ML-DSA 等部署协议。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="8-ehrhart-体积猜想1964-年提出的尖锐体积不等式">8. Ehrhart 体积猜想：1964 年提出的尖锐体积不等式<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#8-ehrhart-%E4%BD%93%E7%A7%AF%E7%8C%9C%E6%83%B31964-%E5%B9%B4%E6%8F%90%E5%87%BA%E7%9A%84%E5%B0%96%E9%94%90%E4%BD%93%E7%A7%AF%E4%B8%8D%E7%AD%89%E5%BC%8F" class="hash-link" aria-label="8. Ehrhart 体积猜想：1964 年提出的尖锐体积不等式的直接链接" title="8. Ehrhart 体积猜想：1964 年提出的尖锐体积不等式的直接链接" translate="no">​</a></h2>
-<p>这项来自凸几何和格点几何。</p>
-<p>设 <code>K</code> 是 <code>R^n</code> 中一个 full-dimensional convex body，满足：</p>
-<ul>
-<li class="">重心在原点；</li>
-<li class="">原点是唯一内部整数格点。</li>
-</ul>
-<p>问题问：这样的凸体最大体积是多少？</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景-7">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF-7" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>Ehrhart 在 1964 年猜测，极值由中心化单纯形达到，对应上界是</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">vol(K) &lt;= (n+1)^n / n!.</span><br></div></code></pre></div></div>
-<p>单纯形情形和若干特殊情形早有进展，但一般 convex body 可以是 irrational、nonpolyhedral，不带方便的 toric 组合结构。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么-7">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88-7" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>Astra 证明了所有维度的尖锐不等式：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">vol(K) &lt;= (n+1)^n / n!.</span><br></div></code></pre></div></div>
-<p>中心化单纯形达到这个值。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="难点在哪里-3">难点在哪里<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E9%9A%BE%E7%82%B9%E5%9C%A8%E5%93%AA%E9%87%8C-3" class="hash-link" aria-label="难点在哪里的直接链接" title="难点在哪里的直接链接" translate="no">​</a></h3>
-<p>常规对称化方法容易丢掉关键的 <code>n!</code> 因子；把问题只做成 rational polytope 又不能覆盖一般 convex body。</p>
-<p>Astra 的证明把多个分析和复几何工具连起来：</p>
-<ol>
-<li class="">用 Monge–Ampere potential 把测度 transport 到 <code>K</code>；</li>
-<li class="">在复环面上用 Laurent monomial 近似；</li>
-<li class="">用 jet filtration 计算 vanishing order，<code>n!</code> 因子在这里自然出现；</li>
-<li class="">通过 rank-one Bergman kernel 关上 convexity gap；</li>
-<li class="">比较上下 slope，得到尖锐体积界。</li>
-</ol>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-7">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-7" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>体积不等式本身解决了，但等号情形仍没有完全分类。</p>
-<p>也就是说，中心化单纯形确实是 extremizer；但是否所有 extremizer 都必须是它的 unimodular image，论文没有完成全部证明。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="9-多色三角-ramsey-数终于知道-r_k3-是-kthetak">9. 多色三角 Ramsey 数：终于知道 <code>R_k(3)</code> 是 <code>k^Theta(k)</code><a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#9-%E5%A4%9A%E8%89%B2%E4%B8%89%E8%A7%92-ramsey-%E6%95%B0%E7%BB%88%E4%BA%8E%E7%9F%A5%E9%81%93-r_k3-%E6%98%AF-kthetak" class="hash-link" aria-label="9-多色三角-ramsey-数终于知道-r_k3-是-kthetak的直接链接" title="9-多色三角-ramsey-数终于知道-r_k3-是-kthetak的直接链接" translate="no">​</a></h2>
-<p>把完全图的每条边涂成 <code>k</code> 种颜色之一。<code>R_k(3)</code> 是最小的顶点数，使得任意 <code>k</code>-染色都必然出现同色三角形。</p>
-<p>当 <code>k=2</code> 时，这是经典 Ramsey 数 <code>R(3,3)=6</code>。当颜色数增长时，问题变成：<code>R_k(3)</code> 到底增长多快？</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="研究背景-8">研究背景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E7%A0%94%E7%A9%B6%E8%83%8C%E6%99%AF-8" class="hash-link" aria-label="研究背景的直接链接" title="研究背景的直接链接" translate="no">​</a></h3>
-<p>长期以来，下界基本来自固定小构造的 tensor 或 sum-free partitions，形如固定常数的 <code>k</code> 次方。上界接近阶乘 <code>k!</code>。</p>
-<p>Erdős 问题 #183 的核心就是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">R_k(3)^(1/k)</span><br></div></code></pre></div></div>
-<p>是否趋于无穷？</p>
-<p>如果趋于无穷，就说明增长不是 fixed-base exponential，而是 superexponential。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="astra-证明了什么-8">Astra 证明了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#astra-%E8%AF%81%E6%98%8E%E4%BA%86%E4%BB%80%E4%B9%88-8" class="hash-link" aria-label="Astra 证明了什么的直接链接" title="Astra 证明了什么的直接链接" translate="no">​</a></h3>
-<p>Astra 证明存在绝对常数 <code>c &gt; 0</code>，使得</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">R_k(3) &gt;= (c k^(1/3) / log k)^k.</span><br></div></code></pre></div></div>
-<p>结合已有阶乘上界，得到</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">R_k(3) = k^Theta(k).</span><br></div></code></pre></div></div>
-<p>这解决 Erdős #183。它还推出 independence number 为 2 的图可以有任意大的 Shannon capacity。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="证明思路">证明思路<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E8%AF%81%E6%98%8E%E6%80%9D%E8%B7%AF" class="hash-link" aria-label="证明思路的直接链接" title="证明思路的直接链接" translate="no">​</a></h3>
-<p>固定小构造 tensor 永远只能得到 fixed base。要让 base 随 <code>k</code> 增长，必须让颜色结构本身递归扩张。</p>
-<p>Astra 的构造有三层：</p>
-<ul>
-<li class="">saturated random matrix；</li>
-<li class="">two-sided coordinate cover；</li>
-<li class="">palette-separated recursive coloring。</li>
-</ul>
-<p>递归过程中，不只是维护 triangle-free，还维护每个颜色图的 chromatic invariant。这样可以防止跨 block 的同色三角形在递归里重新出现。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-8">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-8" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>它确定了增长阶，但没有求出 sharp exponent。</p>
-<p>目前下界 log 规模大约相当于 <code>(1/3-o(1)) k log k</code>，上界约为 <code>(1+o(1)) k log k</code>。中间仍有大空间。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="10-极值图论一个编号下藏着两个-erdős-反例">10. 极值图论：一个编号下藏着两个 Erdős 反例<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#10-%E6%9E%81%E5%80%BC%E5%9B%BE%E8%AE%BA%E4%B8%80%E4%B8%AA%E7%BC%96%E5%8F%B7%E4%B8%8B%E8%97%8F%E7%9D%80%E4%B8%A4%E4%B8%AA-erd%C5%91s-%E5%8F%8D%E4%BE%8B" class="hash-link" aria-label="10. 极值图论：一个编号下藏着两个 Erdős 反例的直接链接" title="10. 极值图论：一个编号下藏着两个 Erdős 反例的直接链接" translate="no">​</a></h2>
-<p>OpenAI 的第十项叫 “Compactness and degeneracy”，其实包含两个独立猜想的反例。</p>
-<p>它们都属于 extremal graph theory：给定 forbidden graph 或 forbidden family，问一个 <code>n</code> 顶点图最多能有多少条边而不包含它们。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="101-erdőssimonovits-compactness-猜想">10.1 Erdős–Simonovits compactness 猜想<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#101-erd%C5%91ssimonovits-compactness-%E7%8C%9C%E6%83%B3" class="hash-link" aria-label="10.1 Erdős–Simonovits compactness 猜想的直接链接" title="10.1 Erdős–Simonovits compactness 猜想的直接链接" translate="no">​</a></h3>
-<p>对一个有限 forbidden family <code>F</code>，同时禁止所有成员得到的 extremal number 记为 <code>ex(n,F)</code>。一个自然想法是：整个 family 的限制，也许总是由其中某个最强成员主导。</p>
-<p>早期版本有简单森林反例，所以修正后要求 family 中每个成员都含 cycle。</p>
-<p>Astra 构造一个有限 family，其中每个图都是：</p>
-<ul>
-<li class="">connected；</li>
-<li class="">bipartite；</li>
-<li class="">含 cycle。</li>
-</ul>
-<p>但同时禁止整个 family 时，只有</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n, F) = O(n^(4/3 - 1/48)) = O(n^(21/16));</span><br></div></code></pre></div></div>
-<p>而禁止任意单个成员时仍有</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n, F_i) = Omega(n^(4/3)).</span><br></div></code></pre></div></div>
-<p>所以 family 的联合约束确实比任何单一成员都强一个多项式因子。这推翻 corrected compactness conjecture，解决 Erdős #180。</p>
-<p>证明中用到 generalized quadrangles、<code>J/K</code> templates、特征奇偶、admissible quotients 和 half-square 控制。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="102-erdős-degeneracy-猜想">10.2 Erdős degeneracy 猜想<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#102-erd%C5%91s-degeneracy-%E7%8C%9C%E6%83%B3" class="hash-link" aria-label="10.2 Erdős degeneracy 猜想的直接链接" title="10.2 Erdős degeneracy 猜想的直接链接" translate="no">​</a></h3>
-<p>一个图是 <code>r</code>-degenerate，意思是它的每个非空子图里都有度数不超过 <code>r</code> 的点。</p>
-<p>Erdős 猜测：固定 bipartite <code>r</code>-degenerate 图 <code>H</code> 的 extremal number 应该满足</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n,H) = O(n^(2 - 1/r)).</span><br></div></code></pre></div></div>
-<p><code>r=2</code> 时，这个预测就是 <code>O(n^(3/2))</code>。</p>
-<p>Astra 构造了一个固定、connected、bipartite、2-degenerate 图 <code>H</code>，却满足</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ex(n,H) &gt;= c n^(3/2 + epsilon)</span><br></div></code></pre></div></div>
-<p>对所有足够大 <code>n</code> 成立。这已经在 <code>r=2</code> 推翻猜想，解决 Erdős #146。</p>
-<p>证明路线大意是：构造一个 pair-generated layered graph <code>H</code>，再在 Hamming-ball host 中随机抽样。若出现 <code>H</code> 的嵌入，每往下一层都会迫使某个 bounded entropy potential 增加。层数足够深后，potential 超过上限，矛盾。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="没有解决什么-9">没有解决什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88-9" class="hash-link" aria-label="没有解决什么的直接链接" title="没有解决什么的直接链接" translate="no">​</a></h3>
-<p>这两项都是具体 extremal conjecture 的反例，不是一般图论分类。</p>
-<p>特别是 degeneracy 反例给出一个巨大但固定的 <code>H</code>，并不告诉我们所有 2-degenerate bipartite graphs 的 exact extremal numbers。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="横向看这十项为什么不是十个同等级奖杯">横向看：这十项为什么不是“十个同等级奖杯”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%A8%AA%E5%90%91%E7%9C%8B%E8%BF%99%E5%8D%81%E9%A1%B9%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E6%98%AF%E5%8D%81%E4%B8%AA%E5%90%8C%E7%AD%89%E7%BA%A7%E5%A5%96%E6%9D%AF" class="hash-link" aria-label="横向看：这十项为什么不是“十个同等级奖杯”的直接链接" title="横向看：这十项为什么不是“十个同等级奖杯”的直接链接" translate="no">​</a></h2>
-<p>把十项放在一起，最容易出现一种误读：好像它们都是同一个难度、同一种性质、同一个完成度。</p>
-<p>实际更像这样：</p>
-<table><thead><tr><th>类型</th><th>对应结果</th><th>完成度</th></tr></thead><tbody><tr><td>方法极限</td><td>球堆积</td><td>完整解决 Cohn–Elkies 渐近能力；原球堆积仍未解</td></tr><tr><td>通用界推进</td><td>编码、Permanent、GapCVP</td><td>严格推进已知边界；核心精确问题仍远</td></tr><tr><td>反例</td><td>非 sofic、Connes、极值图论</td><td>对相应猜想是完整负面解决</td></tr><tr><td>正面一般 theorem</td><td>量子并行重复</td><td>在论文范围内给出完整指数定理</td></tr><tr><td>尖锐不等式</td><td>Ehrhart</td><td>体积界解决，等号分类仍留白</td></tr><tr><td>增长阶</td><td>多色 Ramsey</td><td><code>k^Theta(k)</code> 解决，精确指数仍未知</td></tr></tbody></table>
-<p>从先修知识看，Connes、量子并行重复、Ehrhart 的门槛最高；从对象存在性看，非 sofic 群最震动；从公众直觉看，球堆积、Ramsey、极值图论最容易解释；从复杂性理论长期目标看，Permanent 和 GapCVP 最容易被误读成“接近终极问题”，但实际上仍离 VP≠VNP 和实用密码攻击很远。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="它们共同揭示了-astra-擅长什么">它们共同揭示了 Astra 擅长什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E5%AE%83%E4%BB%AC%E5%85%B1%E5%90%8C%E6%8F%AD%E7%A4%BA%E4%BA%86-astra-%E6%93%85%E9%95%BF%E4%BB%80%E4%B9%88" class="hash-link" aria-label="它们共同揭示了 Astra 擅长什么的直接链接" title="它们共同揭示了 Astra 擅长什么的直接链接" translate="no">​</a></h2>
-<p>十项结果横跨很多学科，但成功形态有共同点。</p>
-<p>它们都适合被压成清晰的 theorem target：</p>
-<ul>
-<li class="">构造一个反例；</li>
-<li class="">证明一个不等式；</li>
-<li class="">改进一个上界或下界；</li>
-<li class="">给出一个归约；</li>
-<li class="">确定一个渐近增长阶；</li>
-<li class="">证明某类对象全部满足某种衰减。</li>
-</ul>
-<p>这些问题具有很高的 verification leverage：生成候选证明很难，但一旦有候选，数学家和 proof assistant 可以相对明确地检查。</p>
-<p>这说明 AI 数学可能最先改变的不是“所有数学判断”，而是下面这种工作流：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">目标清晰的问题</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 大规模搜索与组合证明路线</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 形式系统压缩逻辑信任边界</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 人类审查语义、文献和意义</span><br></div></code></pre></div></div>
-<p>Astra 的亮点不是会做十道题，而是同一个系统能跨领域执行这种长链 proof synthesis。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="但也要看到选择偏差">但也要看到选择偏差<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E4%BD%86%E4%B9%9F%E8%A6%81%E7%9C%8B%E5%88%B0%E9%80%89%E6%8B%A9%E5%81%8F%E5%B7%AE" class="hash-link" aria-label="但也要看到选择偏差的直接链接" title="但也要看到选择偏差的直接链接" translate="no">​</a></h2>
-<p>OpenAI 展示的是成功结果，不是完整实验记录。</p>
-<p>我们仍不知道：</p>
-<ul>
-<li class="">总共尝试了多少问题；</li>
-<li class="">每题跑了多少分支；</li>
-<li class="">失败问题是什么；</li>
-<li class="">人类是否在中间给过反馈；</li>
-<li class="">原始 prompt 和 tool traces 长什么样；</li>
-<li class=""><code>2,000 美元</code>之外的训练、失败、人工和形式化成本是多少。</li>
-</ul>
-<p>所以，十项结果能证明：Astra 在这些问题上产生了非常强的 proof artifacts。它不能直接证明：Astra 对任意开放问题都有稳定成功率。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="lean-证书强在哪里又不能替代什么">Lean 证书强在哪里，又不能替代什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#lean-%E8%AF%81%E4%B9%A6%E5%BC%BA%E5%9C%A8%E5%93%AA%E9%87%8C%E5%8F%88%E4%B8%8D%E8%83%BD%E6%9B%BF%E4%BB%A3%E4%BB%80%E4%B9%88" class="hash-link" aria-label="Lean 证书强在哪里，又不能替代什么的直接链接" title="Lean 证书强在哪里，又不能替代什么的直接链接" translate="no">​</a></h2>
-<p>Lean 形式化让这批结果比普通 press release 强很多。</p>
-<p>固定快照的仓库包含十个结果文件、十二组 Comparator 配置和 nanoda 外部检查路径。Comparator 的作用，是检查可信 challenge 与 solution 证明的是同一个 elaborated statement，并限制可达 axiom。</p>
-<p>这能极大降低“证明里藏了逻辑漏洞”的风险。</p>
-<p>但 Lean 不能自动回答：</p>
-<table><thead><tr><th>问题</th><th>Lean 能否自动解决</th></tr></thead><tbody><tr><td>theorem 是否从 definitions 推出</td><td>可以</td></tr><tr><td>proof 是否用了未允许 axiom</td><td>可以检查</td></tr><tr><td>statement 是否忠实表达原自然语言猜想</td><td>不能完全自动</td></tr><tr><td>引用文献是否完整</td><td>不能</td></tr><tr><td>结果是否真正新颖</td><td>不能</td></tr><tr><td>这项结果对领域有多重要</td><td>不能</td></tr><tr><td>论文是否通过同行评议</td><td>不能</td></tr></tbody></table>
-<p>因此最合理的态度是：</p>
-<blockquote>
-<p>形式化证明让审查对象变得具体，但数学共同体仍要审查定义、语义、历史和意义。</p>
-</blockquote>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="如果只记住十句话">如果只记住十句话<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E5%A6%82%E6%9E%9C%E5%8F%AA%E8%AE%B0%E4%BD%8F%E5%8D%81%E5%8F%A5%E8%AF%9D" class="hash-link" aria-label="如果只记住十句话的直接链接" title="如果只记住十句话的直接链接" translate="no">​</a></h2>
-<ol>
-<li class="">球堆积：Astra 改进一般高维上界，并证明 Cohn–Elkies 方法的指数天花板。</li>
-<li class="">编码理论：二进制码和球面码的经典通用指数界，半世纪来首次全参数严格推进。</li>
-<li class="">非 sofic 群：此前没人知道是否存在的反例，现在有了。</li>
-<li class="">Connes 刚性：property (T) 群不能仅凭 group factor 唯一或有限恢复。</li>
-<li class="">Permanent：下界很强，但仍是多项式下界，不是 VP≠VNP。</li>
-<li class="">量子并行重复：一般有限双人单轮纠缠博弈终于有指数衰减定理。</li>
-<li class="">GapCVP：最坏情形固定多项式近似困难性增强，不是格密码被破解。</li>
-<li class="">Ehrhart：1964 年提出的 sharp volume inequality 被证明，等号分类仍开放。</li>
-<li class="">多色 Ramsey：<code>R_k(3)</code> 的增长阶确定为 <code>k^Theta(k)</code>，解决 Erdős #183。</li>
-<li class="">极值图论：第十项其实推翻两个猜想，解决 Erdős #180 和 #146。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="接下来应该看什么">接下来应该看什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%8E%A5%E4%B8%8B%E6%9D%A5%E5%BA%94%E8%AF%A5%E7%9C%8B%E4%BB%80%E4%B9%88" class="hash-link" aria-label="接下来应该看什么的直接链接" title="接下来应该看什么的直接链接" translate="no">​</a></h2>
-<p>未来几周到几个月，真正重要的不是再看更多营销标题，而是看这些 proof artifacts 如何被数学界消化：</p>
-<ol>
-<li class="">各领域专家是否逐项确认自然语言证明；</li>
-<li class="">Lean statement 是否被独立 semantic audit；</li>
-<li class="">OpenAI 仓库是否出现 errata 或 statement 调整；</li>
-<li class="">这些结果是否进入正常期刊或会议同行评议；</li>
-<li class="">后续研究是否复用其中的关键 lemma 和构造；</li>
-<li class="">OpenAI 是否公开更多实验 denominator；</li>
-<li class="">Astra 或相近能力是否能被第三方在相近预算下复现。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最后的判断">最后的判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E6%9C%80%E5%90%8E%E7%9A%84%E5%88%A4%E6%96%AD" class="hash-link" aria-label="最后的判断的直接链接" title="最后的判断的直接链接" translate="no">​</a></h2>
-<p>这十项结果不应该被缩成“AI 做了十道题”。更准确的说法是：</p>
-<blockquote>
-<p>Astra 在十个目标清晰、验证杠杆很高的数学与理论计算机科学问题上，产生了可审计的新证明资产；这些资产已经足够具体，足以让外部数学界逐项检查，也足够广泛，足以改变我们对 AI 参与研究级数学的预期。</p>
-</blockquote>
-<p>如果它们全部经受住外部审查，数学史记住的可能不只是这十个 theorem，而是一种新分工开始成形：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">人类提出问题、建立理论和判断意义；</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">模型大规模搜索、组合和修订证明；</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">形式系统检查逻辑；</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">数学共同体审查语义、文献、归因和价值。</span><br></div></code></pre></div></div>
-<p>这比“AI 替代数学家”复杂得多，也重要得多。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-problems-guide#%E4%B8%BB%E8%A6%81%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://openai.com/index/ten-advances-in-mathematics/" target="_blank" rel="noopener noreferrer" class="">OpenAI：Ten advances in mathematics and theoretical computer science</a></li>
-<li class=""><a href="https://cdn.openai.com/pdf/ten-proofs-oai.pdf" target="_blank" rel="noopener noreferrer" class="">Ten Advances in Mathematics and Theoretical Computer Science</a></li>
-<li class=""><a href="https://cdn.openai.com/pdf/reasoning-walkthroughs.pdf" target="_blank" rel="noopener noreferrer" class="">How the Ideas Came Together</a></li>
-<li class=""><a href="https://github.com/openai/ten-proofs" target="_blank" rel="noopener noreferrer" class="">openai/ten-proofs</a></li>
-<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/openai-astra-ten-math-advances">上一篇核验文章：OpenAI Astra 真的解决了十道数学难题吗？</a></li>
-<li class=""><a href="https://leidendeclaration.ai/" target="_blank" rel="noopener noreferrer" class="">Leiden Declaration on AI and Mathematics</a></li>
-</ul>]]></content:encoded>
-            <category>ai-math</category>
-            <category>openai</category>
-            <category>astra</category>
-            <category>mathematics</category>
-            <category>theoretical-computer-science</category>
-            <category>lean</category>
         </item>
     </channel>
 </rss>
