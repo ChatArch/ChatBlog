@@ -30,6 +30,7 @@
 - Added a static ChatShare backend survey covering 16 direct-path file servers, temporary sharing systems, and S3/object-storage candidates, with sourced screenshots and a category-aware shortlist.
 - Added a review draft on the Agent Community operating model, connecting Human Admin, community infrastructure, long-lived Profiles, task gates, and the `Detect -> Judge -> Action` autonomy loop.
 - Added a practical mail service deployment guide comparing hosted SMTP/API, self-hosted gateways, direct-send MTAs, and full mail-server stacks.
+- Added a Speakr practice guide showing the exact post-recording upload step, transcription/detail page, AI Summary/Minutes location, and realtime-ASR boundary.
 
 ### Changed
 

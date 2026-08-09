@@ -1,0 +1,224 @@
+---
+title: "Speakr 实操：录完之后，转写和 AI 纪要到底在哪里"
+date: 2026-08-09
+slug: speakr-recording-ai-notes-practice
+tags: [speakr, transcription, meeting-notes, self-hosted, asr, ai-notes]
+description: 一次 Speakr 自托管实操复盘：它不是实时字幕工具，而是录音或上传后进入后台 ASR，再在详情页显示 Transcription 和 AI Summary / Minutes；重点说明录音后必须点 Upload Recording & Notes、AI 后处理入口在哪里，以及什么时候该换实时 ASR 路线。
+toc_max_heading_level: 2
+---
+
+# Speakr 实操：录完之后，转写和 AI 纪要到底在哪里
+
+前两篇文章先做了大地图：[录音转写与会议笔记自建选型](/blog/audio-transcription-meeting-notes-open-source) 负责区分会议 bot、录音文件后台、字幕工具和 ASR 底座；[网页录音到 AI 纪要](/blog/mobile-web-realtime-transcription-pwa) 负责把需求拆成网页录音、成熟 ASR 和 AI 后处理三层。
+
+这篇只补一个实操问题：**如果先部署 Speakr，用户录完音以后，文字和 AI 纪要到底在哪里？**
+
+结论先说清楚：Speakr 不是“边说边实时出字”的字幕工具。它更像一个自托管的录音/上传后台：
+
+```text
+录音 / 上传音频
+  -> 点击上传进入后台任务
+  -> ASR 生成 Transcription
+  -> LLM 基于 transcript 生成 Summary / Minutes
+  -> 在 recording detail 里查看和导出
+```
+
+如果你期待的是打开网页、点录音、一边说一边看到 partial transcript，那应该换 Deepgram、AssemblyAI、Azure Speech、OpenAI Realtime、FunASR streaming、sherpa-onnx streaming、WhisperLive 这类实时 ASR 路线，而不是继续把 Speakr 当实时字幕用。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+Speakr 的 AI 后处理不是一个显眼的“AI 转写”按钮。转写入口是录音/上传完成后的后台任务，结果在详情页左侧 `Transcription`；AI 会议记录在右侧 `Summary -> Minutes`。录音模式下最容易漏的一步，是 Stop 后还要点底部的 **Upload Recording & Notes**。
+:::
+
+:::info 实操口径
+本文截图来自一次自托管 Speakr 测试实例。服务侧接了一个 OpenAI-Whisper-compatible ASR endpoint 和一个 LLM summary provider；文中不公开测试实例域名、账号、密码、API key、内部端口或服务目录。截图只展示产品 UI 和处理结果。
+:::
+
+## 先纠正一个误解：Speakr 不是纯录音，也不是实时字幕
+
+Speakr 不是只能把音频录下来。它实际打通了这些层：
+
+| 层 | 在 Speakr 里的表现 | 容易误解的点 |
+|---|---|---|
+| 录音 / 上传 | `New Recording` 弹窗里可以选文件、Microphone、System Audio | 录音过程中不会持续显示 transcript |
+| ASR 转写 | 上传后进入处理队列，完成后显示 `Transcription` | 不是一个叫“AI 转写”的按钮 |
+| AI 后处理 | 详情页右侧 `Summary` tab 里生成 `Minutes` | 前提是服务端已经配置 LLM provider |
+| 展示 / 导出 | transcript、summary、notes、stats、复制/下载图标 | 详情页入口不明显，容易停在录音弹窗里 |
+
+所以它不是“纯录音”，也不是“实时字幕”。更准确地说，它是 **录音/上传后的转写与纪要工作台**。
+
+## 录音模式：Stop 之后还要点上传
+
+最容易踩坑的是录音模式。很多录音产品在你点 Stop 后就自动开始处理，但 Speakr 这一步更像“先把浏览器本地录音准备好，再由你确认上传”。
+
+录音停止后，页面会出现音频预览、Recording Notes、Upload Settings，以及底部蓝色按钮：
+
+![Speakr 录音停止后的上传按钮](/img/speakr-recording-ai-notes/recording-upload-action.png)
+
+这里真正进入后端处理的是底部按钮：**Upload Recording & Notes**。
+
+如果只点了 Stop，然后留在这个页面等，用户会觉得“录完什么都没有”。这不是 ASR 或 AI 一定坏了，而是音频还没有作为 recording 上传到服务器。正确流程是：
+
+1. 点 **New Recording**；
+2. 选择 **Microphone**，允许浏览器麦克风权限；
+3. 说完后点 **Stop Recording**；
+4. 如有需要，在 **Recording Notes** 填补充备注；
+5. 点底部 **Upload Recording & Notes**；
+6. 等待后台处理完成；
+7. 从左侧 recording 列表点进新记录。
+
+这一点要写进任何面向普通用户的 quick start，否则他们很容易把“还没上传”理解成“AI 没接上”。
+
+## 文件上传模式：看左下角 Processing Queue
+
+文件上传模式更直观一些：在 `Upload Audio` 弹窗里选文件或拖拽文件，点 **Upload Audio** 后，左下角会出现 `Processing Queue`。
+
+![Speakr 上传后进入转写队列](/img/speakr-recording-ai-notes/upload-processing-queue.png)
+
+这个队列会显示当前任务，例如：
+
+```text
+Processing Queue
+1 transcribing
+Recording - jfk.flac
+Transcribing audio...
+```
+
+实操里还遇到一个典型运维问题：如果入口 Nginx 或前置反代没有放大 `client_max_body_size`，稍大一点的音频文件会被挡在入口层，浏览器只看到上传失败或 413。这种情况下 ASR 和 LLM 都还没被调用，不能从“没有 AI 结果”倒推出“AI 没配置”。
+
+对自托管服务，至少要检查三层：
+
+```text
+浏览器上传
+  -> 公网/本地反代 body size
+  -> Speakr app MAX_CONTENT_LENGTH
+  -> ASR worker / summary worker
+```
+
+## 完成后：左边是 Transcription，右边是 Summary / Minutes
+
+后台处理完成后，左侧列表里会出现一条 recording。点进去后，详情页的核心区域是左右两栏：
+
+- 左侧：`Transcription`，ASR 识别出来的原文；
+- 右侧：`Summary`，里面会生成 `Minutes`；
+- 右侧还有 `Notes` 和 `Stats` tab；
+- 顶部和 tab 旁边有复制、下载、编辑等操作图标。
+
+![Speakr 详情页里的 Transcription 和 Summary Minutes](/img/speakr-recording-ai-notes/transcription-summary-minutes.png)
+
+这张截图里，左侧 transcript 是：
+
+```text
+And so my fellow Americans, ask not what your country can do for you,
+ask what you can do for your country.
+```
+
+右侧 `Summary -> Minutes` 则已经把它整理成会议纪要式结构，包括 participants、recording date/title、opening statement、key issues discussed 等。
+
+也就是说，Speakr 的 AI 后处理不是在录音弹窗里弹出一个“AI 转写”按钮，而是在 **记录详情页** 里显示成 `Summary / Minutes`。
+
+## “AI 转写”这个说法要拆开
+
+实际产品里最好不要把所有东西都叫“AI 转写”。这里有三层：
+
+| 名称 | 做什么 | 在 Speakr 里怎么看 |
+|---|---|---|
+| ASR / speech-to-text | 把音频变成文字 | `Transcription` |
+| AI summary / minutes | 把 transcript 整理成摘要、纪要、要点 | `Summary -> Minutes` |
+| Notes | 用户自己补充的人工备注 | `Notes` tab 或录音上传前的 Recording Notes |
+
+如果用户问“AI 在哪里”，最准确的回答是：
+
+> 先等 ASR 转写完成，再打开 recording detail；左边看 ASR 原文，右边 `Summary` 里看 AI 会议纪要。
+
+如果右侧没有 Summary / Minutes，需要排查的不是录音按钮，而是：
+
+1. 这条 recording 是否已经处理到 completed；
+2. ASR 是否返回了 transcript；
+3. LLM provider 是否配置成功；
+4. summary worker 是否执行成功；
+5. 当前用户是否开启 auto summarization 或相关 summary 功能。
+
+## Bubble / Chat 不要说过头
+
+Speakr UI 里有一个 `Bubble` 控件，也有项目文档提到 per-recording chat / inquire 之类能力。但在这次测试实例里，`Inquire Mode` 不是主验证对象；实际已验证的 AI 后处理是 **Summary / Minutes**。
+
+所以对用户交付时不要说“聊天已经完整打通”，除非你真的做到这几步：
+
+1. 打开 recording 的 chat / inquire 面板；
+2. 对当前 transcript 提问；
+3. 收到 LLM 返回；
+4. 回读页面或 API 确认答案来自该 recording。
+
+在这次实践里，稳妥表述是：**转写和 AI Minutes 已打通；Chat/Inquire 需要单独启用和验证。**
+
+## 这条路线适合什么，不适合什么
+
+| 需求 | Speakr 是否合适 | 说明 |
+|---|---|---|
+| 浏览器录音或上传音频 | 合适 | UI 已经有 recording/upload |
+| 录完后后台转写 | 合适 | 需要配置 ASR endpoint/provider |
+| 自动生成会议纪要 | 合适 | 需要配置 LLM provider |
+| 管理历史录音、复制/导出 | 合适 | 这是产品壳的优势 |
+| 边说边实时出字 | 不合适 | 这不是当前 UI 主线 |
+| 实时纠错/实时字幕/会中辅助 | 不合适 | 应换 streaming ASR + 自研薄前端 |
+
+因此，Speakr 可以作为第一版“录完后处理”的自托管产品壳：先让用户有一个网页，能录音、能上传、能生成 transcript 和 minutes。
+
+但如果真正目标是实时字幕，它应该降级成产品参考，而不是被硬拧成实时方案。
+
+## 自托管落地时的最小检查单
+
+一次可交付的 Speakr 部署，不应该只检查登录页 200。至少要走完下面这条链：
+
+```text
+1. Web app 能登录
+2. ASR endpoint 能处理一段短音频
+3. Speakr 上传一段短音频
+4. 任务进入 Processing Queue
+5. recording 状态变成 completed
+6. 详情页左侧出现 Transcription
+7. 详情页右侧出现 Summary / Minutes
+8. 反代允许目标音频大小，不再被 413 拦截
+```
+
+只有第 6、7 步都成立，才可以说“录音转文字 + AI 后处理”已经打通。
+
+如果只验证了 ASR endpoint，却没有通过 Speakr 自己上传一条 recording，那还不能说明产品体验可用；如果只打开了 Speakr 登录页，也更不能说明用户能看到文字和 AI 纪要。
+
+## 给用户的 quick start 可以这么写
+
+面向最终使用者，不要先讲模型、Docker、ASR provider。直接给这几句话更有效：
+
+1. 打开服务并登录。
+2. 点右上角 **New Recording**。
+3. 如果是现场录音，选 **Microphone**，说完点 **Stop Recording**。
+4. Stop 后必须点底部 **Upload Recording & Notes**。
+5. 看左下角 **Processing Queue**，等转写/总结完成。
+6. 左侧列表点进新 recording。
+7. 左边 **Transcription** 是语音识别文字。
+8. 右边 **Summary -> Minutes** 是 AI 会议纪要。
+9. 如果要实时字幕，不要用这条入口；那是另一条 streaming ASR 方案。
+
+这比“已经部署好了”“有 AI”更重要。用户真正要的是知道：**录完以后点哪里、等什么、结果在哪里。**
+
+## 下一步
+
+我会把 Speakr 保留为“录完后转写 + AI 纪要”的候选产品壳。后续如果要继续满足“边说边实时出字”，应该单独做实时 ASR 实践：
+
+```text
+浏览器麦克风
+  -> WebSocket / realtime ASR
+  -> partial/final transcript
+  -> AI 实时纠错或会后总结
+```
+
+这条实时线可以从外部 provider 快速验证，也可以从 FunASR / sherpa-onnx / WhisperLive 自托管开始。但它应该作为另一条工程路线，不要再把 Speakr 的录完后处理误交付成实时字幕。
+
+## 资料入口
+
+- [Speakr GitHub 仓库](https://github.com/murtaza-nasir/speakr)
+- [OpenAI Whisper ASR Webservice](https://github.com/ahmetoner/whisper-asr-webservice)
+- [网页录音到 AI 纪要：先选成熟 ASR，再看现成产品](/blog/mobile-web-realtime-transcription-pwa)
+- [录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座](/blog/audio-transcription-meeting-notes-open-source)
