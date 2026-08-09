@@ -87,10 +87,12 @@
 <p>代表：Mail-in-a-Box、mailcow、Mailu、Docker Mailserver、Modoboa、iRedMail。</p>
 <p>这类方案不是只解决“发系统邮件”，而是把邮箱系统完整打包：Postfix、Dovecot、Webmail、反垃圾、TLS、DKIM、DMARC、账号管理、备份、管理后台等。</p>
 <ul>
-<li class="">Docker Mailserver 自称是 production-ready、fullstack 但 simple 的容器化邮件服务器，包含 SMTP、IMAP、LDAP、反垃圾、反病毒等；README 列出的组件包括 Postfix、Dovecot、Rspamd、ClamAV、OpenDKIM/OpenDMARC、Fail2ban 和证书支持。[17]</li>
-<li class="">Mailu 是一组 Docker images，目标是易安装、易维护、功能完整的邮件服务器；它列出的能力包括 IMAP、SMTP、Submission、Webmail/Admin、TLS、DANE、MTA-STS、outgoing DKIM、DMARC/SPF、反垃圾等。[19]</li>
-<li class="">Mail-in-a-Box 更像“把整台机器变成一台邮箱盒子”。它的 setup guide 明确不建议在家用网络运行，因为住宅网络常见 25 端口阻断、黑名单、动态 IP 和不可配置 reverse DNS；同时它要求安装在全新的专用机器上，并会自管理配置。[13]</li>
+<li class=""><strong>Docker Mailserver / DMS</strong>：适合已经熟悉 Docker Compose、想要“文件配置、少 Web UI、可版本化”的人。DMS 自称是 production-ready、fullstack 但 simple 的容器化邮件服务器，包含 SMTP、IMAP、LDAP、反垃圾、反病毒等；README 列出的组件包括 Postfix、Dovecot、Rspamd、ClamAV、OpenDKIM/OpenDMARC、Fail2ban 和证书支持。[17] 它更像一套干净的邮件基础设施组件包，不像 mailcow 那样以管理后台和群件体验为中心。</li>
+<li class=""><strong>mailcow</strong>：适合想要完整 Web 管理体验的人。它通常包含 Postfix、Dovecot、SOGo、Rspamd、ACME、管理后台等，适合“我要运营一个团队邮箱系统”，而不只是“让应用能发邮件”。</li>
+<li class=""><strong>Mailu</strong>：适合想要容器化完整邮箱栈、并接受按组件理解配置的人。Mailu 是一组 Docker images，目标是易安装、易维护、功能完整的邮件服务器；它列出的能力包括 IMAP、SMTP、Submission、Webmail/Admin、TLS、DANE、MTA-STS、outgoing DKIM、DMARC/SPF、反垃圾等。[19]</li>
+<li class=""><strong>Mail-in-a-Box</strong>：适合“一台新机器专门做邮箱”的路径。它更像“把整台机器变成一台邮箱盒子”。它的 setup guide 明确不建议在家用网络运行，因为住宅网络常见 25 端口阻断、黑名单、动态 IP 和不可配置 reverse DNS；同时它要求安装在全新的专用机器上，并会自管理配置。[13]</li>
 </ul>
+<p>如果你脑子里第一个想到的是“Docker mail service”，大概率说的就是 Docker Mailserver 这一类。它可以作为自托管邮箱的最小具体方案，但前提是你真的要收信/管邮箱账号；如果只是产品验证码，DMS 反而会把 MX、IMAP、反垃圾、备份等问题也带进来。</p>
 <p>优点：</p>
 <ul>
 <li class="">收信、发信、Webmail、账号、反垃圾、证书等开箱集成。</li>
@@ -104,6 +106,35 @@
 <li class="">一旦作为正式邮箱使用，数据可靠性和迁移成本会变高。</li>
 </ul>
 <p>适合：<strong>真的要拥有邮箱账户和收信能力，而不是只给业务系统发通知</strong>。</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="docker-mailserver一条更具体的落地路线">Docker Mailserver：一条更具体的落地路线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#docker-mailserver%E4%B8%80%E6%9D%A1%E6%9B%B4%E5%85%B7%E4%BD%93%E7%9A%84%E8%90%BD%E5%9C%B0%E8%B7%AF%E7%BA%BF" class="hash-link" aria-label="Docker Mailserver：一条更具体的落地路线的直接链接" title="Docker Mailserver：一条更具体的落地路线的直接链接" translate="no">​</a></h4>
+<p>Butterfly 旧文里写过一版 DMS 搭建教程，核心路径可以抽象成下面这 8 步。这里保留流程形状，域名、IP、密码和 DKIM key 都用占位符。</p>
+<ol>
+<li class=""><strong>准备主机名和目录</strong>：确定 <code>mail.example.com</code>，并把 DMS 配置、邮件数据、状态、日志放到可备份目录，例如 <code>./docker-data/dms/{config,mail-data,mail-state,mail-logs}</code>。</li>
+<li class=""><strong>下载官方 compose 和 env 模板</strong>：从 Docker Mailserver 官方仓库拿 <code>compose.yaml</code> 和 <code>mailserver.env</code>，不要从博客复制过期镜像 tag；上线前固定镜像版本。</li>
+<li class=""><strong>设置容器主机名</strong>：<code>hostname: mail.example.com</code>。这一步不是随便取名，它要和 A/PTR、证书、HELO/EHLO 解释得通。</li>
+<li class=""><strong>先配 DNS，再启动生产流量</strong>：</li>
+</ol>
+<div class="language-dns codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-dns codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">example.com.       MX 10 mail.example.com.</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">mail.example.com.  A     203.0.113.10</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">203.0.113.10       PTR   mail.example.com.</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">example.com.       TXT   "v=spf1 mx -all"</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">_dmarc.example.com. TXT  "v=DMARC1; p=none; rua=mailto:dmarc-report@example.com"</span><br></div></code></pre></div></div>
+<ol start="5">
+<li class=""><strong>配置 TLS 证书</strong>：可以让 DMS 使用 Let’s Encrypt 证书，例如 <code>SSL_TYPE=letsencrypt</code>，再把宿主机证书目录只读挂入容器。生产环境要保证证书域名就是 <code>mail.example.com</code>。</li>
+<li class=""><strong>启动服务并生成 DKIM</strong>：</li>
+</ol>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">docker compose up -d</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -it mailserver setup config dkim</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker compose restart mailserver</span><br></div></code></pre></div></div>
+<p>然后把生成的 <code>mail._domainkey.example.com</code> TXT 记录写入 DNS。不要把私钥或完整真实 DKIM 公钥贴进文章、Issue 或聊天。</p>
+<ol start="7">
+<li class=""><strong>添加邮箱用户</strong>：</li>
+</ol>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -ti mailserver setup email add user@example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -ti mailserver setup email update user@example.com</span><br></div></code></pre></div></div>
+<p>这一步意味着你已经在运营 mailbox，不只是发信 relay；后续要考虑密码策略、离职/禁用、备份恢复和 IMAP 客户端支持。</p>
+<ol start="8">
+<li class=""><strong>开放并验证端口</strong>：</li>
+</ol>
+<table><thead><tr><th style="text-align:right">端口</th><th>作用</th><th>DMS 里通常意味着什么</th></tr></thead><tbody><tr><td style="text-align:right">25</td><td>SMTP server-to-server</td><td>收外部邮件、direct-send 投递；常被云厂商限制</td></tr><tr><td style="text-align:right">465</td><td>implicit TLS submission</td><td>给客户端/应用安全提交邮件</td></tr><tr><td style="text-align:right">587</td><td>STARTTLS submission</td><td>推荐的客户端/应用提交入口</td></tr><tr><td style="text-align:right">143</td><td>IMAP + STARTTLS</td><td>明文连接后升级 TLS，很多场景可不公开</td></tr><tr><td style="text-align:right">993</td><td>IMAPS</td><td>客户端安全收信入口</td></tr></tbody></table>
+<p>最小验收不是“我给自己发了一封能收到”，而是同时检查：</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">dig +short MX example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">dig +short A mail.example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">dig +short -x 203.0.113.10</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">openssl s_client -connect mail.example.com:465 -servername mail.example.com &lt;/dev/null</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">openssl s_client -starttls smtp -connect mail.example.com:587 -servername mail.example.com &lt;/dev/null</span><br></div></code></pre></div></div>
+<p>再发一封到 Gmail/Outlook，查看原始邮件头里的 <code>Authentication-Results</code>，确认 SPF、DKIM、DMARC 至少在测试路径上 pass。</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="dms-之外什么时候换方案">DMS 之外什么时候换方案<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#dms-%E4%B9%8B%E5%A4%96%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E6%8D%A2%E6%96%B9%E6%A1%88" class="hash-link" aria-label="DMS 之外什么时候换方案的直接链接" title="DMS 之外什么时候换方案的直接链接" translate="no">​</a></h4>
+<table><thead><tr><th>如果你真正想要</th><th>更合适的方案</th><th>原因</th></tr></thead><tbody><tr><td>只给业务系统发验证码/通知</td><td>托管 SMTP/API 或自建 gateway + 上游 relay</td><td>不需要接管 MX/IMAP/账号/反垃圾</td></tr><tr><td>Docker Compose 自托管完整邮箱，偏配置文件</td><td>Docker Mailserver</td><td>简洁、可版本化、少数据库依赖</td></tr><tr><td>完整后台、Webmail、管理体验</td><td>mailcow</td><td>更像成品邮箱系统</td></tr><tr><td>容器化完整邮箱栈，可按组件理解</td><td>Mailu</td><td>模块化 Docker images，功能覆盖完整</td></tr><tr><td>专用新机器一键托管个人/小组织邮箱</td><td>Mail-in-a-Box</td><td>opinionated，自动接管整机配置</td></tr><tr><td>学底层或做最小 direct-send</td><td>Postfix + Dovecot/Rspamd/OpenDKIM 或 maddy</td><td>更可控，但维护成本最高</td></tr></tbody></table>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-e一体化轻量服务器--内部测试-mail-sink">方案 E：一体化轻量服务器 / 内部测试 mail sink<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E6%96%B9%E6%A1%88-e%E4%B8%80%E4%BD%93%E5%8C%96%E8%BD%BB%E9%87%8F%E6%9C%8D%E5%8A%A1%E5%99%A8--%E5%86%85%E9%83%A8%E6%B5%8B%E8%AF%95-mail-sink" class="hash-link" aria-label="方案 E：一体化轻量服务器 / 内部测试 mail sink的直接链接" title="方案 E：一体化轻量服务器 / 内部测试 mail sink的直接链接" translate="no">​</a></h3>
 <p>maddy 是另一个有意思的方向：它把 SMTP MTA、MX、IMAP、DKIM/SPF/DMARC/DANE/MTA-STS 等功能整合到一个 daemon，目标是用统一配置替代 Postfix、Dovecot、OpenDKIM、OpenSPF、OpenDMARC 等多组件组合。[12] 但它也在首页提醒 IMAP storage 仍是 beta，若需要稳定、功能丰富的 IMAP，可能仍应选择 Dovecot。[12]</p>
 <p>另外，开发环境里经常需要的不是“发到真实互联网”，而是 mail sink：Mailpit、MailHog、smtp4dev 这类工具可以接收测试邮件、展示 HTML、检查 headers，但不会真正投递。它们适合 CI、预发和本地调试，不应该被误认为生产发信服务。</p>
