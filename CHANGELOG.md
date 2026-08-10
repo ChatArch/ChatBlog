@@ -33,6 +33,8 @@
 - Added a Speakr practice guide showing the exact post-recording upload step, transcription/detail page, AI Summary/Minutes location, and realtime-ASR boundary.
 - Added a domestic realtime ASR provider integration guide covering iFLYTEK, Alibaba Cloud Paraformer, Volcengine Doubao Speech, and Tencent Cloud WebSocket routes.
 - Added a PR-first iFLYTEK realtime ASR practice guide covering registration, service activation, free packages/pricing, SDK smoke tests, WebSocket routing, and secure relay design.
+- Added an Alibaba Cloud Bailian realtime ASR practice guide covering Token Plan boundaries, Workspace/API Key setup, Qwen-Audio/Fun-ASR/Paraformer model choice, DashScope SDK/WebSocket flows, pricing, and relay design.
+- Added a Volcengine Doubao Speech realtime ASR practice guide covering service activation, X-Api-Key vs legacy AppKey/AccessKey, Resource ID selection, bigmodel/bigmodel_async WebSocket modes, pricing, binary protocol caveats, and relay design.
 
 ### Changed
 

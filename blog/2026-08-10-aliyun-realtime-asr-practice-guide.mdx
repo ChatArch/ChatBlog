@@ -1,0 +1,453 @@
+---
+title: "阿里云实时语音识别从注册到接入：百炼 ASR 实践教程"
+date: 2026-08-10
+slug: aliyun-realtime-asr-practice-guide
+tags: [aliyun, dashscope, bailian, paraformer, fun-asr, qwen-audio, realtime, asr, speech-to-text, tutorial]
+description: 从零开始走阿里云百炼 / Model Studio：注册登录、开通百炼、确认 Token Plan 与 ASR 额度边界、创建 Workspace、获取 DashScope API Key、选择 Qwen-Audio / Fun-ASR / Paraformer 实时模型、跑 Python SDK / WebSocket demo，并规划后端 relay 与网页实时字幕实践。
+toc_max_heading_level: 2
+---
+
+# 阿里云实时语音识别从注册到接入：百炼 ASR 实践教程
+
+这篇和科大讯飞教程一样，不写泛泛产品介绍，而是把一条可实践路径讲清楚：**第一次使用阿里云百炼 / Model Studio，怎么开通实时语音识别，怎么确认额度和计费，怎么拿 API Key，怎么跑 DashScope SDK 或 WebSocket，最后怎么接到我们自己的网页实时字幕服务。**
+
+:::info 同主题前情
+- [实时语音转录怎么接：讯飞、阿里云、火山引擎、腾讯云四条路线](/blog/domestic-realtime-asr-provider-integration)：先把四家国内实时 ASR 的 API 形态、服务器分工和 A/B 测试方式拆开。
+- [科大讯飞实时语音转写从注册到接入](/blog/iflytek-realtime-asr-practice-guide)：同系列第一篇，按讯飞控制台、SDK、WebSocket relay 走了一遍。
+- [网页录音到 AI 纪要：先选成熟 ASR，再看现成产品](/blog/mobile-web-realtime-transcription-pwa)：解释为什么我们把“实时 ASR”和“AI 纪要”分成两层。
+:::
+
+<!-- truncate -->
+
+:::tip 一句话结论
+阿里云这条线先不要只盯 `Paraformer`。2026-08-10 的百炼文档里，实时 ASR 推荐入口已经包括 **`qwen-audio-3.0-asr-flash-streaming`、`fun-asr-realtime`、`qwen3-asr-flash-realtime`、`paraformer-realtime-v2`**。如果目标是会议实时字幕，我建议第一轮优先试 `qwen-audio-3.0-asr-flash-streaming` 或 `fun-asr-realtime`，同时把 `paraformer-realtime-v2` 作为稳定、便宜、传统 ASR 路线对照。
+:::
+
+:::info 状态说明
+快照时间为 **2026-08-10 CST**。本文基于阿里云百炼官方模型、SDK、WebSocket API、计费文档做静态实践手册；没有使用任何真实账号密钥，也没有发起付费 ASR 调用。所有真实 API Key、AccessKey、Token、密码、代理凭据都必须写成 `[REDACTED]`，不能进入前端、博客、截图或 Git 仓库。
+:::
+
+## 先分清：Token Plan 不是“ASR 已经可用”的证明
+
+用户常见误区是：我有阿里云 / 千问的 Token Plan，是不是就包含实时 ASR？答案是：**不能默认这么理解。**
+
+百炼里确实有 Token Plan、文本模型、音频模型、ASR 模型、实时多模态等多条计费线。实时语音识别在文档里属于“语音识别”模型；不少 ASR 模型按 **输入音频秒数** 计费，而不是按普通文本 token 计费。
+
+所以第一步不是写代码，而是在控制台确认三件事：
+
+```text
+1. 百炼是否已开通。
+2. 目标地域 / Workspace 下是否能调用目标 ASR 模型。
+3. 当前账号的免费额度、资源包、Token Plan、后付费分别能抵扣哪些模型。
+```
+
+更务实地说：
+
+- Token Plan 可以作为你已有阿里云权益的线索；
+- 但不能把它当成 `qwen-audio-3.0-asr-flash-streaming` 或 `paraformer-realtime-v2` 一定可调用、一定免费抵扣的证明；
+- 最终以 **百炼模型详情页、免费额度页、模型调用计费页、账单明细 / 用量统计** 为准。
+
+## 先分清几个容易混淆的模型
+
+阿里云现在的 ASR 模型比“Paraformer”这一句话复杂得多。第一次实践可以按这个表选：
+
+| 模型 / 系列 | 模式 | 适合什么 | 第一轮建议 |
+|---|---|---|---|
+| `qwen-audio-3.0-asr-flash-streaming` | 实时 WebSocket | 实时字幕、语音助手、会议转写；文档推荐为实时识别首选，支持热词 / Prompt 上下文、多语种及方言 | **优先试** |
+| `fun-asr-realtime` | 实时 WebSocket | 专业 ASR 实时路线，支持热词、多语种及方言；DashScope SDK 可接 | **优先试 / 对照** |
+| `qwen3-asr-flash-realtime` | 实时 WebSocket | 需要转写同时看情感识别时可测 | 备选 |
+| `paraformer-realtime-v2` | 实时 WebSocket | 传统 Paraformer 实时路线，地域限制清晰，费用相对低 | **价格 / 稳定性对照** |
+| `qwen-audio-3.0-asr-flash-filetrans` | 非实时 HTTP | 录音文件转写、访谈、播客；支持说话人分离 | 会后转写，不是实时字幕主线 |
+| `qwen-audio-3.0-asr-flash` | 非实时 HTTP | 短音频识别 | 不是会议实时主线 |
+
+如果只问“会议实时字幕先测哪一个”：
+
+```text
+实时字幕 / 边说边出字
+  -> qwen-audio-3.0-asr-flash-streaming
+  -> fun-asr-realtime
+  -> paraformer-realtime-v2 做价格 / 稳定性对照
+
+录音上传后转写 / 说话人分离
+  -> qwen-audio-3.0-asr-flash-filetrans
+  -> fun-asr / fun-asr-mtl
+```
+
+## 费用先怎么看
+
+价格会变，必须以控制台和官方计费页为准。下面是 2026-08-10 从百炼“模型调用计费”文档抽到的 ASR 快照，只用于估算第一轮 smoke test 成本。
+
+| 模型 | 计费规则 | 页面单价 | 折算单价 | 免费额度口径 |
+|---|---|---:|---:|---|
+| `qwen-audio-3.0-asr-flash-streaming` | 按输入音频秒数，输出不计费 | ¥0.00033 / 秒 | 约 ¥1.188 / 小时 | 36,000 秒（10 小时），有效期以文档和控制台为准 |
+| `qwen3-asr-flash-realtime` | 按输入音频秒数，输出不计费 | ¥0.00033 / 秒 | 约 ¥1.188 / 小时 | 36,000 秒（10 小时），有效期以文档和控制台为准 |
+| `fun-asr-realtime` | 按输入音频秒数，输出不计费 | ¥0.00033 / 秒 | 约 ¥1.188 / 小时 | 36,000 秒（10 小时），有效期以文档和控制台为准 |
+| `fun-asr-flash-8k-realtime` | 按输入音频秒数，输出不计费 | ¥0.00022 / 秒 | 约 ¥0.792 / 小时 | 36,000 秒（10 小时），有效期以文档和控制台为准 |
+| `paraformer-realtime-v2` | 按输入音频秒数，输出不计费 | ¥0.00024 / 秒 | 约 ¥0.864 / 小时 | 36,000 秒（10 小时），文档写到每月自动发放、有效期 1 个月 |
+
+第一轮建议：
+
+1. 不要先买大资源包；
+2. 先在百炼控制台确认免费额度是否存在、是否能抵扣目标地域和目标模型；
+3. 用 10–20 秒音频跑通鉴权和格式；
+4. 用 3–5 分钟真实中文口述测首字延迟、partial 抖动和 final 准确率；
+5. 用量统计里看是否扣到“语音识别 / ASR / 音频秒数”相关项，而不是想当然归到普通文本 Token Plan。
+
+## 你先打开这些网页
+
+第一次操作可以按下面顺序开网页，不需要先写代码。
+
+| 步骤 | 打开地址 | 你要做什么 |
+|---|---|---|
+| 1 | https://aliyun.com/ | 注册或登录阿里云账号。 |
+| 2 | https://bailian.console.aliyun.com/ | 进入百炼控制台，确认是否已开通服务。 |
+| 3 | https://bailian.console.aliyun.com/?tab=model#/model-market | 进入模型广场，搜索 `qwen-audio-3.0-asr-flash-streaming`、`fun-asr-realtime`、`paraformer-realtime-v2`。 |
+| 4 | https://help.aliyun.com/zh/model-studio/asr-model/ | 看官方 ASR 选型页，确认实时 / 非实时、热词、Prompt 上下文、说话人分离、情感识别的边界。 |
+| 5 | https://help.aliyun.com/zh/model-studio/get-api-key | 按文档获取百炼 API Key。 |
+| 6 | https://help.aliyun.com/zh/model-studio/real-time-speech-recognition-user-guide | 看实时语音识别快速开始，里面有 Python / Java 示例。 |
+| 7 | https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-python-sdk | 看 Paraformer Python SDK 文档。 |
+| 8 | https://help.aliyun.com/zh/model-studio/websocket-for-paraformer-real-time-service | 如果不用 SDK，按 WebSocket 协议直连。 |
+| 9 | https://help.aliyun.com/zh/model-studio/billing | 看模型调用计费，确认目标模型单价和免费额度。 |
+| 10 | https://help.aliyun.com/zh/model-studio/list-quotas | 看限额查询接口，后续可自动化检查额度。 |
+
+如果控制台要求实名、企业认证、协议确认、开通后付费或选择地域，正常按它的页面操作；不要把密码、验证码、API Key 或账单截图里的敏感信息发到公开聊天。
+
+## 从注册到可调用：人工操作流程
+
+### 1. 注册 / 登录 / 实名
+
+1. 打开 https://aliyun.com/。
+2. 登录或注册阿里云账号。
+3. 进入 https://bailian.console.aliyun.com/。
+4. 如果提示实名认证、企业认证或协议确认，按页面完成。
+
+完成后只需要告诉我：
+
+```text
+已登录阿里云 / 已进入百炼 / 是否完成实名 / 账号类型个人或企业
+```
+
+不要发送密码、短信验证码、身份证件、完整账单截图。
+
+### 2. 开通百炼并确认地域
+
+进入百炼后先确认：
+
+```text
+地域：优先华北2（北京）
+Workspace：default 或新建 realtime-asr-test
+服务状态：百炼已开通
+```
+
+为什么强调地域？因为文档里多次出现“华北 2（北京）”地域和 Workspace 专属域名，例如：
+
+```text
+wss://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference
+```
+
+这里的 `{WorkspaceId}` 必须替换成真实业务空间 ID。新加坡等地域有不同域名和 API Key 口径，不要混用。
+
+### 3. 查模型是否可用
+
+在模型广场搜索：
+
+```text
+qwen-audio-3.0-asr-flash-streaming
+fun-asr-realtime
+qwen3-asr-flash-realtime
+paraformer-realtime-v2
+```
+
+目标是确认：
+
+1. 模型能否在你的账号 / 地域 / Workspace 下使用；
+2. 是否需要单独开通；
+3. 是否有免费额度；
+4. 是否支持你要的语言、方言、热词、Prompt 上下文；
+5. 是否支持 SDK 或必须直接 WebSocket。
+
+### 4. 创建 / 获取 API Key
+
+按官方“获取 API Key”文档操作。拿到后只记录状态，不要把真实值贴出来：
+
+```dotenv
+DASHSCOPE_API_KEY=[REDACTED]
+ALIYUN_BAILIAN_WORKSPACE_ID=[REDACTED]
+ALIYUN_BAILIAN_REGION=cn-beijing
+```
+
+正式部署时，Key 只能放在服务器环境变量或 Secret Manager 里，浏览器不能知道它。
+
+### 5. 确认额度和后付费边界
+
+在写代码前做一次成本检查：
+
+```text
+- 免费额度是否存在：是 / 否
+- 免费额度适用地域：华北2（北京）/ 新加坡 / 其他
+- 免费额度适用模型：哪些 Model ID
+- Token Plan 是否明确覆盖目标 ASR：是 / 否 / 控制台未明确
+- 后付费是否开启：是 / 否
+- 是否有资源包：是 / 否
+```
+
+如果控制台没明确写 Token Plan 能抵扣目标 ASR，就按“不确定 / 不能默认抵扣”处理。
+
+## SDK 路径：先跑 DashScope Python demo
+
+阿里云官方实时语音识别快速开始给了 DashScope SDK 示例，Python 里主包是：
+
+```bash
+pip install dashscope
+```
+
+如果要直接从麦克风采集，示例还会用：
+
+```bash
+pip install pyaudio
+```
+
+macOS 上 `pyaudio` 可能需要系统 PortAudio 依赖。第一轮如果装麦克风采集麻烦，可以先用本地音频文件 smoke test；真正网页产品不依赖本机 `pyaudio`，会由浏览器采集音频。
+
+### 环境变量
+
+不要把 Key 写进源码。最小形态：
+
+```bash
+export DASHSCOPE_API_KEY='[REDACTED]'
+export ALIYUN_BAILIAN_WORKSPACE_ID='[REDACTED]'
+```
+
+Python 里用：
+
+```python
+import os
+import dashscope
+
+dashscope.api_key = os.environ['DASHSCOPE_API_KEY']
+dashscope.base_websocket_api_url = (
+    f"wss://{os.environ['ALIYUN_BAILIAN_WORKSPACE_ID']}.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference"
+)
+```
+
+### 文件 smoke test
+
+如果手头已有 16k wav，可以先跑非麦克风版本验证账号、模型、Workspace 和 API Key：
+
+```python
+from http import HTTPStatus
+from dashscope.audio.asr import Recognition
+
+recognition = Recognition(
+    model='paraformer-realtime-v2',
+    format='wav',
+    sample_rate=16000,
+    language_hints=['zh', 'en'],
+    callback=None,
+)
+
+result = recognition.call('sample-16k-mono.wav')
+if result.status_code == HTTPStatus.OK:
+    for sentence in result.get_sentence():
+        print(sentence['text'])
+else:
+    print('Error:', result.message)
+```
+
+这一步验收的是：
+
+```text
+API Key 正确 / Workspace URL 正确 / 模型可调用 / 音频格式可识别 / 账单产生在预期模型上
+```
+
+### 麦克风实时 demo
+
+实时 demo 的关键点是：
+
+```python
+from dashscope.audio.asr import Recognition, RecognitionCallback, RecognitionResult
+
+class Callback(RecognitionCallback):
+    def on_event(self, result: RecognitionResult) -> None:
+        sentence = result.get_sentence()
+        if 'text' in sentence:
+            print('text:', sentence['text'])
+            if RecognitionResult.is_sentence_end(sentence):
+                print('final sentence, usage:', result.get_usage(sentence))
+
+recognition = Recognition(
+    model='qwen-audio-3.0-asr-flash-streaming',
+    format='pcm',
+    sample_rate=16000,
+    semantic_punctuation_enabled=False,
+    callback=Callback(),
+)
+recognition.start()
+# 循环读取麦克风或文件音频：recognition.send_audio_frame(data)
+# 结束时：recognition.stop()
+```
+
+官方文档建议流式发送时，每次音频约 **100ms**，数据大小保持在 **1KB 到 16KB**。这和讯飞的 40ms 发包不同，所以 provider adapter 里要把“发包大小 / 节奏”做成配置。
+
+## WebSocket 路径：不用 SDK 时怎么接
+
+如果我们用 Node、Go、Rust 或浏览器 relay，不一定用 Python SDK。Paraformer WebSocket 文档给出的核心形态是：
+
+```text
+wss://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference
+```
+
+请求头：
+
+```http
+Authorization: Bearer [REDACTED]
+X-DashScope-WorkSpace: [REDACTED]   # 可选，按 Workspace 场景使用
+```
+
+交互流程是：
+
+```text
+建立 WebSocket
+  -> 发送 run-task 开启任务
+  -> 收到 task-started
+  -> 持续发送单声道音频二进制
+  -> 持续接收 result-generated
+  -> 发送 finish-task
+  -> 收到 task-finished
+  -> 关闭连接
+```
+
+这适合做后端 relay。前端只连我们的服务，不直接连接阿里云：
+
+```text
+Browser MediaRecorder / AudioWorklet
+  -> wss://realtime-asr.public.wzhecnu.cn/api/asr/session/{id}/stream
+  -> backend reads DASHSCOPE_API_KEY from env
+  -> backend connects Aliyun WebSocket
+  -> backend maps result-generated to transcript.partial / transcript.final
+  -> browser renders live captions
+```
+
+## 我们自己的产品配置
+
+建议配置不要写死在代码里：
+
+```dotenv
+ASR_PROVIDER=aliyun
+ALIYUN_ASR_MODEL=qwen-audio-3.0-asr-flash-streaming
+ALIYUN_BAILIAN_REGION=cn-beijing
+ALIYUN_BAILIAN_WORKSPACE_ID=[REDACTED]
+DASHSCOPE_API_KEY=[REDACTED]
+ALIYUN_ASR_AUDIO_FORMAT=pcm
+ALIYUN_ASR_SAMPLE_RATE=16000
+ALIYUN_ASR_CHUNK_MS=100
+```
+
+统一事件建议：
+
+```json
+{"type":"transcript.partial","provider":"aliyun","text":"我们今天讨论","seq":12}
+{"type":"transcript.final","provider":"aliyun","text":"我们今天讨论实时语音识别。","seq":13,"usage_seconds":4.2}
+```
+
+这样后续切科大讯飞 / 火山 / 腾讯时，前端不用改 UI，只替换 provider adapter。
+
+## 实践分工：你点网页，我写代码
+
+### 你先做
+
+1. 登录阿里云：https://aliyun.com/
+2. 打开百炼：https://bailian.console.aliyun.com/
+3. 确认百炼已开通，地域优先选华北 2（北京）。
+4. 找到或创建 Workspace，记录是否能看到 Workspace ID。
+5. 在模型广场搜索 `qwen-audio-3.0-asr-flash-streaming`、`fun-asr-realtime`、`paraformer-realtime-v2`。
+6. 按“获取 API Key”文档创建百炼 API Key。
+7. 到计费 / 免费额度 / 用量统计页面确认 ASR 是否有免费额度或资源包。
+8. 不要把真实 Key 发到聊天里；只告诉我：
+
+```text
+- 百炼是否已开通：是/否
+- 地域：华北2（北京）/ 新加坡 / 其他
+- Workspace ID 是否能看到：是/否
+- 模型是否可用：qwen-audio / fun-asr / qwen3-asr / paraformer 哪些可用
+- 免费额度是否显示：是/否
+- Token Plan 是否明确显示覆盖目标 ASR：是/否/不确定
+- 后付费是否开启：是/否
+- API Key 是否已创建：是/否
+```
+
+### 我来做
+
+1. 写最小 Python smoke 脚本，只读环境变量，不写死 Key。
+2. 准备 16k/mono wav 或 pcm 测试音频。
+3. 先跑文件识别，再跑麦克风 / 浏览器实时流。
+4. 如果 SDK 不顺，直接写 WebSocket 版客户端。
+5. 把 `result-generated` 转成统一 `partial/final` 事件。
+6. 做网页实时字幕页：开始录音、实时上屏、停止、保存 transcript。
+7. 接 AI 纪要按钮，但不和 ASR 首轮 smoke 混在一起。
+
+## 第一轮验收标准
+
+| 验收项 | 通过标准 |
+|---|---|
+| 服务开通 | 百炼控制台显示目标 ASR 模型可用 |
+| 鉴权 | SDK / WebSocket 不返回 401 / 403 / 无权限 / Workspace 错误 |
+| 音频格式 | 10–20 秒中文 wav/pcm 能被识别 |
+| 实时性 | 发送音频期间持续返回中间结果，而不是结束后才一次性返回 |
+| final 结果 | 句末能拿到稳定文本，能区分 partial 与 final |
+| 成本 | 用量记录进入预期 ASR 模型，免费额度 / 后付费扣费路径可解释 |
+| 日志 | 记录 request_id、first package delay、last package delay、错误码 |
+
+## 常见坑
+
+### 坑 1：把 Token Plan 当成 ASR 免费包
+
+不要这么做。Token Plan 和 ASR 模型免费额度 / 秒级计费不是同一件事。以控制台模型详情和账单为准。
+
+### 坑 2：地域和 API Key 混用
+
+北京、新加坡等地域的 API Key 和域名可能不同。`DASHSCOPE_API_KEY`、Workspace ID、base WebSocket URL 要对应同一地域。
+
+### 坑 3：Workspace ID 填错
+
+`wss://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference` 里的 `{WorkspaceId}` 不是随便写的名字，要用控制台真实业务空间 ID。
+
+### 坑 4：浏览器直接保存 Key
+
+浏览器不能直接拿 `DASHSCOPE_API_KEY`。即使阿里有临时 Token 机制，也应该由后端签发短时访问权限并做限流、鉴权、审计。
+
+### 坑 5：音频包节奏照搬其他厂商
+
+讯飞常见 40ms，火山常见 100–200ms，阿里 SDK 文档建议约 100ms。provider adapter 要分别配置。
+
+### 坑 6：只测 Paraformer，漏掉 Qwen-Audio / Fun-ASR
+
+如果我们目标是 2026 年的中文实时转写效果，应该把 `qwen-audio-3.0-asr-flash-streaming` 和 `fun-asr-realtime` 纳入第一轮，而不是只测传统 Paraformer。
+
+## 后续更新计划
+
+这篇先作为从零教程第一版。拿到控制台状态后继续补：
+
+1. 实际控制台路径截图对应的步骤；
+2. `DASHSCOPE_API_KEY` / Workspace 环境变量 smoke test；
+3. 10–20 秒中文文件识别结果；
+4. 麦克风实时流结果和 request_id；
+5. WebSocket relay 最小实现；
+6. 与科大讯飞 / 火山同音频 A/B 对比；
+7. 最终是否把阿里云作为主 provider 或备 provider。
+
+## 参考入口
+
+- 阿里云百炼控制台：https://bailian.console.aliyun.com/
+- 百炼模型广场：https://bailian.console.aliyun.com/?tab=model#/model-market
+- 语音识别模型选型：https://help.aliyun.com/zh/model-studio/asr-model/
+- 实时语音识别用户指南：https://help.aliyun.com/zh/model-studio/real-time-speech-recognition-user-guide
+- Paraformer 实时语音识别 API：https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-api-reference/
+- Paraformer WebSocket API：https://help.aliyun.com/zh/model-studio/websocket-for-paraformer-real-time-service
+- Paraformer Python SDK：https://help.aliyun.com/zh/model-studio/paraformer-real-time-speech-recognition-python-sdk
+- 获取 API Key：https://help.aliyun.com/zh/model-studio/get-api-key
+- 使用 Workspace：https://help.aliyun.com/zh/model-studio/use-workspace
+- 获取 Workspace ID：https://help.aliyun.com/zh/model-studio/obtain-the-app-id-and-workspace-id
+- 临时 API Key：https://help.aliyun.com/zh/model-studio/generate-temporary-api-key
+- 查询模型限额：https://help.aliyun.com/zh/model-studio/list-quotas
+- 模型调用计费：https://help.aliyun.com/zh/model-studio/billing

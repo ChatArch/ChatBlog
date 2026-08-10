@@ -1,0 +1,406 @@
+---
+title: "火山引擎实时语音识别从注册到接入：豆包语音 ASR 实践教程"
+date: 2026-08-10
+slug: volcengine-realtime-asr-practice-guide
+tags: [volcengine, doubao, bytedance, speech, realtime, asr, speech-to-text, tutorial]
+description: 从零开始走火山引擎豆包语音 / 大模型流式语音识别：注册登录、开通服务、获取新版 X-Api-Key 或旧版 AppKey/AccessToken、选择 Resource ID、理解 bigmodel / bigmodel_nostream / bigmodel_async 三种 WebSocket、看资源包与后付费价格，并规划后端 relay 与网页实时字幕实践。
+toc_max_heading_level: 2
+---
+
+# 火山引擎实时语音识别从注册到接入：豆包语音 ASR 实践教程
+
+这篇继续同一组实践教程：**第一次使用火山引擎豆包语音 / 大模型流式语音识别，怎么注册开通，怎么拿 Key，怎么选资源 ID，怎么理解 WebSocket 二进制协议，怎么从 smoke test 走到我们自己的网页实时字幕服务。**
+
+:::info 同主题前情
+- [实时语音转录怎么接：讯飞、阿里云、火山引擎、腾讯云四条路线](/blog/domestic-realtime-asr-provider-integration)：先把四家国内实时 ASR 的 API 形态、服务器分工和 A/B 测试方式拆开。
+- [科大讯飞实时语音转写从注册到接入](/blog/iflytek-realtime-asr-practice-guide)：同系列第一篇，偏讯飞控制台、SDK、WebSocket relay。
+- [阿里云实时语音识别从注册到接入](/blog/aliyun-realtime-asr-practice-guide)：同系列第二篇，偏百炼 / DashScope / Qwen-Audio / Fun-ASR / Paraformer。
+:::
+
+<!-- truncate -->
+
+:::tip 一句话结论
+火山这条线最值得看的不是老“语音识别 API”本身，而是 **豆包流式语音识别模型 2.0 / 大模型流式语音识别**。如果目标是边说边出字，第一轮优先试 **双向流式优化版 `bigmodel_async`**；如果想在快和准之间折中，可以开启二遍识别，让实时临时结果先上屏，再用更稳的分句 final 覆盖。
+:::
+
+:::info 状态说明
+快照时间为 **2026-08-10 CST**。本文基于火山引擎官方大模型流式语音识别 API、豆包语音计费说明、控制台 FAQ 做静态实践手册；没有使用任何真实账号密钥，也没有发起付费 ASR 调用。真实 App Key、API Key、Access Token、Secret Key、Resource ID、密码、代理凭据一律写成 `[REDACTED]`，不能进入前端、博客、截图或 Git 仓库。
+:::
+
+## 先分清三条实时入口
+
+火山的大模型流式 ASR 文档里列了三个 WebSocket 入口：
+
+| 入口 | URL | 适合什么 | 第一轮建议 |
+|---|---|---|---|
+| 双向流式模式 | `wss://openspeech.bytedance.com/api/v3/sauc/bigmodel` | 每输入一个包返回一个包，尽快返回识别到的字符，速度较快 | 可测 |
+| 流式输入模式 | `wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_nostream` | 发送超过 15 秒音频或最后一包后返回结果，准确率更高但实时性弱 | 准确率对照 |
+| 双向流式优化版 | `wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async` | 结果有变化时才返回新包，官方文档更推荐，性能更优 | **优先试** |
+
+如果我们做会议实时字幕，第一轮建议：
+
+```text
+低延迟实时上屏
+  -> bigmodel_async
+  -> 开 enable_nonstream 做二遍识别
+
+只看最终准确率对照
+  -> bigmodel_nostream
+
+旧链路兼容
+  -> bigmodel
+```
+
+火山文档还明确提醒：单包音频建议 **100–200ms**，发包间隔建议 **100–200ms**；双向流式模式推荐 **200ms** 分包。不要照搬讯飞的 40ms，也不要把浏览器原始 WebM/Opus 不处理就丢过去。
+
+## 费用先怎么看
+
+价格会变，必须以控制台和官方计费页为准。下面是 2026-08-10 从火山“豆包语音计费说明”抓到的快照，只用于第一轮预算判断。
+
+| 商品 / 能力 | 资源包示例 | 资源包折算 | 后付费单价 |
+|---|---:|---:|---:|
+| 豆包流式语音识别模型 2.0 | 30 小时 ¥28；1000 小时 ¥900；10000 小时 ¥8800 | 约 ¥0.93 / 小时到 ¥0.88 / 小时 | ¥1 / 小时 |
+| 大模型流式语音识别 | 30 小时 ¥132；1000 小时 ¥4000；10000 小时 ¥32000 | 约 ¥4.4 / 小时到 ¥3.2 / 小时 | ¥4.5 / 小时 |
+| 豆包录音文件识别模型 2.0 | 30 小时 ¥23；1000 小时 ¥750 | 约 ¥0.77 / 小时到 ¥0.75 / 小时 | ¥0.8 / 小时 |
+| 大模型录音文件识别（标准版） | 30 小时 ¥66；1000 小时 ¥2000 | 约 ¥2.2 / 小时到 ¥2 / 小时 | ¥2.3 / 小时 |
+| 大模型录音文件识别（极速版） | 30 小时 ¥132；1000 小时 ¥4300 | 约 ¥4.4 / 小时到 ¥4.3 / 小时 | ¥4.5 / 小时 |
+
+计费说明里还写到两个非常重要的点：
+
+1. 按时长计费时，会累加每次调用的语音时长，精确到毫秒，最终折算为小时；
+2. 语音识别相关能力按音频时长计费，双声道也是按单声道时长口径计费。
+
+第一轮建议：
+
+```text
+先不要直接买大包
+  -> 先确认是否有免费额度 / 试用
+  -> 再买最小 30 小时包或保持后付费但做成本保护
+  -> 每次测试记录音频秒数、Resource ID、X-Tt-Logid、账单归属
+```
+
+另外，火山文档还列出并发包：豆包流式语音识别模型 2.0 默认并发 / 超出并发价格和大模型流式语音识别不同。第一版 smoke test 不用先买并发包；真要多人同时测，再看并发。
+
+## 你先打开这些网页
+
+第一次操作可以按下面顺序开网页，不需要先写代码。
+
+| 步骤 | 打开地址 | 你要做什么 |
+|---|---|---|
+| 1 | https://www.volcengine.com/ | 注册或登录火山引擎账号。 |
+| 2 | https://www.volcengine.com/product/doubao-speech | 打开豆包语音产品页，确认产品入口。 |
+| 3 | https://console.volcengine.com/speech/new/setting/apikeys?projectName=default | 新版控制台 API Key 页面，登录后查看 / 创建 `X-Api-Key`。 |
+| 4 | https://docs.volcengine.com/docs/6561/1354869?lang=zh | 大模型流式语音识别 API 文档，重点看三种 WebSocket、鉴权、二进制协议、参数。 |
+| 5 | https://docs.volcengine.com/docs/6561/1359370?lang=zh | 豆包语音计费说明，看资源包、后付费、并发包。 |
+| 6 | https://www.volcengine.com/docs/6561/196768 | 控制台 FAQ，看旧版 appid / cluster / token / authorization_type / secret_key 在哪里查。 |
+| 7 | https://console.volcengine.com/speech/monitor | 监控统计 / 资源包使用情况，后续做成本读回。 |
+| 8 | https://console.volcengine.com/finance/bill/detail/ | 费用中心账单详情，确认是否欠费、后付费扣费、资源包抵扣。 |
+
+如果你是子账号，火山 FAQ 明确说：主账号没给对应产品控制台权限时，子账号无法直接访问语音技术控制台，需要主账号在访问控制里授权语音技术系统策略。
+
+## 从注册到可调用：人工操作流程
+
+### 1. 注册 / 登录 / 实名
+
+1. 打开 https://www.volcengine.com/。
+2. 登录或注册火山引擎账号。
+3. 如果提示实名、企业认证、协议确认或付费方式确认，按页面完成。
+4. 进入豆包语音 / 语音技术控制台。
+
+完成后只需要告诉我：
+
+```text
+已登录火山 / 已进入语音控制台 / 是否完成实名 / 是否主账号或子账号
+```
+
+不要发送密码、验证码、证件、完整账单截图。
+
+### 2. 开通豆包语音 / 大模型流式语音识别
+
+目标是确认这些状态：
+
+```text
+服务：豆包流式语音识别模型 2.0 / 大模型流式语音识别
+计费：免费额度 / 资源包 / 后付费
+并发：默认并发是否够第一轮测试
+项目：default 或 realtime-asr-test
+```
+
+如果你只是第一轮效果测试，不建议一开始买大资源包。可以先确认有没有试用 / 免费额度；如果必须购买，优先看最小 30 小时包。
+
+### 3. 获取 Key：新版和旧版不一样
+
+火山文档把鉴权分成新版控制台和旧版控制台：
+
+| 控制台版本 | 需要什么 | 说明 |
+|---|---|---|
+| 新版控制台 | `X-Api-Key` | 官方文档写到新版控制台只需要 `X-Api-Key`，配合 Resource ID、Request ID、Sequence 走 WebSocket header |
+| 旧版控制台 | `X-Api-App-Key` + `X-Api-Access-Key` | 文档解释为 App ID / Access Token 等旧参数；还会涉及 cluster、authorization_type、secret_key 等控制台参数 |
+
+真实值只放服务器环境变量：
+
+```dotenv
+VOLCENGINE_SPEECH_API_KEY=[REDACTED]
+VOLCENGINE_SPEECH_APP_KEY=[REDACTED]
+VOLCENGINE_SPEECH_ACCESS_KEY=[REDACTED]
+```
+
+浏览器端不能看到这些值。
+
+### 4. 选择 Resource ID
+
+API 文档里把资源 ID 写得很明确，代表你调用哪种服务和计费模式：
+
+| 能力 | 小时版 Resource ID | 并发版 Resource ID |
+|---|---|---|
+| 豆包流式语音识别模型 1.0 | `volc.bigasr.sauc.duration` | `volc.bigasr.sauc.concurrent` |
+| 豆包流式语音识别模型 2.0 | `volc.seedasr.sauc.duration` | `volc.seedasr.sauc.concurrent` |
+
+如果第一轮只是按时长小流量测试，通常从小时版开始：
+
+```dotenv
+VOLCENGINE_ASR_RESOURCE_ID=volc.seedasr.sauc.duration
+```
+
+不要把 resource id 和 API key 混为一谈：Resource ID 不是密钥，但它决定调用哪条产品 / 计费线，仍然应当放在服务端配置里统一管理。
+
+### 5. 请求头最小形态
+
+新版控制台 WebSocket 握手 header 大概是：
+
+```http
+X-Api-Key: [REDACTED]
+X-Api-Resource-Id: volc.seedasr.sauc.duration
+X-Api-Request-Id: <uuid>
+X-Api-Sequence: -1
+```
+
+旧版控制台则是：
+
+```http
+X-Api-App-Key: [REDACTED]
+X-Api-Access-Key: [REDACTED]
+X-Api-Resource-Id: volc.seedasr.sauc.duration
+X-Api-Request-Id: <uuid>
+X-Api-Sequence: -1
+```
+
+WebSocket 握手成功后，服务端会返回 `X-Tt-Logid`。这个值不是密钥，应该记录到日志里，方便排错。
+
+## API 路径：火山不是简单 JSON WebSocket
+
+火山这条比阿里 / 讯飞更工程化一点：WebSocket payload 是二进制协议，不是简单地 `send(JSON.stringify(...))` 加音频就完事。
+
+官方协议说明每个 frame payload 包含：
+
+```text
+header
+payload size
+payload
+```
+
+消息类型包括：
+
+| 类型 | 含义 |
+|---|---|
+| `0b0001` | 端上发送 full client request，包含请求参数 |
+| `0b0010` | 端上发送 audio only request，包含音频数据 |
+| `0b1001` | 服务端返回 full server response，包含识别结果 |
+| `0b1111` | 服务端返回错误 |
+
+请求流程：
+
+```text
+建立 WebSocket
+  -> 发送 full client request：音频格式、采样率、模型参数、热词 / 上下文等
+  -> 持续发送 audio only request：每包约 100–200ms 音频
+  -> 服务端持续返回识别结果 / 错误
+  -> 最后一包使用负包标记
+  -> 服务端返回最终结果
+  -> 关闭连接
+```
+
+这意味着第一版 relay 最好先写成后端 adapter，而不是让浏览器直接实现火山二进制协议。
+
+## 请求参数怎么选
+
+第一轮会议实时字幕可以从这个配置开始：
+
+```json
+{
+  "audio": {
+    "format": "wav",
+    "rate": 16000,
+    "bits": 16,
+    "channel": 1,
+    "language": "zh-CN"
+  },
+  "request": {
+    "model_name": "bigmodel",
+    "enable_nonstream": true,
+    "enable_itn": true,
+    "enable_punc": true,
+    "enable_ddc": false,
+    "result_type": "full",
+    "end_window_size": 800
+  }
+}
+```
+
+参数含义：
+
+| 参数 | 建议 | 说明 |
+|---|---|---|
+| `format` | `pcm` 或 `wav` | 文档支持 pcm / wav / ogg / mp3；pcm/wav 内部必须是 pcm_s16le |
+| `rate` | `16000` | 文档写目前只支持 16000 |
+| `channel` | `1` | 第一轮用单声道，减少变量 |
+| `language` | `zh-CN` 或空 | 空值可用默认中英文及部分方言；指定语种只在部分模式支持 |
+| `model_name` | `bigmodel` | 文档当前写目前只有 bigmodel |
+| `enable_nonstream` | `true` | 双向流式优化版可开启二遍识别，用快结果 + 准 final |
+| `enable_itn` | `true` | 把“一九七零年”转成“1970年”等书面格式 |
+| `enable_punc` | `true` | 启用标点 |
+| `enable_ddc` | 先 `false` | 语义顺滑可能会改写口语，先看原始效果 |
+| `end_window_size` | `800` | 静音判停阈值；实时性要求高时可调小，但可能影响准确率 |
+
+后续可以再测：
+
+- `enable_speaker_info`：说话人聚类分离；
+- `context`：热词 / 上下文；
+- `show_speech_rate` / `show_volume`：输出语速、音量；
+- `enable_lid`：语种检测；
+- `enable_emotion_detection`：情绪检测；
+- `enable_gender_detection`：性别检测。
+
+这些都不要第一轮全开。先把“稳定实时出字”跑通，再逐项打开。
+
+## 我们自己的产品架构
+
+最终还是不让浏览器直连火山。推荐：
+
+```text
+浏览器麦克风
+  -> 我们自己的 WebSocket：wss://realtime-asr.public.wzhecnu.cn/ws
+  -> 后端读取 VOLCENGINE_SPEECH_API_KEY / Resource ID
+  -> 后端连接火山 bigmodel_async
+  -> 后端封装 full client request / audio only request 二进制包
+  -> 火山返回识别结果
+  -> 后端统一成 transcript.partial / transcript.final
+  -> 浏览器实时显示字幕
+```
+
+服务端环境变量形态：
+
+```dotenv
+ASR_PROVIDER=volcengine
+VOLCENGINE_ASR_ENDPOINT=wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async
+VOLCENGINE_SPEECH_API_KEY=[REDACTED]
+VOLCENGINE_ASR_RESOURCE_ID=volc.seedasr.sauc.duration
+VOLCENGINE_ASR_AUDIO_FORMAT=wav
+VOLCENGINE_ASR_SAMPLE_RATE=16000
+VOLCENGINE_ASR_CHUNK_MS=200
+VOLCENGINE_ASR_ENABLE_NONSTREAM=true
+```
+
+统一事件建议：
+
+```json
+{"type":"transcript.partial","provider":"volcengine","text":"我们今天讨论","seq":12,"logid":"[REDACTED]"}
+{"type":"transcript.final","provider":"volcengine","text":"我们今天讨论实时语音识别。","seq":13,"definite":true}
+```
+
+`X-Tt-Logid` 可以记录，但如果日志里包含业务内容或用户音频关联 ID，生产环境也要按隐私日志处理。
+
+## 实践分工：你点网页，我写代码
+
+### 你先做
+
+1. 登录火山引擎：https://www.volcengine.com/
+2. 进入豆包语音 / 语音技术控制台。
+3. 确认是否能进入新版 API Key 页面：https://console.volcengine.com/speech/new/setting/apikeys?projectName=default
+4. 开通豆包流式语音识别模型 2.0 或大模型流式语音识别。
+5. 确认是否有免费额度、试用、资源包或后付费。
+6. 选择小时版 Resource ID，第一轮优先 `volc.seedasr.sauc.duration`。
+7. 确认监控统计页面能看到资源包 / 调用用量。
+8. 不要把真实 Key 发出来；只告诉我：
+
+```text
+- 是否已进入语音控制台：是/否
+- 是新版控制台还是旧版控制台：新版/旧版/不确定
+- 已开通能力：豆包流式语音识别2.0 / 大模型流式语音识别 / 未开通
+- 是否有 X-Api-Key：是/否
+- Resource ID 准备用哪个：volc.seedasr.sauc.duration / 其他
+- 是否购买资源包或开启后付费：资源包/后付费/未开通
+- 默认并发是否够第一轮测试：是/否/不确定
+```
+
+### 我来做
+
+1. 写一个最小火山 WebSocket 客户端，只读环境变量，不写死 Key。
+2. 实现火山二进制协议 header / payload size / gzip / JSON 序列化。
+3. 准备 16k/16bit/mono wav 或 pcm 测试音频。
+4. 跑 `bigmodel_async`，记录 `X-Tt-Logid`、错误码、首字延迟、final 文本。
+5. 再测 `bigmodel_nostream` 做准确率对照。
+6. 把火山返回结果映射成统一 partial/final 事件。
+7. 接网页实时字幕页和调用时长统计。
+
+## 第一轮验收标准
+
+| 验收项 | 通过标准 |
+|---|---|
+| 服务开通 | 控制台显示目标能力可用 |
+| 鉴权 | WebSocket 握手成功，不返回 Key / Resource ID / 权限错误 |
+| Resource ID | 账单和日志显示调用的是预期资源 ID |
+| 音频格式 | 10–20 秒 16k 单声道音频能被识别 |
+| 实时性 | `bigmodel_async` 发送期间持续返回可上屏文本 |
+| final 稳定性 | 开启二遍识别后，final 结果能覆盖临时结果且更稳定 |
+| 日志 | 记录 `X-Tt-Logid`、request id、chunk ms、错误码 |
+| 成本 | 用量能在监控 / 账单里解释，未出现意外后付费长跑 |
+
+## 常见坑
+
+### 坑 1：新版 / 旧版控制台参数混用
+
+新版主要看 `X-Api-Key`；旧版可能是 App Key / Access Key / token / cluster 等。先确认自己看到的是哪个控制台，不要把两套参数混着填。
+
+### 坑 2：Resource ID 选错
+
+`volc.bigasr.sauc.duration`、`volc.seedasr.sauc.duration`、并发版 ID、小时版 ID代表不同服务和计费模式。第一轮如果要测豆包流式语音识别 2.0 小时版，应优先确认 `volc.seedasr.sauc.duration`。
+
+### 坑 3：以为 WebSocket 只发 JSON
+
+火山文档使用二进制协议：header、payload size、payload。直接发普通 JSON 大概率不通。这个复杂度应该封装在后端 adapter。
+
+### 坑 4：分包太大或太小
+
+官方建议 100–200ms，双向流式推荐 200ms。分包节奏会影响性能。
+
+### 坑 5：一上来打开所有增强功能
+
+说话人、情感、性别、热词、上下文、顺滑、语种检测都可能改变返回结构。第一轮先只开 ITN、标点、必要的二遍识别。
+
+### 坑 6：后付费没有成本保护
+
+火山文档写了欠费关停 / 回收逻辑，也有资源包监控和到期提醒。测试阶段要记录音频时长，避免长时间后台连接导致账单超预期。
+
+## 后续更新计划
+
+这篇先作为从零教程第一版。拿到控制台状态后继续补：
+
+1. 控制台实际路径截图对应的步骤；
+2. 新版 `X-Api-Key` smoke test；
+3. `bigmodel_async` 最小 Python / Node WebSocket 客户端；
+4. 10–20 秒中文音频结果、`X-Tt-Logid` 和错误码样例；
+5. 二遍识别开启 / 关闭 A/B；
+6. 与科大讯飞 / 阿里云同音频 A/B；
+7. 最终是否把火山作为第一版主 provider 或备 provider。
+
+## 参考入口
+
+- 火山引擎：https://www.volcengine.com/
+- 豆包语音产品页：https://www.volcengine.com/product/doubao-speech
+- 新版控制台 API Key：https://console.volcengine.com/speech/new/setting/apikeys?projectName=default
+- 大模型流式语音识别 API：https://docs.volcengine.com/docs/6561/1354869?lang=zh
+- 豆包语音计费说明：https://docs.volcengine.com/docs/6561/1359370?lang=zh
+- 控制台 FAQ：https://www.volcengine.com/docs/6561/196768
+- 监控统计：https://console.volcengine.com/speech/monitor
+- 费用中心账单详情：https://console.volcengine.com/finance/bill/detail/
