@@ -1,0 +1,419 @@
+---
+title: "当两个 Agent 进同一个 Mattermost Thread：ChatRSS、Hermes 与 cc-connect 的对话规则"
+date: 2026-08-12
+slug: mattermost-chatrss-multi-agent-conversation-rules
+tags: [mattermost, chatrss, hermes, cc-connect, multi-agent]
+description: 用一篇文章讲清楚 ChatArch Mattermost 双账号双 Agent 接入：@hermes-agent 与 @cc-connect 的接入机制和命令边界、thread/session 对话历史隔离规则，以及 ChatRSS 在 TriggerEvent、Router 与 Ledger 层的位置。
+---
+
+# 当两个 Agent 进同一个 Mattermost Thread：ChatRSS、Hermes 与 cc-connect 的对话规则
+
+前两篇文章已经把 Mattermost 放进了 ChatArch 的版图：它是一个自托管实时 Agent 工作间，也是一个和 Slack、飞书心智都不完全一样的 channel / post / thread 系统。接下来真正会遇到的问题是：**如果一个 Mattermost thread 里同时有多个 Agent，它们到底共享什么历史？谁能唤醒谁？命令边界在哪里？ChatRSS 又应该接在哪一层？**
+
+这篇文章只写成一篇，不拆成系列。全文分成三个大节：第一节讲已经跑通的双账号接入和命令边界；第二节讲 thread、session、history 与 Agent 互相 @ 的规则；第三节讲 ChatRSS 在 TriggerEvent、Router、Action 和 Ledger 层应该承担什么角色。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+Mattermost 是共享消息总线，不是共享 Agent memory。`@hermes-agent` 和 `@cc-connect` 应该是两个独立 bot account、两套独立 runtime；它们能共同看到的是同一个 Mattermost thread 里显式写出来的文本，而不是彼此内部 session、tools、memory 或历史。ChatRSS 的位置也不是替代实时聊天 gateway，而是把需要跨平台去重、路由、审计和回放的事件接进 TriggerEvent / Router / Ledger 层。
+:::
+
+:::info 证据口径
+本文只使用公开可打开的链接、公开项目、公开文章和不含凭据的实测结论。Mattermost token、bot credential、私有配置、机器路径、用户 ID 和运维细节都不进入正文。文中的“已实测”指这次在 ChatArch Mattermost public thread 中回读到了普通用户触发、`hermes-agent` 回复、`cc-connect` 回复这三类不同作者身份。
+:::
+
+## 一、双账号双 Agent 接入：Mattermost 是共享消息总线，不是一个 bot 混跑所有 runtime
+
+这次我们先在 Mattermost 上做了一个很小但关键的验收：在同一个 public thread 里，普通用户先触发 Hermes，再触发 cc-connect，并且分别由两个不同 bot account 回包。
+
+公开 thread 入口：
+
+- Root thread: https://mattermost.public.wzhecnu.cn/_redirect/pl/yq3uts5jfpbd7gutbjdjaurnwc
+- Hermes reply: https://mattermost.public.wzhecnu.cn/_redirect/pl/4yzgq91aabg19fqd53mzrpf5ay
+- cc-connect reply: https://mattermost.public.wzhecnu.cn/_redirect/pl/nb7h3jjz63b9tfrndb9uk8n11c
+
+这个 thread 的关键顺序是：
+
+| 顺序 | 谁发的 | 内容含义 |
+| ---: | --- | --- |
+| 1 | 普通用户 | 开一个 multi-agent acceptance root post。 |
+| 2 | 普通用户 | 在 thread 里发 `@hermes-agent /ssh status`。 |
+| 3 | `hermes-agent` | Hermes 以自己的 bot 身份返回 SSH status。 |
+| 4 | 普通用户 | 在同一个 thread 里发 `@cc-connect /help`。 |
+| 5 | `cc-connect` | cc-connect 以自己的 bot 身份返回命令帮助。 |
+
+这说明 Mattermost thread 可以成为一个多人多 Agent 的共享协作表面。但它同时也说明了边界：`@hermes-agent` 和 `@cc-connect` 必须是两个账号，不能混用同一个 Mattermost token 或 bot 用户。
+
+如果混用账号，会出现四类问题：
+
+| 问题 | 影响 |
+| --- | --- |
+| 回包身份不清楚 | 用户看不出是 Hermes 还是 cc-connect 在回答。 |
+| allowlist 不清楚 | 无法按 runtime 精确控制谁能唤醒哪个 Agent。 |
+| session key 不清楚 | 同一个 bot account 背后多个 runtime 容易串话。 |
+| 审计不清楚 | 事后很难判断是哪套 Agent、哪条配置、哪次触发产生了动作。 |
+
+所以这套接入应该按四层理解：
+
+```text
+Mattermost thread / DM / channel
+  -> bot adapter 或 gateway
+     -> Hermes runtime / cc-connect runtime
+        -> 可选的 ChatRSS TriggerEvent / Router / Action / Ledger
+```
+
+每一层职责不同：
+
+| 层 | 负责什么 | 不负责什么 |
+| --- | --- | --- |
+| Mattermost | channel、post、thread、DM、mention、bot account、REST/WebSocket 事件 | Agent 推理、工具执行、长期任务账本 |
+| Hermes Gateway | 把 `@hermes-agent` / DM / thread 消息转成 Hermes session，并把结果写回 Mattermost | cc-connect 的本地 coding agent 命令 |
+| cc-connect adapter | 把 `@cc-connect` / DM 消息转成 cc-connect `core.Message`，调用它自己的 runtime 和命令体系 | Hermes `/ssh`、Hermes skills、Hermes gateway session |
+| ChatRSS | 把跨来源事件标准化成 TriggerEvent，做 router、action、ledger、审计和回放 | 替代实时聊天里的低延迟 bot reply happy path |
+
+### Hermes 的入口和命令边界
+
+Hermes 进 Mattermost 后，它不是一个简单 echo bot。它背后是完整 Hermes Agent runtime：模型、工具、skills、记忆、文件、浏览器、SSH、发布流程都可以进入一次任务。
+
+Mattermost 侧的触发规则应该保持简单：
+
+| 场景 | 默认触发规则 | 推荐回复位置 |
+| --- | --- | --- |
+| 普通频道顶层消息 | 需要 `@hermes-agent` | 这条消息的 thread |
+| 已有 thread reply | 建议继续 `@hermes-agent` | 同一个 thread |
+| DM 私聊 `hermes-agent` | 不需要 @ | DM 对话或 DM thread |
+| 普通频道里不 @ 的消息 | 不触发 | 避免误读频道聊天 |
+
+在这次实测里，`@hermes-agent /ssh status` 进入的是 Hermes 的 slash command / gateway command 体系。也就是说：
+
+```text
+@hermes-agent /ssh status
+```
+
+是 Hermes 命令，不是 cc-connect 命令。
+
+对 ChatArch 来说，`/ssh` 这一组命令用于查看和切换 Hermes SSH Mode 状态，例如：
+
+```text
+/ssh status
+/ssh list
+/ssh test <target>
+/ssh use <target>
+/ssh on <target>
+/ssh off <target>
+/ssh help
+```
+
+在 Mattermost 里，只要前面加上 bot mention，就可以把它作为 Hermes Gateway 命令发送：
+
+```text
+@hermes-agent /ssh status
+```
+
+这条路径的意义是：Mattermost thread 可以直接成为 Hermes 运维和执行任务入口，而不是需要人在平台之间复制粘贴。
+
+### cc-connect 的入口和命令边界
+
+cc-connect 的定位和 Hermes 不一样。它是把 Claude Code、Codex、Cursor、Gemini CLI、Kimi CLI 等本地 coding agent 接到聊天平台的 connector。现在 ChatArch 已经给 cc-connect 补了 Mattermost adapter，并随 v1.0.6 发布；公开 release 入口在这里：
+
+https://github.com/ChatArch/cc-connect/releases/tag/v1.0.6
+
+这次 Mattermost adapter 的核心路径是：
+
+```text
+Mattermost WebSocket posted event
+  -> cc-connect platform/mattermost
+  -> mention / DM / allowlist / dedupe / self-message filter
+  -> cc-connect core.Message
+  -> cc-connect Engine
+  -> 内置命令或配置的 coding agent runtime
+  -> Mattermost REST API thread reply
+```
+
+在频道里，cc-connect 默认也应该要求显式 mention：
+
+```text
+@cc-connect /help
+```
+
+DM 里则可以免 @，因为私聊本身已经表达“我在和这个 bot 说话”。
+
+cc-connect 的当前命令面不是 Hermes 命令面。它自己的 `/help` 会列出 cc-connect session 和 agent 管理相关命令，常用心智如下：
+
+| 命令 | 用途 |
+| --- | --- |
+| `/help` | 显示可用命令。 |
+| `/new` | 新建会话。 |
+| `/list` | 列出当前可切换 session。 |
+| `/search` | 搜索 session。 |
+| `/switch` | 切换到指定 session。 |
+| `/delete` | 删除 session。 |
+| `/history` | 查看当前 cc-connect session 历史。 |
+| `/model` | 查看或切换当前模型/agent 配置。 |
+| `/shell` | shell 相关入口。 |
+| `/thread` | thread 相关入口。 |
+| `/cron` | 定时任务相关入口。 |
+| `/dir` | 工作目录相关入口。 |
+| `/continue` | 继续当前 session。 |
+| `/retry` | 重试上一轮。 |
+| `/stop` | 停止当前任务。 |
+| `/rename` | 重命名 session。 |
+| `/status` | 查看状态。 |
+
+这也是为什么我们必须把 `@hermes-agent` 和 `@cc-connect` 分成两个账号：同一个用户在同一个 Mattermost thread 里可以分别向两个 runtime 发命令，但两个命令表不应该混在一起。
+
+## 二、对话历史和 MultiAgent 规则：thread 共享，session 不混，互相 @ 必须防回环
+
+Mattermost 最关键的一对概念是 root post 和 thread。放到 Agent 场景里，可以把一个对话单元定义成：
+
+```text
+conversation = server + channel + root post
+```
+
+如果用户在频道里发一条新的顶层消息：
+
+```text
+@hermes-agent 看一下 ChatRSS 现在在做什么。
+```
+
+这条消息就是 root post。Hermes 的后续回复、用户追问、cc-connect 的补充，都应该尽量回到这个 root post 下面的 thread。
+
+这比“整个频道共享一条历史”安全，也比“每条 reply 都新开一个会话”自然：
+
+| 模型 | 问题 |
+| --- | --- |
+| 整个频道一条历史 | 不同任务、不同用户、不同 Agent 互相污染，成本和误触发都会变高。 |
+| 每条消息一条历史 | Agent 无法记住同一个 thread 内的上下文，追问体验很差。 |
+| root post + thread | 每个任务有明确入口，thread 内连续，thread 间隔离。 |
+
+所以 ChatArch 当前推荐：**一个任务从一个 root post 开始，后续都在 thread 里继续；新的任务另开 root post。**
+
+### cc-connect 的 `session_scope`
+
+cc-connect Mattermost adapter 有一个关键配置：`session_scope`。它决定一条 Mattermost 消息进入 cc-connect 后，应该归到哪个本地 session key。
+
+可以粗略理解成三种模式：
+
+| `session_scope` | 会话粒度 | 适合场景 | 风险 |
+| --- | --- | --- | --- |
+| `user` | 同一个 Mattermost 用户共用一个 cc-connect session | 私人 bot、低并发个人入口 | 同一用户在多个 thread 里做不同任务时容易串话。 |
+| `channel` | 同一个 channel 共用一个 cc-connect session | 小团队单任务频道 | 多任务频道会互相污染。 |
+| `thread` | 同一个 root post/thread 一个 cc-connect session | Agent 工作间、多任务并行 | 需要用户养成 thread-first 习惯。 |
+
+这次验收用的是 `thread`。这也是我建议的生产默认值：**多 Agent 房间里，cc-connect 应该按 Mattermost thread 隔离历史。**
+
+注意这里的“历史”是 cc-connect 自己的 session history，不等于 Mattermost thread 的完整消息历史。比如：
+
+- 用户在 thread 里提到 `@hermes-agent`，Hermes 收到了；
+- 这条消息如果没有触发 `@cc-connect`，cc-connect 默认不应该把它吸进自己的 runtime history；
+- 后面用户再 `@cc-connect` 时，cc-connect 能看到的上下文取决于 adapter 是否做了 thread backfill，或者用户是否把必要背景写在这次触发消息里。
+
+所以 `/history` 这类命令只能解释为“cc-connect 眼里的 session history”，不能等同于“Mattermost UI 中这条 thread 的全部历史”。
+
+### MultiAgent 之间到底共享什么历史
+
+多个 Agent 在一个 thread 里，历史共享要分三层看。
+
+第一层是 **UI 可见历史**。所有参与者，包括人和 bot，都能在 Mattermost UI 里看到 thread 中的公开文本。这个层面是共享的：Hermes 回复了什么，cc-connect 回复了什么，人都能看到。
+
+第二层是 **adapter ingest 历史**。每个 adapter 会根据自己的触发规则决定“要不要把这条 post 交给 runtime”。
+
+例如：
+
+| 消息 | Hermes 会不会收 | cc-connect 会不会收 |
+| --- | --- | --- |
+| `@hermes-agent /ssh status` | 会 | 默认不会，除非它被配置为读取其它 bot mention 或 thread backfill。 |
+| `@cc-connect /help` | 默认不会，除非 Hermes 被明确提到或配置为自由监听 | 会。 |
+| 普通用户在频道里不 @ 的闲聊 | 默认不会 | 默认不会。 |
+| DM 给 `hermes-agent` | 会 | 不会。 |
+| DM 给 `cc-connect` | 不会 | 会。 |
+
+第三层是 **runtime 内部记忆**。Hermes 有自己的 gateway session、memory、skills 和工具上下文；cc-connect 有自己的 session manager、agent runtime 和历史管理。两者不会自动互相读取。
+
+因此，MultiAgent 协作的安全默认值应该是：
+
+```text
+shared = Mattermost thread 中显式可见的消息
+private = 每个 Agent 自己的 session/history/memory/tools
+```
+
+如果需要真正共享知识，应该通过显式机制完成，而不是假设两个 runtime 天然互通。
+
+### Agent 能不能互相 @
+
+协议上可以。一个 bot 回复里写：
+
+```text
+@cc-connect 请继续看这个仓库的构建问题。
+```
+
+这在 Mattermost 里就是一段普通 mention 文本。目标 bot 是否会响应，取决于四个条件：
+
+1. 目标 bot 是否监听这个 channel 或 thread；
+2. 目标 bot 是否把其它 bot 发出的消息视为允许来源；
+3. allowlist 是否允许这个 sender；
+4. bot/self-message filter 是否会把它过滤掉。
+
+但“能做到”不等于“应该默认放开”。如果让 Agent 之间自由互相 @，最容易出现的是回环：
+
+```text
+Hermes: @cc-connect 你来处理
+cc-connect: @hermes-agent 我需要更多背景
+Hermes: @cc-connect 背景如下
+cc-connect: @hermes-agent 继续确认
+...
+```
+
+所以生产规则应该是：默认不允许无边界 bot-to-bot ping-pong。如果确实需要 Agent handoff，至少要有：
+
+| 机制 | 作用 |
+| --- | --- |
+| 明确 allowlist | 哪些 bot 可以唤醒哪些 bot。 |
+| correlation id | 这次 handoff 属于哪一个任务。 |
+| hop counter | 最多转交几次，防止无限循环。 |
+| idempotency key | 同一事件不会重复触发同一 action。 |
+| ledger | 谁触发、谁接受、做了什么、是否成功。 |
+| human gate | 高风险动作仍需人工批准。 |
+
+这就是 ChatRSS 应该参与的地方。
+
+## 三、ChatRSS 的位置：TriggerEvent / Router / Action / Ledger，而不是替代实时聊天 happy path
+
+ChatRSS 现在的方向是 trigger-router-action framework。它不应该把每一条 Mattermost 实时聊天都抢到自己那里再转给 Hermes。实时聊天的 happy path 更短：
+
+```text
+人类 @hermes-agent
+  -> Hermes Mattermost Gateway
+  -> Hermes runtime
+  -> Mattermost thread reply
+```
+
+或：
+
+```text
+人类 @cc-connect
+  -> cc-connect Mattermost adapter
+  -> cc-connect runtime
+  -> Mattermost thread reply
+```
+
+ChatRSS 的价值在另一类问题上：当 Mattermost 只是一堆事件来源之一，而我们需要统一处理 GitHub、RSSHub、Discourse、Zulip、Mattermost post、评论、release 请求和审批时，它可以把这些来源标准化成同一类 TriggerEvent。
+
+可以把它想成：
+
+```text
+Source Event
+  -> TriggerEvent
+  -> Event Inbox / Dedupe
+  -> Rule Router
+  -> Model Router
+  -> Action Planner
+  -> Action Executor
+  -> Ledger / Audit
+```
+
+这和前一篇 RSS/RSSHub 文章里的分层是一致的：RSSHub 把外部更新变成 feed；ChatRSS 把 feed 或其它平台事件变成协作事件；Hermes 或 cc-connect 负责具体推理和行动。
+
+当前 ChatRSS CLI 也体现了这个过渡状态。已经可回读的真实命令面包括：
+
+```text
+chatrss --tree
+chatrss cat
+chatrss flow demo
+chatrss init
+chatrss ps
+chatrss server start/status/logs/restart/stop/url
+chatrss watch
+```
+
+而 `trigger`、`event`、`router`、`model`、`action`、`ledger`、`connector` 这些更完整的命名空间，目前更适合当 minor 版本目标树：先在文档里明确设计，不要做成空壳命令。
+
+### 推荐生产约定
+
+如果 ChatArch 要把 Mattermost 变成多人多 Agent 工作间，可以先采用这组规则。
+
+第一，**每个 runtime 一个 bot account**。
+
+| Runtime | Mattermost 账号 | 说明 |
+| --- | --- | --- |
+| Hermes | `@hermes-agent` | 工具型 Hermes runtime 和 gateway command 入口。 |
+| cc-connect | `@cc-connect` | cc-connect command 和本地 coding agent connector 入口。 |
+| 后续其它 Agent | 独立 bot account | 不混用 token，不混用审计身份。 |
+
+第二，**共享频道默认 mention gating**。频道里默认只有显式 `@bot` 才触发 Agent；DM 里可以免 @。这条规则和飞书/Slack 用户心智一致，也能避免 bot 读入整个频道闲聊。
+
+第三，**thread 是任务边界**。一个 root post 对应一个任务 thread。Agent 回复、追问、handoff、验收链接都回到同一个 thread。新的任务另开 root post。
+
+第四，**Agent 内部历史默认不共享**。不要把两个 runtime 的 memory 混成一个公共池。需要共享时，写入 Mattermost thread 或 ChatRSS ledger；需要交接时，写清楚摘要、目标 bot、任务 ID 和上下文范围。
+
+第五，**bot-to-bot handoff 走显式路由**。允许 Agent 在文本里 mention 另一个 Agent，但生产环境里应由 ChatRSS 或类似 ledger/router 层做防回环和审计，而不是让 bot 直接无限互叫。
+
+第六，**写动作要有回读证据**。无论是 Hermes 发 PR、cc-connect 跑 coding agent，还是 ChatRSS 执行 action，最终都应该把可验证链接或结果写回 thread：PR、release、workflow、deployment、docs URL、ledger entry，而不是只说“完成了”。
+
+### 当前还缺什么
+
+这次实测已经证明双账号和同 thread 多 Agent 表面可以跑通，但还有几个边界不能说成已完成：
+
+| 项 | 当前状态 |
+| --- | --- |
+| cc-connect Mattermost adapter | 已合入并随 v1.0.6 发布。 |
+| `@cc-connect /help` | 已用独立 cc-connect bot account 实测。 |
+| Hermes `@hermes-agent /ssh status` | 已在 Mattermost thread 实测。 |
+| cc-connect 长期常驻 | 还不是生产 daemon；这次是临时验收进程。 |
+| cc-connect Hermes `/ssh` bridge | 未实现；`/ssh` 仍属于 Hermes。 |
+| reaction lifecycle | 未实现；可以后续加 👀 / ⏳ / ✅ 这类处理状态。 |
+| ChatRSS 完整 Mattermost connector / ledger | 是建议建设方向，不是当前已部署事实。 |
+
+### 一个完整例子
+
+假设一个频道叫 `chatrss-triggers`。用户想让两个 Agent 分工，可以这样写：
+
+```text
+Root post:
+请在这个 thread 里检查 ChatRSS 的 Mattermost 接入规则。
+
+Thread reply 1:
+@hermes-agent 先说明当前 Hermes gateway 的 session 隔离和 /ssh status。
+
+Thread reply 2:
+@cc-connect /help
+
+Thread reply 3:
+@hermes-agent 请根据 cc-connect 返回的命令表，整理一版面向 ChatBlog 的规则。
+```
+
+这时：
+
+- Mattermost thread 是共同协作面；
+- Hermes 只在被 `@hermes-agent` 触发时进入 Hermes session；
+- cc-connect 只在被 `@cc-connect` 触发时进入 cc-connect session；
+- 两个 Agent 的内部历史不自动合并；
+- 如果要让 cc-connect 使用 Hermes 刚才总结的内容，最好把摘要显式写进同一条 `@cc-connect` 消息，或者由 ChatRSS ledger/router 注入上下文。
+
+### 小结
+
+Mattermost 给 ChatArch 提供的是一个自托管、thread-first 的人机协作空间。Hermes 和 cc-connect 进来以后，它就不只是“聊天工具”，而是一个可以承载任务触发、Agent 执行、结果回读和多 Agent 协作的实时工作面。
+
+但多 Agent 的关键不是“把很多 bot 拉进一个频道”。真正关键的是边界：
+
+```text
+Mattermost thread  = 共享可见上下文
+Hermes session     = Hermes 自己的执行历史
+cc-connect session = cc-connect 自己的执行历史
+ChatRSS ledger     = 需要跨平台、可审计、可回放的事件历史
+```
+
+把这四件事分清楚，Agent Community 才不会变成一群机器人在频道里互相吵架；它会变成一套可追踪、可协作、可逐步自治的工作系统。
+
+### 主要来源
+
+- [把 Agent 放进自己的实时工作间：Mattermost、Hermes 与 ChatArch 的下一块拼图](/blog/mattermost-hermes-agent-workspace)
+- [看懂 Mattermost：频道、帖子、Thread、私聊，以及它和 Slack/飞书哪里不一样](/blog/mattermost-posting-model-slack-comparison)
+- [RSS 与 RSSHub 入门：把网页更新变成可订阅的信息流](/blog/rss-and-rsshub-foundation-for-chatrss)
+- [Hermes Mattermost 官方文档](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/)
+- [Mattermost threaded discussions](https://docs.mattermost.com/end-user-guide/collaborate/organize-conversations.html)
+- [Mattermost bot accounts](https://developers.mattermost.com/integrate/reference/bot-accounts/)
+- [Mattermost REST API reference](https://api.mattermost.com/)
+- [CC Connect](https://github.com/chenhg5/cc-connect)
+- [ChatArch cc-connect v1.0.6 release](https://github.com/ChatArch/cc-connect/releases/tag/v1.0.6)
+- [ChatRSS](https://github.com/ChatArch/ChatRSS)
