@@ -1,0 +1,206 @@
+---
+title: "B站发文和视频投稿：官方开放平台、插件能力与 CLI 工具调研"
+date: 2026-08-12
+slug: bilibili-publishing-api-cli-field-guide
+tags: [chatpost, bilibili, publishing, open-platform, cli]
+description: 调研 B站官方开放平台、Wechatsync Bilibili adapter、第三方 CLI 工具，回答能发什么、怎么发、有没有官方 CLI，以及 ChatPost 应优先走哪条接入路线。
+---
+
+# B站发文和视频投稿：官方开放平台、插件能力与 CLI 工具调研
+
+我们要回答的不是“能不能点网页发一篇 B站内容”，而是 **ChatPost 这种发文/投稿编排层应该接哪条稳定边界**：官方 API、浏览器插件、还是第三方 CLI。
+
+结论先说：**B站官方开放平台已经有视频稿件管理和专栏稿件管理 API；插件路线当前看到的是专栏图文草稿，不是视频投稿；官方没有发现可直接投稿的 CLI，第三方 CLI 以 biliup 系列为代表，但它们不等于官方接入路径。**[1][5][8][14]
+
+<!-- truncate -->
+
+## 先拿官方入口
+
+如果要从官方路线开始，入口不要从 cookies、二维码、浏览器插件开始，而应该先看这几个官方站点：
+
+| 入口 | 用途 |
+| --- | --- |
+| [B站开放平台](https://open.bilibili.com/) | 开放平台首页 |
+| [开放平台文档中心](https://open.bilibili.com/doc) | OPEN API、客户端 SDK、运营指南、更多支持 |
+| [开平管理中心 / 应用管理](https://openhome.bilibili.com/company-core) | 入驻、创建应用、查看接口权限、配置白名单 |
+| [账号授权](https://open.bilibili.com/doc/4/eaf0e2b5-bde9-b9a0-9be1-019bb455701c) | OAuth 2.0 授权、token 与 refresh token |
+| [网页应用接入](https://openhome.bilibili.com/doc/4/aac73b2e-4ff2-b75c-4c96-35ced865797b) | Web OAuth 授权页、回调与授权码流程 |
+| [接口签名和状态码](https://open.bilibili.com/doc/4/8673959e-f7bb-56e6-6e68-d225f971b81b) | HMAC-SHA256 签名、公共请求头、签名验证工具 |
+| [接口权限白名单](https://open.bilibili.com/doc/4/b2dc2f0e-c874-aed7-3d92-360929e79d3a) | 某些接口只允许指定 UID 调用时的限制配置 |
+| [B站开放平台 GitHub org](https://github.com/bilibili-openplatform) | 官方 Demo 和签名样例代码 |
+
+这组入口已经能说明官方接入的基本模型：先入驻开放平台、创建应用、拿到 `client_id` 和 `secret`，然后走 OAuth 获取用户授权 token，再用开放平台签名规则调用稿件接口。[1][2][3][4]
+
+## 官方能发布哪些东西
+
+本次调研里，和“发布内容”直接相关的官方能力分两组：
+
+| 内容类型 | 官方能力组 | Scope | 能力边界 |
+| --- | --- | --- | --- |
+| 视频稿件 | 视频稿件管理 / 服务端视频稿件投递 | `ARC_BASE` | 视频文件预处理、分片上传、合片、封面上传、分区查询、视频稿件提交 |
+| 专栏文章 | 专栏稿件管理 | `ATC_BASE` | 文章提交、编辑、删除、详情、列表、分类、图片上传 |
+
+这意味着官方 API 不是只有“读取账号信息”或“授权登录”。它已经覆盖了 B站内容生产里最核心的两类发布对象：**视频投稿**和**专栏文章**。[5][6][7][8][9][10]
+
+但它也不是一个“随便拿账号就能调”的接口。官方账号授权文档明确说，使用授权之前需要在开放平台完成入驻和应用申请，得到 `client_id` 和 `secret`；如果应用新增 scope，原有授权用户还需要重新授权并勾选对应 scope。[1]
+
+## 官方视频投稿大概怎么发
+
+官方视频投稿链路不是一个单接口 `upload(video)`，而是一个分阶段上传与提交流程：
+
+| 阶段 | 官方接口 | 作用 |
+| --- | --- | --- |
+| 1 | `archive/video/init` | 文件上传预处理，拿到上传所需信息 |
+| 2 | `video/v2/part/upload` 或 `video/v2/upload` | 分片上传，或小视频单文件上传 |
+| 3 | `archive/video/complete` | 合片，完成视频文件上传 |
+| 4 | `archive/cover/upload` | 上传稿件封面 |
+| 5 | `archive/type/list` | 查询/刷新分区信息 |
+| 6 | `archive/add-by-utoken` | 提交视频稿件 |
+
+官方概览还写了视频参数边界：文件大小限制 4GB、时长小于 5 小时、推荐 mp4/flv、最大 4096x4096、最大 120fps，并提醒投稿需要选择合适分区，分区可能调整，建议定时查询更新。[5]
+
+所以 ChatPost 如果走官方视频投稿，不应该把它设计成“浏览器里点上传按钮”的封装，而应该设计成一个明确的 pipeline：
+
+```text
+OpenPlatform OAuth token
+  -> 签名请求头
+  -> init 获取上传上下文
+  -> part upload / single upload
+  -> complete 合片
+  -> cover upload
+  -> type/list 校验分区
+  -> add-by-utoken 提交稿件
+  -> 查询稿件状态 / 审核结果
+```
+
+这个流程天然适合服务端编排：可以记录每个阶段的 request id、upload token、分片进度、失败重试、最终稿件状态。它也天然需要更强的权限和更严格的凭据管理，因为它不再只是保存草稿，而是真正创建 B站视频稿件。[6][7][8]
+
+## 官方专栏文章大概怎么发
+
+专栏文章 API 比视频上传短一些，但也有审核和素材处理边界：
+
+| 阶段 | 官方接口 | 作用 |
+| --- | --- | --- |
+| 1 | `article/upload/image` | 上传正文/封面用图片，返回 B站图片 URL |
+| 2 | `article/categories` | 获取可用文章分类 |
+| 3 | `article/add` | 提交文章稿件 |
+| 4 | `article/list` / `article/detail` | 查询文章列表、状态和详情 |
+| 5 | `article/edit` | 编辑文章；编辑后重新审核 |
+| 6 | `article/delete` | 删除文章；删除类操作要谨慎处理 |
+
+官方文章提交文档写得比较清楚：文章提交需要 `ATC_BASE`，正文内容 200–40000 字，或者至少添加三张图片；如果正文里需要图片 URL，要使用图片上传接口生成的 URL；文章提交之后会进入审核过程，期间不对外开放。[9][10]
+
+这说明“专栏发布”也不能简单等同于“发出去了马上可见”。对 ChatPost 来说，正确的状态模型应该至少区分：
+
+```text
+prepared -> uploaded-assets -> submitted -> auditing -> passed / rejected / edited-resubmitted
+```
+
+如果做 `chatpost bilibili article submit`，返回值不应该只报 success，而应该返回文章 id、提交状态、是否进入审核、后续查询命令，以及审核中/打回/通过这些状态解释。
+
+## Wechatsync / 插件里支持什么
+
+我们本次看的 Wechatsync v2 Bilibili adapter 快照显示，插件侧的 B站适配器 metadata 是：
+
+```ts
+id: 'bilibili'
+homepage: 'https://member.bilibili.com/platform/upload/text'
+capabilities: ['article', 'draft', 'image_upload']
+```
+
+它的发布函数保存到的是 B站专栏草稿接口：
+
+```text
+https://api.bilibili.com/x/article/creative/draft/addupdate
+```
+
+图片上传走的是：
+
+```text
+https://api.bilibili.com/x/article/creative/article/upcover
+```
+
+也就是说，插件快照支持的是 **B站专栏/图文草稿 + 图片上传**，不是视频投稿。`homepage` 指向 `platform/upload/text`，capabilities 也只有 `article`、`draft`、`image_upload`，没有 `video`、`archive`、`upload` 这类视频投稿能力。[13]
+
+这条路线的价值是：如果官方 API 权限还没申请下来，可以用浏览器登录态先验证“Markdown/HTML -> 专栏草稿”的产品体验。但它不应该被描述成“支持 B站视频发布”。最多只能说：**支持专栏图文草稿；视频上传在当前 adapter 里没有看到实现证据。**[13]
+
+## 有没有官方 CLI 工具
+
+目前没有发现 B站官方提供“投稿/发布 CLI”。
+
+官方文档里出现的“工具”主要是两类：
+
+1. **签名验证工具**：文档给了一个 Windows 64 位签名验证工具下载链接，用来验证开放平台请求签名。[4]
+2. **官方 Demo / SDK 示例**：官方 GitHub org 下有 `SignatureAlgorithm_DotnetDemo` 和 `OpenPlatform_CSharpDemo`，它们是 C# 签名和开放平台调用示例，不是 `bilibili upload` 这类可直接投稿的命令行产品。[11][12]
+
+官方 `OpenPlatform_CSharpDemo` README 也写明，Demo 里的功能都需要开放平台接入并完成用户授权后才能触发；它要求开发者填入应用信息、回调地址和 token，再按需要选择 sample 中的功能。[12]
+
+所以文章里的 CLI 结论应当严格写成：
+
+```text
+官方有开放平台 API、签名验证工具、C# Demo / SDK 示例；
+当前未发现官方投稿/发布 CLI。
+```
+
+不要把第三方工具当成官方 CLI。
+
+## 第三方 CLI：biliup 是参考，不是官方路线
+
+第三方生态里确实有 B站投稿 CLI / 桌面工具，最明显的是 `biliup` 系列。当前 GitHub API 读到的 `biliup/biliup` 描述是“自动直播录制、投稿、twitch、ytb频道搬运工具。命令行投稿(B站)和视频下载工具，提供多种登录方式，支持多p。”，Stars 为 5340，仓库未归档，最近 push 时间是 2026-08-07。[14]
+
+此外，旧的 `biliup-rs` README 明确说仓库已归档，后续开发迁移到新仓库；它的旧文档里仍能看到 `biliup upload`、`login`、`renew`、`append`、`list` 等命令形态。[15]
+
+这类工具对我们有两个价值：
+
+- 可以参考多 P、分区、封面、延时发布、cookie 文件、多账号等产品参数设计；
+- 可以作为 fallback：当官方 API 权限申请周期太长，而内部需要先验证视频投稿流程时，第三方 CLI 能作为受控实验对象。
+
+但它不应该成为 ChatPost 的首选长期边界。原因很简单：第三方 CLI 常常围绕 cookies、网页登录态、客户端/网页接口做封装，稳定性、合规边界、权限解释和审计能力都弱于官方开放平台 API。
+
+## 对 ChatPost 的建议路线
+
+ChatPost 应该把 B站拆成两条路线，而不是混成一个 `bilibili publish`：
+
+| 层级 | 推荐命令 | 接入边界 | 说明 |
+| --- | --- | --- | --- |
+| 账号/权限 | `chatpost bilibili oauth login/status/logout` | 官方 OAuth | 管理开放平台 app、用户授权 token、scope readback |
+| 专栏文章 | `chatpost bilibili article submit/status/edit` | 官方 `ATC_BASE` | 真正提交专栏稿件，进入审核；不是只存浏览器草稿 |
+| 视频投稿 | `chatpost bilibili video upload/submit/status` | 官方 `ARC_BASE` | 分片上传、封面、分区、提交、状态查询 |
+| 草稿 fallback | `chatpost bilibili draft` | Wechatsync / browser runner | 仅当官方权限不可用时，用专栏草稿体验验证 |
+| 第三方实验 | `chatpost bilibili experimental biliup ...` | biliup 等第三方 CLI | 只作为显式实验功能，不混进官方能力 |
+
+第一阶段不建议直接做公开视频发布。更稳的顺序是：
+
+1. 确认是否已有 B站开放平台主体和应用；
+2. 确认应用是否拿到 `ATC_BASE` / `ARC_BASE`；
+3. 做 OAuth 授权和 token 安全存储；
+4. 先接查询/分类/图片上传这类低风险接口；
+5. 再接专栏提交，并把审核状态做清楚；
+6. 最后接视频上传分片和投稿提交；
+7. 如果官方权限被卡住，再把 Wechatsync 专栏草稿或 biliup 第三方路线作为 fallback，而不是默认主线。
+
+## 最后结论
+
+如果目标只是“今天能不能把内容弄到 B站草稿箱”，Wechatsync 的 Bilibili adapter 快照已经给出一条专栏草稿路线。[13]
+
+如果目标是把 ChatPost 做成可验收、可追踪、可长期维护的平台发布层，B站应该优先走官方开放平台 API：专栏用 `ATC_BASE`，视频用 `ARC_BASE`，先 OAuth 和 scope readback，再做素材上传、稿件提交和状态查询。[1][6][8][9]
+
+官方 CLI 这块，当前结论是：**没有发现官方投稿/发布 CLI；官方提供的是开放平台文档、签名验证工具和 C# Demo。第三方 CLI 有，但只能作为参考或 fallback，不应该被写成官方路径。**[4][11][12][14]
+
+## Sources
+
+[1] B站账号授权文档：[open.bilibili.com/doc/4/eaf0e2b5-bde9-b9a0-9be1-019bb455701c](https://open.bilibili.com/doc/4/eaf0e2b5-bde9-b9a0-9be1-019bb455701c)
+[2] B站网页应用接入指引：[openhome.bilibili.com/doc/4/aac73b2e-4ff2-b75c-4c96-35ced865797b](https://openhome.bilibili.com/doc/4/aac73b2e-4ff2-b75c-4c96-35ced865797b)
+[3] B站接口权限白名单：[open.bilibili.com/doc/4/b2dc2f0e-c874-aed7-3d92-360929e79d3a](https://open.bilibili.com/doc/4/b2dc2f0e-c874-aed7-3d92-360929e79d3a)
+[4] B站接口签名和状态码：[open.bilibili.com/doc/4/8673959e-f7bb-56e6-6e68-d225f971b81b](https://open.bilibili.com/doc/4/8673959e-f7bb-56e6-6e68-d225f971b81b)
+[5] B站视频稿件管理接口概览：[open.bilibili.com/doc/4/1c4302da-8171-d036-5400-ca0dec077045](https://open.bilibili.com/doc/4/1c4302da-8171-d036-5400-ca0dec077045)
+[6] B站视频上传预处理：[open.bilibili.com/doc/4/0c532c6a-e6fb-0aff-8021-905ae2409095](https://open.bilibili.com/doc/4/0c532c6a-e6fb-0aff-8021-905ae2409095)
+[7] B站视频分片上传：[open.bilibili.com/doc/4/733a520a-c50f-7bb4-17cb-35338ba20500](https://open.bilibili.com/doc/4/733a520a-c50f-7bb4-17cb-35338ba20500)
+[8] B站视频稿件提交：[open.bilibili.com/doc/4/f7fc57dd-55a1-5cb1-cba4-61fb2994bf0f](https://open.bilibili.com/doc/4/f7fc57dd-55a1-5cb1-cba4-61fb2994bf0f)
+[9] B站专栏文章提交：[open.bilibili.com/doc/4/b14b77b6-8889-8c8b-2e83-17c5a4c550fb](https://open.bilibili.com/doc/4/b14b77b6-8889-8c8b-2e83-17c5a4c550fb)
+[10] B站专栏图片上传：[open.bilibili.com/doc/4/0eaa4d3e-c4c0-f874-6f3c-e083aa939a1b](https://open.bilibili.com/doc/4/0eaa4d3e-c4c0-f874-6f3c-e083aa939a1b)
+[11] B站官方签名算法 C# Demo：[github.com/bilibili-openplatform/SignatureAlgorithm_DotnetDemo](https://github.com/bilibili-openplatform/SignatureAlgorithm_DotnetDemo)
+[12] B站官方开放平台 C# Demo：[github.com/bilibili-openplatform/OpenPlatform_CSharpDemo](https://github.com/bilibili-openplatform/OpenPlatform_CSharpDemo)
+[13] Wechatsync v2 Bilibili adapter：[github.com/wechatsync/Wechatsync/blob/v2/packages/core/src/adapters/platforms/bilibili.ts](https://github.com/wechatsync/Wechatsync/blob/v2/packages/core/src/adapters/platforms/bilibili.ts)
+[14] biliup：[github.com/biliup/biliup](https://github.com/biliup/biliup)
+[15] biliup-rs：[github.com/biliup/biliup-rs](https://github.com/biliup/biliup-rs)
