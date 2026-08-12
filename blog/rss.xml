@@ -164,6 +164,178 @@
             <category>multi-agent</category>
         </item>
         <item>
+            <title><![CDATA[Frontend Slides：zarazhangrui 的 AI Agent HTML 演示文稿 Skill 详解]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill</guid>
+            <pubDate>Wed, 12 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[详细拆解 zarazhangrui/frontend-slides：它为什么不是一个普通 PPT 模板，而是一套面向 AI coding agent 的零依赖 HTML 演示文稿 skill；以及它如何辅助 ChatBlog 继续完善 Web Slides 工作流。]]></description>
+            <content:encoded><![CDATA[<p>ChatBlog 已经有一个 <a href="https://arch.gh.wzhecnu.cn/ChatBlog/slides" target="_blank" rel="noopener noreferrer" class="">Slides</a> 入口，也已经有一篇文章讨论 Patrick Fu 那套更工程化的 <a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow" target="_blank" rel="noopener noreferrer" class="">Frontend Harness Slides 工作流</a>。那篇文章的重点是：把一套演示文稿做成小型前端 artifact，用 scene / beat / URL state / build / preview / readback 来治理。</p>
+<p>这次看的 <code>zarazhangrui/frontend-slides</code> 是另一个互补方向：它不是 React/Vite workbench，也不是一个大而全的 slides 平台，而是一个 <strong>AI coding agent skill</strong>。它把“做一套好看的 Web Slides”拆成一套可被 Claude Code、Codex、Kimi Code、OpenCode、Gemini CLI 等本地 coding agent 读取和执行的流程：先看内容，再做 3 张视觉 preview，让用户用眼睛选方向，最后生成一个零依赖、固定 16:9、可分享、可导出 PDF 的单 HTML 演示文稿。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p><code>zarazhangrui/frontend-slides</code> 最值得学习的不是某个模板，而是它把 presentation 生成变成了 <strong>agent-readable skill + progressive disclosure design system + fixed-stage single HTML artifact</strong>。对 ChatBlog 来说，它可以补上“从博客/调研快速生成可看的 slides 草稿”和“用视觉 preview 选风格”的能力；但正式纳入 ChatBlog 时，仍要走我们自己的 Git / PR / Docusaurus / 生产 readback 发布链路。</p></div></div>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>本文快照时间为 <strong>2026-08-12 16:22 CST</strong>。证据来自 <code>zarazhangrui/frontend-slides</code> 的 GitHub API、README、<code>SKILL.md</code>、<code>STYLE_PRESETS.md</code>、<code>html-template.md</code>、<code>viewport-base.css</code>、<code>animation-patterns.md</code>、<code>bold-template-pack/README.md</code>、<code>bold-template-pack/selection-index.json</code>、<code>.claude-plugin/marketplace.json</code>、<code>scripts/</code> 目录，以及 ChatBlog 当前 <code>Slides</code> 页面和 <code>Agent Community Quick Start</code> 静态 deck 源码。本文只做静态读取，没有安装、克隆或运行该仓库。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一这个仓库到底是什么">一、这个仓库到底是什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E4%B8%80%E8%BF%99%E4%B8%AA%E4%BB%93%E5%BA%93%E5%88%B0%E5%BA%95%E6%98%AF%E4%BB%80%E4%B9%88" class="hash-link" aria-label="一、这个仓库到底是什么的直接链接" title="一、这个仓库到底是什么的直接链接" translate="no">​</a></h2>
+<p>先给它一个准确定位：<code>zarazhangrui/frontend-slides</code> 是一个 <strong>面向 coding agent 的 presentation skill</strong>。</p>
+<p>它的 README 第一段写得很直接：这是一个用于创建 HTML presentations 的 coding-agent skill，可以从零生成，也可以把 PowerPoint 转成 web；它被打包成 Claude Code plugin，同时核心 <code>SKILL.md</code> 也可以被其它有文件系统和 shell 访问能力的 coding agent 读取。</p>
+<p>仓库快照如下：</p>
+<table><thead><tr><th>项</th><th>快照</th></tr></thead><tbody><tr><td>GitHub</td><td><a href="https://github.com/zarazhangrui/frontend-slides" target="_blank" rel="noopener noreferrer" class="">https://github.com/zarazhangrui/frontend-slides</a></td></tr><tr><td>描述</td><td>Create beautiful slides on the web using a coding agent's frontend skills</td></tr><tr><td>License</td><td>MIT</td></tr><tr><td>默认分支</td><td><code>main</code></td></tr><tr><td>创建时间</td><td>2026-01-28</td></tr><tr><td>最近 push</td><td>2026-06-23</td></tr><tr><td>Stars / Forks / Open issues</td><td>27,350 / 2,217 / 65</td></tr><tr><td>GitHub topics</td><td><code>ai-slides</code>, <code>claude-code</code>, <code>claude-skill</code>, <code>html</code>, <code>presentation</code>, <code>slides</code>, <code>vibe-coding</code> 等</td></tr><tr><td>主要语言统计</td><td>JavaScript、Shell、Python、CSS</td></tr></tbody></table>
+<p>从文件结构看，它也不像一个普通前端 app。根目录没有 <code>package.json</code> 这种应用入口，而是围绕 skill 运行时需要读的材料组织：</p>
+<table><thead><tr><th>文件 / 目录</th><th>角色</th></tr></thead><tbody><tr><td><code>SKILL.md</code></td><td>核心工作流：模式判断、提问、视觉 preview、生成、PPT 转换、交付、分享和导出。</td></tr><tr><td><code>STYLE_PRESETS.md</code></td><td>12 个安全基础视觉 preset：暗色、亮色、专业、复古、终端、纸张等。</td></tr><tr><td><code>bold-template-pack/selection-index.json</code></td><td>34 个更强风格模板的轻量索引，只在 style discovery 时读取元数据。</td></tr><tr><td><code>bold-template-pack/templates/*/preview.md</code></td><td>被 shortlist 后才读的小 preview card。</td></tr><tr><td><code>bold-template-pack/templates/*/design.md</code></td><td>用户选定某个 bold template 后才读的完整设计系统。</td></tr><tr><td><code>viewport-base.css</code></td><td>强制固定 16:9 stage 的基础 CSS，生成最终 deck 时要完整内联。</td></tr><tr><td><code>html-template.md</code></td><td>单 HTML deck 的架构、JS controller、inline editing、图片处理和代码规范。</td></tr><tr><td><code>animation-patterns.md</code></td><td>动效和情绪的映射：cinematic、techy、playful、professional、editorial 等。</td></tr><tr><td><code>scripts/extract-pptx.py</code></td><td>从 <code>.pptx</code> 提取文字、图片、speaker notes，用于 PPT 转 web。</td></tr><tr><td><code>scripts/deploy.sh</code></td><td>把 HTML 或目录部署到 Vercel。</td></tr><tr><td><code>scripts/export-pdf.sh</code></td><td>用 Playwright 截每页 1920×1080 图并合成 PDF。</td></tr></tbody></table>
+<p>所以它不是“下载后启动一个服务”，而更像一套给 Agent 使用的设计与生成手册。Agent 读 <code>SKILL.md</code>，再按当前阶段选择性读取支持文件，最后产出 HTML。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="二核心心智不是让用户描述风格而是让用户看见风格">二、核心心智：不是让用户描述风格，而是让用户看见风格<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E4%BA%8C%E6%A0%B8%E5%BF%83%E5%BF%83%E6%99%BA%E4%B8%8D%E6%98%AF%E8%AE%A9%E7%94%A8%E6%88%B7%E6%8F%8F%E8%BF%B0%E9%A3%8E%E6%A0%BC%E8%80%8C%E6%98%AF%E8%AE%A9%E7%94%A8%E6%88%B7%E7%9C%8B%E8%A7%81%E9%A3%8E%E6%A0%BC" class="hash-link" aria-label="二、核心心智：不是让用户描述风格，而是让用户看见风格的直接链接" title="二、核心心智：不是让用户描述风格，而是让用户看见风格的直接链接" translate="no">​</a></h2>
+<p><code>frontend-slides</code> 的核心产品判断是：大多数非设计用户很难用抽象词准确说出自己想要什么风格，但他们能看懂“我喜欢 A，不喜欢 B”。所以它把 style selection 做成 <strong>show, don't tell</strong>。</p>
+<p>它默认流程不是问一堆“你喜欢极简还是现代”这种选择题，而是生成 3 张真实 title-slide preview：</p>
+<ol>
+<li class="">一个来自 <code>STYLE_PRESETS.md</code> 的安全 preset；</li>
+<li class="">至少一个来自 <code>bold-template-pack</code> 的 bold template；</li>
+<li class="">一个 wildcard，可以是第二个 bold template，也可以是 Agent 自己根据内容设计的 custom direction。</li>
+</ol>
+<p>这里的重点是“真实 title slide”。<code>SKILL.md</code> 明确要求 preview 不能像诊断卡片，不能写 <code>Option A/B/C</code>、<code>template</code>、<code>preview.md</code>、<code>generated from</code> 这种内部流程字样，也不能把用户需求说明直接写到 slide 上。用户看到的应该是一张像正式 deck 第一页的东西。</p>
+<p>这点对我们很重要。ChatBlog 后续如果把文章变 slides，不应该直接把正文段落塞进一个默认模板，而应该先进入一个视觉选择阶段：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">文章 / 调研 / 项目结果</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; deck brief</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 3 张真实 visual preview</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 选定风格</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 完整 deck</span><br></div></code></pre></div></div>
+<p>这比“先生成 20 页，再让用户挑毛病”更省时间，也更容易避免 AI 常见的紫色渐变、白底卡片、Inter 字体、通用 dashboard 风。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="三固定-169-stage-是非协商项">三、固定 16:9 stage 是非协商项<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E4%B8%89%E5%9B%BA%E5%AE%9A-169-stage-%E6%98%AF%E9%9D%9E%E5%8D%8F%E5%95%86%E9%A1%B9" class="hash-link" aria-label="三、固定 16:9 stage 是非协商项的直接链接" title="三、固定 16:9 stage 是非协商项的直接链接" translate="no">​</a></h2>
+<p><code>frontend-slides</code> 对输出几何有一个硬约束：<strong>每套 deck 都是 1920×1080 固定 stage，整个 stage 根据浏览器窗口等比缩放</strong>。</p>
+<p><code>viewport-base.css</code> 里定义了这套基础模型：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">deck-viewport = fixed inset 0, 占满浏览器窗口</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">deck-stage    = absolute 1920px × 1080px, transform-origin: 0 0</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">slide         = absolute inset 0, 1920px × 1080px</span><br></div></code></pre></div></div>
+<p>也就是说，slide 内容不是普通网页布局，不应该在手机上改成另一个响应式排版。它更像舞台：舞台的坐标不变，观众屏幕大小变化时整体缩放、留黑边或留白边。</p>
+<p>这条规则解决了 Web Slides 里一个很常见的问题：如果每张 slide 都写成响应式网页，投影、截图、PDF、手机预览、CI 检查看到的布局可能完全不一样。固定 stage 后，排版、标注、箭头、图表和 reveal 位置都稳定了。</p>
+<p>同时，<code>SKILL.md</code> 对 slide 切换也有明确坑位提醒：不要用 <code>display: none</code> / <code>display: block</code> 控制 slide 显隐，而要用 <code>.active</code> / <code>.visible</code> 配合 <code>visibility</code>、<code>opacity</code>、<code>pointer-events</code>。原因是后续 <code>.slide-content { display: flex; }</code> 之类布局类可能覆盖 display，把所有 slide 一次性显示出来。</p>
+<p>这些看起来像 CSS 小规则，但实际是 presentation artifact 的底层契约。ChatBlog 现在的 <code>Agent Community Quick Start</code> deck 已经有 scene / beat / URL state，但它是一个轻量静态 HTML demo，舞台尺寸更多依赖外层 <code>aspect-ratio</code> 和 <code>clamp()</code>。如果以后要继续打磨，我们可以借 <code>frontend-slides</code> 把它升级为更严格的 1920×1080 fixed-stage 模型。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="四它如何避免ai-味的视觉输出">四、它如何避免“AI 味”的视觉输出<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E5%9B%9B%E5%AE%83%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8Dai-%E5%91%B3%E7%9A%84%E8%A7%86%E8%A7%89%E8%BE%93%E5%87%BA" class="hash-link" aria-label="四、它如何避免“AI 味”的视觉输出的直接链接" title="四、它如何避免“AI 味”的视觉输出的直接链接" translate="no">​</a></h2>
+<p><code>frontend-slides</code> 对审美的要求写得很直白：避免 generic “AI slop”。它点名了几类常见问题：</p>
+<ul>
+<li class="">过度使用 Inter、Roboto、Arial、system font；</li>
+<li class="">白底紫色渐变和泛化的科技卡片；</li>
+<li class="">可预测的布局组件；</li>
+<li class="">任何看起来像“模板生成”而不是“为这个内容设计”的输出。</li>
+</ul>
+<p>为了让 Agent 不只会说“要有设计感”，它把审美拆成了可执行材料：</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-安全-preset">1. 安全 preset<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#1-%E5%AE%89%E5%85%A8-preset" class="hash-link" aria-label="1. 安全 preset的直接链接" title="1. 安全 preset的直接链接" translate="no">​</a></h3>
+<p><code>STYLE_PRESETS.md</code> 提供 12 个基础视觉方向，比如：</p>
+<table><thead><tr><th>类别</th><th>示例</th></tr></thead><tbody><tr><td>Dark Themes</td><td>Bold Signal、Electric Studio、Creative Voltage、Dark Botanical</td></tr><tr><td>Light Themes</td><td>Notebook Tabs、Pastel Geometry、Split Pastel、Vintage Editorial</td></tr><tr><td>Specialty</td><td>Neon Cyber、Terminal Green、Swiss Modern、Paper &amp; Ink</td></tr></tbody></table>
+<p>每个 preset 都给出 vibe、layout、typography、colors、signature elements。Agent 不是凭感觉“做个暗色科技风”，而是有具体字体、色板、构图和标志性元素可用。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-bold-template-pack">2. Bold Template Pack<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#2-bold-template-pack" class="hash-link" aria-label="2. Bold Template Pack的直接链接" title="2. Bold Template Pack的直接链接" translate="no">​</a></h3>
+<p>更强的一层是 <code>bold-template-pack</code>。它把 <code>beautiful-html-templates</code> 里的 34 个设计系统引入 skill，但不是一次性全部塞给 Agent。正确读取顺序是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">selection-index.json</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; shortlist by mood / tone / best_for / avoid_for / formality / density / scheme</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 只读 shortlist 的 preview.md</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 用户选中后，只读那一个 design.md</span><br></div></code></pre></div></div>
+<p>这就是 progressive disclosure。好处是：Agent 一开始不会被 34 套完整 design doc 淹没，也不会把所有模板胡乱混在一起。每次只把“当前决策需要的信息”放进上下文。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-wildcard-自定义设计">3. Wildcard 自定义设计<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#3-wildcard-%E8%87%AA%E5%AE%9A%E4%B9%89%E8%AE%BE%E8%AE%A1" class="hash-link" aria-label="3. Wildcard 自定义设计的直接链接" title="3. Wildcard 自定义设计的直接链接" translate="no">​</a></h3>
+<p>它还保留一个 wildcard slot。也就是说，如果当前内容有更具体的视觉机会，Agent 不必强行套模板，可以自己设计一个更贴合内容的方向。但 custom wildcard 也有约束：要有独特 typography、稳定 palette、可扩展 layout system、一个清晰的视觉 thesis，并且不要把 <code>custom</code>、<code>wildcard</code>、<code>template</code> 这些流程标签渲染到 slide 上。</p>
+<p>这套机制对 ChatBlog 特别有用。我们的内容经常是技术调研、Agent 工作流、服务架构、社区协作、ASR/视频/论文复现等。如果每篇都套一个 generic tech deck，会很快审美疲劳。<code>frontend-slides</code> 提醒我们：先让内容决定视觉隐喻，再让模板服务表达。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="五工作流不是生成-html这么简单">五、工作流不是“生成 HTML”这么简单<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E4%BA%94%E5%B7%A5%E4%BD%9C%E6%B5%81%E4%B8%8D%E6%98%AF%E7%94%9F%E6%88%90-html%E8%BF%99%E4%B9%88%E7%AE%80%E5%8D%95" class="hash-link" aria-label="五、工作流不是“生成 HTML”这么简单的直接链接" title="五、工作流不是“生成 HTML”这么简单的直接链接" translate="no">​</a></h2>
+<p><code>SKILL.md</code> 把任务拆成 6 个 phase：</p>
+<table><thead><tr><th>Phase</th><th>作用</th></tr></thead><tbody><tr><td>Phase 0: Detect Mode</td><td>判断是新建 presentation、PPT conversion，还是增强已有 HTML deck。</td></tr><tr><td>Phase 1: Content Discovery</td><td>一次性问清 purpose、length、content readiness、density，并整理图片。</td></tr><tr><td>Phase 2: Style Discovery</td><td>生成 3 张视觉 preview，让用户选风格或混合。</td></tr><tr><td>Phase 3: Generate Presentation</td><td>读取 <code>html-template.md</code>、<code>viewport-base.css</code>、<code>animation-patterns.md</code>，生成完整单 HTML。</td></tr><tr><td>Phase 4: PPT Conversion</td><td>用 <code>extract-pptx.py</code> 提取文本、图片、speaker notes，再进入 style selection。</td></tr><tr><td>Phase 5: Delivery</td><td>打开 HTML，说明文件位置、风格、页数、导航、可编辑方式。</td></tr><tr><td>Phase 6: Share &amp; Export</td><td>可选部署到 URL 或导出 PDF。</td></tr></tbody></table>
+<p>这里有几个值得单独拿出来的设计点。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-先问密度再决定页数">1. 先问密度，再决定页数<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#1-%E5%85%88%E9%97%AE%E5%AF%86%E5%BA%A6%E5%86%8D%E5%86%B3%E5%AE%9A%E9%A1%B5%E6%95%B0" class="hash-link" aria-label="1. 先问密度，再决定页数的直接链接" title="1. 先问密度，再决定页数的直接链接" translate="no">​</a></h3>
+<p>它把 presentation 分成两种密度模式：</p>
+<table><thead><tr><th>模式</th><th>适合</th><th>设计行为</th></tr></thead><tbody><tr><td>Low density / speaker-led</td><td>公开演讲、keynote、现场讲解</td><td>一页一个想法，大字、强视觉层次、1-3 个 bullet，不够就拆更多页。</td></tr><tr><td>High density / reading-first</td><td>报告、异步 review、内部材料</td><td>更自解释，可用表格、grid、annotation、4-8 个 bullet，但不能拥挤。</td></tr></tbody></table>
+<p>这比“做 10 页 PPT”更合理。因为 10 页对现场演讲和异步阅读完全不是同一个设计任务。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-修改已有-deck-时先查容量">2. 修改已有 deck 时先查容量<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#2-%E4%BF%AE%E6%94%B9%E5%B7%B2%E6%9C%89-deck-%E6%97%B6%E5%85%88%E6%9F%A5%E5%AE%B9%E9%87%8F" class="hash-link" aria-label="2. 修改已有 deck 时先查容量的直接链接" title="2. 修改已有 deck 时先查容量的直接链接" translate="no">​</a></h3>
+<p>Mode C 是 enhancement。它提醒 Agent：在已有 slide 上加文字或图片前，先数元素、检查密度和空间；如果加一张图会挤爆 1920×1080 stage，就应该拆成新 slide，而不是硬塞进去。</p>
+<p>这正好对应我们“完善 ChatBlog slides”的需求。完善不是无脑加内容，而是每次都要问：这张 slide 是否已经达到表达容量？新增信息应该变成 beat、变成新 scene，还是替换掉旧元素？</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-inline-editing-是后置能力">3. Inline editing 是后置能力<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#3-inline-editing-%E6%98%AF%E5%90%8E%E7%BD%AE%E8%83%BD%E5%8A%9B" class="hash-link" aria-label="3. Inline editing 是后置能力的直接链接" title="3. Inline editing 是后置能力的直接链接" translate="no">​</a></h3>
+<p><code>html-template.md</code> 里把 inline editing 作为 post-draft affordance：用户看过 draft 后，可以 hover 左上角或按 <code>E</code> 进入编辑模式，点文字直接改，<code>Ctrl+S</code> 保存。它明确说不要在 Phase 1 就问用户要不要 inline editing，因为用户没看到稿子前不会知道自己是否需要。</p>
+<p>对 ChatBlog 来说，这个能力可以作为草稿阶段辅助：先让人直接在浏览器里改字、调句子，再把稳定修改回写到源文件。但正式进入 ChatBlog repo 后，最终仍要以 Git diff 为准，不能只依赖 localStorage 里的浏览器编辑状态。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-分享和导出是交付的一部分">4. 分享和导出是交付的一部分<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#4-%E5%88%86%E4%BA%AB%E5%92%8C%E5%AF%BC%E5%87%BA%E6%98%AF%E4%BA%A4%E4%BB%98%E7%9A%84%E4%B8%80%E9%83%A8%E5%88%86" class="hash-link" aria-label="4. 分享和导出是交付的一部分的直接链接" title="4. 分享和导出是交付的一部分的直接链接" translate="no">​</a></h3>
+<p>它提供两条后处理路径：</p>
+<ul>
+<li class=""><code>scripts/deploy.sh</code>：把 HTML 或目录部署到 Vercel，拿到可分享 URL；</li>
+<li class=""><code>scripts/export-pdf.sh</code>：用 Playwright 逐页截图，合成 PDF。</li>
+</ul>
+<p>这说明它的交付不是“我写了一个 HTML 文件”就结束，而是要考虑别人怎么打开、怎么转发、怎么存档。</p>
+<p>不过，放到 ChatArch/ChatBlog，我们不能直接照搬 Vercel 作为默认发布面。我们的正式路径应该是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ChatBlog branch</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; PR</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; Docusaurus build</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; Preview URL</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; merge</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; production URL readback</span><br></div></code></pre></div></div>
+<p>Vercel 可以用于个人临时分享，但 ChatBlog 的 canonical artifact 应该回到 <code>ChatArch/ChatBlog</code>。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="六和-patrick-的-frontend-harness-slides-有什么区别">六、和 Patrick 的 Frontend Harness Slides 有什么区别<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E5%85%AD%E5%92%8C-patrick-%E7%9A%84-frontend-harness-slides-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB" class="hash-link" aria-label="六、和 Patrick 的 Frontend Harness Slides 有什么区别的直接链接" title="六、和 Patrick 的 Frontend Harness Slides 有什么区别的直接链接" translate="no">​</a></h2>
+<p>这两个项目都在说 Web Slides，但层级不同。</p>
+<table><thead><tr><th>维度</th><th><code>frontend-harness-slides</code></th><th><code>zarazhangrui/frontend-slides</code></th></tr></thead><tbody><tr><td>核心定位</td><td>Web deck 工程化 harness / scene-beat 工作流</td><td>AI Agent presentation skill / 单 HTML 生成流程</td></tr><tr><td>主要产物</td><td>方法论、workbench、demo、React/Vite/Tailwind/Playwright 参考</td><td><code>SKILL.md</code>、style presets、bold templates、HTML template、脚本</td></tr><tr><td>输出形态</td><td>更像小型前端项目，可测试、可部署、可持续演进</td><td>零依赖 self-contained HTML，快速生成和分享</td></tr><tr><td>强项</td><td>URL-addressable state、player/stage/navigation/tests、生产化治理</td><td>视觉探索、反 AI-slop、PPT 转网页、单文件便携、可读 skill 流程</td></tr><tr><td>风险</td><td>对单场 talk 可能太重</td><td>大型长期 deck 会变成单文件维护压力</td></tr><tr><td>对 ChatBlog 的价值</td><td>建立长期 slides infra 和质量门槛</td><td>快速把文章/调研变成可看的 deck 草稿，并提升视觉质量</td></tr></tbody></table>
+<p>所以它们不是替代关系。一个偏“工程治理”，一个偏“AI 辅助视觉生产”。</p>
+<p>更合理的组合方式是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">frontend-slides</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 快速生成视觉方向、单 HTML 草稿、PPT 转换、PDF/临时 URL</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">frontend-harness / ChatBlog slides infra</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 稳定 scene/beat registry、可测试 player、PR preview、生产部署、长期维护</span><br></div></code></pre></div></div>
+<p>如果只要做一次 8 页内部分享，<code>frontend-slides</code> 的单 HTML 可能就够了。如果这套 slides 要成为 ChatBlog 的公开栏目、要和文章互相回链、要长期维护，那就应该把它接回我们的 repo 流程。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="七它能怎么辅助我们完善-chatblog-slides">七、它能怎么辅助我们完善 ChatBlog Slides<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E4%B8%83%E5%AE%83%E8%83%BD%E6%80%8E%E4%B9%88%E8%BE%85%E5%8A%A9%E6%88%91%E4%BB%AC%E5%AE%8C%E5%96%84-chatblog-slides" class="hash-link" aria-label="七、它能怎么辅助我们完善 ChatBlog Slides的直接链接" title="七、它能怎么辅助我们完善 ChatBlog Slides的直接链接" translate="no">​</a></h2>
+<p>当前 ChatBlog 已经有 <code>/slides</code> 页面，里面有一个 <code>Agent Community Quick Start</code>。这个 deck 是纯静态 HTML，支持 scene / beat URL state，材料页里也明确说它是一个 quick start demo。</p>
+<p><code>frontend-slides</code> 可以在三个层面帮助我们继续完善。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-作为文章转-slides的第一道流程">1. 作为“文章转 slides”的第一道流程<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#1-%E4%BD%9C%E4%B8%BA%E6%96%87%E7%AB%A0%E8%BD%AC-slides%E7%9A%84%E7%AC%AC%E4%B8%80%E9%81%93%E6%B5%81%E7%A8%8B" class="hash-link" aria-label="1. 作为“文章转 slides”的第一道流程的直接链接" title="1. 作为“文章转 slides”的第一道流程的直接链接" translate="no">​</a></h3>
+<p>以后每篇适合展示的 ChatBlog 文章，可以先跑一个 lightweight slides pass：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">1. 读文章，提炼 thesis、audience、density、5-9 个 scenes。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">2. 用 frontend-slides 的方式生成 3 张 title / key-scene preview。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">3. 用户选风格，确定是 speaker-led 还是 reading-first。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">4. 生成单 HTML draft。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">5. 浏览器检查 overflow、panel overlap、键盘导航、移动端可见性。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">6. 如果只是临时展示，直接分享 HTML / PDF。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">7. 如果要进 ChatBlog，迁移到 static/slides/... 并补 materials page、PR、Preview、production readback。</span><br></div></code></pre></div></div>
+<p>这条路线可以降低创建第一版 deck 的心理门槛。先让内容“长出一个可看的样子”，再决定是否工程化。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-用视觉-preview-改造现有-agent-community-deck">2. 用视觉 preview 改造现有 Agent Community deck<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#2-%E7%94%A8%E8%A7%86%E8%A7%89-preview-%E6%94%B9%E9%80%A0%E7%8E%B0%E6%9C%89-agent-community-deck" class="hash-link" aria-label="2. 用视觉 preview 改造现有 Agent Community deck的直接链接" title="2. 用视觉 preview 改造现有 Agent Community deck的直接链接" translate="no">​</a></h3>
+<p><code>Agent Community Quick Start</code> 现在已经有 9 scenes，内容结构是有的。下一步不一定要先大改代码，可以先让 <code>frontend-slides</code> 做 3 张视觉方向 preview：</p>
+<ul>
+<li class="">一个偏 hand-drawn / whiteboard 的版本，保留“议事厅”的手写感；</li>
+<li class="">一个偏 governance / system diagram 的版本，突出 topic、profile、human admin、ledger；</li>
+<li class="">一个偏 editorial manifesto 的版本，适合对外展示“不是机器人群聊”的核心立场。</li>
+</ul>
+<p>选中后再决定是否把现有 deck 重写成 1920×1080 fixed-stage 单 HTML，或者升级成更正式的 React/Vite starter。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-把-slide-维护变成小型变更流程">3. 把 slide 维护变成小型变更流程<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#3-%E6%8A%8A-slide-%E7%BB%B4%E6%8A%A4%E5%8F%98%E6%88%90%E5%B0%8F%E5%9E%8B%E5%8F%98%E6%9B%B4%E6%B5%81%E7%A8%8B" class="hash-link" aria-label="3. 把 slide 维护变成小型变更流程的直接链接" title="3. 把 slide 维护变成小型变更流程的直接链接" translate="no">​</a></h3>
+<p><code>frontend-slides</code> 里 Mode C 的修改规则可以直接变成我们的 slides 维护规范：</p>
+<table><thead><tr><th>变更</th><th>推荐处理</th></tr></thead><tbody><tr><td>改一句文案</td><td>直接改 HTML / scene source，跑 build 和关键 frame 检查。</td></tr><tr><td>增加一个观点</td><td>先判断是 beat 还是新 scene，不要硬塞进旧页。</td></tr><tr><td>加截图或架构图</td><td>先检查当前 slide 容量；必要时拆页。</td></tr><tr><td>换视觉风格</td><td>先做 3 张 preview，再批量调整。</td></tr><tr><td>发布到 ChatBlog</td><td>走 PR、Preview、生产 readback，不把 localhost 当交付。</td></tr></tbody></table>
+<p>这能防止 slides 从“快速 demo”变成“越来越乱的 HTML 文件”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="八适合和不适合的场景">八、适合和不适合的场景<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E5%85%AB%E9%80%82%E5%90%88%E5%92%8C%E4%B8%8D%E9%80%82%E5%90%88%E7%9A%84%E5%9C%BA%E6%99%AF" class="hash-link" aria-label="八、适合和不适合的场景的直接链接" title="八、适合和不适合的场景的直接链接" translate="no">​</a></h2>
+<p>我会把 <code>frontend-slides</code> 放在这个位置：</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="适合">适合<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E9%80%82%E5%90%88" class="hash-link" aria-label="适合的直接链接" title="适合的直接链接" translate="no">​</a></h3>
+<ul>
+<li class="">把博客、调研、项目总结快速变成 Web Slides；</li>
+<li class="">需要 2-3 个视觉方向给用户选择；</li>
+<li class="">需要一个不依赖 npm / bundler / framework 的单 HTML artifact；</li>
+<li class="">想把 <code>.pptx</code> 内容迁移成可在浏览器里继续改造的 web deck；</li>
+<li class="">做一次 talk、pitch、课程、内部同步、项目 showcase；</li>
+<li class="">需要 PDF 截图版归档。</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="不适合">不适合<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E4%B8%8D%E9%80%82%E5%90%88" class="hash-link" aria-label="不适合的直接链接" title="不适合的直接链接" translate="no">​</a></h3>
+<ul>
+<li class="">多人长期维护的大型 slides 系统；</li>
+<li class="">需要复杂路由、数据加载、跨 deck 组件复用的 gallery；</li>
+<li class="">必须保留 PowerPoint 原生编辑体验的团队；</li>
+<li class="">对 CSS/HTML 维护完全无能力且没有 Agent 辅助的用户；</li>
+<li class="">对字体、资源、截图、部署都有严格内网合规要求但未建立发布流程的场景。</li>
+</ul>
+<p>最重要的边界是：<code>frontend-slides</code> 生成的是 <strong>Web artifact</strong>，不是 PowerPoint 原生对象。它可以导出 PDF，可以从 PPT 提取内容，但它的主战场是浏览器。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="九给-chatblog-的落地建议">九、给 ChatBlog 的落地建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E4%B9%9D%E7%BB%99-chatblog-%E7%9A%84%E8%90%BD%E5%9C%B0%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="九、给 ChatBlog 的落地建议的直接链接" title="九、给 ChatBlog 的落地建议的直接链接" translate="no">​</a></h2>
+<p>我建议把它接入 ChatBlog Slides 的方式分成三个层级。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="level-1作为-prompt--skill-参考">Level 1：作为 prompt / skill 参考<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#level-1%E4%BD%9C%E4%B8%BA-prompt--skill-%E5%8F%82%E8%80%83" class="hash-link" aria-label="Level 1：作为 prompt / skill 参考的直接链接" title="Level 1：作为 prompt / skill 参考的直接链接" translate="no">​</a></h3>
+<p>短期最简单：当我们要把某篇文章做成 slides 时，直接按 <code>frontend-slides</code> 的结构给 Agent 一个明确任务：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">请用 frontend-slides 的方式，把这篇 ChatBlog 文章做成 Web Slides 草稿。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">要求：</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">1. 先给 deck brief：audience、goal、density、delivery target。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">2. 先生成 3 个视觉方向说明，每个方向对应一张 title/key-scene preview。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">3. 选定风格后，输出 fixed 1920×1080 stage 的单 HTML deck。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">4. 支持 ArrowLeft / ArrowRight / Space 导航。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">5. 支持 URL state：?scene=&lt;n&gt;&amp;beat=&lt;m&gt;。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">6. 所有关键文字必须是 HTML/CSS/SVG 可编辑文本，不要烘焙进图片。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">7. 完成后做浏览器检查：console、overflow、panel overlap、direct URL、移动端可见性。</span><br></div></code></pre></div></div>
+<p>这一步不需要改 ChatBlog infra，只是改我们的执行习惯。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="level-2形成-chatblog-slides-草稿目录">Level 2：形成 ChatBlog slides 草稿目录<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#level-2%E5%BD%A2%E6%88%90-chatblog-slides-%E8%8D%89%E7%A8%BF%E7%9B%AE%E5%BD%95" class="hash-link" aria-label="Level 2：形成 ChatBlog slides 草稿目录的直接链接" title="Level 2：形成 ChatBlog slides 草稿目录的直接链接" translate="no">​</a></h3>
+<p>当某个 deck 值得进入 ChatBlog，可以放到：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">static/slides/&lt;topic&gt;/deck/index.html</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">src/pages/slides/&lt;topic&gt;/index.tsx</span><br></div></code></pre></div></div>
+<p>材料页负责解释 deck 的背景和结构，HTML deck 负责演示。提交时必须跑 Docusaurus build，并在 PR Preview 和生产 URL 上读回。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="level-3沉淀成-chatarch-web-slides-starter">Level 3：沉淀成 ChatArch Web Slides Starter<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#level-3%E6%B2%89%E6%B7%80%E6%88%90-chatarch-web-slides-starter" class="hash-link" aria-label="Level 3：沉淀成 ChatArch Web Slides Starter的直接链接" title="Level 3：沉淀成 ChatArch Web Slides Starter的直接链接" translate="no">​</a></h3>
+<p>如果我们后续会频繁做 slides，就不要每次从单 HTML 手写开始。可以把 <code>frontend-slides</code> 的视觉 discovery 和 Patrick-style harness 的工程契约合并成一个 ChatArch starter：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">content brief</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; visual preview trio</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; scene/beat registry</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; fixed 1920×1080 stage</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; player/navigation/input isolation</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; static deck or React/Vite deck</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; build / preview / production readback</span><br></div></code></pre></div></div>
+<p><code>frontend-slides</code> 贡献的是前半段：如何让 Agent 先理解内容、探索风格、避免 AI-slop、生成可看的 HTML。ChatBlog infra 贡献的是后半段：如何让它成为可维护、可审查、可发布的公共知识 artifact。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="十小结">十、小结<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E5%8D%81%E5%B0%8F%E7%BB%93" class="hash-link" aria-label="十、小结的直接链接" title="十、小结的直接链接" translate="no">​</a></h2>
+<p><code>zarazhangrui/frontend-slides</code> 的价值可以压缩成三句话：</p>
+<ol>
+<li class="">它把做 slides 的工作从“套模板”改成了 <strong>agent-readable workflow</strong>：内容发现、视觉 preview、风格选择、生成、交付、分享。</li>
+<li class="">它把输出从“网页随便排一下”约束成 <strong>固定 1920×1080 stage 的单 HTML presentation artifact</strong>：可打开、可演示、可截图、可导出 PDF。</li>
+<li class="">它把审美从“用户先说清楚风格”改成 <strong>show, don't tell</strong>：先给真实 preview，让用户通过比较决定方向。</li>
+</ol>
+<p>对 ChatBlog 来说，它不是要替代现有 Slides 页面，也不是替代 Patrick-style harness。它更像一个前置加速器：帮我们把文章、调研和项目成果快速变成第一版可看的 Web Slides，再把成熟内容纳入 ChatBlog 的 PR、Preview、生产 readback 流程。</p>
+<p>如果说 Patrick 的那套方法提醒我们“Slides 也应该像软件一样可测试、可发布、可维护”，那么 <code>frontend-slides</code> 提醒我们另一件事：<strong>在进入工程治理前，Slides 首先要让人愿意看。</strong></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/zarazhangrui-frontend-slides-skill#%E4%B8%BB%E8%A6%81%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
+<ul>
+<li class=""><code>zarazhangrui/frontend-slides</code>: <a href="https://github.com/zarazhangrui/frontend-slides" target="_blank" rel="noopener noreferrer" class="">https://github.com/zarazhangrui/frontend-slides</a></li>
+<li class="">README: <a href="https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/README.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/README.md</a></li>
+<li class=""><code>SKILL.md</code>: <a href="https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/SKILL.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/SKILL.md</a></li>
+<li class=""><code>STYLE_PRESETS.md</code>: <a href="https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/STYLE_PRESETS.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/STYLE_PRESETS.md</a></li>
+<li class=""><code>html-template.md</code>: <a href="https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/html-template.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/html-template.md</a></li>
+<li class=""><code>viewport-base.css</code>: <a href="https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/viewport-base.css" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/viewport-base.css</a></li>
+<li class=""><code>animation-patterns.md</code>: <a href="https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/animation-patterns.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/animation-patterns.md</a></li>
+<li class="">Bold Template Pack: <a href="https://github.com/zarazhangrui/frontend-slides/tree/main/bold-template-pack" target="_blank" rel="noopener noreferrer" class="">https://github.com/zarazhangrui/frontend-slides/tree/main/bold-template-pack</a></li>
+<li class="">Claude Code marketplace metadata: <a href="https://github.com/zarazhangrui/frontend-slides/blob/main/.claude-plugin/marketplace.json" target="_blank" rel="noopener noreferrer" class="">https://github.com/zarazhangrui/frontend-slides/blob/main/.claude-plugin/marketplace.json</a></li>
+<li class="">ChatBlog Slides: <a href="https://arch.gh.wzhecnu.cn/ChatBlog/slides" target="_blank" rel="noopener noreferrer" class="">https://arch.gh.wzhecnu.cn/ChatBlog/slides</a></li>
+<li class="">Frontend Harness Slides 旧文: <a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow" target="_blank" rel="noopener noreferrer" class="">https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow</a></li>
+</ul>]]></content:encoded>
+            <category>slides</category>
+            <category>frontend</category>
+            <category>claude-code</category>
+            <category>html</category>
+            <category>skill</category>
+            <category>chatarch</category>
+        </item>
+        <item>
             <title><![CDATA[阿里云实时语音识别从注册到接入：百炼 ASR 实践教程]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/aliyun-realtime-asr-practice-guide</link>
             <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/aliyun-realtime-asr-practice-guide</guid>
@@ -2998,321 +3170,6 @@
             <category>ai</category>
             <category>agent</category>
             <category>self-hosted</category>
-        </item>
-        <item>
-            <title><![CDATA[Hermes 支持平台图鉴：从聊天窗口到 Agent 工作间]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide</guid>
-            <pubDate>Wed, 05 Aug 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[调研 Hermes Messaging Gateway、平台插件、API Server 与 Webhooks 支持的平台形态，比较每个平台的交互模式、自托管边界和 ChatArch 适配建议。]]></description>
-            <content:encoded><![CDATA[<p>这篇调研回答一个很实际的问题：<strong>Hermes 已经能进这么多平台，那我们以后要把 Agent 放到哪里？</strong></p>
-<p>上一篇文章讲的是 Hermes 的自定义入口机制：API Server、Inbound Webhooks 和 Hooks。那篇文章偏“机制”。这一篇偏“产品形态”：把 Hermes 当前文档和源码里能确认的 messaging / platform / API / webhook 入口逐个摊开，看它们分别像什么页面、采用什么交互模式、适不适合作为 ChatArch 后续 Agent community 的入口。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>如果目标是 <strong>自托管、频道化、接近 Discord/Slack 的 Agent 工作间</strong>，优先看 <strong>Mattermost</strong>，其次是 <strong>Matrix / Element</strong>。如果目标是把内部系统接进 Agent，优先用 <strong>Hermes API Server + Open WebUI/自研前端</strong> 和 <strong>Webhooks</strong>。Feishu/Lark 适合当前组织协作入口，但不是自托管平台。</p></div></div>
-<p><img decoding="async" loading="lazy" alt="Hermes platforms contact sheet" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/platform-screenshots-contact-sheet-581b2ce651cf4650ffe34029205637f0.jpg" width="780" height="1872" class="img_ev3q"></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先校正这里说的支持分三种">先校正：这里说的“支持”分三种<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E5%85%88%E6%A0%A1%E6%AD%A3%E8%BF%99%E9%87%8C%E8%AF%B4%E7%9A%84%E6%94%AF%E6%8C%81%E5%88%86%E4%B8%89%E7%A7%8D" class="hash-link" aria-label="先校正：这里说的“支持”分三种的直接链接" title="先校正：这里说的“支持”分三种的直接链接" translate="no">​</a></h2>
-<p>不能把“我们服务器上部署过某个平台”和“Hermes 原生支持这个平台”混在一起。本文只按 Hermes 当前资料分层：</p>
-<table><thead><tr><th>支持层级</th><th>含义</th><th>例子</th></tr></thead><tbody><tr><td>内置 Platform adapter</td><td><code>gateway.config.Platform</code> 里有显式枚举，<code>gateway/platforms/</code> 有 adapter 或 runner 直接创建逻辑</td><td>Telegram、Slack、Matrix、Feishu、WeCom、API Server、Webhooks</td></tr><tr><td>Platform plugin</td><td><code>plugins/platforms/&lt;name&gt;/plugin.yaml</code> + <code>register_platform()</code> 动态注册</td><td>Discord、Mattermost、Google Chat、Home Assistant、IRC、LINE、ntfy、Photon、SimpleX、Teams</td></tr><tr><td>机制入口</td><td>不是传统聊天平台，但外部 UI/系统可以通过 HTTP/API/Webhook 进入 Hermes</td><td>Open WebUI/API Server、Inbound Webhooks、Microsoft Graph webhook</td></tr></tbody></table>
-<p>这也纠正了前面对话里的一个不确定点：<strong>ntfy、IRC、SimpleX 不是“未支持候选”，当前 checkout 里有 platform plugin / docs 证据</strong>。但 <strong>Revolt/Stoat、Zulip、Discourse</strong> 虽然我们在 <code>rexpc</code> 上部署过或讨论过，不在本文这份 Hermes 原生 gateway 清单里；要接它们，应走 API Server/Webhook bridge 或新增 connector。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这篇文章怎么读">这篇文章怎么读<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E8%BF%99%E7%AF%87%E6%96%87%E7%AB%A0%E6%80%8E%E4%B9%88%E8%AF%BB" class="hash-link" aria-label="这篇文章怎么读的直接链接" title="这篇文章怎么读的直接链接" translate="no">​</a></h2>
-<p>下面每个平台都给五个字段：</p>
-<ul>
-<li class=""><strong>页面形态</strong>：用户看到的产品大概长什么样。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 adapter、platform plugin、API Server，还是 webhook 入口。</li>
-<li class=""><strong>交互模式</strong>：DM、频道、thread、webhook、API、卡片、语音等。</li>
-<li class=""><strong>自托管边界</strong>：平台本身能不能自托管，还是只有 bot/bridge 可以自己跑。</li>
-<li class=""><strong>ChatArch 适配判断</strong>：适合作主社区、实时工作间、个人入口、告警入口，还是只适合专项 pipeline。</li>
-</ul>
-<p>截图说明：本文截图来自各平台公开官网/文档页面的 headless 抓取；其中少数平台官网对远端 headless 截图不友好，本文改用其官方支持页、开发者文档或官方源码仓库页面作为页面形态参考。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="快速选择框架">快速选择框架<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E5%BF%AB%E9%80%9F%E9%80%89%E6%8B%A9%E6%A1%86%E6%9E%B6" class="hash-link" aria-label="快速选择框架的直接链接" title="快速选择框架的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>目标</th><th>首选</th><th>备选</th><th>不推荐作为主入口的原因</th></tr></thead><tbody><tr><td>自托管 Agent 工作间</td><td>Mattermost</td><td>Matrix / Element、IRC</td><td>Discord/Slack/Feishu/Teams 是 SaaS；ntfy/SMS/Email 不是聊天室</td></tr><tr><td>现有企业协作入口</td><td>Feishu/Lark、Slack、Teams、DingTalk、WeCom</td><td>Google Chat</td><td>依赖组织 SaaS 权限和应用审核</td></tr><tr><td>个人移动入口</td><td>Telegram、WhatsApp、Signal、LINE、Weixin</td><td>BlueBubbles/Photon、QQ、Yuanbao</td><td>账号/生态依赖强，适合入口不适合 canonical 讨论沉淀</td></tr><tr><td>系统事件进入 Agent</td><td>Webhooks</td><td>MS Graph webhook、ntfy</td><td>不是人类讨论界面，但最适合自动触发</td></tr><tr><td>内部 UI / 控制台</td><td>API Server + Open WebUI</td><td>自研前端</td><td>需要自己管理 auth、会话和暴露边界</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="总表27-个入口">总表：27 个入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E6%80%BB%E8%A1%A827-%E4%B8%AA%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="总表：27 个入口的直接链接" title="总表：27 个入口的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>平台</th><th>Hermes 接入层</th><th>交互形态</th><th>自托管判断</th><th>ChatArch 角色</th></tr></thead><tbody><tr><td>Telegram</td><td>内置 Platform adapter</td><td>即时通讯 / 频道 / 群组</td><td>SaaS / 平台侧不可自托管</td><td>轻量外部入口、个人/小群协作、通知和语音输入。</td></tr><tr><td>Discord</td><td>内置 Platform + plugin adapter</td><td>实时社区 / 频道 / 语音</td><td>平台不可自托管，bridge 可自部署</td><td>公开社区实时入口和语音/频道互动；不适合作为完全自托管 canonical 社区。</td></tr><tr><td>Slack</td><td>内置 Platform adapter</td><td>企业协作 / 频道</td><td>SaaS / 平台侧不可自托管</td><td>企业团队内 Agent 工作间，但不是开源自托管社区入口。</td></tr><tr><td>Google Chat</td><td>Platform plugin</td><td>Google Workspace 聊天</td><td>SaaS / 平台侧不可自托管</td><td>Google Workspace 组织内部的低公网暴露 bot 入口。</td></tr><tr><td>WhatsApp / WhatsApp Business</td><td>内置 Platform adapter</td><td>移动 IM / 客户触达</td><td>SaaS / 平台侧不可自托管</td><td>面向外部个人用户的低门槛入口；合规和账号稳定性要单独评估。</td></tr><tr><td>Signal</td><td>内置 Platform adapter</td><td>隐私即时通讯</td><td>SaaS / 平台侧不可自托管</td><td>私密小群/个人入口；不适合大规模公开社区。</td></tr><tr><td>SMS (Twilio)</td><td>内置 Platform adapter</td><td>短信 / 最低门槛入口</td><td>需按平台确认</td><td>告警、紧急回执、极简入口；不适合复杂协作。</td></tr><tr><td>Email (IMAP/SMTP)</td><td>内置 Platform adapter</td><td>异步邮件</td><td>可自托管</td><td>长文本、异步审批、外部协作；实时性弱。</td></tr><tr><td>Mattermost</td><td>内置 Platform + plugin adapter</td><td>自托管团队聊天 / 频道</td><td>可自托管</td><td>首选自托管 Agent 工作间：频道、线程、团队权限都比较贴合。</td></tr><tr><td>Matrix / Element</td><td>内置 Platform adapter</td><td>联邦聊天协议 / 客户端生态</td><td>可自托管</td><td>开放联邦和自托管强，但运维/身份/桥接复杂度高于 Mattermost。</td></tr><tr><td>Home Assistant</td><td>内置 Platform + plugin adapter</td><td>智能家居控制台</td><td>可自托管</td><td>家庭/实验室自动化入口，不适合作为 Agent 社区主讨论空间。</td></tr><tr><td>DingTalk</td><td>内置 Platform adapter</td><td>企业 IM / 国内办公</td><td>SaaS / 平台侧不可自托管</td><td>国内企业组织内入口，卡片交互比纯消息更强。</td></tr><tr><td>Feishu / Lark</td><td>内置 Platform adapter</td><td>企业协作 / IM / 文档生态</td><td>SaaS / 平台侧不可自托管</td><td>当前工作空间入口；适合任务派发、审批、文档协作和多工具 Agent。</td></tr><tr><td>WeCom / 企业微信</td><td>内置 Platform adapter</td><td>企业微信生态</td><td>SaaS / 平台侧不可自托管</td><td>微信生态组织入口；适合内部企业场景，不适合开放社区。</td></tr><tr><td>Weixin / WeChat</td><td>内置 Platform adapter</td><td>个人微信 bridge</td><td>SaaS / 平台侧不可自托管</td><td>熟人网络/轻量入口；合规、账号风险和稳定性要谨慎。</td></tr><tr><td>BlueBubbles (iMessage)</td><td>内置 Platform adapter</td><td>iMessage bridge</td><td>SaaS / 平台侧不可自托管</td><td>Apple 个人消息入口，不适合团队社区。</td></tr><tr><td>Photon iMessage</td><td>Platform plugin</td><td>iMessage bridge / 插件</td><td>平台不可自托管，bridge 可自部署</td><td>Apple 个人入口候选，和 BlueBubbles 类似但实现栈不同。</td></tr><tr><td>QQ Bot</td><td>内置 Platform adapter</td><td>QQ 频道/群 Bot</td><td>SaaS / 平台侧不可自托管</td><td>国内 QQ 社群入口；平台权限和审核约束较强。</td></tr><tr><td>Yuanbao</td><td>内置 Platform adapter</td><td>企业/群组消息平台</td><td>平台不可自托管，bridge 可自部署</td><td>如已有 Yuanbao 群，可作为国内群组入口；生态边界需单独验证。</td></tr><tr><td>Microsoft Teams</td><td>Platform plugin</td><td>Microsoft 365 企业协作</td><td>SaaS / 平台侧不可自托管</td><td>Microsoft 365 组织入口和审批卡片；外部开放社区不优先。</td></tr><tr><td>LINE</td><td>Platform plugin</td><td>移动 IM / 公众账号</td><td>SaaS / 平台侧不可自托管</td><td>日本/台湾/东南亚用户触达入口。</td></tr><tr><td>ntfy</td><td>Platform plugin</td><td>Pub/Sub 通知</td><td>可自托管</td><td>告警、cron 通知、低摩擦订阅；不适合作为主讨论空间。</td></tr><tr><td>SimpleX Chat</td><td>Platform plugin</td><td>隐私聊天网络</td><td>可自托管</td><td>高隐私小范围通信候选，不适合大众社区默认入口。</td></tr><tr><td>IRC</td><td>Platform plugin</td><td>老牌实时聊天协议</td><td>可自托管</td><td>工程/开源老派入口，低资源但现代 UX 弱。</td></tr><tr><td>Open WebUI / API Server</td><td>API Server / OpenAI-compatible</td><td>浏览器 UI / OpenAI-compatible API</td><td>可自托管</td><td>内部工具/网页控制台/自研前端接 Agent 的主入口。</td></tr><tr><td>Webhooks</td><td>Webhook / Event ingress</td><td>事件入口</td><td>需按平台确认</td><td>GitHub PR、CI、监控、业务事件进入 Agent 的标准机制。</td></tr><tr><td>Microsoft Graph Webhook / Teams Meetings</td><td>Webhook / Event ingress</td><td>Microsoft 365 事件入口</td><td>SaaS / 平台侧不可自托管</td><td>会议纪要和企业协作流水线，不是普通聊天入口。</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="平台卡片">平台卡片<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E5%B9%B3%E5%8F%B0%E5%8D%A1%E7%89%87" class="hash-link" aria-label="平台卡片的直接链接" title="平台卡片的直接链接" translate="no">​</a></h2>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一实时社区与团队频道">一、实时社区与团队频道<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E4%B8%80%E5%AE%9E%E6%97%B6%E7%A4%BE%E5%8C%BA%E4%B8%8E%E5%9B%A2%E9%98%9F%E9%A2%91%E9%81%93" class="hash-link" aria-label="一、实时社区与团队频道的直接链接" title="一、实时社区与团队频道的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="mattermost">Mattermost<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#mattermost" class="hash-link" aria-label="Mattermost的直接链接" title="Mattermost的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Mattermost public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/mattermost-cf9a4afa07b3c46b46201c9c89353ffa.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：自托管团队聊天 / 频道。公开页面：<a href="https://mattermost.com/" target="_blank" rel="noopener noreferrer" class="">https://mattermost.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform + plugin adapter；证据：<code>docs:mattermost.md; builtin:Platform.MATTERMOST; plugin:plugins/platforms/mattermost</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/mattermost/</a>。</li>
-<li class=""><strong>交互模式</strong>：WebSocket event stream + REST；team/channel/thread；Slack-like 体验。</li>
-<li class=""><strong>自托管边界</strong>：可自托管，且是 Hermes 支持平台里最像 Discord/Slack 的自托管社区入口。</li>
-<li class=""><strong>ChatArch 判断</strong>：首选自托管 Agent 工作间：频道、线程、团队权限都比较贴合。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="matrix--element">Matrix / Element<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#matrix--element" class="hash-link" aria-label="Matrix / Element的直接链接" title="Matrix / Element的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Matrix / Element public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/element_matrix-96ddc4a87611549a0c183fd76f7e6ecd.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：联邦聊天协议 / 客户端生态。公开页面：<a href="https://element.io/" target="_blank" rel="noopener noreferrer" class="">https://element.io/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:matrix.md; builtin:Platform.MATRIX; adapter:gateway/platforms/matrix.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/matrix/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/matrix/</a>。</li>
-<li class=""><strong>交互模式</strong>：homeserver room/event；Element 等客户端；支持 thread/reaction/附件。</li>
-<li class=""><strong>自托管边界</strong>：Matrix homeserver 可自托管；Element 客户端也可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：开放联邦和自托管强，但运维/身份/桥接复杂度高于 Mattermost。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="discord">Discord<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#discord" class="hash-link" aria-label="Discord的直接链接" title="Discord的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Discord public page" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/discord-97fc7f7e7d04544ff49bd939eb410f4b.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：实时社区 / 频道 / 语音。公开页面：<a href="https://support.discord.com/hc/en-us" target="_blank" rel="noopener noreferrer" class="">https://support.discord.com/hc/en-us</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform + plugin adapter；证据：<code>docs:discord.md; builtin:Platform.DISCORD; plugin:plugins/platforms/discord</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/discord/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/discord/</a>。</li>
-<li class=""><strong>交互模式</strong>：Bot Gateway；server/channel/thread/forum/voice；@mention、slash command、按钮/反应、语音频道。</li>
-<li class=""><strong>自托管边界</strong>：官方服务不能自托管；bot 可自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：公开社区实时入口和语音/频道互动；不适合作为完全自托管 canonical 社区。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="slack">Slack<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#slack" class="hash-link" aria-label="Slack的直接链接" title="Slack的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Slack public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/slack-a1fc6f488615ba5a9e675c27c350f74b.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：企业协作 / 频道。公开页面：<a href="https://slack.com/" target="_blank" rel="noopener noreferrer" class="">https://slack.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:slack.md; builtin:Platform.SLACK; adapter:gateway/platforms/slack.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/slack/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/slack/</a>。</li>
-<li class=""><strong>交互模式</strong>：Socket Mode；workspace/channel/DM/thread；bot mention、thread reply、文件。</li>
-<li class=""><strong>自托管边界</strong>：SaaS，不可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：企业团队内 Agent 工作间，但不是开源自托管社区入口。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="google-chat">Google Chat<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#google-chat" class="hash-link" aria-label="Google Chat的直接链接" title="Google Chat的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Google Chat public page" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/google_chat-bd00314b310caaddd278d6f4b59069bb.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：Google Workspace 聊天。公开页面：<a href="https://github.com/googleworkspace/google-chat-samples" target="_blank" rel="noopener noreferrer" class="">https://github.com/googleworkspace/google-chat-samples</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Platform plugin；证据：<code>docs:google_chat.md; plugin:plugins/platforms/google_chat</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat/</a>。</li>
-<li class=""><strong>交互模式</strong>：Cloud Pub/Sub pull subscription 收事件，Chat REST API 发消息；DM、space、thread。</li>
-<li class=""><strong>自托管边界</strong>：SaaS，不可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：Google Workspace 组织内部的低公网暴露 bot 入口。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="microsoft-teams">Microsoft Teams<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#microsoft-teams" class="hash-link" aria-label="Microsoft Teams的直接链接" title="Microsoft Teams的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Microsoft Teams public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/teams-f4c7183807c4c370084ef548e92f1505.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：Microsoft 365 企业协作。公开页面：<a href="https://www.microsoft.com/en-us/microsoft-teams/group-chat-software" target="_blank" rel="noopener noreferrer" class="">https://www.microsoft.com/en-us/microsoft-teams/group-chat-software</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Platform plugin；证据：<code>docs:teams.md; plugin:plugins/platforms/teams</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams/</a>。</li>
-<li class=""><strong>交互模式</strong>：Bot Framework webhook；DM、群聊、channel posts；Adaptive Card 审批。</li>
-<li class=""><strong>自托管边界</strong>：SaaS，不可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：Microsoft 365 组织入口和审批卡片；外部开放社区不优先。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="dingtalk">DingTalk<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#dingtalk" class="hash-link" aria-label="DingTalk的直接链接" title="DingTalk的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="DingTalk public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/dingtalk-19c1f04c944cdf578bad183268fc13c7.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：企业 IM / 国内办公。公开页面：<a href="https://www.dingtalk.com/" target="_blank" rel="noopener noreferrer" class="">https://www.dingtalk.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:dingtalk.md; builtin:Platform.DINGTALK; adapter:gateway/platforms/dingtalk.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/dingtalk/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/dingtalk/</a>。</li>
-<li class=""><strong>交互模式</strong>：Stream Mode 长连接；DM/群组；session webhook 回复；可选 AI Cards。</li>
-<li class=""><strong>自托管边界</strong>：SaaS，不可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：国内企业组织内入口，卡片交互比纯消息更强。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="feishu--lark">Feishu / Lark<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#feishu--lark" class="hash-link" aria-label="Feishu / Lark的直接链接" title="Feishu / Lark的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Feishu / Lark public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/lark_feishu-5ca16be96172f10f97f8893db53c6a47.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：企业协作 / IM / 文档生态。公开页面：<a href="https://www.larksuite.com/" target="_blank" rel="noopener noreferrer" class="">https://www.larksuite.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:feishu.md; builtin:Platform.FEISHU; adapter:gateway/platforms/feishu.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/feishu/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/feishu/</a>。</li>
-<li class=""><strong>交互模式</strong>：事件回调/长连接、群聊/话题/卡片/文档；适合 rich card 与工具审批。</li>
-<li class=""><strong>自托管边界</strong>：SaaS，不可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：当前工作空间入口；适合任务派发、审批、文档协作和多工具 Agent。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="wecom--企业微信">WeCom / 企业微信<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#wecom--%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1" class="hash-link" aria-label="WeCom / 企业微信的直接链接" title="WeCom / 企业微信的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="WeCom / 企业微信 public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/wecom-a31c15aa71e492ad0c747fe16ef477aa.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：企业微信生态。公开页面：<a href="https://work.weixin.qq.com/" target="_blank" rel="noopener noreferrer" class="">https://work.weixin.qq.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:wecom.md; docs:wecom-callback.md; builtin:Platform.WECOM; builtin:Platform.WECOM_CALLBACK; adapter:gateway/platforms/wecom.py; adapter:gateway/platforms/wecom_callback.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/wecom/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/wecom/</a>。</li>
-<li class=""><strong>交互模式</strong>：AI Bot WebSocket 或自建应用 callback；企业通讯录/群/会话。</li>
-<li class=""><strong>自托管边界</strong>：SaaS，不可自托管；callback 服务可自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：微信生态组织入口；适合内部企业场景，不适合开放社区。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="二个人移动-im-与私密消息入口">二、个人移动 IM 与私密消息入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E4%BA%8C%E4%B8%AA%E4%BA%BA%E7%A7%BB%E5%8A%A8-im-%E4%B8%8E%E7%A7%81%E5%AF%86%E6%B6%88%E6%81%AF%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="二、个人移动 IM 与私密消息入口的直接链接" title="二、个人移动 IM 与私密消息入口的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="telegram">Telegram<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#telegram" class="hash-link" aria-label="Telegram的直接链接" title="Telegram的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Telegram public page" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/telegram-af4c3382ff64c05129aae8e7b05a0414.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：即时通讯 / 频道 / 群组。公开页面：<a href="https://github.com/telegramdesktop/tdesktop" target="_blank" rel="noopener noreferrer" class="">https://github.com/telegramdesktop/tdesktop</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:index; docs:telegram.md; builtin:Platform.TELEGRAM; adapter:gateway/platforms/telegram.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/telegram/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/telegram/</a>。</li>
-<li class=""><strong>交互模式</strong>：Bot API；DM、群组、频道、topic/thread；轮询或 webhook；支持流式编辑、文件/图片/语音。</li>
-<li class=""><strong>自托管边界</strong>：客户端/服务端不可自托管；bot 可自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：轻量外部入口、个人/小群协作、通知和语音输入。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="whatsapp--whatsapp-business">WhatsApp / WhatsApp Business<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#whatsapp--whatsapp-business" class="hash-link" aria-label="WhatsApp / WhatsApp Business的直接链接" title="WhatsApp / WhatsApp Business的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="WhatsApp / WhatsApp Business public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/whatsapp-be2ddd7633036cbece7646689d51b867.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：移动 IM / 客户触达。公开页面：<a href="https://www.whatsapp.com/" target="_blank" rel="noopener noreferrer" class="">https://www.whatsapp.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:whatsapp.md; docs:whatsapp-cloud.md; builtin:Platform.WHATSAPP; builtin:Platform.WHATSAPP_CLOUD; adapter:gateway/platforms/whatsapp.py; adapter:gateway/platforms/whatsapp_cloud.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/whatsapp/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/whatsapp/</a>。</li>
-<li class=""><strong>交互模式</strong>：两条路径：Baileys bridge 或 Meta Business Cloud API webhook；以手机号/会话为中心。</li>
-<li class=""><strong>自托管边界</strong>：WhatsApp 服务不可自托管；bridge/API 运行面可自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：面向外部个人用户的低门槛入口；合规和账号稳定性要单独评估。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="signal">Signal<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#signal" class="hash-link" aria-label="Signal的直接链接" title="Signal的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Signal public page" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/signal-dc977a701b2117af362dce0d44b90107.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：隐私即时通讯。公开页面：<a href="https://github.com/signalapp/Signal-Desktop" target="_blank" rel="noopener noreferrer" class="">https://github.com/signalapp/Signal-Desktop</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:signal.md; builtin:Platform.SIGNAL; adapter:gateway/platforms/signal.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/signal/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/signal/</a>。</li>
-<li class=""><strong>交互模式</strong>：signal-cli daemon；手机号身份、DM/群组、附件；本地 bridge 接收/发送。</li>
-<li class=""><strong>自托管边界</strong>：Signal 公共网络不可自托管；本地 signal-cli bridge 可自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：私密小群/个人入口；不适合大规模公开社区。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="line">LINE<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#line" class="hash-link" aria-label="LINE的直接链接" title="LINE的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="LINE public page" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/line-a2bb66752e1328c7b4cd9aeba34b2e0b.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：移动 IM / 公众账号。公开页面：<a href="https://developers.line.biz/en/docs/messaging-api/overview/" target="_blank" rel="noopener noreferrer" class="">https://developers.line.biz/en/docs/messaging-api/overview/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Platform plugin；证据：<code>docs:line.md; plugin:plugins/platforms/line</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/line/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/line/</a>。</li>
-<li class=""><strong>交互模式</strong>：LINE Messaging API webhook；一对一/群、图片文件、typing。</li>
-<li class=""><strong>自托管边界</strong>：LINE 服务不可自托管；webhook 服务自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：日本/台湾/东南亚用户触达入口。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="weixin--wechat">Weixin / WeChat<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#weixin--wechat" class="hash-link" aria-label="Weixin / WeChat的直接链接" title="Weixin / WeChat的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Weixin / WeChat public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/weixin-7c5bb93eeaff46fa8d9afba347391a9d.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：个人微信 bridge。公开页面：<a href="https://weixin.qq.com/" target="_blank" rel="noopener noreferrer" class="">https://weixin.qq.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:weixin.md; builtin:Platform.WEIXIN; adapter:gateway/platforms/weixin.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/weixin/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/weixin/</a>。</li>
-<li class=""><strong>交互模式</strong>：iLink Bot API/bridge；个人号/群聊/消息流。</li>
-<li class=""><strong>自托管边界</strong>：微信服务不可自托管；bridge 可自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：熟人网络/轻量入口；合规、账号风险和稳定性要谨慎。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="bluebubbles-imessage">BlueBubbles (iMessage)<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#bluebubbles-imessage" class="hash-link" aria-label="BlueBubbles (iMessage)的直接链接" title="BlueBubbles (iMessage)的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="BlueBubbles (iMessage) public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/bluebubbles-78c8b5eb7d611070190a62d8b501a5b1.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：iMessage bridge。公开页面：<a href="https://bluebubbles.app/" target="_blank" rel="noopener noreferrer" class="">https://bluebubbles.app/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:bluebubbles.md; builtin:Platform.BLUEBUBBLES; adapter:gateway/platforms/bluebubbles.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/bluebubbles/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/bluebubbles/</a>。</li>
-<li class=""><strong>交互模式</strong>：macOS BlueBubbles server；iMessage/SMS conversation、附件、反应。</li>
-<li class=""><strong>自托管边界</strong>：需要自有 Mac server；Apple iMessage 网络本身不可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：Apple 个人消息入口，不适合团队社区。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="photon-imessage">Photon iMessage<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#photon-imessage" class="hash-link" aria-label="Photon iMessage的直接链接" title="Photon iMessage的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Photon iMessage public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/photon_github-b50706c8ba61673bdd7ef959cef16dbc.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：iMessage bridge / 插件。公开页面：<a href="https://github.com/openimessage/photon" target="_blank" rel="noopener noreferrer" class="">https://github.com/openimessage/photon</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Platform plugin；证据：<code>docs:photon.md; plugin:plugins/platforms/photon</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/photon/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/photon/</a>。</li>
-<li class=""><strong>交互模式</strong>：Photon sidecar/adapter 接入 iMessage 类会话；偏本地桥接。</li>
-<li class=""><strong>自托管边界</strong>：运行面可自部署，底层仍依赖 Apple 消息生态。</li>
-<li class=""><strong>ChatArch 判断</strong>：Apple 个人入口候选，和 BlueBubbles 类似但实现栈不同。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="qq-bot">QQ Bot<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#qq-bot" class="hash-link" aria-label="QQ Bot的直接链接" title="QQ Bot的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="QQ Bot public page" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/qqbot-7fad0138ef7ff62a2abd0c7d2b861c46.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：QQ 频道/群 Bot。公开页面：<a href="https://bot.q.qq.com/wiki/" target="_blank" rel="noopener noreferrer" class="">https://bot.q.qq.com/wiki/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:qqbot.md; builtin:Platform.QQBOT; adapter:gateway/platforms/qqbot/adapter.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/qqbot/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/qqbot/</a>。</li>
-<li class=""><strong>交互模式</strong>：QQ Bot 平台，WebSocket/OpenAPI；群/频道消息、图片文件、语音。</li>
-<li class=""><strong>自托管边界</strong>：QQ 服务不可自托管；bot 运行面可自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：国内 QQ 社群入口；平台权限和审核约束较强。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="yuanbao">Yuanbao<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#yuanbao" class="hash-link" aria-label="Yuanbao的直接链接" title="Yuanbao的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Yuanbao public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/yuanbao-b0cf1c0fcac8f012be1f5e73f38817b4.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：企业/群组消息平台。公开页面：<a href="https://yuanbao.tencent.com/" target="_blank" rel="noopener noreferrer" class="">https://yuanbao.tencent.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:yuanbao.md; builtin:Platform.YUANBAO; adapter:gateway/platforms/yuanbao.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/yuanbao/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/yuanbao/</a>。</li>
-<li class=""><strong>交互模式</strong>：WebSocket gateway；群组消息、@mention、媒体；偏国内企业/协作场景。</li>
-<li class=""><strong>自托管边界</strong>：按当前资料视为平台侧服务，Hermes adapter 自部署。</li>
-<li class=""><strong>ChatArch 判断</strong>：如已有 Yuanbao 群，可作为国内群组入口；生态边界需单独验证。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="simplex-chat">SimpleX Chat<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#simplex-chat" class="hash-link" aria-label="SimpleX Chat的直接链接" title="SimpleX Chat的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="SimpleX Chat public page" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/simplex-34eae2b93d9369de80b8cad9ba9e01ba.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：隐私聊天网络。公开页面：<a href="https://github.com/simplex-chat/simplex-chat" target="_blank" rel="noopener noreferrer" class="">https://github.com/simplex-chat/simplex-chat</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Platform plugin；证据：<code>docs:simplex.md; plugin:plugins/platforms/simplex</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/simplex/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/simplex/</a>。</li>
-<li class=""><strong>交互模式</strong>：SimpleX local agent / WebSocket；无全局用户 ID，隐私强，接入复杂。</li>
-<li class=""><strong>自托管边界</strong>：可自托管 relay/SMP 等组件；客户端网络设计较特殊。</li>
-<li class=""><strong>ChatArch 判断</strong>：高隐私小范围通信候选，不适合大众社区默认入口。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="三低摩擦通知邮件与老派协议">三、低摩擦通知、邮件与老派协议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E4%B8%89%E4%BD%8E%E6%91%A9%E6%93%A6%E9%80%9A%E7%9F%A5%E9%82%AE%E4%BB%B6%E4%B8%8E%E8%80%81%E6%B4%BE%E5%8D%8F%E8%AE%AE" class="hash-link" aria-label="三、低摩擦通知、邮件与老派协议的直接链接" title="三、低摩擦通知、邮件与老派协议的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="sms-twilio">SMS (Twilio)<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#sms-twilio" class="hash-link" aria-label="SMS (Twilio)的直接链接" title="SMS (Twilio)的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="SMS (Twilio) public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/sms_twilio-993a5192affb787a0ff226c71cfd263b.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：短信 / 最低门槛入口。公开页面：<a href="https://www.twilio.com/en-us/messaging/channels/sms" target="_blank" rel="noopener noreferrer" class="">https://www.twilio.com/en-us/messaging/channels/sms</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:sms.md; builtin:Platform.SMS; adapter:gateway/platforms/sms.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/sms/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/sms/</a>。</li>
-<li class=""><strong>交互模式</strong>：Twilio webhook 收短信、REST API 发短信；无富媒体上下文。</li>
-<li class=""><strong>自托管边界</strong>：依赖运营商/Twilio，不是自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：告警、紧急回执、极简入口；不适合复杂协作。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="email-imapsmtp">Email (IMAP/SMTP)<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#email-imapsmtp" class="hash-link" aria-label="Email (IMAP/SMTP)的直接链接" title="Email (IMAP/SMTP)的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Email (IMAP/SMTP) public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/email_roundcube-a4ab2491b5b8660db1ee126c6afd58b1.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：异步邮件。公开页面：<a href="https://roundcube.net/" target="_blank" rel="noopener noreferrer" class="">https://roundcube.net/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform adapter；证据：<code>docs:email.md; builtin:Platform.EMAIL; adapter:gateway/platforms/email.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/email/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/email/</a>。</li>
-<li class=""><strong>交互模式</strong>：IMAP 轮询收信、SMTP 发信；thread 依赖邮件头/主题。</li>
-<li class=""><strong>自托管边界</strong>：可自托管邮件服务器，也可用 SaaS 邮箱。</li>
-<li class=""><strong>ChatArch 判断</strong>：长文本、异步审批、外部协作；实时性弱。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ntfy">ntfy<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#ntfy" class="hash-link" aria-label="ntfy的直接链接" title="ntfy的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="ntfy public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/ntfy-4e7a1d62f9bf91aef03294bad2867035.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：Pub/Sub 通知。公开页面：<a href="https://ntfy.sh/" target="_blank" rel="noopener noreferrer" class="">https://ntfy.sh/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Platform plugin；证据：<code>docs:ntfy.md; plugin:plugins/platforms/ntfy</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/ntfy/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/ntfy/</a>。</li>
-<li class=""><strong>交互模式</strong>：topic-based pub/sub；更像通知通道而非聊天室。</li>
-<li class=""><strong>自托管边界</strong>：ntfy server 可自托管，也可用 ntfy.sh。</li>
-<li class=""><strong>ChatArch 判断</strong>：告警、cron 通知、低摩擦订阅；不适合作为主讨论空间。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="irc">IRC<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#irc" class="hash-link" aria-label="IRC的直接链接" title="IRC的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="IRC public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/irc_libera-82ca9824517be0519abc0e64de3f0c83.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：老牌实时聊天协议。公开页面：<a href="https://libera.chat/" target="_blank" rel="noopener noreferrer" class="">https://libera.chat/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Platform plugin；证据：<code>plugin:plugins/platforms/irc; registry:Platform("irc") dynamic plugin</code>。当前 checkout 没有独立 <code>website/docs/user-guide/messaging/irc.md</code>，因此发布时应引用插件源码/manifest，而不是伪造 docs 页。</li>
-<li class=""><strong>交互模式</strong>：server/channel/nick；纯文本为主；适合 bot 命令和日志化。</li>
-<li class=""><strong>自托管边界</strong>：可自托管 IRC server，也可用公共网络。</li>
-<li class=""><strong>ChatArch 判断</strong>：工程/开源老派入口，低资源但现代 UX 弱。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="四不是聊天平台但很适合接-agent-的入口">四、不是聊天平台，但很适合接 Agent 的入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E5%9B%9B%E4%B8%8D%E6%98%AF%E8%81%8A%E5%A4%A9%E5%B9%B3%E5%8F%B0%E4%BD%86%E5%BE%88%E9%80%82%E5%90%88%E6%8E%A5-agent-%E7%9A%84%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="四、不是聊天平台，但很适合接 Agent 的入口的直接链接" title="四、不是聊天平台，但很适合接 Agent 的入口的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="home-assistant">Home Assistant<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#home-assistant" class="hash-link" aria-label="Home Assistant的直接链接" title="Home Assistant的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Home Assistant public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/homeassistant-e5f0689a6f594721c5f48698acab1fd1.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：智能家居控制台。公开页面：<a href="https://www.home-assistant.io/" target="_blank" rel="noopener noreferrer" class="">https://www.home-assistant.io/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：内置 Platform + plugin adapter；证据：<code>docs:homeassistant.md; builtin:Platform.HOMEASSISTANT; plugin:plugins/platforms/homeassistant; tool:tools/homeassistant_tool.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/homeassistant/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/homeassistant/</a>。</li>
-<li class=""><strong>交互模式</strong>：不是聊天社区；通过 Home Assistant API/WebSocket 控制实体、读状态、执行服务。</li>
-<li class=""><strong>自托管边界</strong>：可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：家庭/实验室自动化入口，不适合作为 Agent 社区主讨论空间。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="open-webui--api-server">Open WebUI / API Server<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#open-webui--api-server" class="hash-link" aria-label="Open WebUI / API Server的直接链接" title="Open WebUI / API Server的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Open WebUI / API Server public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/open_webui-6765f9cd07b0bec1a28be183981efc39.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：浏览器 UI / OpenAI-compatible API。公开页面：<a href="https://openwebui.com/" target="_blank" rel="noopener noreferrer" class="">https://openwebui.com/</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：API Server / OpenAI-compatible；证据：<code>docs:open-webui.md; docs:features/api-server.md; builtin:Platform.API_SERVER; adapter:gateway/platforms/api_server.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/open-webui/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/open-webui/</a>。</li>
-<li class=""><strong>交互模式</strong>：OpenAI-compatible chat/completions、responses、runs；SSE streaming；由外部 UI 主动调用 Hermes。</li>
-<li class=""><strong>自托管边界</strong>：Hermes API Server 与 Open WebUI 均可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：内部工具/网页控制台/自研前端接 Agent 的主入口。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="webhooks">Webhooks<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#webhooks" class="hash-link" aria-label="Webhooks的直接链接" title="Webhooks的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Webhooks public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/webhooks_github_docs-23ae339e4d55ca64835618640d32f2bb.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：事件入口。公开页面：<a href="https://docs.github.com/en/webhooks" target="_blank" rel="noopener noreferrer" class="">https://docs.github.com/en/webhooks</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Webhook / Event ingress；证据：<code>docs:webhooks.md; builtin:Platform.WEBHOOK; adapter:gateway/platforms/webhook.py</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/</a>。</li>
-<li class=""><strong>交互模式</strong>：<code>POST /webhooks/&lt;name&gt;</code>；HMAC/过滤/模板；事件触发 agent run 或转发。</li>
-<li class=""><strong>自托管边界</strong>：Hermes webhook server 自托管；上游事件源各异。</li>
-<li class=""><strong>ChatArch 判断</strong>：GitHub PR、CI、监控、业务事件进入 Agent 的标准机制。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="microsoft-graph-webhook--teams-meetings">Microsoft Graph Webhook / Teams Meetings<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#microsoft-graph-webhook--teams-meetings" class="hash-link" aria-label="Microsoft Graph Webhook / Teams Meetings的直接链接" title="Microsoft Graph Webhook / Teams Meetings的直接链接" translate="no">​</a></h3>
-<p><img decoding="async" loading="lazy" alt="Microsoft Graph Webhook / Teams Meetings public page " src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/msgraph_webhook-2624f9cad59b09ad7c789b6e533ee43b.png" width="1365" height="900" class="img_ev3q"></p>
-<ul>
-<li class=""><strong>页面形态</strong>：Microsoft 365 事件入口。公开页面：<a href="https://learn.microsoft.com/en-us/graph/change-notifications-overview" target="_blank" rel="noopener noreferrer" class="">https://learn.microsoft.com/en-us/graph/change-notifications-overview</a>。</li>
-<li class=""><strong>Hermes 接入层</strong>：Webhook / Event ingress；证据：<code>docs:msgraph-webhook.md; docs:teams-meetings.md; builtin:Platform.MSGRAPH_WEBHOOK; adapter:gateway/platforms/msgraph_webhook.py; plugin:plugins/teams_pipeline</code>；文档入口：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/msgraph-webhook/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/msgraph-webhook/</a>。</li>
-<li class=""><strong>交互模式</strong>：Graph change notification webhook；会议、日历、聊天等事件进入 Hermes/Teams pipeline。</li>
-<li class=""><strong>自托管边界</strong>：监听器自托管，Microsoft 365 云端不可自托管。</li>
-<li class=""><strong>ChatArch 判断</strong>：会议纪要和企业协作流水线，不是普通聊天入口。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="对-chatarch-的实际建议">对 ChatArch 的实际建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E5%AF%B9-chatarch-%E7%9A%84%E5%AE%9E%E9%99%85%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="对 ChatArch 的实际建议的直接链接" title="对 ChatArch 的实际建议的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-主社区仍然需要-canonical-讨论层">1. 主社区仍然需要 canonical 讨论层<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#1-%E4%B8%BB%E7%A4%BE%E5%8C%BA%E4%BB%8D%E7%84%B6%E9%9C%80%E8%A6%81-canonical-%E8%AE%A8%E8%AE%BA%E5%B1%82" class="hash-link" aria-label="1. 主社区仍然需要 canonical 讨论层的直接链接" title="1. 主社区仍然需要 canonical 讨论层的直接链接" translate="no">​</a></h3>
-<p>Discourse 这类 forum/topic/comment 系统适合长期沉淀：提案、任务、结论、复盘、搜索和外部引用。Hermes 支持很多聊天入口，并不意味着聊天平台应该替代 canonical discussion。更合理的结构是：</p>
-<!-- -->
-<p>实时入口负责“叫醒”和“协作”，canonical 层负责“留下来”。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-如果要一个自托管-discord-like-工作间mattermost-是最短路径">2. 如果要一个自托管 Discord-like 工作间，Mattermost 是最短路径<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#2-%E5%A6%82%E6%9E%9C%E8%A6%81%E4%B8%80%E4%B8%AA%E8%87%AA%E6%89%98%E7%AE%A1-discord-like-%E5%B7%A5%E4%BD%9C%E9%97%B4mattermost-%E6%98%AF%E6%9C%80%E7%9F%AD%E8%B7%AF%E5%BE%84" class="hash-link" aria-label="2. 如果要一个自托管 Discord-like 工作间，Mattermost 是最短路径的直接链接" title="2. 如果要一个自托管 Discord-like 工作间，Mattermost 是最短路径的直接链接" translate="no">​</a></h3>
-<p>从 Hermes 支持现状看，Mattermost 同时满足：</p>
-<ul>
-<li class="">自托管；</li>
-<li class="">频道/团队/线程模型接近 Slack/Discord；</li>
-<li class="">Hermes 有 plugin / docs / Platform enum 证据；</li>
-<li class="">运维复杂度低于 Matrix federation；</li>
-<li class="">比 ntfy、Email、SMS 更像真实工作间。</li>
-</ul>
-<p>Matrix / Element 的优势是开放协议和联邦，但身份、桥接、加密、homeserver 运维和客户端选择会带来更多决策点。它适合把 ChatArch 做成开放网络节点，但不是最快 demo。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-feishulark-是当前协作入口不是自托管候选">3. Feishu/Lark 是当前协作入口，不是自托管候选<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#3-feishulark-%E6%98%AF%E5%BD%93%E5%89%8D%E5%8D%8F%E4%BD%9C%E5%85%A5%E5%8F%A3%E4%B8%8D%E6%98%AF%E8%87%AA%E6%89%98%E7%AE%A1%E5%80%99%E9%80%89" class="hash-link" aria-label="3. Feishu/Lark 是当前协作入口，不是自托管候选的直接链接" title="3. Feishu/Lark 是当前协作入口，不是自托管候选的直接链接" translate="no">​</a></h3>
-<p>我们现在就在 Feishu 里用 Hermes。Feishu 的优势是卡片、文档、审批、群聊和企业组织能力，适合 ChatArch 当前工作流。但它是 SaaS。文章、任务、结论仍应回写到 Git/Discourse/ChatBlog 这类可审计载体。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-api-server-和-webhooks-是所有非原生平台的逃生门">4. API Server 和 Webhooks 是所有“非原生平台”的逃生门<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#4-api-server-%E5%92%8C-webhooks-%E6%98%AF%E6%89%80%E6%9C%89%E9%9D%9E%E5%8E%9F%E7%94%9F%E5%B9%B3%E5%8F%B0%E7%9A%84%E9%80%83%E7%94%9F%E9%97%A8" class="hash-link" aria-label="4. API Server 和 Webhooks 是所有“非原生平台”的逃生门的直接链接" title="4. API Server 和 Webhooks 是所有“非原生平台”的逃生门的直接链接" translate="no">​</a></h3>
-<p>Revolt/Stoat、Zulip、Discourse 这类已部署或候选平台，如果没有 Hermes 原生 gateway，不代表不能接：</p>
-<ul>
-<li class="">能主动调用 Agent 的，用 <strong>API Server</strong>；</li>
-<li class="">能发事件回调的，用 <strong>Inbound Webhooks</strong>；</li>
-<li class="">需要平台语义、附件、线程、权限都完整保留的，再写 <strong>platform adapter / connector</strong>。</li>
-</ul>
-<p>这也是上一篇机制文章和本文平台图鉴的连接点。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/hermes-supported-platforms-field-guide#%E4%B8%BB%E8%A6%81%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
-<ul>
-<li class="">Hermes Messaging Gateway docs：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/</a></li>
-<li class="">Hermes API Server docs：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/api-server/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/features/api-server/</a></li>
-<li class="">Hermes Webhooks docs：<a href="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/" target="_blank" rel="noopener noreferrer" class="">https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/</a></li>
-<li class="">本地源码核验：<code>gateway/config.py</code>、<code>gateway/platforms/</code>、<code>plugins/platforms/</code>、<code>gateway/platform_registry.py</code>。</li>
-<li class="">各平台公开官网/文档页面见 <code>data/platform-inventory.json</code> 与 <code>data/screenshot-manifest.json</code>。</li>
-</ul>]]></content:encoded>
-            <category>hermes</category>
-            <category>agent</category>
-            <category>messaging</category>
-            <category>platform</category>
-            <category>community</category>
         </item>
     </channel>
 </rss>
