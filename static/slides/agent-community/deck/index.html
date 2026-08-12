@@ -6,10 +6,10 @@
   <title>Agent Community Quick Start Slides</title>
   <style>
     :root {
-      --outer: #0f1724;
+      --stage-bg: #070b12;
       --paper: #fffdf8;
       --ink: #111827;
-      --muted: #6b7280;
+      --muted: #64748b;
       --faint: #e5e7eb;
       --blue: #2563eb;
       --blue-soft: #dbeafe;
@@ -21,52 +21,70 @@
       --amber-soft: #fef3c7;
       --violet: #7c3aed;
       --violet-soft: #ede9fe;
-      --shadow: 0 30px 80px rgba(0, 0, 0, .36);
+      --cyan: #0891b2;
+      --cyan-soft: #cffafe;
+      --shadow: 0 40px 110px rgba(0, 0, 0, .42);
       --hand: "LXGW WenKai Lite", "Kaiti SC", STKaiti, "STSong", "Songti SC", serif;
       --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     * { box-sizing: border-box; }
+    html,
     body {
+      width: 100%;
+      height: 100%;
       margin: 0;
-      min-height: 100vh;
-      background: radial-gradient(circle at 20% 10%, #1f2937 0, var(--outer) 44%, #070b12 100%);
-      color: var(--ink);
-      display: grid;
-      place-items: center;
       overflow: hidden;
+      background: var(--stage-bg);
+    }
+    body {
+      color: var(--ink);
       font-family: var(--hand);
     }
 
-    .deck-shell {
-      width: min(1280px, calc(100vw - 44px));
-      aspect-ratio: 16 / 9;
-      position: relative;
-      filter: drop-shadow(var(--shadow));
+    .deck-viewport {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(37, 99, 235, .25) 0, transparent 34%),
+        radial-gradient(circle at 88% 84%, rgba(124, 58, 237, .22) 0, transparent 36%),
+        linear-gradient(135deg, #101827 0%, #070b12 58%, #020617 100%);
+    }
+
+    .deck-stage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      transform-origin: 0 0;
+      background: var(--paper);
+      box-shadow: var(--shadow);
     }
 
     .stage {
-      width: 100%;
-      height: 100%;
-      position: relative;
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
       overflow: hidden;
       background:
         linear-gradient(90deg, rgba(17,24,39,.035) 1px, transparent 1px),
         linear-gradient(0deg, rgba(17,24,39,.025) 1px, transparent 1px),
         var(--paper);
-      background-size: 48px 48px, 48px 48px, auto;
-      border-radius: 2px;
-      box-shadow: inset 0 0 0 1px rgba(17, 24, 39, .08);
+      background-size: 72px 72px, 72px 72px, auto;
     }
-
     .stage::before {
       content: "";
       position: absolute;
-      inset: -20% -10%;
+      inset: -180px -120px;
       background:
-        radial-gradient(ellipse at 50% 45%, transparent 0 56%, rgba(37,99,235,.06) 57% 59%, transparent 60%),
-        radial-gradient(ellipse at 22% 76%, transparent 0 46%, rgba(17,24,39,.05) 47% 49%, transparent 50%);
+        radial-gradient(ellipse at 50% 45%, transparent 0 56%, rgba(37,99,235,.07) 57% 59%, transparent 60%),
+        radial-gradient(ellipse at 22% 76%, transparent 0 46%, rgba(17,24,39,.055) 47% 49%, transparent 50%);
       transform: rotate(-18deg);
       pointer-events: none;
     }
@@ -74,312 +92,259 @@
     .slide {
       position: absolute;
       inset: 0;
-      padding: 54px 70px 58px;
+      width: 1920px;
+      height: 1080px;
+      padding: 86px 112px 76px;
       display: grid;
       grid-template-rows: auto 1fr auto;
-      gap: 20px;
+      gap: 34px;
       z-index: 1;
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    .kicker {
+    .kicker,
+    .mini-label {
       font-family: var(--mono);
-      font-size: clamp(10px, 1.2vw, 14px);
-      letter-spacing: .13em;
       text-transform: uppercase;
-      color: var(--blue);
-      font-weight: 800;
-    }
-
-    h1, h2, h3, p { margin: 0; }
-    h1 {
-      font-size: clamp(38px, 5.2vw, 72px);
-      line-height: 1.05;
-      letter-spacing: -.04em;
+      letter-spacing: .13em;
       font-weight: 900;
+    }
+    .kicker { color: var(--blue); font-size: 22px; }
+    .mini-label { color: inherit; opacity: .72; font-size: 17px; margin-bottom: 12px; }
+
+    h1,
+    h2,
+    h3,
+    p { margin: 0; }
+    h1 {
+      font-size: 104px;
+      line-height: .98;
+      letter-spacing: -.055em;
+      font-weight: 950;
       text-wrap: balance;
     }
     h2 {
-      font-size: clamp(30px, 4vw, 52px);
-      line-height: 1.08;
-      letter-spacing: -.035em;
-      font-weight: 900;
+      font-size: 76px;
+      line-height: 1.02;
+      letter-spacing: -.045em;
+      font-weight: 950;
       text-wrap: balance;
+      max-width: 1500px;
     }
     h3 {
-      font-size: clamp(20px, 2.1vw, 28px);
-      line-height: 1.15;
-      font-weight: 900;
+      font-size: 42px;
+      line-height: 1.1;
+      letter-spacing: -.025em;
+      font-weight: 950;
     }
     .lead {
-      margin-top: 18px;
-      font-size: clamp(18px, 2.1vw, 29px);
-      line-height: 1.35;
+      margin-top: 30px;
+      font-size: 42px;
+      line-height: 1.28;
       color: var(--blue);
       font-weight: 850;
       text-wrap: balance;
     }
     .subtle {
       color: var(--muted);
-      font-size: clamp(14px, 1.55vw, 20px);
+      font-family: var(--sans);
+      font-size: 28px;
       line-height: 1.55;
     }
+    .content { position: relative; min-height: 0; }
 
-    .content {
-      position: relative;
-      min-height: 0;
-    }
-
-    .hero-content {
+    .hero-content,
+    .closing-stack {
       display: grid;
       place-items: center;
       text-align: center;
+      height: 100%;
     }
-    .hero-card { max-width: 980px; position: relative; z-index: 2; }
-    .tag-row {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 14px;
-      margin-top: 42px;
-    }
+    .hero-card { max-width: 1460px; position: relative; z-index: 2; }
+    .tag-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; margin-top: 62px; }
     .tag {
       font-family: var(--mono);
-      border: 2px dashed rgba(37, 99, 235, .42);
-      background: rgba(219, 234, 254, .68);
+      border: 3px dashed rgba(37, 99, 235, .42);
+      background: rgba(219, 234, 254, .78);
       color: #1d4ed8;
-      padding: 10px 14px;
+      padding: 16px 22px;
       border-radius: 999px;
-      font-weight: 850;
-      font-size: clamp(12px, 1.25vw, 16px);
+      font-weight: 900;
+      font-size: 24px;
     }
     .punchline {
-      margin-top: 30px;
-      font-size: clamp(20px, 2.3vw, 32px);
-      line-height: 1.28;
-      font-weight: 900;
+      margin-top: 46px;
+      font-size: 46px;
+      line-height: 1.2;
+      font-weight: 950;
       color: var(--ink);
       background: linear-gradient(transparent 58%, rgba(37,99,235,.18) 58%);
       display: inline;
     }
 
-    .board {
-      position: absolute;
-      border: 2px solid rgba(17,24,39,.16);
-      background: rgba(255,255,255,.78);
-      border-radius: 22px;
-      box-shadow: 0 12px 30px rgba(17,24,39,.08);
-      padding: 20px;
-    }
-    .hand-card {
-      border: 2px solid rgba(17,24,39,.18);
-      border-radius: 20px 24px 18px 22px;
-      background: rgba(255,255,255,.82);
-      box-shadow: 0 10px 24px rgba(17,24,39,.07);
-      padding: 17px 18px;
-      position: relative;
-    }
-    .hand-card.red { background: var(--red-soft); border-color: rgba(220,38,38,.32); color: #7f1d1d; }
-    .hand-card.green { background: var(--green-soft); border-color: rgba(22,163,74,.32); color: #14532d; }
-    .hand-card.blue { background: var(--blue-soft); border-color: rgba(37,99,235,.32); color: #1e3a8a; }
-    .hand-card.amber { background: var(--amber-soft); border-color: rgba(217,119,6,.32); color: #78350f; }
-    .hand-card.violet { background: var(--violet-soft); border-color: rgba(124,58,237,.32); color: #4c1d95; }
-    .hand-card small, .mini-label {
-      display: block;
-      font-family: var(--mono);
-      text-transform: uppercase;
-      letter-spacing: .11em;
-      font-size: 11px;
-      font-weight: 900;
-      opacity: .72;
-      margin-bottom: 7px;
-    }
-    .hand-card strong {
-      display: block;
-      font-size: clamp(18px, 2vw, 26px);
-      line-height: 1.12;
-      font-weight: 950;
-    }
-    .hand-card p {
-      margin-top: 8px;
-      color: inherit;
-      opacity: .86;
-      font-size: clamp(13px, 1.25vw, 17px);
-      line-height: 1.42;
-      font-family: var(--sans);
-    }
-
-    .two-col {
+    .two-col,
+    .bridge,
+    .scope-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 28px;
+      gap: 48px;
       height: 100%;
       align-items: center;
     }
-    .three-col {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
-      align-items: stretch;
+    .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; align-items: stretch; }
+
+    .hand-card,
+    .board {
+      border: 3px solid rgba(17,24,39,.18);
+      border-radius: 34px 40px 30px 38px;
+      background: rgba(255,255,255,.86);
+      box-shadow: 0 18px 40px rgba(17,24,39,.08);
+      padding: 30px 32px;
+      position: relative;
+    }
+    .hand-card.red { background: var(--red-soft); border-color: rgba(220,38,38,.34); color: #7f1d1d; }
+    .hand-card.green { background: var(--green-soft); border-color: rgba(22,163,74,.34); color: #14532d; }
+    .hand-card.blue { background: var(--blue-soft); border-color: rgba(37,99,235,.34); color: #1e3a8a; }
+    .hand-card.amber { background: var(--amber-soft); border-color: rgba(217,119,6,.34); color: #78350f; }
+    .hand-card.violet { background: var(--violet-soft); border-color: rgba(124,58,237,.34); color: #4c1d95; }
+    .hand-card.cyan { background: var(--cyan-soft); border-color: rgba(8,145,178,.34); color: #164e63; }
+    .hand-card strong { display: block; font-size: 40px; line-height: 1.08; font-weight: 950; }
+    .hand-card p {
+      margin-top: 16px;
+      color: inherit;
+      opacity: .88;
+      font-size: 27px;
+      line-height: 1.36;
+      font-family: var(--sans);
+      font-weight: 650;
     }
 
-    .bubble-stream {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      transform: rotate(-2deg);
-    }
+    .bubble-stream { display: flex; flex-direction: column; gap: 20px; transform: rotate(-2deg); }
     .bubble {
       width: fit-content;
       max-width: 95%;
-      padding: 12px 15px;
-      border-radius: 18px 18px 18px 4px;
+      padding: 19px 24px;
+      border-radius: 28px 28px 28px 6px;
       background: #f3f4f6;
-      border: 1px solid #d1d5db;
+      border: 2px solid #d1d5db;
       font-family: var(--mono);
       color: #374151;
-      font-weight: 700;
-      box-shadow: 0 6px 18px rgba(17,24,39,.05);
+      font-size: 27px;
+      font-weight: 800;
+      box-shadow: 0 10px 26px rgba(17,24,39,.06);
     }
-    .bubble:nth-child(even) { align-self: flex-end; border-radius: 18px 18px 4px 18px; background: #eef2ff; }
+    .bubble:nth-child(even) { align-self: flex-end; border-radius: 28px 28px 6px 28px; background: #eef2ff; }
+    .missing-grid { display: grid; gap: 24px; }
 
-    .missing-grid { display: grid; gap: 16px; }
     .warning-strip {
       position: absolute;
-      left: 40px;
-      right: 40px;
-      bottom: 18px;
-      padding: 16px 18px;
-      border-radius: 18px;
+      left: 78px;
+      right: 78px;
+      bottom: 10px;
+      padding: 24px 28px;
+      border-radius: 28px;
       background: #111827;
       color: #fff7ed;
-      font-size: clamp(17px, 1.85vw, 25px);
-      font-weight: 900;
+      font-size: 36px;
+      line-height: 1.22;
+      font-weight: 950;
       text-align: center;
+      z-index: 3;
     }
 
-    .topic-table {
-      left: 31%; top: 19%; width: 38%; height: 42%;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      border-style: dashed;
-      background: #fff;
-    }
-    .topic-table .topic-title { font-size: clamp(28px, 3vw, 42px); font-weight: 950; }
-    .topic-meta { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
-    .topic-meta span { font-family: var(--mono); padding: 7px 9px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-weight: 850; font-size: 12px; }
-    .seat { position: absolute; width: 190px; text-align: center; }
-    .seat .avatar { font-size: 34px; margin-bottom: 4px; }
-    .seat.researcher { left: 8%; top: 20%; }
-    .seat.builder { left: 10%; bottom: 22%; }
-    .seat.reviewer { right: 10%; top: 18%; }
-    .action-chain { right: 7%; bottom: 17%; width: 250px; }
-    .arrow { font-family: var(--mono); color: var(--blue); font-weight: 950; font-size: 26px; text-align: center; }
+    .topic-table { left: 590px; top: 170px; width: 740px; height: 455px; display: grid; place-items: center; text-align: center; border-style: dashed; background: #fff; }
+    .topic-title { font-size: 62px; line-height: 1.08; font-weight: 950; }
+    .topic-meta { display: flex; gap: 13px; flex-wrap: wrap; justify-content: center; margin-top: 26px; }
+    .topic-meta span { font-family: var(--mono); padding: 13px 16px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-weight: 900; font-size: 18px; }
+    .seat { position: absolute; width: 295px; text-align: center; }
+    .seat .avatar { font-size: 58px; margin-bottom: 8px; }
+    .seat.researcher { left: 126px; top: 160px; }
+    .seat.builder { left: 150px; bottom: 160px; }
+    .seat.reviewer { right: 150px; top: 148px; }
+    .action-chain { right: 122px; bottom: 128px; width: 408px; }
+    .arrow { font-family: var(--mono); color: var(--blue); font-weight: 950; font-size: 40px; text-align: center; }
 
-    .bridge {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 20px;
-      align-items: center;
-      height: 100%;
-    }
-    .bridge-icon { font-size: 56px; color: var(--blue); font-weight: 950; }
-    .queue {
-      position: absolute;
-      left: 50%; bottom: 16px; transform: translateX(-50%);
-      display: flex; gap: 8px; align-items: center;
-      font-family: var(--mono); font-weight: 900; color: #1d4ed8;
-    }
-    .queue span { padding: 8px 10px; border: 2px dashed rgba(37,99,235,.35); border-radius: 12px; background: rgba(219,234,254,.8); }
+    .bridge { grid-template-columns: 1fr auto 1fr; }
+    .bridge-icon { font-size: 92px; color: var(--blue); font-weight: 950; }
+    .queue { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; gap: 14px; align-items: center; font-family: var(--mono); font-weight: 900; color: #1d4ed8; }
+    .queue span { padding: 14px 18px; border: 3px dashed rgba(37,99,235,.35); border-radius: 20px; background: rgba(219,234,254,.86); font-size: 20px; }
 
-    .admin-console {
-      width: 74%; margin: 0 auto 24px;
-      border: 3px solid rgba(17,24,39,.22);
-      background: #fff;
-      border-radius: 26px;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 14px 30px rgba(17,24,39,.1);
-    }
-    .admin-console .crown { font-size: 42px; }
-    .governance-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
-    .executor-row { display: flex; justify-content: center; gap: 16px; margin-top: 24px; }
-    .executor { padding: 13px 17px; border-radius: 16px; border: 2px dashed rgba(17,24,39,.22); background: rgba(255,255,255,.8); font-weight: 900; }
+    .admin-console { width: 1120px; margin: 0 auto 40px; border: 4px solid rgba(17,24,39,.22); background: #fff; border-radius: 42px; padding: 38px; text-align: center; box-shadow: 0 22px 46px rgba(17,24,39,.10); }
+    .admin-console .crown { font-size: 72px; }
+    .governance-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-top: 32px; }
+    .executor-row { display: flex; justify-content: center; gap: 24px; margin-top: 36px; }
+    .executor { padding: 20px 28px; border-radius: 24px; border: 3px dashed rgba(17,24,39,.22); background: rgba(255,255,255,.85); font-weight: 950; font-size: 28px; }
 
-    .layers { width: 82%; margin: 0 auto; display: grid; gap: 10px; }
-    .layer {
-      display: grid; grid-template-columns: 230px 1fr;
-      align-items: center; gap: 18px;
-      border: 2px solid rgba(17,24,39,.16);
-      background: rgba(255,255,255,.85);
-      border-radius: 18px;
-      padding: 13px 18px;
-      box-shadow: 0 8px 18px rgba(17,24,39,.055);
-    }
-    .layer-name { font-family: var(--mono); font-weight: 950; color: var(--ink); }
-    .layer-role { color: #374151; font-family: var(--sans); font-size: 16px; line-height: 1.35; }
-    .link-note { margin: 16px auto 0; width: fit-content; padding: 12px 16px; border-radius: 999px; background: #111827; color: white; font-weight: 900; }
+    .layers { width: 1260px; margin: 0 auto; display: grid; gap: 16px; }
+    .layer { display: grid; grid-template-columns: 345px 1fr; align-items: center; gap: 28px; border: 3px solid rgba(17,24,39,.16); background: rgba(255,255,255,.88); border-radius: 28px; padding: 22px 28px; box-shadow: 0 12px 25px rgba(17,24,39,.055); }
+    .layer-name { font-family: var(--mono); font-weight: 950; color: var(--ink); font-size: 28px; }
+    .layer-role { color: #374151; font-family: var(--sans); font-size: 26px; line-height: 1.35; }
+    .link-note { margin: 26px auto 0; width: fit-content; padding: 18px 28px; border-radius: 999px; background: #111827; color: white; font-weight: 950; font-size: 30px; }
 
     .loop-wrap { position: relative; height: 100%; }
-    .loop-ring {
-      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-12deg);
-      width: 54%; aspect-ratio: 1 / 1; border: 9px dashed rgba(37,99,235,.22); border-radius: 999px;
-    }
-    .loop-node { position: absolute; width: 230px; text-align: center; }
-    .loop-node.detect { left: 10%; top: 28%; }
-    .loop-node.judge { left: 50%; top: 13%; transform: translateX(-50%); }
-    .loop-node.action { right: 10%; top: 28%; }
-    .loop-node.readback { left: 50%; bottom: 8%; transform: translateX(-50%); }
+    .loop-ring { position: absolute; left: 50%; top: 48%; transform: translate(-50%, -50%) rotate(-12deg); width: 760px; height: 760px; border: 14px dashed rgba(37,99,235,.22); border-radius: 999px; }
+    .loop-node { position: absolute; width: 355px; text-align: center; }
+    .loop-node.detect { left: 172px; top: 250px; }
+    .loop-node.judge { left: 50%; top: 106px; transform: translateX(-50%); }
+    .loop-node.action { right: 172px; top: 250px; }
+    .loop-node.readback { left: 50%; bottom: 62px; transform: translateX(-50%); }
 
-    .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; height: 100%; }
-    .scope-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; font-family: var(--sans); }
-    .scope-list li { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.68); font-weight: 750; }
-    .acceptance { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: 76%; text-align: center; }
+    .skill-scene { display: grid; grid-template-columns: 1.08fr .92fr; gap: 46px; height: 100%; align-items: center; }
+    .skill-pipeline { display: grid; gap: 20px; }
+    .pipe-step { display: grid; grid-template-columns: 94px 1fr; gap: 20px; align-items: center; padding: 22px 26px; border: 3px solid rgba(37,99,235,.18); border-radius: 30px; background: rgba(255,255,255,.88); box-shadow: 0 14px 28px rgba(17,24,39,.06); }
+    .pipe-step .num { font-family: var(--mono); font-weight: 950; font-size: 32px; color: var(--blue); text-align: center; }
+    .pipe-step strong { display: block; font-size: 34px; line-height: 1.08; font-weight: 950; }
+    .pipe-step span { display: block; margin-top: 8px; color: #475569; font-family: var(--sans); font-size: 24px; line-height: 1.32; font-weight: 650; }
+    .artifact-card { min-height: 660px; display: grid; align-content: center; text-align: center; background: linear-gradient(145deg, #eff6ff 0%, #fff 45%, #fef3c7 100%); }
+    .artifact-card .code-tag { display: inline-block; width: fit-content; margin: 0 auto 26px; padding: 12px 18px; border-radius: 999px; background: #111827; color: white; font-family: var(--mono); font-weight: 950; font-size: 22px; }
+    .artifact-card h3 { font-size: 58px; }
+    .artifact-card p { font-size: 30px; }
+    .mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 34px; }
+    .mini-tile { padding: 20px 16px; border-radius: 24px; border: 3px dashed rgba(17,24,39,.16); background: rgba(255,255,255,.68); font-family: var(--mono); font-size: 20px; font-weight: 900; }
 
-    .memory-chain { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 46px; flex-wrap: wrap; }
-    .chain-node { padding: 15px 18px; border-radius: 19px; border: 2px solid rgba(37,99,235,.27); background: #eff6ff; font-family: var(--mono); font-weight: 950; color: #1d4ed8; }
-    .closing-stack { text-align: center; display: grid; place-items: center; height: 100%; }
-    .final-line { font-size: clamp(31px, 4vw, 56px); font-weight: 950; line-height: 1.12; max-width: 980px; }
+    .scope-grid { align-items: start; }
+    .scope-list { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 16px; font-family: var(--sans); }
+    .scope-list li { padding: 18px 20px; border-radius: 18px; background: rgba(255,255,255,.70); font-size: 26px; line-height: 1.3; font-weight: 760; }
+    .acceptance { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); width: 1180px; text-align: center; }
 
-    .footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: #9ca3af;
-      position: relative;
-      z-index: 5;
-    }
-    .dots { display: flex; gap: 5px; align-items: center; }
-    .dot { width: 7px; height: 7px; border-radius: 99px; background: #d1d5db; opacity: .85; cursor: pointer; }
-    .dot.active { width: 24px; background: var(--blue); }
-    .controls { display: flex; gap: 8px; align-items: center; }
-    .controls button {
-      border: 1px solid rgba(17,24,39,.18);
-      background: rgba(255,255,255,.84);
-      border-radius: 999px;
-      padding: 7px 10px;
-      font-family: var(--mono);
-      font-weight: 900;
-      color: #374151;
-      cursor: pointer;
-    }
+    .memory-chain { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 70px; flex-wrap: wrap; }
+    .chain-node { padding: 24px 28px; border-radius: 28px; border: 3px solid rgba(37,99,235,.27); background: #eff6ff; font-family: var(--mono); font-weight: 950; color: #1d4ed8; font-size: 26px; }
+    .final-line { font-size: 72px; font-weight: 950; line-height: 1.08; max-width: 1360px; }
+
+    .footer { display: flex; justify-content: space-between; align-items: center; gap: 32px; font-family: var(--mono); font-size: 18px; color: #9ca3af; position: relative; z-index: 5; }
+    .dots { display: flex; gap: 8px; align-items: center; }
+    .dot { width: 11px; height: 11px; border-radius: 99px; background: #d1d5db; opacity: .88; cursor: pointer; }
+    .dot.active { width: 36px; background: var(--blue); }
+    .controls { display: flex; gap: 10px; align-items: center; }
+    .controls button { border: 2px solid rgba(17,24,39,.18); background: rgba(255,255,255,.84); border-radius: 999px; padding: 12px 16px; font-family: var(--mono); font-size: 18px; font-weight: 900; color: #374151; cursor: pointer; }
     .controls button:hover { background: #eff6ff; color: var(--blue); }
 
-    .visible { animation: pop .24s ease-out both; }
-    @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .visible { animation: pop .28s var(--ease-out) both; }
+    @keyframes pop { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    @media print {
+      html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+      .deck-viewport { position: static; overflow: visible; background: #fff; }
+      .deck-stage { position: static; width: auto; height: auto; transform: none !important; box-shadow: none; }
+      .stage { position: static; width: auto; height: auto; overflow: visible; }
+      .slide { position: relative; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+      .footer { display: none !important; }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .visible { animation: none; }
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
   </style>
 </head>
 <body>
-  <main class="deck-shell" aria-label="Agent Community deck v1">
-    <section class="stage" id="stage"></section>
-  </main>
+  <div class="deck-viewport">
+    <main class="deck-stage" id="deckStage" aria-label="Agent Community deck v2 fixed-stage">
+      <section class="stage" id="stage"></section>
+    </main>
+  </div>
 
   <script>
     const scenes = [
@@ -390,8 +355,9 @@
       { key: 'admin', label: 'Human Admin', maxBeat: 2, kicker: 'SCENE 5 · HUMAN ADMIN', title: 'Human Admin 不是退出，而是上移为治理者' },
       { key: 'layers', label: 'Layers', maxBeat: 2, kicker: 'SCENE 6 · LAYERS', title: '不做大一统平台，先把每层职责说清楚' },
       { key: 'loop', label: 'Loop', maxBeat: 2, kicker: 'SCENE 7 · LOOP', title: '自治不是先全自动，而是先能闭环' },
-      { key: 'slice', label: 'First Slice', maxBeat: 2, kicker: 'SCENE 8 · FIRST SLICE', title: '第一版要克制：先跑通一个可验收 slice' },
-      { key: 'closing', label: 'Closing', maxBeat: 2, kicker: 'SCENE 9 · CLOSING', title: 'Agent Community 的目标，是把讨论变成组织记忆' }
+      { key: 'frontendSlides', label: 'Frontend Slides', maxBeat: 2, kicker: 'SCENE 8 · FRONTEND SLIDES SKILL', title: '用 frontend-slides 把文章变成可看的 Web Deck' },
+      { key: 'slice', label: 'First Slice', maxBeat: 2, kicker: 'SCENE 9 · FIRST SLICE', title: '第一版要克制：先跑通一个可验收 slice' },
+      { key: 'closing', label: 'Closing', maxBeat: 2, kicker: 'SCENE 10 · CLOSING', title: 'Agent Community 的目标，是把讨论变成组织记忆' }
     ];
 
     const qs = new URLSearchParams(location.search);
@@ -399,15 +365,27 @@
     let beatIndex = clamp(parseInt(qs.get('beat') || '0', 10) || 0, 0, scenes[sceneIndex].maxBeat);
 
     function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
-    function show(min, html) { return beatIndex >= min ? `<div class="visible">${html}</div>` : ''; }
+    function show(min, markup) { return beatIndex >= min ? `<div class="visible">${markup}</div>` : ''; }
     function html(strings, ...values) { return strings.map((s, i) => s + (values[i] ?? '')).join(''); }
+
+    function setupStageScale() {
+      const stage = document.getElementById('deckStage');
+      const scale = () => {
+        const factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        const x = (window.innerWidth - 1920 * factor) / 2;
+        const y = (window.innerHeight - 1080 * factor) / 2;
+        stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+      };
+      scale();
+      window.addEventListener('resize', scale);
+    }
 
     function updateUrl() {
       const url = new URL(location.href);
       url.searchParams.set('scene', String(sceneIndex + 1));
       url.searchParams.set('beat', String(beatIndex));
       history.replaceState(null, '', url);
-      document.title = `${sceneIndex + 1}. ${scenes[sceneIndex].label} — Agent Community Deck v1`;
+      document.title = `${sceneIndex + 1}. ${scenes[sceneIndex].label} — Agent Community Deck v2`;
     }
 
     function render() {
@@ -429,7 +407,7 @@
     }
 
     function renderScene(scene) {
-      const renderers = { thesis, failure, topic, profiles, admin, layers, loop, slice, closing };
+      const renderers = { thesis, failure, topic, profiles, admin, layers, loop, frontendSlides, slice, closing };
       return renderers[scene.key]();
     }
 
@@ -437,10 +415,10 @@
       return html`
         <div class="hero-content">
           <div class="hero-card">
-            <div class="kicker">CHATBLOG SLIDES · QUICK START DEMO</div>
+            <div class="kicker">CHATBLOG SLIDES · FIXED-STAGE V2</div>
             <h1>${scenes[0].title}</h1>
             <p class="lead">${scenes[0].lead}</p>
-            ${show(1, `<div class="tag-row"><span class="tag">Topic</span><span class="tag">Profile</span><span class="tag">Human Admin</span><span class="tag">Loop</span></div>`)}
+            ${show(1, `<div class="tag-row"><span class="tag">Topic</span><span class="tag">Profile</span><span class="tag">Human Admin</span><span class="tag">Loop</span><span class="tag">Slides Skill</span></div>`)}
             ${show(2, `<p class="punchline">重点不是“让 bot 更多”，而是让每一次讨论都能留下证据、决策和行动。</p>`)}
           </div>
         </div>`;
@@ -453,9 +431,9 @@
             ${['bot: 我来处理一下…', 'tool: output 148 lines', 'agent: maybe fixed', 'bot: 再试一次？', 'human: 刚才决定是什么？'].map(x => `<div class="bubble">${x}</div>`).join('')}
           </div>
           ${show(1, `<div class="missing-grid">
-            <div class="hand-card red"><small>missing</small><strong>No decision</strong><p>讨论没有沉淀成可引用的结论。</p></div>
-            <div class="hand-card red"><small>missing</small><strong>No owner</strong><p>不知道谁负责下一步，也不知道谁验收。</p></div>
-            <div class="hand-card red"><small>missing</small><strong>No readback</strong><p>没有 URL、任务、PR、截图或运行证据。</p></div>
+            <div class="hand-card red"><div class="mini-label">missing</div><strong>No decision</strong><p>讨论没有沉淀成可引用的结论。</p></div>
+            <div class="hand-card red"><div class="mini-label">missing</div><strong>No owner</strong><p>不知道谁负责下一步，也不知道谁验收。</p></div>
+            <div class="hand-card red"><div class="mini-label">missing</div><strong>No readback</strong><p>没有 URL、任务、PR、截图或运行证据。</p></div>
           </div>`)}
         </div>
         ${show(2, `<div class="warning-strip">消息越多，不等于协作越强；没有结构的热闹，只会制造组织遗忘。</div>`)}
@@ -475,7 +453,7 @@
           ${show(1, `<div class="seat researcher hand-card blue"><div class="avatar">🔎</div><strong>Researcher</strong><p>补来源和反例。</p></div>
             <div class="seat builder hand-card amber"><div class="avatar">🛠️</div><strong>Builder</strong><p>给实现路径。</p></div>
             <div class="seat reviewer hand-card green"><div class="avatar">✅</div><strong>Reviewer</strong><p>看证据和验收。</p></div>`)}
-          ${show(2, `<div class="action-chain hand-card violet"><small>action chain</small><strong>Decision → Task → PR / Doc / Run</strong><p>Topic 不是终点，它要能推动外部事实源变化。</p></div>`)}
+          ${show(2, `<div class="action-chain hand-card violet"><div class="mini-label">action chain</div><strong>Decision → Task → PR / Doc / Run</strong><p>Topic 不是终点，它要能推动外部事实源变化。</p></div>`)}
         </div>
         ${show(2, `<div class="warning-strip" style="background:#1e3a8a">群聊按时间流走；Topic 按问题留下。</div>`)}
       `;
@@ -485,12 +463,12 @@
       return html`
         <div class="bridge">
           <div class="hand-card blue">
-            <small>profile / seat</small>
+            <div class="mini-label">profile / seat</div>
             <strong>长期 Agent Profile</strong>
             <p>身份、记忆、技能、权限、风格和长期责任。像社区里的固定席位。</p>
           </div>
           ${show(2, `<div class="bridge-icon">⇄</div>`)}
-          ${show(1, `<div class="hand-card amber"><small>subagent / branch</small><strong>临时执行分身</strong><p>一次任务里的并行分支，完成后回传总结，不承担长期身份。</p></div>`)}
+          ${show(1, `<div class="hand-card amber"><div class="mini-label">subagent / branch</div><strong>临时执行分身</strong><p>一次任务里的并行分支，完成后回传总结，不承担长期身份。</p></div>`)}
         </div>
         ${show(2, `<div class="queue"><span>Kanban</span><span>accepted</span><span>revise</span><span>reject</span><span>handoff</span></div>`)}
         ${show(2, `<div class="warning-strip" style="background:#111827">Profile 是席位，subagent 是临时分身；社区需要席位，不只需要分身。</div>`)}
@@ -506,10 +484,10 @@
             <p class="subtle">人类保留目标、边界、权限和验收主权。</p>
           </div>
           ${show(1, `<div class="governance-row">
-            <div class="hand-card blue"><small>goal</small><strong>定目标</strong></div>
-            <div class="hand-card amber"><small>boundary</small><strong>划边界</strong></div>
-            <div class="hand-card violet"><small>permission</small><strong>配权限</strong></div>
-            <div class="hand-card green"><small>verdict</small><strong>做验收</strong></div>
+            <div class="hand-card blue"><div class="mini-label">goal</div><strong>定目标</strong></div>
+            <div class="hand-card amber"><div class="mini-label">boundary</div><strong>划边界</strong></div>
+            <div class="hand-card violet"><div class="mini-label">permission</div><strong>配权限</strong></div>
+            <div class="hand-card green"><div class="mini-label">verdict</div><strong>做验收</strong></div>
           </div>`)}
           ${show(2, `<div class="executor-row"><div class="executor">Researcher</div><div class="executor">Builder</div><div class="executor">Reviewer</div><div class="executor">Operator</div></div>`)}
         </div>
@@ -538,12 +516,32 @@
       return html`
         <div class="loop-wrap">
           <div class="loop-ring"></div>
-          <div class="loop-node detect hand-card blue"><small>01 / signal</small><strong>Detect</strong><p>从 topic、事件、任务板和服务状态发现需要处理的信号。</p></div>
-          ${show(0, `<div class="loop-node judge hand-card amber"><small>02 / rule</small><strong>Judge</strong><p>根据规则、权限、上下文判断是否行动，是否需要叫人。</p></div>`)}
-          ${show(0, `<div class="loop-node action hand-card green"><small>03 / artifact</small><strong>Action</strong><p>创建评论、任务、PR、文档或请求确认。</p></div>`)}
-          ${show(2, `<div class="loop-node readback hand-card violet"><small>04 / evidence</small><strong>Readback</strong><p>回读 URL、任务 ID、截图、commit 或运行结果。</p></div>`)}
+          <div class="loop-node detect hand-card blue"><div class="mini-label">01 / signal</div><strong>Detect</strong><p>从 topic、事件、任务板和服务状态发现需要处理的信号。</p></div>
+          ${show(0, `<div class="loop-node judge hand-card amber"><div class="mini-label">02 / rule</div><strong>Judge</strong><p>根据规则、权限、上下文判断是否行动，是否需要叫人。</p></div>`)}
+          ${show(0, `<div class="loop-node action hand-card green"><div class="mini-label">03 / artifact</div><strong>Action</strong><p>创建评论、任务、PR、文档或请求确认。</p></div>`)}
+          ${show(2, `<div class="loop-node readback hand-card violet"><div class="mini-label">04 / evidence</div><strong>Readback</strong><p>回读 URL、任务 ID、截图、commit 或运行结果。</p></div>`)}
         </div>
         ${show(2, `<div class="warning-strip" style="background:#581c87">没有 readback 的 action，不算完成；没有证据的自治，只是幻觉。</div>`)}
+      `;
+    }
+
+    function frontendSlides() {
+      return html`
+        <div class="skill-scene">
+          <div class="skill-pipeline">
+            <div class="pipe-step visible"><div class="num">01</div><div><strong>读内容，而不是套模板</strong><span>先抽 thesis、audience、density，再决定 scene / beat。</span></div></div>
+            ${show(1, `<div class="pipe-step visible"><div class="num">02</div><div><strong>Show, don’t tell</strong><span>先出 3 张真实视觉 preview，让人用眼睛选方向。</span></div></div>`)}
+            ${show(1, `<div class="pipe-step visible"><div class="num">03</div><div><strong>固定 1920×1080 stage</strong><span>内容坐标稳定，浏览器只负责整体缩放。</span></div></div>`)}
+            ${show(2, `<div class="pipe-step visible"><div class="num">04</div><div><strong>回到 ChatBlog 发布链路</strong><span>草稿可以是单 HTML；正式发布必须 PR → Preview → Production readback。</span></div></div>`)}
+          </div>
+          <div class="artifact-card hand-card cyan">
+            <div class="code-tag">frontend-slides / SKILL.md</div>
+            <h3>Agent-readable deck workflow</h3>
+            <p>它把“做一套 slides”拆成可执行步骤：style presets、bold template pack、viewport-base.css、html-template、export / deploy scripts。</p>
+            ${show(2, `<div class="mini-grid"><div class="mini-tile">visual preview</div><div class="mini-tile">single HTML</div><div class="mini-tile">PDF / URL</div></div>`)}
+          </div>
+        </div>
+        ${show(2, `<div class="warning-strip" style="background:#164e63">对 ChatBlog 来说：frontend-slides 负责快速长出可看的 deck；ChatBlog 负责把它变成可审查、可发布、可回读的 artifact。</div>`)}
       `;
     }
 
@@ -551,7 +549,7 @@
       return html`
         <div class="scope-grid">
           <div class="hand-card red">
-            <small>not now</small>
+            <div class="mini-label">not now</div>
             <strong>不要第一版就全自治</strong>
             <ul class="scope-list">
               <li>无限 agent 和复杂权限</li>
@@ -560,9 +558,9 @@
               <li>把聊天工具当事实源</li>
             </ul>
           </div>
-          ${show(1, `<div class="hand-card green"><small>first slice</small><strong>先跑通可验收闭环</strong><ul class="scope-list"><li>少数长期 Profile</li><li>固定 topic 模板</li><li>评论 schema 和证据要求</li><li>每次行动都有 readback URL</li></ul></div>`)}
+          ${show(1, `<div class="hand-card green"><div class="mini-label">first slice</div><strong>先跑通可验收闭环</strong><ul class="scope-list"><li>少数长期 Profile</li><li>固定 topic 模板</li><li>评论 schema 和证据要求</li><li>每次行动都有 readback URL</li></ul></div>`)}
         </div>
-        ${show(2, `<div class="acceptance hand-card blue"><small>acceptance</small><strong>打开链接 → 看懂结构 → 能继续改 deck</strong><p>第一版只证明组织方式成立，再扩大自动化半径。</p></div>`)}
+        ${show(2, `<div class="acceptance hand-card blue"><div class="mini-label">acceptance</div><strong>打开链接 → 看懂结构 → 能继续改 deck</strong><p>第一版只证明组织方式成立，再扩大自动化半径。</p></div>`)}
       `;
     }
 
@@ -571,10 +569,10 @@
         <div class="closing-stack">
           <div>
             <div class="kicker">FINAL POSITION</div>
-            <h1>${scenes[8].title}</h1>
+            <h1>${scenes[9].title}</h1>
             ${show(0, `<div class="memory-chain"><span class="chain-node">Topic</span><span class="arrow">→</span><span class="chain-node">Decision</span><span class="arrow">→</span><span class="chain-node">Action</span><span class="arrow">→</span><span class="chain-node">Evidence</span><span class="arrow">→</span><span class="chain-node">Memory</span></div>`)}
-            ${show(1, `<p class="lead" style="margin-top:34px;color:#111827">Human Admin 在上方治理；Agent Profiles 在下方持续协作。</p>`)}
-            ${show(2, `<p class="final-line" style="margin:38px auto 0">从聊天工具，变成可治理的智能体协作操作系统。</p>`)}
+            ${show(1, `<p class="lead" style="margin-top:52px;color:#111827">Human Admin 在上方治理；Agent Profiles 在下方持续协作。</p>`)}
+            ${show(2, `<p class="final-line" style="margin:58px auto 0">从聊天工具，变成可治理的智能体协作操作系统。</p>`)}
           </div>
         </div>`;
     }
@@ -627,6 +625,7 @@
       render();
     });
 
+    setupStageScale();
     render();
   </script>
 </body>
