@@ -9,6 +9,105 @@
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
         <item>
+            <title><![CDATA[B站发文和视频投稿：官方开放平台、插件能力与 CLI 工具调研]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide</guid>
+            <pubDate>Wed, 12 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[调研 B站官方开放平台、Wechatsync Bilibili adapter、第三方 CLI 工具，回答能发什么、怎么发、有没有官方 CLI，以及 ChatPost 应优先走哪条接入路线。]]></description>
+            <content:encoded><![CDATA[<p>我们要回答的不是“能不能点网页发一篇 B站内容”，而是 <strong>ChatPost 这种发文/投稿编排层应该接哪条稳定边界</strong>：官方 API、浏览器插件、还是第三方 CLI。</p>
+<p>结论先说：<strong>B站官方开放平台已经有视频稿件管理和专栏稿件管理 API；插件路线当前看到的是专栏图文草稿，不是视频投稿；官方没有发现可直接投稿的 CLI，第三方 CLI 以 biliup 系列为代表，但它们不等于官方接入路径。</strong>[1][5][8][14]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先拿官方入口">先拿官方入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#%E5%85%88%E6%8B%BF%E5%AE%98%E6%96%B9%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="先拿官方入口的直接链接" title="先拿官方入口的直接链接" translate="no">​</a></h2>
+<p>如果要从官方路线开始，入口不要从 cookies、二维码、浏览器插件开始，而应该先看这几个官方站点：</p>
+<table><thead><tr><th>入口</th><th>用途</th></tr></thead><tbody><tr><td><a href="https://open.bilibili.com/" target="_blank" rel="noopener noreferrer" class="">B站开放平台</a></td><td>开放平台首页</td></tr><tr><td><a href="https://open.bilibili.com/doc" target="_blank" rel="noopener noreferrer" class="">开放平台文档中心</a></td><td>OPEN API、客户端 SDK、运营指南、更多支持</td></tr><tr><td><a href="https://openhome.bilibili.com/company-core" target="_blank" rel="noopener noreferrer" class="">开平管理中心 / 应用管理</a></td><td>入驻、创建应用、查看接口权限、配置白名单</td></tr><tr><td><a href="https://open.bilibili.com/doc/4/eaf0e2b5-bde9-b9a0-9be1-019bb455701c" target="_blank" rel="noopener noreferrer" class="">账号授权</a></td><td>OAuth 2.0 授权、token 与 refresh token</td></tr><tr><td><a href="https://openhome.bilibili.com/doc/4/aac73b2e-4ff2-b75c-4c96-35ced865797b" target="_blank" rel="noopener noreferrer" class="">网页应用接入</a></td><td>Web OAuth 授权页、回调与授权码流程</td></tr><tr><td><a href="https://open.bilibili.com/doc/4/8673959e-f7bb-56e6-6e68-d225f971b81b" target="_blank" rel="noopener noreferrer" class="">接口签名和状态码</a></td><td>HMAC-SHA256 签名、公共请求头、签名验证工具</td></tr><tr><td><a href="https://open.bilibili.com/doc/4/b2dc2f0e-c874-aed7-3d92-360929e79d3a" target="_blank" rel="noopener noreferrer" class="">接口权限白名单</a></td><td>某些接口只允许指定 UID 调用时的限制配置</td></tr><tr><td><a href="https://github.com/bilibili-openplatform" target="_blank" rel="noopener noreferrer" class="">B站开放平台 GitHub org</a></td><td>官方 Demo 和签名样例代码</td></tr></tbody></table>
+<p>这组入口已经能说明官方接入的基本模型：先入驻开放平台、创建应用、拿到 <code>client_id</code> 和 <code>secret</code>，然后走 OAuth 获取用户授权 token，再用开放平台签名规则调用稿件接口。[1][2][3][4]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="官方能发布哪些东西">官方能发布哪些东西<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#%E5%AE%98%E6%96%B9%E8%83%BD%E5%8F%91%E5%B8%83%E5%93%AA%E4%BA%9B%E4%B8%9C%E8%A5%BF" class="hash-link" aria-label="官方能发布哪些东西的直接链接" title="官方能发布哪些东西的直接链接" translate="no">​</a></h2>
+<p>本次调研里，和“发布内容”直接相关的官方能力分两组：</p>
+<table><thead><tr><th>内容类型</th><th>官方能力组</th><th>Scope</th><th>能力边界</th></tr></thead><tbody><tr><td>视频稿件</td><td>视频稿件管理 / 服务端视频稿件投递</td><td><code>ARC_BASE</code></td><td>视频文件预处理、分片上传、合片、封面上传、分区查询、视频稿件提交</td></tr><tr><td>专栏文章</td><td>专栏稿件管理</td><td><code>ATC_BASE</code></td><td>文章提交、编辑、删除、详情、列表、分类、图片上传</td></tr></tbody></table>
+<p>这意味着官方 API 不是只有“读取账号信息”或“授权登录”。它已经覆盖了 B站内容生产里最核心的两类发布对象：<strong>视频投稿</strong>和<strong>专栏文章</strong>。[5][6][7][8][9][10]</p>
+<p>但它也不是一个“随便拿账号就能调”的接口。官方账号授权文档明确说，使用授权之前需要在开放平台完成入驻和应用申请，得到 <code>client_id</code> 和 <code>secret</code>；如果应用新增 scope，原有授权用户还需要重新授权并勾选对应 scope。[1]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="官方视频投稿大概怎么发">官方视频投稿大概怎么发<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#%E5%AE%98%E6%96%B9%E8%A7%86%E9%A2%91%E6%8A%95%E7%A8%BF%E5%A4%A7%E6%A6%82%E6%80%8E%E4%B9%88%E5%8F%91" class="hash-link" aria-label="官方视频投稿大概怎么发的直接链接" title="官方视频投稿大概怎么发的直接链接" translate="no">​</a></h2>
+<p>官方视频投稿链路不是一个单接口 <code>upload(video)</code>，而是一个分阶段上传与提交流程：</p>
+<table><thead><tr><th>阶段</th><th>官方接口</th><th>作用</th></tr></thead><tbody><tr><td>1</td><td><code>archive/video/init</code></td><td>文件上传预处理，拿到上传所需信息</td></tr><tr><td>2</td><td><code>video/v2/part/upload</code> 或 <code>video/v2/upload</code></td><td>分片上传，或小视频单文件上传</td></tr><tr><td>3</td><td><code>archive/video/complete</code></td><td>合片，完成视频文件上传</td></tr><tr><td>4</td><td><code>archive/cover/upload</code></td><td>上传稿件封面</td></tr><tr><td>5</td><td><code>archive/type/list</code></td><td>查询/刷新分区信息</td></tr><tr><td>6</td><td><code>archive/add-by-utoken</code></td><td>提交视频稿件</td></tr></tbody></table>
+<p>官方概览还写了视频参数边界：文件大小限制 4GB、时长小于 5 小时、推荐 mp4/flv、最大 4096x4096、最大 120fps，并提醒投稿需要选择合适分区，分区可能调整，建议定时查询更新。[5]</p>
+<p>所以 ChatPost 如果走官方视频投稿，不应该把它设计成“浏览器里点上传按钮”的封装，而应该设计成一个明确的 pipeline：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">OpenPlatform OAuth token</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 签名请求头</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; init 获取上传上下文</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; part upload / single upload</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; complete 合片</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; cover upload</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; type/list 校验分区</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; add-by-utoken 提交稿件</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 查询稿件状态 / 审核结果</span><br></div></code></pre></div></div>
+<p>这个流程天然适合服务端编排：可以记录每个阶段的 request id、upload token、分片进度、失败重试、最终稿件状态。它也天然需要更强的权限和更严格的凭据管理，因为它不再只是保存草稿，而是真正创建 B站视频稿件。[6][7][8]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="官方专栏文章大概怎么发">官方专栏文章大概怎么发<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#%E5%AE%98%E6%96%B9%E4%B8%93%E6%A0%8F%E6%96%87%E7%AB%A0%E5%A4%A7%E6%A6%82%E6%80%8E%E4%B9%88%E5%8F%91" class="hash-link" aria-label="官方专栏文章大概怎么发的直接链接" title="官方专栏文章大概怎么发的直接链接" translate="no">​</a></h2>
+<p>专栏文章 API 比视频上传短一些，但也有审核和素材处理边界：</p>
+<table><thead><tr><th>阶段</th><th>官方接口</th><th>作用</th></tr></thead><tbody><tr><td>1</td><td><code>article/upload/image</code></td><td>上传正文/封面用图片，返回 B站图片 URL</td></tr><tr><td>2</td><td><code>article/categories</code></td><td>获取可用文章分类</td></tr><tr><td>3</td><td><code>article/add</code></td><td>提交文章稿件</td></tr><tr><td>4</td><td><code>article/list</code> / <code>article/detail</code></td><td>查询文章列表、状态和详情</td></tr><tr><td>5</td><td><code>article/edit</code></td><td>编辑文章；编辑后重新审核</td></tr><tr><td>6</td><td><code>article/delete</code></td><td>删除文章；删除类操作要谨慎处理</td></tr></tbody></table>
+<p>官方文章提交文档写得比较清楚：文章提交需要 <code>ATC_BASE</code>，正文内容 200–40000 字，或者至少添加三张图片；如果正文里需要图片 URL，要使用图片上传接口生成的 URL；文章提交之后会进入审核过程，期间不对外开放。[9][10]</p>
+<p>这说明“专栏发布”也不能简单等同于“发出去了马上可见”。对 ChatPost 来说，正确的状态模型应该至少区分：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">prepared -&gt; uploaded-assets -&gt; submitted -&gt; auditing -&gt; passed / rejected / edited-resubmitted</span><br></div></code></pre></div></div>
+<p>如果做 <code>chatpost bilibili article submit</code>，返回值不应该只报 success，而应该返回文章 id、提交状态、是否进入审核、后续查询命令，以及审核中/打回/通过这些状态解释。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="wechatsync--插件里支持什么">Wechatsync / 插件里支持什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#wechatsync--%E6%8F%92%E4%BB%B6%E9%87%8C%E6%94%AF%E6%8C%81%E4%BB%80%E4%B9%88" class="hash-link" aria-label="Wechatsync / 插件里支持什么的直接链接" title="Wechatsync / 插件里支持什么的直接链接" translate="no">​</a></h2>
+<p>我们本次看的 Wechatsync v2 Bilibili adapter 快照显示，插件侧的 B站适配器 metadata 是：</p>
+<div class="language-ts codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-ts codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">id</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">'bilibili'</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">homepage</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">'https://member.bilibili.com/platform/upload/text'</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">capabilities</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">[</span><span class="token string" style="color:#e3116c">'article'</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">'draft'</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">'image_upload'</span><span class="token punctuation" style="color:#393A34">]</span><br></div></code></pre></div></div>
+<p>它的发布函数保存到的是 B站专栏草稿接口：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://api.bilibili.com/x/article/creative/draft/addupdate</span><br></div></code></pre></div></div>
+<p>图片上传走的是：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://api.bilibili.com/x/article/creative/article/upcover</span><br></div></code></pre></div></div>
+<p>也就是说，插件快照支持的是 <strong>B站专栏/图文草稿 + 图片上传</strong>，不是视频投稿。<code>homepage</code> 指向 <code>platform/upload/text</code>，capabilities 也只有 <code>article</code>、<code>draft</code>、<code>image_upload</code>，没有 <code>video</code>、<code>archive</code>、<code>upload</code> 这类视频投稿能力。[13]</p>
+<p>这条路线的价值是：如果官方 API 权限还没申请下来，可以用浏览器登录态先验证“Markdown/HTML -&gt; 专栏草稿”的产品体验。但它不应该被描述成“支持 B站视频发布”。最多只能说：<strong>支持专栏图文草稿；视频上传在当前 adapter 里没有看到实现证据。</strong>[13]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="有没有官方-cli-工具">有没有官方 CLI 工具<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#%E6%9C%89%E6%B2%A1%E6%9C%89%E5%AE%98%E6%96%B9-cli-%E5%B7%A5%E5%85%B7" class="hash-link" aria-label="有没有官方 CLI 工具的直接链接" title="有没有官方 CLI 工具的直接链接" translate="no">​</a></h2>
+<p>目前没有发现 B站官方提供“投稿/发布 CLI”。</p>
+<p>官方文档里出现的“工具”主要是两类：</p>
+<ol>
+<li class=""><strong>签名验证工具</strong>：文档给了一个 Windows 64 位签名验证工具下载链接，用来验证开放平台请求签名。[4]</li>
+<li class=""><strong>官方 Demo / SDK 示例</strong>：官方 GitHub org 下有 <code>SignatureAlgorithm_DotnetDemo</code> 和 <code>OpenPlatform_CSharpDemo</code>，它们是 C# 签名和开放平台调用示例，不是 <code>bilibili upload</code> 这类可直接投稿的命令行产品。[11][12]</li>
+</ol>
+<p>官方 <code>OpenPlatform_CSharpDemo</code> README 也写明，Demo 里的功能都需要开放平台接入并完成用户授权后才能触发；它要求开发者填入应用信息、回调地址和 token，再按需要选择 sample 中的功能。[12]</p>
+<p>所以文章里的 CLI 结论应当严格写成：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">官方有开放平台 API、签名验证工具、C# Demo / SDK 示例；</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">当前未发现官方投稿/发布 CLI。</span><br></div></code></pre></div></div>
+<p>不要把第三方工具当成官方 CLI。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第三方-clibiliup-是参考不是官方路线">第三方 CLI：biliup 是参考，不是官方路线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#%E7%AC%AC%E4%B8%89%E6%96%B9-clibiliup-%E6%98%AF%E5%8F%82%E8%80%83%E4%B8%8D%E6%98%AF%E5%AE%98%E6%96%B9%E8%B7%AF%E7%BA%BF" class="hash-link" aria-label="第三方 CLI：biliup 是参考，不是官方路线的直接链接" title="第三方 CLI：biliup 是参考，不是官方路线的直接链接" translate="no">​</a></h2>
+<p>第三方生态里确实有 B站投稿 CLI / 桌面工具，最明显的是 <code>biliup</code> 系列。当前 GitHub API 读到的 <code>biliup/biliup</code> 描述是“自动直播录制、投稿、twitch、ytb频道搬运工具。命令行投稿(B站)和视频下载工具，提供多种登录方式，支持多p。”，Stars 为 5340，仓库未归档，最近 push 时间是 2026-08-07。[14]</p>
+<p>此外，旧的 <code>biliup-rs</code> README 明确说仓库已归档，后续开发迁移到新仓库；它的旧文档里仍能看到 <code>biliup upload</code>、<code>login</code>、<code>renew</code>、<code>append</code>、<code>list</code> 等命令形态。[15]</p>
+<p>这类工具对我们有两个价值：</p>
+<ul>
+<li class="">可以参考多 P、分区、封面、延时发布、cookie 文件、多账号等产品参数设计；</li>
+<li class="">可以作为 fallback：当官方 API 权限申请周期太长，而内部需要先验证视频投稿流程时，第三方 CLI 能作为受控实验对象。</li>
+</ul>
+<p>但它不应该成为 ChatPost 的首选长期边界。原因很简单：第三方 CLI 常常围绕 cookies、网页登录态、客户端/网页接口做封装，稳定性、合规边界、权限解释和审计能力都弱于官方开放平台 API。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="对-chatpost-的建议路线">对 ChatPost 的建议路线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#%E5%AF%B9-chatpost-%E7%9A%84%E5%BB%BA%E8%AE%AE%E8%B7%AF%E7%BA%BF" class="hash-link" aria-label="对 ChatPost 的建议路线的直接链接" title="对 ChatPost 的建议路线的直接链接" translate="no">​</a></h2>
+<p>ChatPost 应该把 B站拆成两条路线，而不是混成一个 <code>bilibili publish</code>：</p>
+<table><thead><tr><th>层级</th><th>推荐命令</th><th>接入边界</th><th>说明</th></tr></thead><tbody><tr><td>账号/权限</td><td><code>chatpost bilibili oauth login/status/logout</code></td><td>官方 OAuth</td><td>管理开放平台 app、用户授权 token、scope readback</td></tr><tr><td>专栏文章</td><td><code>chatpost bilibili article submit/status/edit</code></td><td>官方 <code>ATC_BASE</code></td><td>真正提交专栏稿件，进入审核；不是只存浏览器草稿</td></tr><tr><td>视频投稿</td><td><code>chatpost bilibili video upload/submit/status</code></td><td>官方 <code>ARC_BASE</code></td><td>分片上传、封面、分区、提交、状态查询</td></tr><tr><td>草稿 fallback</td><td><code>chatpost bilibili draft</code></td><td>Wechatsync / browser runner</td><td>仅当官方权限不可用时，用专栏草稿体验验证</td></tr><tr><td>第三方实验</td><td><code>chatpost bilibili experimental biliup ...</code></td><td>biliup 等第三方 CLI</td><td>只作为显式实验功能，不混进官方能力</td></tr></tbody></table>
+<p>第一阶段不建议直接做公开视频发布。更稳的顺序是：</p>
+<ol>
+<li class="">确认是否已有 B站开放平台主体和应用；</li>
+<li class="">确认应用是否拿到 <code>ATC_BASE</code> / <code>ARC_BASE</code>；</li>
+<li class="">做 OAuth 授权和 token 安全存储；</li>
+<li class="">先接查询/分类/图片上传这类低风险接口；</li>
+<li class="">再接专栏提交，并把审核状态做清楚；</li>
+<li class="">最后接视频上传分片和投稿提交；</li>
+<li class="">如果官方权限被卡住，再把 Wechatsync 专栏草稿或 biliup 第三方路线作为 fallback，而不是默认主线。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最后结论">最后结论<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#%E6%9C%80%E5%90%8E%E7%BB%93%E8%AE%BA" class="hash-link" aria-label="最后结论的直接链接" title="最后结论的直接链接" translate="no">​</a></h2>
+<p>如果目标只是“今天能不能把内容弄到 B站草稿箱”，Wechatsync 的 Bilibili adapter 快照已经给出一条专栏草稿路线。[13]</p>
+<p>如果目标是把 ChatPost 做成可验收、可追踪、可长期维护的平台发布层，B站应该优先走官方开放平台 API：专栏用 <code>ATC_BASE</code>，视频用 <code>ARC_BASE</code>，先 OAuth 和 scope readback，再做素材上传、稿件提交和状态查询。[1][6][8][9]</p>
+<p>官方 CLI 这块，当前结论是：<strong>没有发现官方投稿/发布 CLI；官方提供的是开放平台文档、签名验证工具和 C# Demo。第三方 CLI 有，但只能作为参考或 fallback，不应该被写成官方路径。</strong>[4][11][12][14]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="sources">Sources<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/bilibili-publishing-api-cli-field-guide#sources" class="hash-link" aria-label="Sources的直接链接" title="Sources的直接链接" translate="no">​</a></h2>
+<p>[1] B站账号授权文档：<a href="https://open.bilibili.com/doc/4/eaf0e2b5-bde9-b9a0-9be1-019bb455701c" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/eaf0e2b5-bde9-b9a0-9be1-019bb455701c</a>
+[2] B站网页应用接入指引：<a href="https://openhome.bilibili.com/doc/4/aac73b2e-4ff2-b75c-4c96-35ced865797b" target="_blank" rel="noopener noreferrer" class="">openhome.bilibili.com/doc/4/aac73b2e-4ff2-b75c-4c96-35ced865797b</a>
+[3] B站接口权限白名单：<a href="https://open.bilibili.com/doc/4/b2dc2f0e-c874-aed7-3d92-360929e79d3a" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/b2dc2f0e-c874-aed7-3d92-360929e79d3a</a>
+[4] B站接口签名和状态码：<a href="https://open.bilibili.com/doc/4/8673959e-f7bb-56e6-6e68-d225f971b81b" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/8673959e-f7bb-56e6-6e68-d225f971b81b</a>
+[5] B站视频稿件管理接口概览：<a href="https://open.bilibili.com/doc/4/1c4302da-8171-d036-5400-ca0dec077045" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/1c4302da-8171-d036-5400-ca0dec077045</a>
+[6] B站视频上传预处理：<a href="https://open.bilibili.com/doc/4/0c532c6a-e6fb-0aff-8021-905ae2409095" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/0c532c6a-e6fb-0aff-8021-905ae2409095</a>
+[7] B站视频分片上传：<a href="https://open.bilibili.com/doc/4/733a520a-c50f-7bb4-17cb-35338ba20500" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/733a520a-c50f-7bb4-17cb-35338ba20500</a>
+[8] B站视频稿件提交：<a href="https://open.bilibili.com/doc/4/f7fc57dd-55a1-5cb1-cba4-61fb2994bf0f" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/f7fc57dd-55a1-5cb1-cba4-61fb2994bf0f</a>
+[9] B站专栏文章提交：<a href="https://open.bilibili.com/doc/4/b14b77b6-8889-8c8b-2e83-17c5a4c550fb" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/b14b77b6-8889-8c8b-2e83-17c5a4c550fb</a>
+[10] B站专栏图片上传：<a href="https://open.bilibili.com/doc/4/0eaa4d3e-c4c0-f874-6f3c-e083aa939a1b" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/0eaa4d3e-c4c0-f874-6f3c-e083aa939a1b</a>
+[11] B站官方签名算法 C# Demo：<a href="https://github.com/bilibili-openplatform/SignatureAlgorithm_DotnetDemo" target="_blank" rel="noopener noreferrer" class="">github.com/bilibili-openplatform/SignatureAlgorithm_DotnetDemo</a>
+[12] B站官方开放平台 C# Demo：<a href="https://github.com/bilibili-openplatform/OpenPlatform_CSharpDemo" target="_blank" rel="noopener noreferrer" class="">github.com/bilibili-openplatform/OpenPlatform_CSharpDemo</a>
+[13] Wechatsync：<a href="https://github.com/wechatsync/Wechatsync" target="_blank" rel="noopener noreferrer" class="">github.com/wechatsync/Wechatsync</a>
+[14] biliup：<a href="https://github.com/biliup/biliup" target="_blank" rel="noopener noreferrer" class="">github.com/biliup/biliup</a>
+[15] biliup-rs：<a href="https://github.com/biliup/biliup-rs" target="_blank" rel="noopener noreferrer" class="">github.com/biliup/biliup-rs</a></p>]]></content:encoded>
+            <category>chatpost</category>
+            <category>bilibili</category>
+            <category>publishing</category>
+            <category>open-platform</category>
+            <category>cli</category>
+        </item>
+        <item>
             <title><![CDATA[当两个 Agent 进同一个 Mattermost Thread：ChatRSS、Hermes 与 cc-connect 的对话规则]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/mattermost-chatrss-multi-agent-conversation-rules</link>
             <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/mattermost-chatrss-multi-agent-conversation-rules</guid>
@@ -3023,153 +3122,6 @@
             <category>codex</category>
             <category>crs</category>
             <category>chatarch</category>
-        </item>
-        <item>
-            <title><![CDATA[Discourse AI 实践指南：把论坛变成 Agent 社区的 AI 工作台]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide</guid>
-            <pubDate>Wed, 05 Aug 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[Discourse AI 不是“给论坛套一个聊天机器人”这么简单。更准确地说，它是一组嵌在 Discourse 里的 AI 能力：写作助手、AI Bot、语义搜索、相关话题、总结、垃圾信息检测、AI triage 和自动化报告。它适合增强 topic/comment 型社区，而不是替代 Mattermost、Discord 或 Slack 这类实时聊天入口。]]></description>
-            <content:encoded><![CDATA[<p>Discourse AI 不是“给论坛套一个聊天机器人”这么简单。更准确地说，它是一组嵌在 Discourse 里的 AI 能力：写作助手、AI Bot、语义搜索、相关话题、总结、垃圾信息检测、AI triage 和自动化报告。它适合增强 topic/comment 型社区，而不是替代 Mattermost、Discord 或 Slack 这类实时聊天入口。</p>
-<p>这篇文章回答三个问题：<strong>Discourse AI 到底有什么功能？普通用户和管理员怎么用？我们在 ChatArch 这台自托管 Discourse 上实测到了什么？</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先说结论">先说结论<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E5%85%88%E8%AF%B4%E7%BB%93%E8%AE%BA" class="hash-link" aria-label="先说结论的直接链接" title="先说结论的直接链接" translate="no">​</a></h2>
-<p>我们当前的判断是：</p>
-<ul>
-<li class=""><strong>Discourse 负责长期讨论和决策沉淀</strong>：topic、post、category、tag、review、search 都适合留下可追踪上下文。</li>
-<li class=""><strong>Discourse AI 负责论坛内的辅助智能</strong>：写作、解释、问答、总结、审核和路由建议。</li>
-<li class=""><strong>Mattermost / Discord-like 平台负责实时入口</strong>：适合频道化聊天、即时通知和 bot 房间。</li>
-<li class=""><strong>Hermes / Agent Router 负责执行任务</strong>：通过 API、webhook、plugin 或 automation 读写 Discourse，而不是把 Discourse AI 当作 Hermes 的原生 gateway。</li>
-</ul>
-<p>这次本机实践结果也很清楚：Discourse AI plugin 已启用，AI Helper 和 AI Bot 已开启，默认 LLM 可完成真实调用并写入 Discourse AI 审计日志；但 embeddings 和 summarization 当前未启用，所以 AI Search、Related Topics、Summarize 这几类能力只能作为“下一步可启用方向”，不能说已经在本站实测可用。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="discourse-ai-是哪一层">Discourse AI 是哪一层<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#discourse-ai-%E6%98%AF%E5%93%AA%E4%B8%80%E5%B1%82" class="hash-link" aria-label="Discourse AI 是哪一层的直接链接" title="Discourse AI 是哪一层的直接链接" translate="no">​</a></h2>
-<p>官方把 Discourse AI 描述为一套把 AI 集成进 Discourse 的功能集合。它现在是 bundled with Discourse core 的官方插件，不需要再单独安装外部 plugin；官方主文档也强调这些功能可以独立启用，并且不锁定单一模型供应商：管理员可以根据隐私、性能、能力和成本选择不同 provider。</p>
-<p>官方入口：</p>
-<ul>
-<li class=""><a href="https://meta.discourse.org/t/discourse-ai/259214" target="_blank" rel="noopener noreferrer" class="">Discourse AI</a></li>
-<li class=""><a href="https://discourse.org/ai" target="_blank" rel="noopener noreferrer" class="">Discourse AI features</a></li>
-<li class=""><a href="https://meta.discourse.org/t/discourse-ai-self-hosted-guide/259598" target="_blank" rel="noopener noreferrer" class="">Discourse AI Self-Hosted Guide</a></li>
-</ul>
-<p>我把它理解成三层：</p>
-<table><thead><tr><th>层</th><th>说明</th><th>在 Agent 社区里的位置</th></tr></thead><tbody><tr><td>Discourse core</td><td>topic、post、category、tag、user、moderation、search</td><td>长期事实源和讨论沉淀</td></tr><tr><td>Discourse AI</td><td>helper、bot、summary、semantic search、triage、spam detection</td><td>论坛内辅助智能</td></tr><tr><td>外部 Agent / Gateway</td><td>Hermes、任务 runner、Git/CI/文档工具</td><td>执行任务、回写结果、跨平台路由</td></tr></tbody></table>
-<p>它不是实时聊天总线。真正要做“频道里 @bot，bot 立刻回复并调工具”的体验，Mattermost 这类 Slack-like 平台更直接；Discourse 更适合把一次讨论、一次任务、一条决策沉淀成一个有标题、有状态、有评论历史的 topic。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="官方功能速览">官方功能速览<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E5%AE%98%E6%96%B9%E5%8A%9F%E8%83%BD%E9%80%9F%E8%A7%88" class="hash-link" aria-label="官方功能速览的直接链接" title="官方功能速览的直接链接" translate="no">​</a></h2>
-<p>Discourse AI 的功能很多，第一次使用时最容易混在一起。下面按“用户能感知什么”和“管理员要启用什么”来分。</p>
-<table><thead><tr><th>功能</th><th>官方用途</th><th>怎么用</th><th>启用前提</th></tr></thead><tbody><tr><td><a href="https://meta.discourse.org/t/enable-ai-bot/266012" target="_blank" rel="noopener noreferrer" class="">AI Bot</a></td><td>和 Discourse 内的 AI agent 对话；支持选择 agent / LLM，多人可在同一个 bot 私信里互动</td><td>用户通过 AI bot 入口发起私信式对话；管理员可限制哪些用户/组可用</td><td>Discourse AI enabled；至少一个 LLM；把 LLM 开放给 bot</td></tr><tr><td><a href="https://meta.discourse.org/t/enable-ai-helper/283943" target="_blank" rel="noopener noreferrer" class="">Helper</a></td><td>写 topic/reply 时生成标题、改写、审校、翻译、表格；阅读时解释/翻译选中文本</td><td>在 composer 或阅读页面中选择 AI helper 操作；官方文档也列出 Windows <code>CTRL ALT P</code>、macOS <code>⌘ ⌥ P</code> 快捷键</td><td>Discourse AI enabled；LLM；相关 helper 开关/权限</td></tr><tr><td><a href="https://meta.discourse.org/t/enable-ai-search/282420" target="_blank" rel="noopener noreferrer" class="">AI Search</a></td><td>用语义相似度找相关 topic，超越关键词匹配</td><td>搜索时出现 AI 结果或在完整搜索页切换 AI search</td><td>Embeddings 是硬前提；HyDE 等增强还需要 LLM</td></tr><tr><td><a href="https://meta.discourse.org/t/enable-related-topics/281807" target="_blank" rel="noopener noreferrer" class="">Related Topics</a></td><td>在读完一个 topic 后推荐语义相关 topic</td><td>阅读 topic 后查看 related/suggested topics 区域</td><td>Embeddings 是硬前提</td></tr><tr><td><a href="https://meta.discourse.org/t/discourse-ai-summarization/262711" target="_blank" rel="noopener noreferrer" class="">Summarize</a></td><td>对长 topic 或 chat channel 生成摘要，快速 catch up</td><td>在 topic map 或 chat channel 里触发 summary；可查看生成时间和模型</td><td>至少一个 LLM；<code>ai_summarization_enabled</code> 等设置</td></tr><tr><td><a href="https://meta.discourse.org/t/discourse-ai-spam-detection/343541" target="_blank" rel="noopener noreferrer" class="">Spam Detection</a></td><td>用 AI 辅助判断垃圾帖并进入审核流程</td><td>管理员在 AI spam 页面配置扫描范围、模型和处理方式</td><td>LLM；审核策略；适合和传统 trust level / review 队列配合</td></tr><tr><td><a href="https://meta.discourse.org/t/discourse-ai-ai-triage/281227" target="_blank" rel="noopener noreferrer" class="">AI Triage</a></td><td>结合 Automation 自动分类、打标、回复、隐藏、flag 等</td><td>管理员配置 automation rule，让 AI 根据内容执行指定动作</td><td><code>discourse-ai</code> + <code>discourse-automation</code>；规则和权限边界</td></tr></tbody></table>
-<p>第一轮最推荐先启用的不是所有功能，而是 <strong>AI Bot + Helper</strong>。它们最容易被人理解，也最不容易不小心改变社区结构。Search、Related Topics 和 Summarize 很有价值，但对 embeddings、summary agent、索引、成本和权限的要求更高，适合第二阶段再开。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="普通用户怎么用">普通用户怎么用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E6%99%AE%E9%80%9A%E7%94%A8%E6%88%B7%E6%80%8E%E4%B9%88%E7%94%A8" class="hash-link" aria-label="普通用户怎么用的直接链接" title="普通用户怎么用的直接链接" translate="no">​</a></h2>
-<p>如果你只是社区用户，不需要知道模型 key 或后台配置。可以从三个入口开始。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-写帖子时用-helper">1. 写帖子时用 Helper<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#1-%E5%86%99%E5%B8%96%E5%AD%90%E6%97%B6%E7%94%A8-helper" class="hash-link" aria-label="1. 写帖子时用 Helper的直接链接" title="1. 写帖子时用 Helper的直接链接" translate="no">​</a></h3>
-<p>在写 topic 或 reply 时，Helper 可以帮你做这些事：</p>
-<ul>
-<li class="">根据正文生成更清楚的标题；</li>
-<li class="">审校拼写、语法和表达；</li>
-<li class="">把一段话改成更正式、简短或结构化；</li>
-<li class="">生成 Markdown 表格；</li>
-<li class="">翻译选中文本；</li>
-<li class="">对图片生成 caption；</li>
-<li class="">把自然语言日期转换成 Markdown-friendly smart date。</li>
-</ul>
-<p>适合的用法是：先自己写背景、目标、证据，再让 Helper 清理表达。不要反过来只给一句“帮我写个方案”，否则 AI 会很容易补不存在的上下文。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-用-ai-bot-问站内上下文问题">2. 用 AI Bot 问站内上下文问题<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#2-%E7%94%A8-ai-bot-%E9%97%AE%E7%AB%99%E5%86%85%E4%B8%8A%E4%B8%8B%E6%96%87%E9%97%AE%E9%A2%98" class="hash-link" aria-label="2. 用 AI Bot 问站内上下文问题的直接链接" title="2. 用 AI Bot 问站内上下文问题的直接链接" translate="no">​</a></h3>
-<p>AI Bot 更像一个站内助手。它可以回答和社区内容有关的问题，也可以按 persona/agent 切换不同回答方式。</p>
-<p>适合问：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">这个 topic 里已经确认了哪些结论？</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">请把这段讨论整理成 5 条行动项。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">基于这个分类最近的 topic，哪些问题还没有 owner？</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">帮我把这条任务改成可执行的 PRD。</span><br></div></code></pre></div></div>
-<p>不适合直接问：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">请直接部署生产服务。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">请删除这些数据。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">请把 API key 发出来。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">请替我批准这次成本开销。</span><br></div></code></pre></div></div>
-<p>涉及部署、删除、发布、权限、费用、凭据的动作，仍然应该由人确认，或者交给带审批边界的 Hermes / Agent Router。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-在长讨论里用摘要和决策闭环">3. 在长讨论里用摘要和决策闭环<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#3-%E5%9C%A8%E9%95%BF%E8%AE%A8%E8%AE%BA%E9%87%8C%E7%94%A8%E6%91%98%E8%A6%81%E5%92%8C%E5%86%B3%E7%AD%96%E9%97%AD%E7%8E%AF" class="hash-link" aria-label="3. 在长讨论里用摘要和决策闭环的直接链接" title="3. 在长讨论里用摘要和决策闭环的直接链接" translate="no">​</a></h3>
-<p>当 Summarize 启用后，它最适合处理长 topic：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">背景很多 -&gt; 先让 AI 总结争议点</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">评论很多 -&gt; 让 AI 提炼行动项</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">即将收尾 -&gt; 让 AI 写 accepted / rejected / follow-up 草稿</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">人类确认 -&gt; 结论进入 Decisions 或项目文档</span><br></div></code></pre></div></div>
-<p>这里的关键不是“让 AI 代替人做决定”，而是让 AI 降低读长 thread 的成本。最终决策仍然应该由人类明确回复 accepted、revise 或 reject。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="管理员怎么启用">管理员怎么启用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E7%AE%A1%E7%90%86%E5%91%98%E6%80%8E%E4%B9%88%E5%90%AF%E7%94%A8" class="hash-link" aria-label="管理员怎么启用的直接链接" title="管理员怎么启用的直接链接" translate="no">​</a></h2>
-<p>管理员侧可以按这个顺序做，别一口气把所有 AI 功能都打开。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一步确认-discourse-ai-plugin-和-llm">第一步：确认 Discourse AI plugin 和 LLM<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E7%AC%AC%E4%B8%80%E6%AD%A5%E7%A1%AE%E8%AE%A4-discourse-ai-plugin-%E5%92%8C-llm" class="hash-link" aria-label="第一步：确认 Discourse AI plugin 和 LLM的直接链接" title="第一步：确认 Discourse AI plugin 和 LLM的直接链接" translate="no">​</a></h3>
-<p>最小可用条件：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Discourse AI plugin: enabled</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Default LLM model: configured</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">AI secret: present, but never printed</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">LLM validation: response status 200</span><br></div></code></pre></div></div>
-<p>在自托管环境里，key 应该进入 Discourse 自己的 secret store，或者进入服务级 <code>0600</code> secret 文件，再由部署脚本写入 Discourse；不要把 key 写进博客、项目报告、聊天记录或 PR。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第二步先开-helper-和-ai-bot">第二步：先开 Helper 和 AI Bot<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E7%AC%AC%E4%BA%8C%E6%AD%A5%E5%85%88%E5%BC%80-helper-%E5%92%8C-ai-bot" class="hash-link" aria-label="第二步：先开 Helper 和 AI Bot的直接链接" title="第二步：先开 Helper 和 AI Bot的直接链接" translate="no">​</a></h3>
-<p>这两项更像“人类可控的助手”：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ai_helper_enabled = true</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ai_bot_enabled = true</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ai_bot_enabled_llms includes the default LLM id</span><br></div></code></pre></div></div>
-<p>然后限制可用用户/组。早期建议先给管理员、维护者或小范围测试用户，而不是全站开放。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第三步再考虑-embeddings-和总结">第三步：再考虑 embeddings 和总结<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E7%AC%AC%E4%B8%89%E6%AD%A5%E5%86%8D%E8%80%83%E8%99%91-embeddings-%E5%92%8C%E6%80%BB%E7%BB%93" class="hash-link" aria-label="第三步：再考虑 embeddings 和总结的直接链接" title="第三步：再考虑 embeddings 和总结的直接链接" translate="no">​</a></h3>
-<p>AI Search、Related Topics 需要 embeddings；Summarize 需要 summary agent / LLM 设置。它们不是“打开 Discourse AI 就自动有”的能力。</p>
-<p>启用前要先回答：</p>
-<ul>
-<li class="">embeddings 由哪个 provider 提供？</li>
-<li class="">索引全站历史 topic 的成本和时间是多少？</li>
-<li class="">匿名用户是否能用 AI search？</li>
-<li class="">summary 是否允许普通用户触发？</li>
-<li class="">生成结果缓存多久？</li>
-<li class="">审计日志保留多久？</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第四步最后再开自动化和审核类能力">第四步：最后再开自动化和审核类能力<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E7%AC%AC%E5%9B%9B%E6%AD%A5%E6%9C%80%E5%90%8E%E5%86%8D%E5%BC%80%E8%87%AA%E5%8A%A8%E5%8C%96%E5%92%8C%E5%AE%A1%E6%A0%B8%E7%B1%BB%E8%83%BD%E5%8A%9B" class="hash-link" aria-label="第四步：最后再开自动化和审核类能力的直接链接" title="第四步：最后再开自动化和审核类能力的直接链接" translate="no">​</a></h3>
-<p>Spam Detection 和 AI Triage 能改 review / tag / category / hidden / flag 等状态，影响比 Helper 大很多。它们适合在规则明确后启用：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">先 dry-run 或低风险动作</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">再开放自动打标</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">最后才考虑自动隐藏、自动回复或升级审核</span><br></div></code></pre></div></div>
-<p>对于 Agent 社区，AI triage 很适合未来做“topic 路由”：把 topic 按内容打上 <code>route-infra</code>、<code>route-skill</code>、<code>status-waiting-human</code> 等标签。但这一步应该和人工审核、日志和 rollback 一起设计。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="本机实践我们验证了什么">本机实践：我们验证了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E6%9C%AC%E6%9C%BA%E5%AE%9E%E8%B7%B5%E6%88%91%E4%BB%AC%E9%AA%8C%E8%AF%81%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="本机实践：我们验证了什么的直接链接" title="本机实践：我们验证了什么的直接链接" translate="no">​</a></h2>
-<p>这次实践在 <code>zhihong.oray</code> 上的 ChatArch Discourse 服务完成。服务入口是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://discourse.public.wzhecnu.cn/</span><br></div></code></pre></div></div>
-<p>站内记录 topic：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://discourse.public.wzhecnu.cn/t/discourse-ai-2026-08-05/17</span><br></div></code></pre></div></div>
-<p>当前站点匿名访问该 topic 会跳登录页，所以公开博客只记录无敏感摘要；完整实践记录留在站内 <code>Agent Runs</code> 分类。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="状态快照">状态快照<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E7%8A%B6%E6%80%81%E5%BF%AB%E7%85%A7" class="hash-link" aria-label="状态快照的直接链接" title="状态快照的直接链接" translate="no">​</a></h3>
-<p>通过 Rails runner 读取非敏感状态，得到：</p>
-<table><thead><tr><th>项</th><th>当前值</th></tr></thead><tbody><tr><td><code>discourse-ai</code> plugin</td><td>enabled</td></tr><tr><td><code>ai_helper_enabled</code></td><td><code>true</code></td></tr><tr><td><code>ai_bot_enabled</code></td><td><code>true</code></td></tr><tr><td><code>ai_default_llm_model</code></td><td><code>1</code></td></tr><tr><td><code>ai_bot_enabled_llms</code></td><td><code>1</code></td></tr><tr><td><code>ai_embeddings_enabled</code></td><td><code>false</code></td></tr><tr><td><code>ai_summarization_enabled</code></td><td><code>false</code></td></tr><tr><td>默认 LLM</td><td><code>ChatArch Byted ark-code-latest</code> / OpenAI-compatible provider</td></tr><tr><td>companion bot user</td><td><code>ark-code-latest1</code></td></tr></tbody></table>
-<p>这里没有输出任何 API key、URL secret、admin password、session、cookie 或 token。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="最小-llm-调用">最小 LLM 调用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E6%9C%80%E5%B0%8F-llm-%E8%B0%83%E7%94%A8" class="hash-link" aria-label="最小 LLM 调用的直接链接" title="最小 LLM 调用的直接链接" translate="no">​</a></h3>
-<p>我们没有只看后台开关，而是通过 Discourse AI 自己的 LLM facade 做了一次最小调用：</p>
-<div class="language-ruby codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-ruby codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">DiscourseAi::Completions::Llm.proxy(model).generate(</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  prompt,</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  user: user,</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  max_tokens: 80,</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  feature_name: "chatarch_blog_practice",</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  feature_context: { task: "discourse_ai_blog", date: "2026-08-05" },</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">)</span><br></div></code></pre></div></div>
-<p>返回结果是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Discourse AI 已通过站点配置的 LLM 成功完成一次最小实践调用。</span><br></div></code></pre></div></div>
-<p>审计摘要：</p>
-<table><thead><tr><th>项</th><th>值</th></tr></thead><tbody><tr><td>Audit id</td><td><code>3</code></td></tr><tr><td>Feature</td><td><code>chatarch_blog_practice</code></td></tr><tr><td>Model</td><td><code>ark-code-latest</code></td></tr><tr><td>Response status</td><td><code>200</code></td></tr><tr><td>Request tokens</td><td><code>192</code></td></tr><tr><td>Response tokens</td><td><code>17</code></td></tr><tr><td>Duration</td><td><code>932 ms</code></td></tr></tbody></table>
-<p>这说明模型配置、Discourse AI 调用路径和审计日志链路都是真实工作的。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="可见实践回复">可见实践回复<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E5%8F%AF%E8%A7%81%E5%AE%9E%E8%B7%B5%E5%9B%9E%E5%A4%8D" class="hash-link" aria-label="可见实践回复的直接链接" title="可见实践回复的直接链接" translate="no">​</a></h3>
-<p>第二步，我们让 Discourse AI 根据当前站点状态生成 4 条中文实践建议，并把输出回写到上面的站内 topic。回写由模型 companion user <code>ark-code-latest1</code> 作为可见回复完成。</p>
-<p>审计摘要：</p>
-<table><thead><tr><th>项</th><th>值</th></tr></thead><tbody><tr><td>Topic</td><td><code>Discourse AI 实践记录：2026-08-05</code></td></tr><tr><td>Category</td><td><code>Agent Runs</code></td></tr><tr><td>Post</td><td><code>#2</code></td></tr><tr><td>Audit id</td><td><code>4</code></td></tr><tr><td>Feature</td><td><code>chatarch_blog_visible_practice</code></td></tr><tr><td>Model</td><td><code>ark-code-latest</code></td></tr><tr><td>Response status</td><td><code>200</code></td></tr><tr><td>Request tokens</td><td><code>334</code></td></tr><tr><td>Response tokens</td><td><code>260</code></td></tr><tr><td>Duration</td><td><code>6281 ms</code></td></tr></tbody></table>
-<p>Rails readback 也确认：topic 里有 2 个 post，实践回复包含 marker、feature name 和 response status 200。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这次没有验证什么">这次没有验证什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E8%BF%99%E6%AC%A1%E6%B2%A1%E6%9C%89%E9%AA%8C%E8%AF%81%E4%BB%80%E4%B9%88" class="hash-link" aria-label="这次没有验证什么的直接链接" title="这次没有验证什么的直接链接" translate="no">​</a></h2>
-<p>有些能力官方存在，但本站当前还没启用，因此不能写成“已经跑通”。</p>
-<table><thead><tr><th>功能</th><th>当前状态</th><th>为什么不宣称实测</th></tr></thead><tbody><tr><td>AI Search</td><td><code>ai_embeddings_enabled=false</code></td><td>语义搜索依赖 embeddings</td></tr><tr><td>Related Topics</td><td><code>ai_embeddings_enabled=false</code></td><td>相关话题同样依赖 embeddings</td></tr><tr><td>Summarize</td><td><code>ai_summarization_enabled=false</code></td><td>总结开关未启用，summary agent 未作为本次实践开放</td></tr><tr><td>Spam Detection</td><td>相关 AI agent disabled</td><td>会进入审核/处置流程，需单独设计策略</td></tr><tr><td>AI Triage</td><td>未启用自动化规则</td><td>会改分类、标签、隐藏、回复等状态，不能无审核开启</td></tr></tbody></table>
-<p>这点很重要：**安装了 Discourse AI plugin，不等于每一个 AI feature 都已经可用。**博客和报告应该分清“官方支持”“本站已启用”“本站已实测”三种状态。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="和-mattermost--hermes-怎么分工">和 Mattermost / Hermes 怎么分工<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E5%92%8C-mattermost--hermes-%E6%80%8E%E4%B9%88%E5%88%86%E5%B7%A5" class="hash-link" aria-label="和 Mattermost / Hermes 怎么分工的直接链接" title="和 Mattermost / Hermes 怎么分工的直接链接" translate="no">​</a></h2>
-<p>当前 ChatArch Agent Community 更适合采用双层结构：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Mattermost / realtime room</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 快速讨论、通知、@bot、短消息</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 适合 Hermes Gateway 或 Agent Router 做即时响应</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Discourse / topic space</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 长期讨论、任务记录、设计、决策、审计</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 适合 AI Helper、AI Bot、Summarize、Triage 做论坛内辅助</span><br></div></code></pre></div></div>
-<p>典型闭环可以是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">1. 人在 Mattermost 里快速提出问题</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">2. Agent Router 判断需要沉淀</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">3. 创建或更新 Discourse topic</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">4. Discourse AI 帮忙整理上下文、摘要和行动项</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">5. Hermes / Agent 执行任务，把结果回写到 topic</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">6. 人类确认 accepted / revise / reject</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">7. 结论同步到项目文档、ChatBoard 或博客</span><br></div></code></pre></div></div>
-<p>这样分工比“所有事情都塞进一个聊天频道”稳得多。实时平台解决响应速度，Discourse 解决上下文寿命，Hermes 解决任务执行。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="实践建议">实践建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E5%AE%9E%E8%B7%B5%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="实践建议的直接链接" title="实践建议的直接链接" translate="no">​</a></h2>
-<p>如果你也在自托管 Discourse 上启用 AI，我建议按下面顺序推进：</p>
-<ol>
-<li class=""><strong>先只跑 LLM validation</strong>：确认模型能从 Discourse 容器内访问，审计日志有 response status 200。</li>
-<li class=""><strong>先给小范围用户开 Helper / AI Bot</strong>：它们是低风险的人类辅助入口。</li>
-<li class=""><strong>让 AI 输出成为草稿，不要直接成为事实</strong>：summary、title、reply 都要经过人看一眼。</li>
-<li class=""><strong>再开 embeddings</strong>：为 AI Search 和 Related Topics 做准备，先评估索引成本。</li>
-<li class=""><strong>最后做 automation / triage</strong>：只有当分类、标签、审核规则稳定后，才让 AI 自动改状态。</li>
-<li class=""><strong>把所有实践写回 Discourse topic</strong>：每次启用一个 AI feature，就在 <code>Agent Runs</code> 或 <code>Decisions</code> 里留下记录。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="小结">小结<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E5%B0%8F%E7%BB%93" class="hash-link" aria-label="小结的直接链接" title="小结的直接链接" translate="no">​</a></h2>
-<p>Discourse AI 最有价值的地方，不是让论坛“看起来有 AI”，而是把 AI 放进一个有 topic、post、category、tag、review 和 audit log 的协作系统里。</p>
-<p>在 ChatArch 当前实践里，Discourse AI 已经能完成最小 LLM 调用和可见 topic 回复；Helper / Bot 可以作为第一阶段使用入口。Search、Related Topics、Summarize、Spam Detection、AI Triage 则需要继续补 embeddings、summary agent、审核规则和权限边界。</p>
-<p>所以它的定位应该是：<strong>让长期讨论空间更容易读、写、总结和路由；不要把它误当成实时 agent gateway，也不要把 AI 输出误当成未经审核的事实源。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="资料来源">资料来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/discourse-ai-practice-guide#%E8%B5%84%E6%96%99%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="资料来源的直接链接" title="资料来源的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://meta.discourse.org/t/discourse-ai/259214" target="_blank" rel="noopener noreferrer" class="">Discourse AI</a></li>
-<li class=""><a href="https://meta.discourse.org/t/enable-ai-bot/266012" target="_blank" rel="noopener noreferrer" class="">Discourse AI - AI bot</a></li>
-<li class=""><a href="https://meta.discourse.org/t/enable-ai-helper/283943" target="_blank" rel="noopener noreferrer" class="">Discourse AI - Helper</a></li>
-<li class=""><a href="https://meta.discourse.org/t/enable-ai-search/282420" target="_blank" rel="noopener noreferrer" class="">Discourse AI - AI search</a></li>
-<li class=""><a href="https://meta.discourse.org/t/discourse-ai-summarization/262711" target="_blank" rel="noopener noreferrer" class="">Discourse AI - Summarize</a></li>
-<li class=""><a href="https://meta.discourse.org/t/discourse-ai-spam-detection/343541" target="_blank" rel="noopener noreferrer" class="">Discourse AI - Spam detection</a></li>
-<li class=""><a href="https://meta.discourse.org/t/discourse-ai-ai-triage/281227" target="_blank" rel="noopener noreferrer" class="">Discourse AI - AI triage</a></li>
-<li class=""><a href="https://meta.discourse.org/t/enable-related-topics/281807" target="_blank" rel="noopener noreferrer" class="">Discourse AI - Related topics</a></li>
-<li class=""><a href="https://meta.discourse.org/t/discourse-ai-self-hosted-guide/259598" target="_blank" rel="noopener noreferrer" class="">Discourse AI - Self-Hosted Guide</a></li>
-<li class="">相关部署背景：<a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/chatarch-discourse-ai-community-usage">ChatArch Agent Community：Discourse + AI 社区使用说明</a></li>
-</ul>]]></content:encoded>
-            <category>discourse</category>
-            <category>ai</category>
-            <category>agent</category>
-            <category>self-hosted</category>
         </item>
     </channel>
 </rss>
