@@ -8,10 +8,10 @@ const slides = [
     title: 'Agent Community Quick Start',
     subtitle: '从机器人群聊到可治理议事厅',
     description:
-      '一个纯静态 Web Slides demo：用 scene / beat / URL state 把 Agent Discussion Community 的核心论点拆成可演示、可 review、可发布的切片。',
+      '一个 frontend-slides 风格改造后的纯静态 Web Slides demo：固定 1920×1080 stage、scene / beat / URL state，并新增 frontend-slides skill 介绍页。',
     href: '/slides/agent-community/',
-    meta: 'Materials page · static deck · 9 scenes',
-    status: 'quick start demo',
+    meta: 'Materials page · fixed-stage static deck · 10 scenes',
+    status: 'frontend-slides remodel',
   },
 ];
 
