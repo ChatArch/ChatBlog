@@ -98,7 +98,7 @@
 [10] B站专栏图片上传：<a href="https://open.bilibili.com/doc/4/0eaa4d3e-c4c0-f874-6f3c-e083aa939a1b" target="_blank" rel="noopener noreferrer" class="">open.bilibili.com/doc/4/0eaa4d3e-c4c0-f874-6f3c-e083aa939a1b</a>
 [11] B站官方签名算法 C# Demo：<a href="https://github.com/bilibili-openplatform/SignatureAlgorithm_DotnetDemo" target="_blank" rel="noopener noreferrer" class="">github.com/bilibili-openplatform/SignatureAlgorithm_DotnetDemo</a>
 [12] B站官方开放平台 C# Demo：<a href="https://github.com/bilibili-openplatform/OpenPlatform_CSharpDemo" target="_blank" rel="noopener noreferrer" class="">github.com/bilibili-openplatform/OpenPlatform_CSharpDemo</a>
-[13] Wechatsync：<a href="https://github.com/wechatsync/Wechatsync" target="_blank" rel="noopener noreferrer" class="">github.com/wechatsync/Wechatsync</a>
+[13] Wechatsync v2 Bilibili adapter：<a href="https://github.com/wechatsync/Wechatsync/blob/v2/packages/core/src/adapters/platforms/bilibili.ts" target="_blank" rel="noopener noreferrer" class="">github.com/wechatsync/Wechatsync/blob/v2/packages/core/src/adapters/platforms/bilibili.ts</a>
 [14] biliup：<a href="https://github.com/biliup/biliup" target="_blank" rel="noopener noreferrer" class="">github.com/biliup/biliup</a>
 [15] biliup-rs：<a href="https://github.com/biliup/biliup-rs" target="_blank" rel="noopener noreferrer" class="">github.com/biliup/biliup-rs</a></p>]]></content:encoded>
             <category>chatpost</category>
