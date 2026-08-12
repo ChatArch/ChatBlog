@@ -1,0 +1,380 @@
+---
+title: "Frontend Slides：zarazhangrui 的 AI Agent HTML 演示文稿 Skill 详解"
+date: 2026-08-12
+slug: zarazhangrui-frontend-slides-skill
+tags: [slides, frontend, claude-code, html, skill, chatarch]
+description: 详细拆解 zarazhangrui/frontend-slides：它为什么不是一个普通 PPT 模板，而是一套面向 AI coding agent 的零依赖 HTML 演示文稿 skill；以及它如何辅助 ChatBlog 继续完善 Web Slides 工作流。
+---
+
+# Frontend Slides：zarazhangrui 的 AI Agent HTML 演示文稿 Skill 详解
+
+ChatBlog 已经有一个 [Slides](https://arch.gh.wzhecnu.cn/ChatBlog/slides) 入口，也已经有一篇文章讨论 Patrick Fu 那套更工程化的 [Frontend Harness Slides 工作流](https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow)。那篇文章的重点是：把一套演示文稿做成小型前端 artifact，用 scene / beat / URL state / build / preview / readback 来治理。
+
+这次看的 `zarazhangrui/frontend-slides` 是另一个互补方向：它不是 React/Vite workbench，也不是一个大而全的 slides 平台，而是一个 **AI coding agent skill**。它把“做一套好看的 Web Slides”拆成一套可被 Claude Code、Codex、Kimi Code、OpenCode、Gemini CLI 等本地 coding agent 读取和执行的流程：先看内容，再做 3 张视觉 preview，让用户用眼睛选方向，最后生成一个零依赖、固定 16:9、可分享、可导出 PDF 的单 HTML 演示文稿。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+`zarazhangrui/frontend-slides` 最值得学习的不是某个模板，而是它把 presentation 生成变成了 **agent-readable skill + progressive disclosure design system + fixed-stage single HTML artifact**。对 ChatBlog 来说，它可以补上“从博客/调研快速生成可看的 slides 草稿”和“用视觉 preview 选风格”的能力；但正式纳入 ChatBlog 时，仍要走我们自己的 Git / PR / Docusaurus / 生产 readback 发布链路。
+:::
+
+:::info 证据口径
+本文快照时间为 **2026-08-12 16:22 CST**。证据来自 `zarazhangrui/frontend-slides` 的 GitHub API、README、`SKILL.md`、`STYLE_PRESETS.md`、`html-template.md`、`viewport-base.css`、`animation-patterns.md`、`bold-template-pack/README.md`、`bold-template-pack/selection-index.json`、`.claude-plugin/marketplace.json`、`scripts/` 目录，以及 ChatBlog 当前 `Slides` 页面和 `Agent Community Quick Start` 静态 deck 源码。本文只做静态读取，没有安装、克隆或运行该仓库。
+:::
+
+## 一、这个仓库到底是什么
+
+先给它一个准确定位：`zarazhangrui/frontend-slides` 是一个 **面向 coding agent 的 presentation skill**。
+
+它的 README 第一段写得很直接：这是一个用于创建 HTML presentations 的 coding-agent skill，可以从零生成，也可以把 PowerPoint 转成 web；它被打包成 Claude Code plugin，同时核心 `SKILL.md` 也可以被其它有文件系统和 shell 访问能力的 coding agent 读取。
+
+仓库快照如下：
+
+| 项 | 快照 |
+| --- | --- |
+| GitHub | https://github.com/zarazhangrui/frontend-slides |
+| 描述 | Create beautiful slides on the web using a coding agent's frontend skills |
+| License | MIT |
+| 默认分支 | `main` |
+| 创建时间 | 2026-01-28 |
+| 最近 push | 2026-06-23 |
+| Stars / Forks / Open issues | 27,350 / 2,217 / 65 |
+| GitHub topics | `ai-slides`, `claude-code`, `claude-skill`, `html`, `presentation`, `slides`, `vibe-coding` 等 |
+| 主要语言统计 | JavaScript、Shell、Python、CSS |
+
+从文件结构看，它也不像一个普通前端 app。根目录没有 `package.json` 这种应用入口，而是围绕 skill 运行时需要读的材料组织：
+
+| 文件 / 目录 | 角色 |
+| --- | --- |
+| `SKILL.md` | 核心工作流：模式判断、提问、视觉 preview、生成、PPT 转换、交付、分享和导出。 |
+| `STYLE_PRESETS.md` | 12 个安全基础视觉 preset：暗色、亮色、专业、复古、终端、纸张等。 |
+| `bold-template-pack/selection-index.json` | 34 个更强风格模板的轻量索引，只在 style discovery 时读取元数据。 |
+| `bold-template-pack/templates/*/preview.md` | 被 shortlist 后才读的小 preview card。 |
+| `bold-template-pack/templates/*/design.md` | 用户选定某个 bold template 后才读的完整设计系统。 |
+| `viewport-base.css` | 强制固定 16:9 stage 的基础 CSS，生成最终 deck 时要完整内联。 |
+| `html-template.md` | 单 HTML deck 的架构、JS controller、inline editing、图片处理和代码规范。 |
+| `animation-patterns.md` | 动效和情绪的映射：cinematic、techy、playful、professional、editorial 等。 |
+| `scripts/extract-pptx.py` | 从 `.pptx` 提取文字、图片、speaker notes，用于 PPT 转 web。 |
+| `scripts/deploy.sh` | 把 HTML 或目录部署到 Vercel。 |
+| `scripts/export-pdf.sh` | 用 Playwright 截每页 1920×1080 图并合成 PDF。 |
+
+所以它不是“下载后启动一个服务”，而更像一套给 Agent 使用的设计与生成手册。Agent 读 `SKILL.md`，再按当前阶段选择性读取支持文件，最后产出 HTML。
+
+## 二、核心心智：不是让用户描述风格，而是让用户看见风格
+
+`frontend-slides` 的核心产品判断是：大多数非设计用户很难用抽象词准确说出自己想要什么风格，但他们能看懂“我喜欢 A，不喜欢 B”。所以它把 style selection 做成 **show, don't tell**。
+
+它默认流程不是问一堆“你喜欢极简还是现代”这种选择题，而是生成 3 张真实 title-slide preview：
+
+1. 一个来自 `STYLE_PRESETS.md` 的安全 preset；
+2. 至少一个来自 `bold-template-pack` 的 bold template；
+3. 一个 wildcard，可以是第二个 bold template，也可以是 Agent 自己根据内容设计的 custom direction。
+
+这里的重点是“真实 title slide”。`SKILL.md` 明确要求 preview 不能像诊断卡片，不能写 `Option A/B/C`、`template`、`preview.md`、`generated from` 这种内部流程字样，也不能把用户需求说明直接写到 slide 上。用户看到的应该是一张像正式 deck 第一页的东西。
+
+这点对我们很重要。ChatBlog 后续如果把文章变 slides，不应该直接把正文段落塞进一个默认模板，而应该先进入一个视觉选择阶段：
+
+```text
+文章 / 调研 / 项目结果
+  -> deck brief
+  -> 3 张真实 visual preview
+  -> 选定风格
+  -> 完整 deck
+```
+
+这比“先生成 20 页，再让用户挑毛病”更省时间，也更容易避免 AI 常见的紫色渐变、白底卡片、Inter 字体、通用 dashboard 风。
+
+## 三、固定 16:9 stage 是非协商项
+
+`frontend-slides` 对输出几何有一个硬约束：**每套 deck 都是 1920×1080 固定 stage，整个 stage 根据浏览器窗口等比缩放**。
+
+`viewport-base.css` 里定义了这套基础模型：
+
+```text
+deck-viewport = fixed inset 0, 占满浏览器窗口
+deck-stage    = absolute 1920px × 1080px, transform-origin: 0 0
+slide         = absolute inset 0, 1920px × 1080px
+```
+
+也就是说，slide 内容不是普通网页布局，不应该在手机上改成另一个响应式排版。它更像舞台：舞台的坐标不变，观众屏幕大小变化时整体缩放、留黑边或留白边。
+
+这条规则解决了 Web Slides 里一个很常见的问题：如果每张 slide 都写成响应式网页，投影、截图、PDF、手机预览、CI 检查看到的布局可能完全不一样。固定 stage 后，排版、标注、箭头、图表和 reveal 位置都稳定了。
+
+同时，`SKILL.md` 对 slide 切换也有明确坑位提醒：不要用 `display: none` / `display: block` 控制 slide 显隐，而要用 `.active` / `.visible` 配合 `visibility`、`opacity`、`pointer-events`。原因是后续 `.slide-content { display: flex; }` 之类布局类可能覆盖 display，把所有 slide 一次性显示出来。
+
+这些看起来像 CSS 小规则，但实际是 presentation artifact 的底层契约。ChatBlog 现在的 `Agent Community Quick Start` deck 已经有 scene / beat / URL state，但它是一个轻量静态 HTML demo，舞台尺寸更多依赖外层 `aspect-ratio` 和 `clamp()`。如果以后要继续打磨，我们可以借 `frontend-slides` 把它升级为更严格的 1920×1080 fixed-stage 模型。
+
+## 四、它如何避免“AI 味”的视觉输出
+
+`frontend-slides` 对审美的要求写得很直白：避免 generic “AI slop”。它点名了几类常见问题：
+
+- 过度使用 Inter、Roboto、Arial、system font；
+- 白底紫色渐变和泛化的科技卡片；
+- 可预测的布局组件；
+- 任何看起来像“模板生成”而不是“为这个内容设计”的输出。
+
+为了让 Agent 不只会说“要有设计感”，它把审美拆成了可执行材料：
+
+### 1. 安全 preset
+
+`STYLE_PRESETS.md` 提供 12 个基础视觉方向，比如：
+
+| 类别 | 示例 |
+| --- | --- |
+| Dark Themes | Bold Signal、Electric Studio、Creative Voltage、Dark Botanical |
+| Light Themes | Notebook Tabs、Pastel Geometry、Split Pastel、Vintage Editorial |
+| Specialty | Neon Cyber、Terminal Green、Swiss Modern、Paper & Ink |
+
+每个 preset 都给出 vibe、layout、typography、colors、signature elements。Agent 不是凭感觉“做个暗色科技风”，而是有具体字体、色板、构图和标志性元素可用。
+
+### 2. Bold Template Pack
+
+更强的一层是 `bold-template-pack`。它把 `beautiful-html-templates` 里的 34 个设计系统引入 skill，但不是一次性全部塞给 Agent。正确读取顺序是：
+
+```text
+selection-index.json
+  -> shortlist by mood / tone / best_for / avoid_for / formality / density / scheme
+  -> 只读 shortlist 的 preview.md
+  -> 用户选中后，只读那一个 design.md
+```
+
+这就是 progressive disclosure。好处是：Agent 一开始不会被 34 套完整 design doc 淹没，也不会把所有模板胡乱混在一起。每次只把“当前决策需要的信息”放进上下文。
+
+### 3. Wildcard 自定义设计
+
+它还保留一个 wildcard slot。也就是说，如果当前内容有更具体的视觉机会，Agent 不必强行套模板，可以自己设计一个更贴合内容的方向。但 custom wildcard 也有约束：要有独特 typography、稳定 palette、可扩展 layout system、一个清晰的视觉 thesis，并且不要把 `custom`、`wildcard`、`template` 这些流程标签渲染到 slide 上。
+
+这套机制对 ChatBlog 特别有用。我们的内容经常是技术调研、Agent 工作流、服务架构、社区协作、ASR/视频/论文复现等。如果每篇都套一个 generic tech deck，会很快审美疲劳。`frontend-slides` 提醒我们：先让内容决定视觉隐喻，再让模板服务表达。
+
+## 五、工作流不是“生成 HTML”这么简单
+
+`SKILL.md` 把任务拆成 6 个 phase：
+
+| Phase | 作用 |
+| --- | --- |
+| Phase 0: Detect Mode | 判断是新建 presentation、PPT conversion，还是增强已有 HTML deck。 |
+| Phase 1: Content Discovery | 一次性问清 purpose、length、content readiness、density，并整理图片。 |
+| Phase 2: Style Discovery | 生成 3 张视觉 preview，让用户选风格或混合。 |
+| Phase 3: Generate Presentation | 读取 `html-template.md`、`viewport-base.css`、`animation-patterns.md`，生成完整单 HTML。 |
+| Phase 4: PPT Conversion | 用 `extract-pptx.py` 提取文本、图片、speaker notes，再进入 style selection。 |
+| Phase 5: Delivery | 打开 HTML，说明文件位置、风格、页数、导航、可编辑方式。 |
+| Phase 6: Share & Export | 可选部署到 URL 或导出 PDF。 |
+
+这里有几个值得单独拿出来的设计点。
+
+### 1. 先问密度，再决定页数
+
+它把 presentation 分成两种密度模式：
+
+| 模式 | 适合 | 设计行为 |
+| --- | --- | --- |
+| Low density / speaker-led | 公开演讲、keynote、现场讲解 | 一页一个想法，大字、强视觉层次、1-3 个 bullet，不够就拆更多页。 |
+| High density / reading-first | 报告、异步 review、内部材料 | 更自解释，可用表格、grid、annotation、4-8 个 bullet，但不能拥挤。 |
+
+这比“做 10 页 PPT”更合理。因为 10 页对现场演讲和异步阅读完全不是同一个设计任务。
+
+### 2. 修改已有 deck 时先查容量
+
+Mode C 是 enhancement。它提醒 Agent：在已有 slide 上加文字或图片前，先数元素、检查密度和空间；如果加一张图会挤爆 1920×1080 stage，就应该拆成新 slide，而不是硬塞进去。
+
+这正好对应我们“完善 ChatBlog slides”的需求。完善不是无脑加内容，而是每次都要问：这张 slide 是否已经达到表达容量？新增信息应该变成 beat、变成新 scene，还是替换掉旧元素？
+
+### 3. Inline editing 是后置能力
+
+`html-template.md` 里把 inline editing 作为 post-draft affordance：用户看过 draft 后，可以 hover 左上角或按 `E` 进入编辑模式，点文字直接改，`Ctrl+S` 保存。它明确说不要在 Phase 1 就问用户要不要 inline editing，因为用户没看到稿子前不会知道自己是否需要。
+
+对 ChatBlog 来说，这个能力可以作为草稿阶段辅助：先让人直接在浏览器里改字、调句子，再把稳定修改回写到源文件。但正式进入 ChatBlog repo 后，最终仍要以 Git diff 为准，不能只依赖 localStorage 里的浏览器编辑状态。
+
+### 4. 分享和导出是交付的一部分
+
+它提供两条后处理路径：
+
+- `scripts/deploy.sh`：把 HTML 或目录部署到 Vercel，拿到可分享 URL；
+- `scripts/export-pdf.sh`：用 Playwright 逐页截图，合成 PDF。
+
+这说明它的交付不是“我写了一个 HTML 文件”就结束，而是要考虑别人怎么打开、怎么转发、怎么存档。
+
+不过，放到 ChatArch/ChatBlog，我们不能直接照搬 Vercel 作为默认发布面。我们的正式路径应该是：
+
+```text
+ChatBlog branch
+  -> PR
+  -> Docusaurus build
+  -> Preview URL
+  -> merge
+  -> production URL readback
+```
+
+Vercel 可以用于个人临时分享，但 ChatBlog 的 canonical artifact 应该回到 `ChatArch/ChatBlog`。
+
+## 六、和 Patrick 的 Frontend Harness Slides 有什么区别
+
+这两个项目都在说 Web Slides，但层级不同。
+
+| 维度 | `frontend-harness-slides` | `zarazhangrui/frontend-slides` |
+| --- | --- | --- |
+| 核心定位 | Web deck 工程化 harness / scene-beat 工作流 | AI Agent presentation skill / 单 HTML 生成流程 |
+| 主要产物 | 方法论、workbench、demo、React/Vite/Tailwind/Playwright 参考 | `SKILL.md`、style presets、bold templates、HTML template、脚本 |
+| 输出形态 | 更像小型前端项目，可测试、可部署、可持续演进 | 零依赖 self-contained HTML，快速生成和分享 |
+| 强项 | URL-addressable state、player/stage/navigation/tests、生产化治理 | 视觉探索、反 AI-slop、PPT 转网页、单文件便携、可读 skill 流程 |
+| 风险 | 对单场 talk 可能太重 | 大型长期 deck 会变成单文件维护压力 |
+| 对 ChatBlog 的价值 | 建立长期 slides infra 和质量门槛 | 快速把文章/调研变成可看的 deck 草稿，并提升视觉质量 |
+
+所以它们不是替代关系。一个偏“工程治理”，一个偏“AI 辅助视觉生产”。
+
+更合理的组合方式是：
+
+```text
+frontend-slides
+  -> 快速生成视觉方向、单 HTML 草稿、PPT 转换、PDF/临时 URL
+
+frontend-harness / ChatBlog slides infra
+  -> 稳定 scene/beat registry、可测试 player、PR preview、生产部署、长期维护
+```
+
+如果只要做一次 8 页内部分享，`frontend-slides` 的单 HTML 可能就够了。如果这套 slides 要成为 ChatBlog 的公开栏目、要和文章互相回链、要长期维护，那就应该把它接回我们的 repo 流程。
+
+## 七、它能怎么辅助我们完善 ChatBlog Slides
+
+当前 ChatBlog 已经有 `/slides` 页面，里面有一个 `Agent Community Quick Start`。这个 deck 是纯静态 HTML，支持 scene / beat URL state，材料页里也明确说它是一个 quick start demo。
+
+`frontend-slides` 可以在三个层面帮助我们继续完善。
+
+### 1. 作为“文章转 slides”的第一道流程
+
+以后每篇适合展示的 ChatBlog 文章，可以先跑一个 lightweight slides pass：
+
+```text
+1. 读文章，提炼 thesis、audience、density、5-9 个 scenes。
+2. 用 frontend-slides 的方式生成 3 张 title / key-scene preview。
+3. 用户选风格，确定是 speaker-led 还是 reading-first。
+4. 生成单 HTML draft。
+5. 浏览器检查 overflow、panel overlap、键盘导航、移动端可见性。
+6. 如果只是临时展示，直接分享 HTML / PDF。
+7. 如果要进 ChatBlog，迁移到 static/slides/... 并补 materials page、PR、Preview、production readback。
+```
+
+这条路线可以降低创建第一版 deck 的心理门槛。先让内容“长出一个可看的样子”，再决定是否工程化。
+
+### 2. 用视觉 preview 改造现有 Agent Community deck
+
+`Agent Community Quick Start` 现在已经有 9 scenes，内容结构是有的。下一步不一定要先大改代码，可以先让 `frontend-slides` 做 3 张视觉方向 preview：
+
+- 一个偏 hand-drawn / whiteboard 的版本，保留“议事厅”的手写感；
+- 一个偏 governance / system diagram 的版本，突出 topic、profile、human admin、ledger；
+- 一个偏 editorial manifesto 的版本，适合对外展示“不是机器人群聊”的核心立场。
+
+选中后再决定是否把现有 deck 重写成 1920×1080 fixed-stage 单 HTML，或者升级成更正式的 React/Vite starter。
+
+### 3. 把 slide 维护变成小型变更流程
+
+`frontend-slides` 里 Mode C 的修改规则可以直接变成我们的 slides 维护规范：
+
+| 变更 | 推荐处理 |
+| --- | --- |
+| 改一句文案 | 直接改 HTML / scene source，跑 build 和关键 frame 检查。 |
+| 增加一个观点 | 先判断是 beat 还是新 scene，不要硬塞进旧页。 |
+| 加截图或架构图 | 先检查当前 slide 容量；必要时拆页。 |
+| 换视觉风格 | 先做 3 张 preview，再批量调整。 |
+| 发布到 ChatBlog | 走 PR、Preview、生产 readback，不把 localhost 当交付。 |
+
+这能防止 slides 从“快速 demo”变成“越来越乱的 HTML 文件”。
+
+## 八、适合和不适合的场景
+
+我会把 `frontend-slides` 放在这个位置：
+
+### 适合
+
+- 把博客、调研、项目总结快速变成 Web Slides；
+- 需要 2-3 个视觉方向给用户选择；
+- 需要一个不依赖 npm / bundler / framework 的单 HTML artifact；
+- 想把 `.pptx` 内容迁移成可在浏览器里继续改造的 web deck；
+- 做一次 talk、pitch、课程、内部同步、项目 showcase；
+- 需要 PDF 截图版归档。
+
+### 不适合
+
+- 多人长期维护的大型 slides 系统；
+- 需要复杂路由、数据加载、跨 deck 组件复用的 gallery；
+- 必须保留 PowerPoint 原生编辑体验的团队；
+- 对 CSS/HTML 维护完全无能力且没有 Agent 辅助的用户；
+- 对字体、资源、截图、部署都有严格内网合规要求但未建立发布流程的场景。
+
+最重要的边界是：`frontend-slides` 生成的是 **Web artifact**，不是 PowerPoint 原生对象。它可以导出 PDF，可以从 PPT 提取内容，但它的主战场是浏览器。
+
+## 九、给 ChatBlog 的落地建议
+
+我建议把它接入 ChatBlog Slides 的方式分成三个层级。
+
+### Level 1：作为 prompt / skill 参考
+
+短期最简单：当我们要把某篇文章做成 slides 时，直接按 `frontend-slides` 的结构给 Agent 一个明确任务：
+
+```text
+请用 frontend-slides 的方式，把这篇 ChatBlog 文章做成 Web Slides 草稿。
+
+要求：
+1. 先给 deck brief：audience、goal、density、delivery target。
+2. 先生成 3 个视觉方向说明，每个方向对应一张 title/key-scene preview。
+3. 选定风格后，输出 fixed 1920×1080 stage 的单 HTML deck。
+4. 支持 ArrowLeft / ArrowRight / Space 导航。
+5. 支持 URL state：?scene=<n>&beat=<m>。
+6. 所有关键文字必须是 HTML/CSS/SVG 可编辑文本，不要烘焙进图片。
+7. 完成后做浏览器检查：console、overflow、panel overlap、direct URL、移动端可见性。
+```
+
+这一步不需要改 ChatBlog infra，只是改我们的执行习惯。
+
+### Level 2：形成 ChatBlog slides 草稿目录
+
+当某个 deck 值得进入 ChatBlog，可以放到：
+
+```text
+static/slides/<topic>/deck/index.html
+src/pages/slides/<topic>/index.tsx
+```
+
+材料页负责解释 deck 的背景和结构，HTML deck 负责演示。提交时必须跑 Docusaurus build，并在 PR Preview 和生产 URL 上读回。
+
+### Level 3：沉淀成 ChatArch Web Slides Starter
+
+如果我们后续会频繁做 slides，就不要每次从单 HTML 手写开始。可以把 `frontend-slides` 的视觉 discovery 和 Patrick-style harness 的工程契约合并成一个 ChatArch starter：
+
+```text
+content brief
+  -> visual preview trio
+  -> scene/beat registry
+  -> fixed 1920×1080 stage
+  -> player/navigation/input isolation
+  -> static deck or React/Vite deck
+  -> build / preview / production readback
+```
+
+`frontend-slides` 贡献的是前半段：如何让 Agent 先理解内容、探索风格、避免 AI-slop、生成可看的 HTML。ChatBlog infra 贡献的是后半段：如何让它成为可维护、可审查、可发布的公共知识 artifact。
+
+## 十、小结
+
+`zarazhangrui/frontend-slides` 的价值可以压缩成三句话：
+
+1. 它把做 slides 的工作从“套模板”改成了 **agent-readable workflow**：内容发现、视觉 preview、风格选择、生成、交付、分享。
+2. 它把输出从“网页随便排一下”约束成 **固定 1920×1080 stage 的单 HTML presentation artifact**：可打开、可演示、可截图、可导出 PDF。
+3. 它把审美从“用户先说清楚风格”改成 **show, don't tell**：先给真实 preview，让用户通过比较决定方向。
+
+对 ChatBlog 来说，它不是要替代现有 Slides 页面，也不是替代 Patrick-style harness。它更像一个前置加速器：帮我们把文章、调研和项目成果快速变成第一版可看的 Web Slides，再把成熟内容纳入 ChatBlog 的 PR、Preview、生产 readback 流程。
+
+如果说 Patrick 的那套方法提醒我们“Slides 也应该像软件一样可测试、可发布、可维护”，那么 `frontend-slides` 提醒我们另一件事：**在进入工程治理前，Slides 首先要让人愿意看。**
+
+## 主要来源
+
+- `zarazhangrui/frontend-slides`: https://github.com/zarazhangrui/frontend-slides
+- README: https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/README.md
+- `SKILL.md`: https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/SKILL.md
+- `STYLE_PRESETS.md`: https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/STYLE_PRESETS.md
+- `html-template.md`: https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/html-template.md
+- `viewport-base.css`: https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/viewport-base.css
+- `animation-patterns.md`: https://raw.githubusercontent.com/zarazhangrui/frontend-slides/main/animation-patterns.md
+- Bold Template Pack: https://github.com/zarazhangrui/frontend-slides/tree/main/bold-template-pack
+- Claude Code marketplace metadata: https://github.com/zarazhangrui/frontend-slides/blob/main/.claude-plugin/marketplace.json
+- ChatBlog Slides: https://arch.gh.wzhecnu.cn/ChatBlog/slides
+- Frontend Harness Slides 旧文: https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow
