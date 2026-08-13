@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">DeepSeek Harness agent runtime architecture</title>
+  <desc id="desc">A layered architecture diagram showing UI and CLI surfaces, profile and bundle composition, Cordis plugin tree, core agent runtime, capability seams, and providers.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+    <style>
+      .title{font:700 34px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#f8fafc}
+      .subtitle{font:500 17px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#cbd5e1}
+      .box{rx:22;filter:url(#shadow)}
+      .h{font:700 20px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#fff}
+      .t{font:500 15px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#e2e8f0}
+      .s{font:500 13px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;fill:#cbd5e1}
+      .arrow{stroke:#93c5fd;stroke-width:3;fill:none;marker-end:url(#arrow)}
+      .dash{stroke:#64748b;stroke-width:2;fill:none;stroke-dasharray:8 8}
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#93c5fd"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <text x="70" y="66" class="title">DeepSeek Harness：模型之外的 Agent Runtime</text>
+  <text x="70" y="100" class="subtitle">Web UI / Headless CLI 只是入口；核心是可组合、可替换、可扩展的 Cordis 插件树。</text>
+
+  <rect x="70" y="145" width="250" height="130" fill="#2563eb" class="box"/>
+  <text x="95" y="182" class="h">入口层</text>
+  <text x="95" y="214" class="t">Web UI</text>
+  <text x="95" y="240" class="t">Headless CLI</text>
+  <text x="95" y="266" class="s">人类任务 / 自动化调用</text>
+
+  <rect x="390" y="145" width="280" height="130" fill="#7c3aed" class="box"/>
+  <text x="415" y="182" class="h">组合层</text>
+  <text x="415" y="214" class="t">profile / bundle / patch</text>
+  <text x="415" y="240" class="t">dsh-base / web-app / headless</text>
+  <text x="415" y="266" class="s">启动时拼出插件树</text>
+
+  <rect x="750" y="145" width="460" height="130" fill="#0f766e" class="box"/>
+  <text x="775" y="182" class="h">Cordis 插件树</text>
+  <text x="775" y="214" class="t">services + typed events + reversible effects</text>
+  <text x="775" y="240" class="t">system prompt / tools / session / llm / policy</text>
+  <text x="775" y="266" class="s">新增能力 = mount 一个插件，而不是改一个“大核心”</text>
+
+  <path d="M320 210 C345 210 365 210 390 210" class="arrow"/>
+  <path d="M670 210 C700 210 720 210 750 210" class="arrow"/>
+
+  <rect x="90" y="350" width="1090" height="235" rx="28" fill="#1e293b" stroke="#334155" stroke-width="2" filter="url(#shadow)"/>
+  <text x="125" y="390" class="h">一次 turn/step 的内部路径</text>
+
+  <rect x="125" y="420" width="145" height="88" rx="18" fill="#334155"/>
+  <text x="150" y="454" class="t">Session Log</text>
+  <text x="150" y="481" class="s">durable events</text>
+
+  <rect x="315" y="420" width="155" height="88" rx="18" fill="#334155"/>
+  <text x="342" y="454" class="t">Prompt</text>
+  <text x="342" y="481" class="s">sections + tools</text>
+
+  <rect x="515" y="420" width="145" height="88" rx="18" fill="#334155"/>
+  <text x="548" y="454" class="t">LLM</text>
+  <text x="548" y="481" class="s">adapter seam</text>
+
+  <rect x="705" y="420" width="170" height="88" rx="18" fill="#334155"/>
+  <text x="733" y="454" class="t">Tool Pipeline</text>
+  <text x="733" y="481" class="s">pre / execute / post</text>
+
+  <rect x="920" y="420" width="220" height="88" rx="18" fill="#334155"/>
+  <text x="950" y="454" class="t">Providers</text>
+  <text x="950" y="481" class="s">fs / shell / web / subagent</text>
+
+  <path d="M270 464 H315" class="arrow"/>
+  <path d="M470 464 H515" class="arrow"/>
+  <path d="M660 464 H705" class="arrow"/>
+  <path d="M875 464 H920" class="arrow"/>
+  <path d="M1030 508 C1030 552 200 552 200 508" class="dash"/>
+  <text x="430" y="565" class="s">tool/result、assistant/chunk 等事实回到 session/event，UI 和 replay 都从日志投影</text>
+
+  <rect x="95" y="625" width="330" height="46" rx="14" fill="#0b1220" stroke="#475569"/>
+  <text x="118" y="654" class="s">核心判断：DeepSeek Harness 是 agent 运行时，不只是一个聊天页面。</text>
+  <rect x="455" y="625" width="345" height="46" rx="14" fill="#0b1220" stroke="#475569"/>
+  <text x="478" y="654" class="s">扩展判断：system prompt、tools、provider、policy 都是插件贡献。</text>
+  <rect x="830" y="625" width="350" height="46" rx="14" fill="#0b1220" stroke="#475569"/>
+  <text x="853" y="654" class="s">安全判断：能读写文件和执行命令，不能裸露成公共服务。</text>
+</svg>

@@ -1,0 +1,267 @@
+---
+title: "DeepSeek Harness 是什么：一个 Agent Runtime 的架构与代码阅读"
+date: 2026-08-14
+slug: deepseek-harness-agent-runtime-architecture
+tags: [deepseek, agent, architecture, coding-agent]
+description: 从官方仓库、npm 包、架构文档和源码结构出发，解释 DeepSeek Harness 为什么不是普通聊天网页，而是一个由 profile、bundle、patch、Cordis 插件树、工具执行管线和 session event log 组成的 Agent Runtime。
+---
+
+如果只看名字，DeepSeek Harness 很容易被误解成“DeepSeek 出了一个聊天网页”。但真正把它跑起来、读完官方架构文档和源码结构之后，我觉得更准确的描述是：**DeepSeek Harness 是 DeepSeek 官方开源的 Agent Runtime。**
+
+模型是“大脑”；Harness 提供的是“手、眼睛、工作台、工具系统、权限边界、会话日志和 UI/CLI 入口”。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+DeepSeek Harness 的重点不是聊天界面，而是把模型、workspace、文件系统、shell、Web、子 Agent、权限审批、system prompt 和 session log 组织成一棵可组合的 Cordis 插件树。它更像一个 agent runtime，而不是一个单纯的 Chat UI。
+:::
+
+![DeepSeek Harness Agent Runtime 架构图](/img/deepseek-harness/agent-runtime-architecture.svg)
+
+## 先回答：它到底是什么？
+
+官方仓库是 `deepseek-ai/deepseek-harness`，npm 包是 `@deepseek-ai/dsh`。[1][2] 我们检索时，npm `latest` / `next` 都指向 `0.1.0-rc.6`；仓库使用 MIT License。[1]
+
+从用户视角看，它有两个入口：
+
+1. **Web UI**：像一个可以选 workspace、发任务、观察工具调用的工作台；
+2. **Headless CLI**：可以从命令行直接让 agent 跑一个一次性任务。
+
+但从源码视角看，Web UI 和 CLI 都只是 surface。真正的主体是下面这组运行时机制：
+
+- 用 **profile / bundle / patch** 决定启动哪些插件；[4]
+- 用 **Cordis 插件树**承载服务、事件和生命周期；[3]
+- 用 **system prompt assembly** 让插件贡献模型上下文；[6]
+- 用 **tool registry / execution pipeline** 让模型看见、调用并被约束地执行工具；[5]
+- 用 **session/event log** 记录 assistant chunk、tool call、tool result 等事实；[7]
+- 用 provider adapter 接入 DeepSeek 或其他模型后端；[3]
+- 用 MCP、workflow、subagent、sandbox、approval 等插件扩展能力边界。[3][7]
+
+所以一句话讲人话版：
+
+> DeepSeek Harness 是一个“让模型在项目里干活”的运行框架。它把模型调用、文件读写、命令执行、工具审批、上下文注入、会话记录和 UI 展示串成一个可扩展系统。
+
+## 和普通 ChatGPT 网页有什么不同？
+
+普通 Chat UI 的中心是“对话”：用户输入一段话，模型返回一段话。即使它能联网或上传文件，系统边界通常仍是产品预置的。
+
+DeepSeek Harness 的中心是“一个 agent turn 如何在 workspace 中执行”：
+
+```text
+用户任务
+  -> 组装 system prompt + 可见工具 schema
+  -> 模型决定读文件、改文件、跑命令或追问
+  -> tool pipeline 审批 / 执行 / 后处理 / 记录结果
+  -> session event log 驱动 UI 展示和后续上下文
+```
+
+这意味着它天然关心几个 Chat UI 不一定关心的问题：
+
+| 问题 | 普通 Chat UI | DeepSeek Harness |
+| --- | --- | --- |
+| 工具从哪里来 | 产品内置 | 插件注册到 `ctx.tools` |
+| prompt 谁贡献 | 产品配置 | 插件通过 `ctx.systemPrompt.section()` 贡献 |
+| 文件/命令怎么接入 | 通常封闭 | 文件、shell、Web、subagent 都是 tool/provider |
+| 能否换运行组合 | 很少暴露 | profile / bundle / patch 组合 |
+| UI 如何知道工具过程 | 产品内部状态 | 从 `session/event` 日志投影 |
+| 扩展入口在哪里 | 不稳定或封闭 | Cordis services + event hooks |
+
+这也是为什么我不建议把它理解成“一个 DeepSeek 版 ChatGPT 页面”。更贴切的类比是：**它把 coding agent 的运行时拆成一批可替换插件，然后给了 Web 和 CLI 两个入口。**
+
+## 代码规模透露了什么？
+
+我在公开仓库源码快照上做了一次轻量统计。当前快照 commit 是 `47f943859bef60e4160492346772ded9b24f765a`；`packages/*/*/package.json` 下有 **219 个 package**，排除 vendor/build/deps 后，TypeScript 文件约 **2,285 个 / 490,939 行**，TSX 约 **259 个 / 66,633 行**。这不是一个“小 demo”，而是一个已经被拆得很细的 monorepo。
+
+几个值得注意的 package group：
+
+| 分组 | 数量 | 含义 |
+| --- | ---: | --- |
+| `core` | 8 | agent、session、tools、system-prompt 等核心 runtime |
+| `boot` | 2 | CLI/app 启动、profile/bundle/patch 组合 |
+| `bundle` | 3 | base、headless、web-app 等可装配 bundle |
+| `client` | 39 | Web client、connection、UI 投影等 |
+| `fs` | 7 | 文件系统、搜索、编辑工具和 sandbox 相关能力 |
+| `shell` | 9 | bash/pwsh、本地执行、sandbox、persistent shell |
+| `session` | 13 | persistence、projection、telemetry、title 等会话系统 |
+| `subagent` | 11 | 多种 subagent provider 和工具 |
+| `workflow` | 4 | workflow engine 和相关工具 |
+
+这个拆分方式本身就是架构信号：Harness 不是把所有功能塞进一个 agent loop，而是把“模型能看到什么、能调用什么、调用前后谁能拦截、结果怎样持久化、UI 怎样复现”拆成独立 seam。
+
+## 第一层：profile / bundle / patch 是启动组合系统
+
+`@deepseek-ai/dsh-app-boot` 的 README 对 profile 机制讲得很清楚：profile 位于 `$DSH_HOME/profiles/<name>`，持有 package 依赖和 `dsh.profile` manifest；bundle 是声明了 `dsh.bundle.patch` 的 npm package；用户还可以通过 `cordis.patch.yml` 在 profile 或 home 层追加 patch。[4]
+
+这套机制解决的是：**同一个 runtime 如何启动成不同产品形态。**
+
+- `web` profile 可以挂 Web UI 和 host API；
+- `headless` profile 可以只挂一次性命令行运行所需的能力；
+- `base` bundle 提供公共 agent 能力；
+- 用户 patch 可以插入额外插件、覆盖 config 或调整 profile 行为。[4]
+
+这比“配置一个 JSON”更接近“组合一个插件树”。特别值得注意的是，`renderConfigDump()` 会离线按同一套 patch 算法渲染最终配置，避免 dump 和真实 boot 漂移；`watchUserPatches()` 还能让用户 patch 文件变更触发热更新式重组。[4]
+
+换句话说，Harness 的配置不是静态偏好项，而是运行拓扑的一部分。
+
+## 第二层：Cordis 插件树是微内核
+
+官方 architecture 文档把 Harness 描述成围绕 Cordis container、service registry、typed events、effects 和 fiber lifecycle 组织的系统。[3]
+
+用更直白的话说：
+
+- 插件不是“启动时跑一下的脚本”；
+- 插件可以提供 service，例如 `tools`、`systemPrompt`、`agents`、`sessions`；
+- 插件可以监听事件，例如 `session/event`、`tools/pre-execute`、`system-prompt/assemble`；
+- 插件注册的东西跟随 fiber 生命周期，dispose 后能力会撤销；
+- 热重载和配置重组依赖这些 effect 可逆地注册/注销。
+
+这就解释了为什么官方 cookbook 会说工具插件、hook 插件、UI 插件、protocol driver 都只是不同 shape 的 Cordis 插件。[7]
+
+一个 permission gate 插件可以监听 `tools/pre-execute` 来允许、拒绝或询问用户；一个 UI 插件可以监听 `session/event` 里的 assistant chunk 和 tool activity；一个 MCP 插件可以发现远端工具后注册到 `ctx.tools`。[7]
+
+这种设计的结果是：agent loop 不需要认识每一种产品能力。新能力只要挂到正确 seam 上，就可以进入同一条运行时路径。
+
+## 第三层：system prompt 不是一个大字符串
+
+`dsh-system-prompt` 的 README 把 system prompt 建模为一个 assembly registry：插件贡献 ordered sections、tool schemas 和变量，loop 每一步组装一次完整模型 prompt。[6]
+
+这里有几个关键点：
+
+1. `ctx.systemPrompt.section()` 可以贡献一个具名、有顺序的 prompt section；
+2. section 支持 scope，agent-scoped section 可以 shadow global section；
+3. `ctx.systemPrompt.tools()` 贡献模型可见 tool schema；
+4. `system-prompt/assemble` 是一个 waterfall，插件可以合作修改最终 assembly；
+5. prompt 变量严格插值，未知变量会 fail loud，而不是悄悄留下坏模板。[6]
+
+这意味着 Harness 的 prompt 不是“写在某个模板文件里的超长系统词”。更准确地说，它是插件化 runtime 状态的一次投影：
+
+```text
+Harness identity
++ deployment persona
++ tool guidance sections
++ AGENTS.md / skills / memory / runtime context
++ visible tool schemas
++ scoped overrides
+= 当前 step 的完整模型上下文
+```
+
+我们后面做最小插件实践时，就是利用这个 seam：一个本地 ESM 插件在启动时调用 `ctx.systemPrompt.section()` 注入一段 marker 文本；随后 headless 模型能看见并回显这个 marker。这个验证说明“插件贡献进模型上下文”不是文档口号，而是 runtime seam。
+
+## 第四层：工具系统有完整执行管线
+
+`dsh-tools` 的 README 直接把自己定义为 Tool registry and execution pipeline。工具插件通过 `ctx.tools.register()` 注册 schema 和 executor；agent loop 执行工具时走：
+
+```text
+tools/pre-execute
+  -> monotonic guards
+  -> tools/execute
+  -> tools/post-execute
+  -> definition-owned finalizeContent
+  -> tools/result notification
+```
+
+这个顺序很重要。[5]
+
+它说明 Harness 把“工具调用”拆成了几个可以被插件拦截的位置：
+
+- **pre-execute**：审批、拒绝、询问用户；
+- **guard**：不可被后续 listener 反转的最终拒绝；
+- **execute**：围绕真实 dispatch 包一层，例如 deadline、retry、metrics；
+- **post-execute**：检查或替换结果、追加上下文；
+- **result**：观察最终 immutable outcome。[5]
+
+工具定义本身也不是返回一段随便给模型看的文本。`defineTool()` 要求声明参数 schema、输出 schema、render 逻辑；成功结果是 canonical JSON value，再渲染成模型可读内容。[5][8]
+
+这就是 agent runtime 和普通脚本最大的差别之一：脚本只需要执行；agent runtime 必须让模型、UI、日志、审批、安全策略都对同一次工具调用有一致理解。
+
+## 第五层：session/event 让 UI 和 replay 不靠猜
+
+官方 extension cookbook 里，UI plugin 的例子不是从某个“当前 DOM 状态”读内容，而是监听 `session/event`。比如 assistant token stream 是 `assistant/chunk`，工具活动、turn/step 边界也都走事件流。[7]
+
+这是一种很重要的工程取舍：
+
+- UI 展示不是工具执行的 side effect；
+- UI 可以从 durable event log 投影；
+- replay 和 live streaming 可以使用同一批事实；
+- 工具结果的 presentation metadata 可以持久化，避免回放时重新做 I/O。[5][7]
+
+如果你关心“agent 到底做了什么”，这比单纯保存最终回答可靠得多。因为 coding agent 的价值往往在过程：它读了哪些文件、改了哪些 diff、跑了什么命令、哪个步骤失败又如何修复。
+
+## 第六层：安全边界是核心能力，不是附属品
+
+只要一个系统能让模型读写文件、执行 shell、调用 Web 和启动子 Agent，它就不应该被当成普通静态网页暴露。Harness 源码里把权限、sandbox、approval、tool guard、API request trust 都做成核心 seam，这一点是正确方向。[3][5][7]
+
+实践中我们也确实遇到过一个很典型的问题：Web UI 通过公网入口访问 host API 时，如果反代层没有保持正确的 Host/Origin 形态，目录 API 会被 trust 判断拒绝。这不是“麻烦的安全限制”，而是这类 runtime 应有的默认防线。
+
+所以部署口径应该是：
+
+- Harness 进程默认只监听本机或受控内网；
+- 外层入口要有身份认证、访问控制和正确的反代头；
+- 公开文章、日志和截图不应包含 live service URL、内部主机名、私有路径或任何凭据；
+- 开发者预览版不应用来承载无边界的公共用户输入。
+
+## 和 Claude Code / Codex CLI / Hermes Agent 怎么比？
+
+可以这样拆：
+
+| 工具 | 更像什么 | 主要优势 | Harness 的不同点 |
+| --- | --- | --- | --- |
+| Claude Code / Codex CLI | 成熟 coding agent CLI | 直接进入仓库改代码、跑测试、走终端 | Harness 把 UI、profile、plugin runtime、tool schema、session event 作为一套开源架构公开出来 |
+| 普通 Chat UI | 对话产品 | 低门槛问答、文件上传、网页使用 | Harness 关注 workspace、工具执行、权限和扩展，不只是回答文本 |
+| Hermes Agent | 多平台 agent / 本地工具系统 | 多平台投递、长期记忆、skills、调度和本机/远端工具 | Harness 是 DeepSeek 官方的 agent runtime 实验场，更集中在 coding agent 工作台和 Cordis 插件化 |
+
+因此我更愿意把 DeepSeek Harness 看作“DeepSeek 官方的 agent runtime 参考实现”。它未必马上替代成熟 CLI，但它把很多 agent 系统最关键的 seam 开出来了。
+
+## 当前版本状态：值得看，但要按预览版对待
+
+这次公开检索显示，npm `@deepseek-ai/dsh` 的 latest 是 `0.1.0-rc.6`；我本地源码快照里很多 package 仍是 `0.1.0-rc.5`。[2] 这说明当前生态还在快速移动，读源码、跑 npm 包和写扩展时要明确锁版本。
+
+我会用三个判断来概括它的成熟度：
+
+1. **架构完成度很高**：219 个 package、清晰的 service/event/extension seam，不是临时 demo；
+2. **产品稳定性仍是预览态**：profile、patch、插件路径、Node 版本、反代 trust 等都可能踩坑；
+3. **二次开发价值很大**：如果你想研究 agent runtime 怎么组织，这个仓库比单纯使用一个闭源 coding agent 更有学习价值。
+
+## 我会关注的几个源码入口
+
+如果你也要读这个项目，我建议按这个顺序：
+
+1. `docs/architecture.md`：先理解 Cordis、services、events、extension seam；[3]
+2. `packages/boot/app-boot/README.md`：理解 profile / bundle / patch 如何启动；[4]
+3. `packages/core/system-prompt/README.md`：理解 prompt 如何由插件 assemble；[6]
+4. `packages/core/tools/README.md`：理解工具注册、执行、审批、结果观察；[5]
+5. `docs/cookbook/extension-cookbook.md`：看工具插件、hook 插件、UI 插件的最小形态；[7]
+6. `docs/cookbook/adding-a-tool.md`：理解一个模型可见工具需要的 schema、execute、output contract。[8]
+
+读完这些，再去看 Web client、fs tool、bash tool、subagent、workflow，会更容易把代码放回架构图里。
+
+## 结论
+
+DeepSeek Harness 让我最感兴趣的地方，不是它现在能不能在 Web UI 里修一个小 bug——这个当然重要，但不是全部。
+
+更重要的是，它把 agent runtime 的内部构造公开成了工程对象：
+
+```text
+启动组合：profile / bundle / patch
+运行骨架：Cordis plugin tree
+模型上下文：system prompt assembly
+行动能力：tool registry + execution pipeline
+事实记录：session/event log
+扩展方式：service + event + effect
+安全边界：approval / sandbox / trust fence
+```
+
+如果你只是想找一个立刻高强度写代码的工具，成熟 CLI 可能仍然更顺手。可如果你想理解“一个现代 coding agent 应该怎样组织模型、工具、权限、日志、UI 和扩展”，DeepSeek Harness 很值得读。
+
+下一篇我会写这次真实实践：如何从部署开始，让 Web UI agent 修一个受控小仓库里的 bug，再写一个最小插件证明 `--patch` 和 `ctx.systemPrompt.section()` 确实能进入模型上下文。
+
+## Sources
+
+[1] https://github.com/deepseek-ai/deepseek-harness
+[2] https://www.npmjs.com/package/@deepseek-ai/dsh
+[3] https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md
+[4] https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/boot/app-boot/README.md
+[5] https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/tools/README.md
+[6] https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/system-prompt/README.md
+[7] https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/extension-cookbook.md
+[8] https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/adding-a-tool.md
