@@ -6,44 +6,44 @@ tags: [deepseek, agent, practice, webui, plugin]
 description: 记录一次 DeepSeek Harness 实战：隔离部署、Node 版本选择、headless 和 Web UI 验收、反代 403 排查、受控小仓库修 bug、npm test 回读、本地 Cordis 插件和 system prompt 注入验证。
 ---
 
-我想确认的不是页面能不能打开，而是 DeepSeek Harness 能不能真的进到 workspace 里做事。
+我这次想验证一件具体的事：DeepSeek Harness 能否在 workspace 里完成一次受控代码修改，并让树外插件进入模型上下文。
 
-实测结果是：`@deepseek-ai/dsh@0.1.0-rc.6` 正常启动，Web UI agent 修了一个小仓库里的百分比计算 bug，`npm test` 回读通过；再用 `--patch` 加载一个本地 Cordis 插件，模型也能读到插件注入的 system prompt marker。
+实测结果：`@deepseek-ai/dsh@0.1.0-rc.6` 在 Node `v22.19.0` 下正常启动；headless 返回 `OK`；Web UI agent 修复了一个小 JS 仓库里的百分比计算 bug，`npm test` 通过；本地 Cordis 插件通过 `--patch` 插入 profile，模型读到了插件注入的 marker，宿主侧也读到了插件执行留下的 marker 文件。
 
 <!-- truncate -->
 
 ![DeepSeek Harness Web UI 与插件实践流程](/img/deepseek-harness/webui-plugin-practice-flow.svg)
 
-这篇不把 live service URL 写出来。Harness 有文件读写和命令执行能力，不能当普通 Web demo 裸放。
+这张图按实践顺序看：运行环境和 headless 先跑通，Web UI 再连接 workspace，agent 完成小仓库任务后，本地插件再验证 `--patch` 和 `ctx.systemPrompt.section()`。
 
-## 验收口径
+公开材料只保留可复用的部署模式和脱敏证据。Harness 连接文件系统和命令执行能力，部署口径要按高权限本地服务处理。
 
-我没有把“网页能打开”当成功。一个 coding-agent runtime 至少要过这些检查：
+## 验收标准
 
-| 检查 | 为什么要做 |
-| --- | --- |
-| headless 返回稳定结果 | 确认 provider、profile、agent loop 可用 |
-| Web UI 能选择 workspace | 确认浏览器、host API、后端连接正常 |
-| agent 能读、改、测一个小仓库 | 确认工具链不是摆设 |
-| 从文件和测试回读结果 | 不相信最终回答，只相信产物 |
-| 插件能被加载并影响 prompt | 确认扩展机制真的进入 runtime |
-| 反代和访问控制单独检查 | 它有本地文件和 shell 权限，不能裸暴露 |
+网页能打开，说明前端资源能加载。coding-agent runtime 还要验收行动链路。
 
-官方对象仍然是 `deepseek-ai/deepseek-harness` 和 npm 包 `@deepseek-ai/dsh`。[1][2]
+| 检查 | 合格信号 | 这一步排除什么问题 |
+| --- | --- | --- |
+| headless smoke | 模型精确返回 `OK` | provider、profile boot、一次性 agent loop 不通 |
+| Web UI workspace | 页面能选择受控 workspace，host API 返回 200 | 浏览器连接、host API、反代 header、workspace 权限异常 |
+| 小仓库修 bug | agent 修改源文件，测试通过，结果文件可回读 | 工具链只是展示、没有真实读改测 |
+| 插件 patch | 本地 ESM 插件被加载，prompt marker 被模型看到 | profile overlay 没进入 Cordis 插件树 |
+| 宿主 marker | marker 文件存在并包含验证值 | 插件 `apply()` 没执行，只有模型侧幻觉 |
+| 安全口径 | 服务入口、内部路径、凭据都不进入公开材料 | 高权限工具被误当普通 Web demo |
 
-## 环境：先把 Node 搞对
+后面的实践按这张表推进。
 
-第一个问题不是模型，是 Node。
+## 环境选择：Node 版本先定住
 
-目标机器上的系统 Node 是 `v10.19.0`，跑现代 TypeScript/Node 项目不现实。Node 24 在当时环境里碰到 native build / runtime 问题；Node `v22.19.0` 这条线稳定。
+目标机器的系统 Node 是 Node 10 系列，无法支撑现代 TypeScript/Node 工程。Node 24 在当时环境里触发 native dependency build / runtime 兼容问题；Node `v22.19.0` 路线稳定。
 
-我按隔离方式部署：独立 Harness home、独立 npm cache、独立 workspace。密钥不写进文章、报告、截图或仓库。Web 进程先只监听本地地址，对外访问交给反代层和访问控制。
+部署方式保持隔离：独立 Harness home、独立 npm cache、独立 workspace。密钥不写进文章、报告、截图或仓库。Web 进程先监听本机地址，对外访问交给反代和访问控制。
 
-这类 preview 项目还有一个现实问题：运行包和源码快照会有差异。检索时 npm `@deepseek-ai/dsh` 是 `0.1.0-rc.6`；公开源码快照里不少 package 仍显示 `0.1.0-rc.5`。[2] 排错时必须说明自己跑的是哪个包、读的是哪个 commit。
+这个项目还处在 preview 阶段。检索时 npm `@deepseek-ai/dsh` 是 `0.1.0-rc.6`，公开源码快照里不少 package 仍显示 `0.1.0-rc.5`。[2] 排错时要同时记录“跑的包版本”和“读的源码快照”。
 
-## 最小 CLI 验证
+## Headless smoke：先确认 agent loop 通了
 
-先跑 headless：
+最小命令只有一条：
 
 ```bash
 dsh --profile headless "Reply with exactly OK."
@@ -55,220 +55,109 @@ dsh --profile headless "Reply with exactly OK."
 OK
 ```
 
-这一步小，但很必要。它确认模型 provider、profile boot 和一次性 agent loop 已经通了。后面 Web UI 出问题时，就能把范围收窄到浏览器、host API、反代或 workspace 侧。
+这一步看起来小，却很省时间。它确认 provider、profile boot 和一次性 agent loop 已经工作。后面 Web UI 出问题时，排查范围就集中到浏览器、host API、反代和 workspace。
 
-## Web UI 验证
+## Web UI：403 是安全边界在拦截
 
-Web UI 打开后，我检查了几件事：
+Web UI 打开后，我看四个可回读信号：页面 title 是 `DeepSeek Harness`；能看到会话、工作区、设置入口；workspace 请求能到 host API；本地 health 返回 200。
 
-- 页面 title 是 `DeepSeek Harness`；
-- boot 对象存在；
-- 能看到“新会话 / 工作区 / 设置”等基础 UI；
-- host API 能处理 workspace 请求；
-- 服务端本地 HTTP health 返回 200。
-
-问题出在公网反代。
-
-第一次选择 workspace 时，浏览器侧报：
+第一次选择 workspace 时，浏览器侧拿到这个错误：
 
 ```text
 transport failure for /api/host.listDirectory: HTTP 403
 ```
 
-根因不是按钮坏了。Web UI 从浏览器发 API 请求，后端会检查 Host / Origin / forwarded header。反代层当时没有让这些信息保持一致，触发了 Harness 的 request trust fence。
+根因在反代链路。浏览器发起 host API 请求，后端会检查 Host、Origin 和 forwarded header。反代层当时没有保持 public host 形态一致，触发 request trust fence。
 
-修复方向也不是关安全检查，而是让链路里的 public host 形态一致：
+修复后，我只保留脱敏形态作为公开证据：`host.listDirectory` envelope 返回 `status: 200`，`ok: true`，并能看到 entries count。文章里不展示路径、主机名和目录名。
 
-```text
-Browser HTTPS origin
-  -> exact public vhost
-  -> internal reverse proxy
-  -> Harness localhost listener
-```
+这一步给了一个很实际的部署判断：反代配置属于 runtime 安全边界。Harness 的 Web UI 背后连着 workspace、文件系统和命令执行能力，public host、认证、访问控制和 forwarded header 都要进验收。
 
-修好后，用浏览器侧 `host.listDirectory` envelope 回读，目录 API 不再 403。
+## Web UI 任务：让 agent 修一个小 bug
 
-这也是为什么反代配置要进部署验收，而不是事后补一条 Nginx 规则。DeepSeek Harness 的 Web UI 背后不是静态资源。它连着本地 workspace、文件系统和命令执行能力。反代配置就是安全边界的一部分。
+我准备了一个小 JS workspace，文件很少：`package.json`、`src/quote.js`、`test/quote.test.js`。业务函数 `estimateQuote` 故意写错：`discountPercent` 和 `taxPercent` 是百分比数值，`10` 表示 10%，`5` 表示 5%；错误实现把它们当成直接倍率。
 
-## Web UI 任务：修一个小仓库 bug
+给 agent 的任务没有花哨内容，只要求它完成四件事：读 `package.json`、源文件和测试；修复百分比计算；运行 `npm test`；写 `PRACTICE_RESULT.md` 记录改动和测试摘要。
 
-我准备了一个很小的 JS workspace：
+| 观察点 | 回读结果 |
+| --- | --- |
+| 源码修改 | `src/quote.js` 把百分比输入转换成比例计算 |
+| 修复公式 | `discount = subtotal * discountPercent / 100`，`tax = discountedSubtotal * taxPercent / 100` |
+| 测试命令 | `npm test` 由 agent 执行 |
+| 测试输出 | `PASS applies discountPercent and taxPercent as percentages`；`PASS rejects negative hours or rates` |
+| 结果文件 | `PRACTICE_RESULT.md` 记录改动原因和测试摘要 |
 
-```text
-package.json
-src/quote.js
-test/quote.test.js
-```
+结果文件的公开摘录只保留事实形态：修复点是百分比换算，测试命令是 `npm test`，两条测试用例都通过。任务规模很小，验收面完整：读文件、理解测试、改源文件、跑命令、根据结果继续、写结果报告。这个过程比 hello world 更能说明 Web UI 的工具链真实工作。
 
-`package.json` 只有一个测试命令：
+## 插件验证：把树外能力插进 runtime
 
-```json
-{
-  "scripts": {
-    "test": "node test/quote.test.js"
-  }
-}
-```
+Web UI 修 bug 验证了内置能力。Harness 的架构重点还包括插件化，所以还要验证树外插件能进入 runtime。
 
-业务函数叫 `estimateQuote`。我故意放了一个 bug：`discountPercent` 和 `taxPercent` 应该是百分比数值，`10` 表示 10%，`5` 表示 5%；错误实现把它们当成直接倍率。
+我做了一个最小 Cordis 插件，职责很窄：
 
-给 agent 的任务是：
+| 插件动作 | 验证方式 |
+| --- | --- |
+| `apply(ctx)` 执行时写 marker 文件 | 宿主侧读取 marker 文件，确认包含 `PLUGIN_EXTENSION_VERIFIED=1` |
+| 调用 `ctx.systemPrompt.section()` 注入 prompt marker | headless 模型返回 `DSH_PRACTICE_PLUGIN_ACTIVE` |
 
-```text
-请完整完成这个小仓库任务：
-1. 阅读 package.json、src/quote.js、test/quote.test.js。
-2. 修复 estimateQuote 中 discountPercent/taxPercent 的计算逻辑。
-3. 运行 npm test 验证。
-4. 新增 PRACTICE_RESULT.md，记录改了什么、为什么改、测试输出摘要。
-要求：只修改必要文件；如果测试失败，请继续修到通过。
-```
+插件通过本地 ESM 文件加载，没有发布 npm 包。`app-boot` 文档说明，用户 patch layer 可以用 `insert` 添加 entries；profile boot 会把 bundle patch、profile patch、home patch 和 overlay patch 合成最终插件树。[4]
 
-这个任务很小，但验收面够完整：读文件、理解测试、改源文件、跑命令、根据结果继续、写结果报告。
+patch 的公开形态只保留结构，不放真实绝对路径：
 
-最终回读显示，agent 修改了 `src/quote.js`，把百分比输入转换成比例计算，并写了 `PRACTICE_RESULT.md`。
+| 字段 | 含义 |
+| --- | --- |
+| `id: practice-plugin-marker` | 插件 entry 的稳定 id |
+| `name: file://.../dsh-practice-plugin.mjs` | 本地 ESM 插件 URL |
+| `marker` | 注入 prompt 的公开 marker 文本 |
+| `markerPath` | 宿主侧验证文件，公开时脱敏 |
+| `promptSectionName` / `promptOrder` | system prompt section 的名字和顺序 |
 
-测试结果：
+这里踩过一个实际坑：相对路径插件在当时启动方式下不稳定。改成明确 `file://` URL 后加载成功。公开文章不放真实路径，复现时要留意插件 specifier 的解析基准。
 
-```text
-PASS applies discountPercent and taxPercent as percentages
-PASS rejects negative hours or rates
-```
+验证时，我让模型返回实践 marker。模型侧证据和宿主侧证据分开看：
 
-这比发一句 hello 有意义。它证明 Web UI 不是只把建议吐给用户，而是能驱动工具完成一次受控代码修改。
+| 证据 | 来源 | 说明 |
+| --- | --- | --- |
+| `DSH_PRACTICE_PLUGIN_ACTIVE` | 模型输出 | prompt section 已进入模型上下文 |
+| `PLUGIN_EXTENSION_VERIFIED=1` | 宿主 marker 文件 | 插件 `apply()` 执行，配置检查通过 |
 
-## 插件验证：只看配置 dump 不够
+宿主 marker 文件只写一行公开验证值：`PLUGIN_EXTENSION_VERIFIED=1`。模型侧 marker 和宿主侧 marker 分开记录，避免把“模型复述了 prompt”误当成“插件代码已经执行”。这两个证据合在一起，说明 `--patch insert` 把本地插件装进了 Cordis runtime，并且影响到了宿主执行和模型上下文。
 
-Web UI 修 bug 只能证明内置能力可用。Harness 的架构重点是插件化，所以还要验证树外插件能不能进 runtime。
-
-我做了一个最小 Cordis 插件。它只做两件事：
-
-1. 启动时写一个 marker 文件，证明 `apply()` 执行过；
-2. 调用 `ctx.systemPrompt.section()` 注入一段 marker prompt，证明插件能影响模型上下文。[6]
-
-插件大致长这样：
-
-```js
-export const name = 'dsh-practice-plugin'
-export const inject = ['systemPrompt']
-
-export function apply(ctx, config = {}) {
-  const marker = config.marker || 'DSH_PRACTICE_PLUGIN_ACTIVE'
-
-  ctx.systemPrompt.section({
-    name: config.promptSectionName || 'practice:plugin-marker',
-    order: config.promptOrder ?? 42,
-    text: `Practice plugin marker: ${marker}`,
-  })
-
-  // 同时写 marker 文件，供宿主侧验证。
-}
-```
-
-没有发布 npm 包。实践里用本地 ESM 文件，再通过 `--patch` 插入 profile。`app-boot` 文档说明，用户 patch layer 可以用 `insert` 添加 entries；profile boot 会把 bundle patch、profile patch、home patch 和 overlay patch 合成最终树。[4]
-
-patch 的形态是：
-
-```yaml
-- insert:
-    - id: practice-plugin-marker
-      name: file:///path/to/dsh-practice-plugin.mjs
-      config:
-        marker: DSH_PRACTICE_PLUGIN_ACTIVE
-        markerPath: ./plugin-mounted.marker
-        promptSectionName: practice:plugin-marker
-        promptOrder: 42
-```
-
-这里踩过一个实际坑：相对路径插件在当时启动方式下不稳定。改成明确的 `file://` URL 后加载成功。公开文章不放真实绝对路径，但复现时要留意插件 specifier 的解析基准。
-
-验证命令：
-
-```bash
-dsh --profile headless --patch dsh-practice-plugin.patch.yml   "Read the plugin marker from your system prompt and reply with it."
-```
-
-这一步得到两个证据：
-
-```text
-DSH_PRACTICE_PLUGIN_ACTIVE
-PLUGIN_EXTENSION_VERIFIED=1
-```
-
-第一个来自模型输出，说明 prompt section 被模型看见。第二个来自宿主侧检查，说明 marker 文件和配置检查通过。
-
-## 这次实践证明了什么
+## 这次实践留下的证据
 
 | 架构点 | 实践证据 |
 | --- | --- |
 | profile 能切换运行形态 | `headless` 和 Web UI 分别可用 |
-| tool registry 不是装饰 | Web UI 任务发生了读文件、改文件、跑测试；工具管线由 `dsh-tools` 定义。[5] |
-| session/event 支撑观察 | Web UI 能展示工具过程和任务状态 |
+| tool registry 参与真实行动 | Web UI 任务发生读文件、改文件、跑测试；工具管线由 `dsh-tools` 定义。[5] |
+| session/event 支撑观察 | Web UI 展示工具过程和任务状态 |
 | system prompt 可由插件贡献 | 本地插件注入 marker 后模型可见 |
-| patch overlay 能扩展插件树 | `--patch insert` 加载树外 ESM 插件 |
-| trust fence 会影响部署 | 错误反代触发 `host.listDirectory` 403 |
+| patch overlay 扩展插件树 | `--patch insert` 加载树外 ESM 插件 |
+| trust fence 影响部署 | 错误反代触发 `host.listDirectory` 403 |
 
-所以这次实践的重点不是那个百分比 bug，而是闭环：Harness 能把 Web UI、workspace、工具、测试、插件和 prompt 组到一条 runtime 路径里。[4][5][6][7][8]
+这次实践的价值在闭环：Harness 把 Web UI、workspace、工具、测试、插件和 prompt 组织到同一条 runtime 路径里。[4][5][6][7][8]
 
-## 复现路线
+## 复现建议
 
-按这个顺序来，少走弯路：
+按这个顺序来：
 
-### 1. 先确认 Node 和包版本
-
-```bash
-node -v
-npm view @deepseek-ai/dsh version
-```
-
-用现代 Node。给 Harness 单独的 home、npm cache 和 workspace。不要把凭据写进仓库。
-
-### 2. 先跑 headless
-
-```bash
-dsh --profile headless "Reply with exactly OK."
-```
-
-这一步先把 provider、profile、agent loop 验掉。
-
-### 3. 再启动 Web UI
-
-先只监听本机或受控内网。需要公网入口时，把它当敏感服务反代，不要当静态网页。
-
-### 4. 准备一个小仓库任务
-
-不要一开始给生产仓库。小任务最好满足：
-
-- 文件少；
-- 有明确测试；
-- bug 可定位；
-- 没有敏感数据；
-- 允许 agent 修改；
-- 能从测试和文件回读结果。
-
-### 5. 再试插件
-
-先读官方 extension cookbook 和 tool authoring reference。[7][8] 第一个插件可以只做 prompt section 或只读工具。先证明 loader、生命周期和模型上下文是通的，再写复杂业务。
+1. 确认 Node 和包版本：记录 `node -v` 和 `npm view @deepseek-ai/dsh version`。
+2. 给 Harness 单独的 home、npm cache 和 workspace。
+3. 先跑 headless smoke，把 provider、profile 和 agent loop 验掉。
+4. 启动 Web UI 时先监听本机或受控内网；需要公网入口时按敏感服务反代。
+5. 准备一个小仓库任务：文件少、有测试、bug 可定位、无敏感数据、允许 agent 修改、能从测试和文件回读。
+6. 再试插件：第一个插件只做 prompt section 或只读工具，先验证 loader、生命周期和模型上下文。
 
 ## 安全边界
 
-DeepSeek Harness 可以让模型读文件、改文件、跑命令、调用工具。部署时不要把它当普通 Web demo。
-
-最低要求：
-
-- Web 入口有访问控制；
-- workspace 限制在受控目录；
-- 公开文章不贴真实服务入口；
-- 截图和日志不暴露密钥、内部路径、内部主机名；
-- 高风险工具走审批或 sandbox；
-- 未授权用户不能直接访问 host API。
+DeepSeek Harness 可以让模型读文件、改文件、跑命令、调用工具。部署时至少满足这些要求：Web 入口有访问控制；workspace 限制在受控目录；公开文章不贴真实服务入口；截图和日志不暴露密钥、内部路径、内部主机名；高风险工具走审批或 sandbox；未授权用户无法直接访问 host API。
 
 学习和评估阶段，最好放在本机或内网，用受控示例仓库。
 
-## 我的结论
+## 结论
 
-DeepSeek Harness 还不是一个可以无脑拿去生产裸跑的 coding-agent 产品。它是 developer preview，版本、插件路径、Node 环境、反代 trust 都可能踩坑。
+DeepSeek Harness 现在是 developer preview，版本、插件路径、Node 环境和反代 trust 都可能踩坑。它已经跑通一条可研究的 runtime 路线：Web UI、headless CLI、profile/bundle/patch、Cordis 插件树、system prompt assembly 和工具执行管线可以组合在一起。
 
-但它已经跑通了一条有价值的路线：Web UI + headless CLI + profile/bundle/patch + Cordis 插件树。对想研究 agent 平台的人，它比一个封闭 CLI 更值得拆。因为你能看到模型上下文、工具执行、事件记录和扩展点怎样被组织成一套 runtime。
+对想研究 agent 平台的人，它比封闭 CLI 更适合拆解。你能看到模型上下文、工具执行、事件记录和扩展点怎样连接成一套 runtime。
 
 ## Sources
 

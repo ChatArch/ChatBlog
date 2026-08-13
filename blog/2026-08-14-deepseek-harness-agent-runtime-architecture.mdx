@@ -3,202 +3,143 @@ title: "DeepSeek Harness 是什么：把模型接进 workspace 的 Agent Runtime
 date: 2026-08-14
 slug: deepseek-harness-agent-runtime-architecture
 tags: [deepseek, agent, architecture, coding-agent]
-description: 直接解释 DeepSeek Harness 的 runtime 结构：模型如何进入 workspace，profile/bundle/patch 如何装配插件树，system prompt、tools、session event 和安全边界怎样连成一轮 agent 执行。
+description: 用一张运行时地图解释 DeepSeek Harness：profile/bundle/patch 如何装配 Cordis 插件树，system prompt、tools、session event 和安全边界怎样连成一轮 agent 执行。
 ---
 
-DeepSeek Harness 是 DeepSeek 官方开源的 agent runtime。它不是一个换皮聊天页。它做的事更底层：把模型接进一个 workspace，让模型能看上下文、调用工具、读写文件、执行命令，并把这整轮过程记录下来。
+DeepSeek Harness 是 DeepSeek 开源的 agent runtime。它把模型放进一个 workspace，让模型带着上下文完成任务：读项目、调用工具、改文件、执行命令、留下过程记录。
 
-普通 Chat UI 的中心是“问答”。Harness 的中心是“模型怎么在项目里完成一个动作”。这就是理解它的入口。
+普通 Chat UI 围绕问答组织界面。Harness 围绕一次 agent 行动组织运行时：上下文、工具、执行、日志和界面都在同一条链路里。
 
 <!-- truncate -->
 
 ![DeepSeek Harness Agent Runtime 架构图](/img/deepseek-harness/agent-runtime-architecture.svg)
 
-官方仓库是 `deepseek-ai/deepseek-harness`，运行包是 `@deepseek-ai/dsh`。[1][2] 官方 README 说它是 DeepSeek AI 开发的开源 agent harness，并且明确写到它采用 “everything is a plugin” 的架构，由 Cordis 驱动。[1]
+这张图从上到下看：上半部分是启动入口和插件组合，下半部分是一轮 turn/step 的行动路径。读源码时先沿着这条路径走，再回头看各包的职责。
 
-我读这个项目时，最有用的不是先看 Web UI，而是先抓住一轮 agent turn：
+官方仓库是 `deepseek-ai/deepseek-harness`，运行包是 `@deepseek-ai/dsh`。[1][2] README 直接把架构落在一句话上：`Everything is a Plugin`，底层由 Cordis 驱动。[1]
 
-```text
-profile / bundle / patch 决定启动哪些插件
-  -> Cordis 挂出 services、events、effects
-  -> system prompt 服务组装模型上下文
-  -> tools 服务暴露文件、shell、Web、subagent 等能力
-  -> agent loop 调模型并执行工具
-  -> session/event log 记录 token、tool call、tool result
-  -> Web UI 从事件流投影出可观察过程
-```
+读它可以从一次 agent turn 开始：启动配置拼出插件树，插件贡献 prompt 和 tools，agent loop 调模型并执行工具，session/event log 留下过程，Web UI 从日志里投影出可观察界面。
 
-这条链路把 Harness 和普通聊天产品区分开了。聊天页通常把内部能力藏在产品里；Harness 把 runtime 的接口、生命周期、扩展点和安全边界摆在源码里。
+## 先看一轮任务怎样流动
 
-## 读源码前先建立一张地图
+一轮任务从用户输入开始，随后进入运行时组合出来的能力链路。
 
-我在公开仓库快照上做了一次轻量统计。快照 commit 是 `47f943859bef60e4160492346772ded9b24f765a`；`packages/*/*/package.json` 下有 219 个 package。排除 vendor、build、deps 后，TypeScript 文件约 2,285 个 / 490,939 行，TSX 约 259 个 / 66,633 行。
+| 阶段 | 发生了什么 | 读源码时看哪里 |
+| --- | --- | --- |
+| 启动形态 | profile、bundle、patch 组合出本次运行的插件树 | `packages/boot/app-boot` |
+| 能力装配 | Cordis 挂出 service、event、effect 和 fiber lifecycle | `docs/architecture.md` |
+| 模型上下文 | system prompt registry 汇总身份、上下文、工具 schema、插件 section | `packages/core/system-prompt` |
+| 工具执行 | tool registry 经过审批、guard、execute、post-process、result notification | `packages/core/tools` |
+| 过程记录 | assistant chunk、tool call、tool result、turn/step 边界进入 session event | cookbook 和 session 相关包 |
+| 界面呈现 | Web UI 订阅事件，把过程画给人看 | `client` 和 extension cookbook |
 
-这不是小 demo。它是一个拆得很细的 monorepo。
+这张表比目录树更有用。目录告诉你文件在哪里，任务链路告诉你这些包为什么需要一起工作。
 
-几个目录先看这些：
+## 启动层：profile / bundle / patch 决定 runtime 形态
 
-| 分组 | 数量 | 先理解什么 |
-| --- | ---: | --- |
-| `boot` | 2 | `dsh` 怎么按 profile、bundle、patch 启动 |
-| `bundle` | 3 | base、headless、web-app 这些运行组合怎么复用 |
-| `core` | 8 | agent、session、tools、system-prompt 等 runtime 核心 |
-| `client` | 39 | Web UI、connection、host API、事件投影 |
-| `fs` | 7 | 文件系统、搜索、编辑工具和 sandbox 相关能力 |
-| `shell` | 9 | bash / pwsh、本地执行、sandbox、persistent shell |
-| `session` | 13 | 会话持久化、projection、telemetry、title |
-| `subagent` | 11 | 子 agent provider 和工具 |
-| `workflow` | 4 | workflow engine 和相关工具 |
+`@deepseek-ai/dsh-app-boot` 的 README 把启动机制讲得很清楚：profile 位于 `$DSH_HOME/profiles/<name>`，里面有 package 依赖和 `dsh.profile` manifest；bundle 是带 `dsh.bundle.patch` 的 npm package；用户还能通过 profile/home 级别的 `cordis.patch.yml` 和命令行 `--patch` 叠加配置。[4]
 
-这个拆法说明了一件事：Harness 没有把“agent 会做什么”写死在一个大 loop 里。它把能力拆成 service 和插件，再由启动配置组合起来。
+这些配置描述的是运行拓扑。
 
-## 第一层：profile、bundle、patch 决定这次启动像什么
+| 入口 | 作用 |
+| --- | --- |
+| `web` profile | 启动 Web UI、host API、浏览器侧协作体验 |
+| `headless` profile | 跑一次 CLI agent task，适合自动化和 smoke test |
+| `base` bundle | 提供公共 agent 能力，供不同 profile 复用 |
+| 用户 patch | 插入本地插件、覆盖配置、调整插件树 |
 
-`@deepseek-ai/dsh-app-boot` 的 README 讲了 profile 的启动逻辑：profile 在 `$DSH_HOME/profiles/<name>`，里面有 package 依赖和 `dsh.profile` manifest；bundle 是带 `dsh.bundle.patch` 的 npm package；用户还可以通过 profile/home 级别的 `cordis.patch.yml`，或者命令行 `--patch`，叠加额外配置。[4]
+`renderConfigDump()` 使用同一套 patch 逻辑渲染最终配置，`watchUserPatches()` 负责监听 patch 变更并重新应用。[4] 读 Harness 时，最先要问的是：当前 profile 最终拼出了哪棵插件树？这比逐项背配置名更接近真实运行。
 
-这套东西解决的是“同一个 runtime 怎么启动成不同形态”：
+## Cordis 层：插件拥有生命周期
 
-- `web` profile 挂 Web UI 和 host API；
-- `headless` profile 适合一次性 CLI 任务；
-- `base` bundle 提供公共 agent 能力；
-- 用户 patch 可以插入本地插件、覆盖配置、调整树结构。[4]
+官方架构文档把 Harness 建在 Cordis container、service registry、typed events、effects 和 fiber lifecycle 上。[3]
 
-这里的配置不是偏好项，而是运行拓扑。`renderConfigDump()` 会用同一套 patch 逻辑渲染最终配置，减少“dump 看起来对，真实 boot 却不同”的漂移；`watchUserPatches()` 还能在 patch 文件变更时重新应用配置。[4]
+直白讲，插件会活在运行时里。插件可以提供 `tools`、`systemPrompt`、`agents`、`sessions` 这类 service；可以监听 `session/event`、`tools/pre-execute`、`system-prompt/assemble` 这类 event；还可以注册带 disposer 的 effect。插件随 fiber mount，能力随 fiber dispose 撤销。热重载、配置重组和能力卸载都依赖这套生命周期。[3][7]
 
-所以读 Harness 不能只问“配置项有哪些”。更应该问：这次启动到底组合出了哪棵插件树？
+官方 extension cookbook 里的工具插件、hook 插件、UI 插件、protocol driver 都走这个模型。[7]
 
-## 第二层：Cordis 是插件树和生命周期系统
+几个例子能把 Cordis 的意义讲清楚：permission gate 插件监听 `tools/pre-execute`，MCP 插件发现外部工具后注册到 `ctx.tools`，UI 插件监听 `session/event` 后展示新投影。agent loop 面向稳定 seam，具体能力由插件挂载。
 
-官方架构文档把 Harness 放在 Cordis container、service registry、typed events、effects 和 fiber lifecycle 上。[3]
+DeepSeek Harness README 链接的 Cordis 论文 _A Programming Paradigm for Spatiotemporal Composability_ 也在解释这个方向：动态系统需要管理组件安装、撤销和依赖变化。[1]
 
-直白讲：插件不是启动时跑完就结束的脚本。插件可以提供 service，例如 `tools`、`systemPrompt`、`agents`、`sessions`；也可以监听事件，例如 `session/event`、`tools/pre-execute`、`system-prompt/assemble`。插件注册的能力跟随 fiber 生命周期，dispose 后能力撤销。热重载、配置重组和能力卸载都依赖这种可逆注册。[3][7]
+## Prompt 层：模型看到的是当前 runtime 的投影
 
-这解释了官方 cookbook 为什么把工具插件、hook 插件、UI 插件、protocol driver 都放在 Cordis 插件模型里。[7]
+`dsh-system-prompt` 把 prompt 做成 assembly registry：插件贡献有顺序的 sections、tool schemas 和变量，agent loop 每一步都组装当前模型上下文。[6]
 
-一个 permission gate 插件可以监听 `tools/pre-execute`；一个 UI 插件可以监听 `session/event`；一个 MCP 插件可以发现外部工具后注册到 `ctx.tools`。agent loop 不必预先认识每一种能力。能力挂到正确 seam 上，就进入同一条 runtime 路径。
+模型看到的内容来自几类来源：Harness identity、部署 persona、workspace/AGENTS 等上下文、插件贡献的 prompt section、当前可见 tool schema、scoped override。它们按规则汇总成当前 step 的 prompt。
 
-DeepSeek Harness README 还链接了一篇 Cordis 论文 _A Programming Paradigm for Spatiotemporal Composability_，这也说明它不是临时把插件当扩展机制，而是在用一套更完整的动态组合模型支撑 agent runtime。[1]
+几个 API 决定了 prompt 的运行时性质：[6]
 
-## 第三层：system prompt 是运行时投影
+| API / event | 作用 |
+| --- | --- |
+| `ctx.systemPrompt.section()` | 插件贡献具名、有顺序的 prompt section |
+| section scope | agent-scoped section 可以覆盖 global section |
+| `ctx.systemPrompt.tools()` | 插件贡献模型可见 tool schema |
+| `system-prompt/assemble` | waterfall event，插件可协作修改最终 assembly |
+| 变量插值报错 | 坏模板直接失败，避免静默污染 prompt |
 
-`dsh-system-prompt` 把 prompt 做成 assembly registry：插件贡献 ordered sections、tool schemas 和变量，loop 每一步组装当前模型上下文。[6]
+[实践篇](/blog/deepseek-harness-webui-plugin-practice)里，我就用了这个 seam：本地 ESM 插件调用 `ctx.systemPrompt.section()` 注入 marker，headless 模型能看到并回显 marker。这个结果说明插件已经进入模型上下文。
 
-这比“一个很长的系统提示词模板”更灵活。它大致是：
+## Tools 层：工具调用有可检查的执行管线
 
-```text
-Harness identity
-+ deployment persona
-+ AGENTS.md / skills / runtime context
-+ 插件贡献的 prompt sections
-+ 当前可见 tool schemas
-+ scoped overrides
-= 当前 step 的模型上下文
-```
+`dsh-tools` 把自己定义为 tool registry and execution pipeline。工具插件通过 `ctx.tools.register()` 注册 schema 和 executor，agent loop 调工具时经过固定管线。[5]
 
-这几个 API 决定了 prompt 不是静态文本：
+| 管线位置 | 适合放什么 |
+| --- | --- |
+| `tools/pre-execute` | 审批、拒绝、用户确认、权限检查 |
+| monotonic guard | 产生后续 listener 无法反转的拒绝 |
+| `tools/execute` | 真实 dispatch，可加 deadline、retry、metrics |
+| `tools/post-execute` | 检查、替换或规范化结果 |
+| finalize / render | 把 canonical JSON value 渲染成模型可读内容 |
+| result notification | 观察最终 immutable outcome |
 
-- `ctx.systemPrompt.section()` 可以贡献具名、有顺序的 section；
-- section 支持 scope，agent-scoped section 可以覆盖 global section；
-- `ctx.systemPrompt.tools()` 贡献模型可见 tool schema；
-- `system-prompt/assemble` 是 waterfall，插件可以协作修改最终 assembly；
-- 变量插值失败会直接报错，不会悄悄留下坏模板。[6]
+这个设计让一次工具调用同时服务几类对象：模型需要可读结果，UI 需要状态，日志需要事实，安全策略需要拦截点，调试者需要知道失败发生在哪一段。
 
-我们后来做最小插件实践时，就是用这个 seam 验证的：本地 ESM 插件调用 `ctx.systemPrompt.section()` 注入 marker；headless 模型能看到并回显 marker。这个结果说明插件确实能改变模型上下文。
+工具定义也有契约。`defineTool()` 声明参数 schema、输出 schema 和 render 逻辑；成功结果先是 canonical JSON value，再渲染成模型可读内容。[5][8]
 
-## 第四层：工具调用有一条执行管线
+## Session/event log 层：过程本身成为产物
 
-`dsh-tools` 的 README 把自己定义为 tool registry and execution pipeline。工具插件通过 `ctx.tools.register()` 注册 schema 和 executor；agent loop 执行工具时走这条线：[5]
+官方 extension cookbook 的 UI 插件例子监听 `session/event`。assistant streaming chunk 对应 `assistant/chunk`，工具活动和 turn/step 边界也进入事件流。[7]
 
-```text
-tools/pre-execute
-  -> monotonic guards
-  -> tools/execute
-  -> tools/post-execute
-  -> definition-owned finalizeContent
-  -> tools/result notification
-```
+这让 Web UI、replay、debug 共用一批事实。coding agent 的价值常常在过程里：读了哪些文件，改了哪些 diff，跑了什么命令，失败后怎样修。Harness 把这些过程写进 event log，最终回答只是事件流的一个投影。
 
-这条线把工具调用拆成多个可检查的位置：
+## 安全边界跟 runtime 一起看
 
-- `pre-execute` 可以审批、拒绝、询问用户；
-- guard 给出不能被后续 listener 反转的拒绝；
-- `execute` 包住真实 dispatch，可以加 deadline、retry、metrics；
-- `post-execute` 可以检查或替换结果；
-- `result` 观察最终 immutable outcome。[5]
+Harness 能读写文件、执行 shell、调用 Web、启动子 agent。部署口径要按高权限本地服务来设计。
 
-工具定义也不是随手返回一段文本。`defineTool()` 要声明参数 schema、输出 schema 和 render 逻辑；成功结果先是 canonical JSON value，再渲染成模型可读内容。[5][8]
+我们的实践里碰到过一个典型问题：Web UI 通过公网入口访问 host API 时，反代层的 Host / Origin / forwarded header 组合不一致，目录 API 被 request trust fence 拒绝。表现是 `host.listDirectory` 返回 403。这个错误说明安全边界已经在工作。
 
-这就是 agent runtime 和普通脚本的区别。脚本只要执行。agent runtime 要让模型、UI、日志、审批、安全策略都能理解同一次工具调用。
+部署时至少守住几条线：Harness 进程监听本机或受控内网；外层入口提供身份认证和访问控制；反代头和 public host 保持一致；公开文章、日志、截图不出现 live service URL、内部主机名、私有路径或凭据；高风险工具进入 approval 或 sandbox 路径。
 
-## 第五层：session/event log 让过程可见
-
-官方 extension cookbook 的 UI 插件例子监听的是 `session/event`，不是随手读 DOM。assistant token stream 是 `assistant/chunk`，工具活动、turn/step 边界也走事件流。[7]
-
-这个设计很实用：
-
-- UI 不需要猜 agent 当前在干什么；
-- live streaming 和 replay 可以复用同一批事件；
-- 工具结果的 presentation metadata 可以持久化；
-- 事后分析能看到过程，而不只看最终回答。[5][7]
-
-coding agent 的价值常常在过程里：它读了哪些文件，改了哪些 diff，跑了什么命令，哪里失败，后来怎么修。Harness 把这些过程放进 event log，而不是只留下最终总结。
-
-## 第六层：安全边界要跟 runtime 一起设计
-
-能读写文件、执行 shell、调用 Web、启动子 agent 的系统，就不应该按普通静态网页部署。Harness 源码里把 permission、sandbox、approval、tool guard、API request trust 都做成 runtime seam，这个方向是对的。[3][5][7]
-
-我们的实践里也碰到过一个典型问题：Web UI 经公网入口访问 host API 时，反代层的 Host / Origin / forwarded header 组合不对，目录 API 被 trust 判断拒绝。错误表现是 `host.listDirectory` 403。这个坑不是“前端坏了”，而是安全边界在工作。
-
-部署时至少要守住几条线：
-
-- Harness 进程只监听本机或受控内网；
-- 外层入口要有身份认证、访问控制和正确反代头；
-- 公开文章、日志和截图不放 live service URL、内部主机名、私有路径或凭据；
-- 开发者预览版不承载无边界公共输入。
-
-## 它和 Claude Code、Codex CLI、Hermes Agent 的关系
+## 它和现有 coding agent 工具的关系
 
 | 工具 | 适合做什么 | Harness 的位置 |
 | --- | --- | --- |
-| Claude Code / Codex CLI | 直接进仓库写代码、跑测试 | 更成熟的 coding-agent 产品形态 |
-| 普通 Chat UI | 问答、文件上传、轻量任务 | 不暴露完整 runtime 结构 |
-| Hermes Agent | 多平台投递、长期记忆、skills、调度、本机/远端工具 | 更偏跨平台 agent 操作系统 |
-| DeepSeek Harness | 研究和搭建 coding-agent runtime | 把 UI、profile、plugin、tools、event log 和安全 seam 开源出来 |
+| Claude Code / Codex CLI | 直接进仓库写代码、跑测试 | 成熟 coding-agent 产品形态 |
+| 普通 Chat UI | 问答、文件上传、轻量任务 | 隐藏大部分 runtime 结构 |
+| Hermes Agent | 多平台投递、长期记忆、skills、调度、本机/远端工具 | 跨平台 agent 操作系统 |
+| DeepSeek Harness | 研究和搭建 coding-agent runtime | 公开 UI、profile、plugin、tools、event log 和安全 seam |
 
-我的判断是：DeepSeek Harness 现在最值得看的地方，不是它能不能立刻替代成熟 CLI，而是它把一个现代 coding agent runtime 的骨架公开了。
+DeepSeek Harness 把现代 coding agent runtime 的骨架放在公开仓库里。当前 npm `@deepseek-ai/dsh` 的 latest 是 `0.1.0-rc.6`；我读到的源码快照里很多 package 仍是 `0.1.0-rc.5`。[2] 读源码、跑 npm 包、写插件时要锁住版本，避免把不同快照混在一起判断。
 
-当前 npm `@deepseek-ai/dsh` 的 latest 是 `0.1.0-rc.6`；我读到的源码快照里很多 package 仍是 `0.1.0-rc.5`。[2] 这是预览期项目的正常状态。读源码、跑 npm 包、写插件时要锁住版本，不要把不同快照混在一起判断。
+## 推荐阅读入口
 
-## 读这个项目，从这些入口开始
+1. `docs/architecture.md`：Cordis、services、events、extension seam。[3]
+2. `packages/boot/app-boot/README.md`：profile / bundle / patch。[4]
+3. `packages/core/system-prompt/README.md`：prompt assembly。[6]
+4. `packages/core/tools/README.md`：工具注册、执行、审批、结果观察。[5]
+5. `docs/cookbook/extension-cookbook.md`：工具插件、hook 插件、UI 插件的最小形态。[7]
+6. `docs/cookbook/adding-a-tool.md`：一个模型可见工具需要的 schema、execute、output contract。[8]
 
-推荐顺序：
+先按这条路线读，再去看 Web client、fs tool、bash tool、subagent、workflow，源码会顺很多。
 
-1. `docs/architecture.md`：先看 Cordis、services、events、extension seam；[3]
-2. `packages/boot/app-boot/README.md`：看 profile / bundle / patch；[4]
-3. `packages/core/system-prompt/README.md`：看 prompt assembly；[6]
-4. `packages/core/tools/README.md`：看工具注册、执行、审批、结果观察；[5]
-5. `docs/cookbook/extension-cookbook.md`：看工具插件、hook 插件、UI 插件的最小形态；[7]
-6. `docs/cookbook/adding-a-tool.md`：看一个模型可见工具需要的 schema、execute、output contract。[8]
+## 结论
 
-读完这些，再去看 Web client、fs tool、bash tool、subagent、workflow，会顺很多。
+DeepSeek Harness 把 agent runtime 的硬问题放在同一个工程里：启动形态由 profile/bundle/patch 管，组合模型由 Cordis plugin tree 管，模型上下文由 system prompt assembly 管，工具行动由 registry 和 execution pipeline 管，过程由 session/event log 管，风险由 approval、sandbox 和 trust fence 管。
 
-## 我的结论
+它仍处在 developer preview。研究 runtime、写小插件、理解 agent 平台拆分方式，很合适；开放公网服务和生产承载，需要更完整的认证、沙箱和运维边界。
 
-DeepSeek Harness 值得读，因为它把 agent runtime 的几个硬问题放在一个开源工程里：
-
-```text
-怎么启动：profile / bundle / patch
-怎么组合：Cordis plugin tree
-模型看什么：system prompt assembly
-模型怎么行动：tool registry + execution pipeline
-过程怎么留下：session/event log
-能力怎么扩展：service + event + effect
-风险怎么拦住：approval / sandbox / trust fence
-```
-
-它现在还是 developer preview。拿来当生产级公开服务不合适。拿来研究 DeepSeek 怎么组织 coding agent runtime，很合适。
-
-下一篇写实践：怎样部署它，让 Web UI agent 修一个小仓库里的 bug，再用最小插件证明 `--patch` 和 `ctx.systemPrompt.section()` 真的能进入模型上下文。
+实践篇继续把这条链路跑了一遍：部署 Harness，让 Web UI agent 修一个小仓库里的 bug，再用最小插件证明 `--patch` 和 `ctx.systemPrompt.section()` 进入模型上下文。
 
 ## Sources
 
