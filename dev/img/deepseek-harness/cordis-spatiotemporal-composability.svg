@@ -80,7 +80,7 @@
     <text x="867" y="368" class="box-text">Web UI and host API</text>
     <text x="867" y="402" class="box-text">sandbox and approval seams</text>
     <rect x="867" y="444" width="212" height="42" rx="21" fill="#0ea5e9" opacity="0.18" stroke="#38bdf8"/>
-    <text x="897" y="471" class="small">agent runtime, not chat skin</text>
+    <text x="897" y="471" class="small">agent runtime with lifecycle seams</text>
   </g>
 
   <path class="line" d="M370 233 C415 235 425 290 458 320"/>
