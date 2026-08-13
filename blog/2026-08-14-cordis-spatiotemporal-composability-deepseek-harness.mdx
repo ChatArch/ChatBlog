@@ -1,0 +1,193 @@
+---
+title: "读 Cordis 论文：DeepSeek Harness 为什么把 everything 做成 plugin"
+date: 2026-08-14
+slug: cordis-spatiotemporal-composability-deepseek-harness
+tags: [deepseek, cordis, agent, paper, plugin]
+description: 读 Cordis 论文 A Programming Paradigm for Spatiotemporal Composability，解释它和 DeepSeek Harness 的关系：revertible effects、reactive coeffects、fiber lifecycle、热重载、权限和 sandbox 边界，为什么这些概念会落到 agent runtime 上。
+---
+
+DeepSeek Harness README 里有一句话很容易被当成口号：`Everything is a Plugin`。旁边还放了 Cordis 论文 _A Programming Paradigm for Spatiotemporal Composability_。[1][2][3]
+
+读完这篇论文，那句话就不像宣传语了。它更像一条工程约束：一个 agent runtime 在运行中装上工具、撤掉工具、换 provider、改 prompt、保留 session，又不想每次都重启进程，就需要一套规则管理“谁改了环境”和“谁依赖谁”。
+
+<!-- truncate -->
+
+![Cordis spatiotemporal composability map](/img/deepseek-harness/cordis-spatiotemporal-composability.svg)
+
+我会把论文里的形式化内容翻译成 agent runtime 视角。数学符号只保留必要部分，重点看它解释了 DeepSeek Harness 哪些设计。
+
+## 论文真正讨论的问题
+
+论文的对象不是“怎么写一个插件系统”。它问的是更底层的问题：一个组件运行时加入系统以后，既会改变共享环境，也会依赖共享环境；当这个组件被移除、热更新、或者它依赖的 provider 变化时，系统怎样保持一致？[3]
+
+论文把这个问题拆成两个方向：[3]
+
+| 方向 | 论文里的叫法 | 工程里的含义 |
+| --- | --- | --- |
+| 时间 | temporal composability | 组件卸载时，它安装过的 listener、service、状态和资源要能撤回 |
+| 空间 | spatial composability | 组件依赖的 service/provider 要能声明、解析、变更和触发重组 |
+
+这两个词听起来抽象，但放到 Harness 上就很具体。
+
+一个工具插件注册了 `ctx.tools.register()`，以后模型就可能调用它。一个 prompt 插件注册了 section，以后每轮模型上下文都会受到影响。一个 Web UI 插件监听 session event，以后前端能看到新的投影。它们都不是“函数调用完就没了”的代码。它们把能力安装进运行时。
+
+问题也跟着来了：
+
+- 插件卸载时，它注册的 tool、event listener、prompt section 是否会完全撤掉？
+- provider 被换掉时，依赖它的组件是否会停下来重新解析？
+- 一个工具执行中途失败，runtime 能不能知道哪些状态已经安装、哪些需要回滚？
+- HMR 能不能换模块而不是重启整个进程？
+
+论文用 effect / coeffect 这组概念回答这些问题。[3]
+
+## Revertible effects：安装能力时同时留下卸载路径
+
+论文对 temporal composability 的建模叫 revertible effects。简化以后，它的意思是：一次对 context 的改变，不只返回新的 context，还要返回一个 inverse。论文把 effect 写成 `Γ -> Γ × (Γ -> Γ)`；应用 effect 得到新 context，同时得到一个能把它撤回去的函数。[3]
+
+这和普通插件 API 的差别很大。
+
+很多系统把插件卸载做成另一个生命周期钩子：`activate()` 里注册东西，`deactivate()` 里作者自己记得清理。论文认为这会把 effect creation 和 disposal 分开，清理是否完整依赖作者纪律。[3]
+
+Cordis 的思路更接近：注册本身就是一个带 disposer 的 effect。你注册 listener，运行时拿到反向操作；你提供 service，运行时拿到撤销 provider 的操作；你在 fiber 下安装多个 effect，运行时按顺序组合 disposer。论文后面把 Cordis 的 `ctx.effect()` 对应到这个模型：callback 产生 disposer，执行器把 disposer 累积起来，卸载时按 LIFO 恢复。[3]
+
+Harness 的官方架构文档和 extension cookbook 也沿着这条路走：扩展点不是随便 push 到全局数组，而是经过 Cordis context、service、events 和 fiber lifecycle。[1][7][8]
+
+在 agent runtime 里，这件事很重要。因为工具、prompt、session event、权限 hook 都会影响模型行为。注册不干净，比普通 Web 插件更危险。一个 UI 扩展没卸掉，最多界面多一块；一个 permission hook、tool schema 或 prompt section 没卸掉，模型看到的世界就变了。
+
+## Reactive coeffects：依赖不是读不到再报错
+
+另一个方向是 spatial composability。论文把 coeffect 用来描述“程序需要什么环境”。传统 IoC 容器通常就是 key-value mapping；Cordis 把它提升成一个会触发生命周期变化的 context。[3]
+
+论文里的核心判断很简单：组件不应该乐观访问一个可能不存在的依赖，然后在运行时炸掉。组件应该先声明依赖；只有当 context 满足声明时才激活；当依赖消失时，运行时要通知并触发 deactivation。[3]
+
+论文给出三种状态：[3]
+
+```text
+activating   原来不满足依赖，现在满足
+
+deactivating 原来满足依赖，现在不满足
+
+neutral      依赖满足状态没有变化
+```
+
+放到 Harness 的插件树里，例子并不抽象：工具通过 registry 进入执行管线，system prompt section 通过 registry 进入模型上下文，UI 插件可以监听 session event。依赖不是 README 里写一句“需要 X”，而应该成为 runtime 能看见、能排序、能撤回的东西。[5][6][8]
+
+我读论文时最想带回 Harness 的也是这一点：它不是在为“插件化”找漂亮理论，而是在解释为什么插件化 agent runtime 不能只靠约定。
+
+## Fiber：组件不是模块文件，而是一次运行中的实例
+
+论文把 component 的运行实例称为 fiber。一个 fiber 有自己的 context、依赖声明、提供的能力、生命周期状态和 accumulated disposer。[3]
+
+这个抽象在 Harness 里很自然。一个 package 只是代码；一个 profile / bundle / patch 启动以后，真正影响系统的是被加载出来的 plugin instance。它挂在一棵树里，能提供 service，能监听 event，能安装 effect，也能因为依赖变化进入 loading / active / unloading / failed 之类的状态。[1][4]
+
+沿着 fiber 这个视角看，前两篇 DeepSeek Harness 文章里提到的几个现象会更容易串起来：
+
+- `profile / bundle / patch` 不是普通配置项，而是在决定插件树长什么样；
+- `ctx.systemPrompt.section()` 不是改一个字符串模板，而是在当前 runtime 里贡献模型上下文；
+- `ctx.tools.register()` 不是把函数塞进全局表，而是在工具 registry 和执行管线里注册一个可观察、可撤销、可拦截的能力；
+- session event log 之所以重要，是因为 UI、replay、debug 都应该订阅 runtime 事件，而不是猜 DOM 或猜模型最后一句话。[4][5][6]
+
+论文给这个工程直觉补了一层语言：插件不是“扩展点回调”，而是生命周期受控的 component instance。
+
+## 为什么这和 agent harness 特别相关
+
+论文在动机里直接提到了 self-evolving agent harnesses。现代 agent harness 会组合 tool suites、execution environments、permission / sandboxing、session persistence、context management、memory、subagents 和用户界面；未来还可能生成并部署自己的组件修改。[3]
+
+这个观察很准。一个 coding agent runtime 的风险不在“能不能调用模型”，而在它把很多高权限能力绑在一起：
+
+```text
+模型上下文
++ 工具 schema
++ 文件系统能力
++ shell / subprocess
++ Web / MCP / subagent
++ session state
++ approval / guard
++ UI projection
+```
+
+这些能力要能动态组合，但不能乱组合。比如：
+
+- 工具 provider 加入后，模型 prompt 里的 tool schema 要更新；
+- permission 插件撤掉后，不能留下半个 guard；
+- credential provider 变化后，依赖它的 driver 要重新解析；
+- Web UI 热更新时，session stream 和 host API 不能进半更新状态；
+- 不可信插件必须放到 sandbox 或桥接 context，不能因为语言层访问控制看起来存在就信任它。[3]
+
+论文第 6 节讨论系统边界、安全和 sandbox 时说得很清楚：语言层 access control 挡不住恶意代码直接触达 host runtime；不可信组件需要进单独 sandbox、进程或虚拟化边界，再通过 bridge 获取被削弱过的能力。[3]
+
+Harness 的部署判断也要按这个边界来做：不要把 Web UI 当普通静态页面裸放。它背后连接的是 workspace、文件系统、shell 和工具执行。反代、认证、Host / Origin trust fence、sandbox、approval 都会影响 runtime 的实际安全边界。[1][7]
+
+## 论文里最能落地的三块
+
+### 1. `ctx.effect()`：把清理责任从作者记忆里拿出来
+
+论文的 Cordis 实现部分把 effect tracking 落到 `ctx.effect()`。callback 执行时产生 disposer，运行时组合 disposer，卸载 fiber 时恢复。[3]
+
+对插件作者来说，这会变成几条很实际的要求：
+
+- 不要绕过 context 往全局随便挂状态；
+- 注册能力时返回 disposer；
+- 把资源获取和释放放在同一个局部结构里；
+- 外部世界的 irreversible emission 不能假装可回滚，只能 withheld、commit 或 compensation。[3]
+
+这个边界对 agent tool 尤其重要。读文件、打开 descriptor、启动子进程，可以被 runtime 记录和释放。向外部 API 发送请求、写入用户仓库、发消息，就不是同一种东西。文章和日志里也不能把这些外部副作用说成“可自动回滚”。
+
+### 2. `ctx.set()` / `ctx.get()`：依赖访问需要被 runtime 看见
+
+论文把 coeffect operations 落到 `ctx.set(key, value)`、`ctx.get(key)`，再在 Cordis 里加上 isolation、interception 和 proxy-mediated property access。[3]
+
+这比普通对象属性访问麻烦，但有收益：runtime 能知道一个 fiber 声明了什么依赖，当前 committed view 里有什么 provider，什么时候应该刷新 target，什么时候应该让 dependent 卸载。
+
+在 Harness 里，这个机制支撑了“可组合而不是硬编码”的设计：tools、system prompt、sessions、workflow、subagent、settings 这类能力可以通过 service / registry / event seam 进入同一套 runtime。agent loop 不需要把所有能力写死在自己里面。[1][5][6][7][8]
+
+### 3. HMR / declarative loader：配置变更不是重启脚本
+
+论文实现部分还讲到 declarative configuration 和 HMR。配置 entry 记录 id、url、isolate、intercept、config、disabled；loader 用 reconciliation key 调整 fiber。HMR 则通过 dispose 旧 fiber、import 新模块、失败时恢复 cache 的方式避免半更新状态。[3]
+
+这也解释了 Harness 的 `profile / bundle / patch` 为什么不该被理解成“给 CLI 加几个 flag”。它们描述的是一棵可协调的插件树：哪个 entry 插入，哪个被禁用，哪些配置层叠加到最终 runtime。[4]
+
+此前用 `--patch` 加载本地 Cordis 插件、再把 marker 注入 system prompt，本质上是在验证这条路线：树外插件能被 loader 装进 runtime，并通过 `ctx.systemPrompt.section()` 影响模型上下文。[4][6]
+
+## 论文没有解决完的地方
+
+这篇论文不是产品白皮书，也不是完整安全方案。有几处边界需要单独拎出来。
+
+第一，revertible effects 依赖插件给出正确 inverse。Cordis 可以追踪 disposer、按顺序调用 disposer，但它无法自动证明你返回的 disposer 真能撤回 effect。论文也承认 runtime 不检查 witnessed refinement 里的证明义务。[3]
+
+第二，外部副作用不是都能回滚。论文把系统边界讲得很谨慎：打开资源的 acquisition 可以记录，真正把数据写出边界的 emission 通常只能延迟提交或用补偿动作处理。[3]
+
+第三，依赖 typing 和 versioning 仍是开放问题。论文第 6.6 节标题就是 Dependency Typing and Versioning：单靠 key identity 不能解决独立组件生态里的 interface drift 和 key collision。provider 改了接口、消费者还声明同一个 key，coeffect 层会认为依赖满足，但运行时值可能已经不兼容。[3]
+
+这点放到 Harness 插件生态里很现实。一个 tool service 的 schema、一个 credentials provider 的 shape、一个 UI event payload 的版本，最终都需要 namespacing、schema check、manifest 或 capability negotiation。否则“依赖满足”只能说明名字对上了，不能说明协议对上了。
+
+## 读完论文后，怎么看 DeepSeek Harness
+
+前两篇文章分别讲了 Harness 的 runtime 架构和一次部署/插件实践：
+
+- [DeepSeek Harness 是什么：把模型接进 workspace 的 Agent Runtime](/blog/deepseek-harness-agent-runtime-architecture)
+- [DeepSeek Harness 实战：部署、修 bug、加载一个本地插件](/blog/deepseek-harness-webui-plugin-practice)
+
+这篇论文给它们补上了“为什么”。
+
+DeepSeek Harness 不是因为喜欢插件这个词，才把 everything 做成 plugin。它要解决的是 agent runtime 的组合问题：工具、prompt、session、UI、provider、guard、sandbox 这些东西都可能在运行中出现、消失、替换、拦截和重组。
+
+把它们硬写进一个 agent loop，会很快变成一团 if/else。把它们做成普通插件，也还不够，因为普通插件系统常常只管注册，不认真管撤回和依赖重排。Cordis 的价值在这里：它把插件从“扩展点”提升成“带生命周期、effect、coeffect 和 context 的运行单元”。[3]
+
+我现在对 Harness 的判断是：
+
+- 它还在 developer preview，不适合当成无边界公网产品裸跑；[1]
+- 它很适合研究现代 coding agent runtime 应该怎么拆；
+- 它最值得看的不是 Web UI 外观，而是 profile / bundle / patch、system prompt assembly、tool registry、session event、Cordis fiber lifecycle 这些 seam；[1][4][5][6]
+- Cordis 不能替代部署层认证、权限策略或 sandbox 实现，但它提供了一个判断工具：哪些改动必须可撤回，哪些依赖必须被 runtime 看见。
+
+## Sources
+
+[1] https://github.com/deepseek-ai/deepseek-harness
+[2] https://github.com/cordiverse/paper
+[3] https://github.com/cordiverse/paper/blob/main/paper.pdf
+[4] https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/boot/app-boot/README.md
+[5] https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/tools/README.md
+[6] https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/system-prompt/README.md
+[7] https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md
+[8] https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/extension-cookbook.md
