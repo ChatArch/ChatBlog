@@ -9,6 +9,125 @@
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
         <item>
+            <title><![CDATA[读 Cordis 论文：DeepSeek Harness 为什么把 everything 做成 plugin]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness</guid>
+            <pubDate>Fri, 14 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[读 Cordis 论文 A Programming Paradigm for Spatiotemporal Composability，解释它和 DeepSeek Harness 的关系：revertible effects、reactive coeffects、fiber lifecycle、热重载、权限和 sandbox 边界，为什么这些概念会落到 agent runtime 上。]]></description>
+            <content:encoded><![CDATA[<p>DeepSeek Harness README 里有一句话很容易被当成口号：<code>Everything is a Plugin</code>。旁边还放了 Cordis 论文 <em>A Programming Paradigm for Spatiotemporal Composability</em>。[1][2][3]</p>
+<p>读完这篇论文，那句话就不像宣传语了。它更像一条工程约束：一个 agent runtime 在运行中装上工具、撤掉工具、换 provider、改 prompt、保留 session，又不想每次都重启进程，就需要一套规则管理“谁改了环境”和“谁依赖谁”。</p>
+<p><img decoding="async" loading="lazy" alt="Cordis spatiotemporal composability map" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAwIiBoZWlnaHQ9IjY4MCIgdmlld0JveD0iMCAwIDEyMDAgNjgwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+Q29yZGlzIHNwYXRpb3RlbXBvcmFsIGNvbXBvc2FiaWxpdHkgbWFwPC90aXRsZT4KICA8ZGVzYyBpZD0iZGVzYyI+QSBkYXJrIGRpYWdyYW0gc2hvd2luZyB3aHkgQ29yZGlzIG1hdHRlcnMgdG8gRGVlcFNlZWsgSGFybmVzczogY29tcG9uZW50cyBpbnN0YWxsIHJldmVydGlibGUgZWZmZWN0cywgZGVjbGFyZSByZWFjdGl2ZSBjb2VmZmVjdHMsIHJ1biBpbiBmaWJlcnMsIGFuZCBzdXJmYWNlIGFzIGFuIGFnZW50IHJ1bnRpbWUgd2l0aCB0b29scywgcHJvbXB0LCBzZXNzaW9ucywgVUksIGFuZCBzYW5kYm94IHNlYW1zLjwvZGVzYz4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB4Mj0iMSIgeTE9IjAiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMDYxMzFmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC41NSIgc3RvcC1jb2xvcj0iIzBiMTAyMCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxMTE4MjciLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InRlYWwiIHgxPSIwIiB4Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzIyZDNlZSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMzNGQzOTkiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InZpb2xldCIgeDE9IjAiIHgyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYTc4YmZhIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzYwYTVmYSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9InNoYWRvdyIgeD0iLTIwJSIgeT0iLTIwJSIgd2lkdGg9IjE0MCUiIGhlaWdodD0iMTQwJSI+CiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAiIGR5PSIxMiIgc3RkRGV2aWF0aW9uPSIxOCIgZmxvb2QtY29sb3I9IiMwMDAiIGZsb29kLW9wYWNpdHk9IjAuMzUiLz4KICAgIDwvZmlsdGVyPgogICAgPG1hcmtlciBpZD0iYXJyb3ciIG1hcmtlcldpZHRoPSIxMiIgbWFya2VySGVpZ2h0PSIxMiIgcmVmWD0iMTAiIHJlZlk9IjYiIG9yaWVudD0iYXV0byIgbWFya2VyVW5pdHM9InN0cm9rZVdpZHRoIj4KICAgICAgPHBhdGggZD0iTTIsMiBMMTAsNiBMMiwxMCBaIiBmaWxsPSIjOGJkNWZmIi8+CiAgICA8L21hcmtlcj4KICAgIDxzdHlsZT4KICAgICAgLnRpdGxlIHsgZm9udDogNzAwIDM0cHggLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBzYW5zLXNlcmlmOyBmaWxsOiAjZjhmYWZjOyB9CiAgICAgIC5zdWJ0aXRsZSB7IGZvbnQ6IDQwMCAxN3B4IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgc2Fucy1zZXJpZjsgZmlsbDogI2I2YzdkOTsgfQogICAgICAuYm94LXRpdGxlIHsgZm9udDogNzAwIDIwcHggLWFwcGxlLXN5c3RlbSwgQmxpbmtNYWNTeXN0ZW1Gb250LCAiU2Vnb2UgVUkiLCBzYW5zLXNlcmlmOyBmaWxsOiAjZjhmYWZjOyB9CiAgICAgIC5ib3gtdGV4dCB7IGZvbnQ6IDQwMCAxNXB4IC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgc2Fucy1zZXJpZjsgZmlsbDogI2NiZDVlMTsgfQogICAgICAuc21hbGwgeyBmb250OiA1MDAgMTNweCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIHNhbnMtc2VyaWY7IGZpbGw6ICM5ZmI1Yzc7IH0KICAgICAgLnBpbGwgeyBmb250OiA3MDAgMTNweCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIHNhbnMtc2VyaWY7IGZpbGw6ICMwNzExMWY7IH0KICAgICAgLmxpbmUgeyBzdHJva2U6ICM4YmQ1ZmY7IHN0cm9rZS13aWR0aDogMi4yOyBmaWxsOiBub25lOyBtYXJrZXItZW5kOiB1cmwoI2Fycm93KTsgb3BhY2l0eTogMC44ODsgfQogICAgICAubXV0ZWQtbGluZSB7IHN0cm9rZTogIzY0NzQ4Yjsgc3Ryb2tlLXdpZHRoOiAxLjU7IGZpbGw6IG5vbmU7IG9wYWNpdHk6IDAuNTU7IHN0cm9rZS1kYXNoYXJyYXk6IDYgNzsgfQogICAgPC9zdHlsZT4KICA8L2RlZnM+CgogIDxyZWN0IHdpZHRoPSIxMjAwIiBoZWlnaHQ9IjY4MCIgcng9IjAiIGZpbGw9InVybCgjYmcpIi8+CiAgPGNpcmNsZSBjeD0iMTAyMCIgY3k9IjExMCIgcj0iMjEwIiBmaWxsPSIjMGVhNWU5IiBvcGFjaXR5PSIwLjA4Ii8+CiAgPGNpcmNsZSBjeD0iMTIwIiBjeT0iNTkwIiByPSIyNTAiIGZpbGw9IiMzNGQzOTkiIG9wYWNpdHk9IjAuMDciLz4KCiAgPHRleHQgeD0iNzAiIHk9IjcyIiBjbGFzcz0idGl0bGUiPkNvcmRpcyBwYXBlcjogdGhlIHJ1bnRpbWUgbW9kZWwgdW5kZXJuZWF0aCBIYXJuZXNzPC90ZXh0PgogIDx0ZXh0IHg9IjcwIiB5PSIxMDQiIGNsYXNzPSJzdWJ0aXRsZSI+U3BhdGlvdGVtcG9yYWwgY29tcG9zYWJpbGl0eSB0dXJucyBwbHVnaW4gdGVhcmRvd24gYW5kIGRlcGVuZGVuY3kgcmVzb2x1dGlvbiBpbnRvIGZpcnN0LWNsYXNzIHJ1bnRpbWUgcnVsZXMuPC90ZXh0PgoKICA8ZyBmaWx0ZXI9InVybCgjc2hhZG93KSI+CiAgICA8cmVjdCB4PSI3MCIgeT0iMTU1IiB3aWR0aD0iMzAwIiBoZWlnaHQ9IjE1NSIgcng9IjI0IiBmaWxsPSIjMGYxNzJhIiBzdHJva2U9IiMxZTNhNGEiLz4KICAgIDxyZWN0IHg9IjkyIiB5PSIxNzciIHdpZHRoPSIxMTYiIGhlaWdodD0iMjYiIHJ4PSIxMyIgZmlsbD0idXJsKCN0ZWFsKSIvPgogICAgPHRleHQgeD0iMTA5IiB5PSIxOTUiIGNsYXNzPSJwaWxsIj50aW1lIGF4aXM8L3RleHQ+CiAgICA8dGV4dCB4PSI5MiIgeT0iMjMzIiBjbGFzcz0iYm94LXRpdGxlIj5SZXZlcnRpYmxlIGVmZmVjdHM8L3RleHQ+CiAgICA8dGV4dCB4PSI5MiIgeT0iMjYzIiBjbGFzcz0iYm94LXRleHQiPkEgY29tcG9uZW50IGNoYW5nZXMgY29udGV4dDwvdGV4dD4KICAgIDx0ZXh0IHg9IjkyIiB5PSIyODciIGNsYXNzPSJib3gtdGV4dCI+YW5kIHJldHVybnMgYW4gaW52ZXJzZS48L3RleHQ+CiAgICA8dGV4dCB4PSI5MiIgeT0iMzEzIiBjbGFzcz0ic21hbGwiPlVubG9hZCA9IHJlcGxheSB0cmFja2VkIGludmVyc2VzLjwvdGV4dD4KICA8L2c+CgogIDxnIGZpbHRlcj0idXJsKCNzaGFkb3cpIj4KICAgIDxyZWN0IHg9IjcwIiB5PSIzNzUiIHdpZHRoPSIzMDAiIGhlaWdodD0iMTU1IiByeD0iMjQiIGZpbGw9IiMwZjE3MmEiIHN0cm9rZT0iIzI3MzY1MyIvPgogICAgPHJlY3QgeD0iOTIiIHk9IjM5NyIgd2lkdGg9IjEyMiIgaGVpZ2h0PSIyNiIgcng9IjEzIiBmaWxsPSJ1cmwoI3Zpb2xldCkiLz4KICAgIDx0ZXh0IHg9IjExMSIgeT0iNDE1IiBjbGFzcz0icGlsbCI+c3BhY2UgYXhpczwvdGV4dD4KICAgIDx0ZXh0IHg9IjkyIiB5PSI0NTMiIGNsYXNzPSJib3gtdGl0bGUiPlJlYWN0aXZlIGNvZWZmZWN0czwvdGV4dD4KICAgIDx0ZXh0IHg9IjkyIiB5PSI0ODMiIGNsYXNzPSJib3gtdGV4dCI+QSBjb21wb25lbnQgZGVjbGFyZXMgd2hhdDwvdGV4dD4KICAgIDx0ZXh0IHg9IjkyIiB5PSI1MDciIGNsYXNzPSJib3gtdGV4dCI+ZGVwZW5kZW5jaWVzIGl0IG5lZWRzLjwvdGV4dD4KICAgIDx0ZXh0IHg9IjkyIiB5PSI1MzMiIGNsYXNzPSJzbWFsbCI+Q2hhbmdlID0gYWN0aXZhdGUsIGRlYWN0aXZhdGUsIG9yIHN0YXkuPC90ZXh0PgogIDwvZz4KCiAgPGcgZmlsdGVyPSJ1cmwoI3NoYWRvdykiPgogICAgPHJlY3QgeD0iNDU4IiB5PSIyNDgiIHdpZHRoPSIyODYiIGhlaWdodD0iMTkwIiByeD0iMjgiIGZpbGw9IiMxMTE4MjciIHN0cm9rZT0iIzM1NjI3YSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICAgIDx0ZXh0IHg9IjQ5NiIgeT0iMjk1IiBjbGFzcz0iYm94LXRpdGxlIj5VbmlmaWVkIGNvbnRleHQ8L3RleHQ+CiAgICA8dGV4dCB4PSI0OTYiIHk9IjMyNiIgY2xhc3M9ImJveC10ZXh0Ij5lZmZlY3RzICsgY29lZmZlY3RzPC90ZXh0PgogICAgPHRleHQgeD0iNDk2IiB5PSIzNTAiIGNsYXNzPSJib3gtdGV4dCI+bGl2ZSBpbiB0aGUgc2FtZSBydW50aW1lPC90ZXh0PgogICAgPHRleHQgeD0iNDk2IiB5PSIzNzQiIGNsYXNzPSJib3gtdGV4dCI+b2JqZWN0LCBzbyBjb21wb25lbnRzIGNhbjwvdGV4dD4KICAgIDx0ZXh0IHg9IjQ5NiIgeT0iMzk4IiBjbGFzcz0iYm94LXRleHQiPmJlIGxvYWRlZCwgdW5sb2FkZWQsIGFuZDwvdGV4dD4KICAgIDx0ZXh0IHg9IjQ5NiIgeT0iNDIyIiBjbGFzcz0iYm94LXRleHQiPnJlY29uZmlndXJlZCB3aXRob3V0IHJlc3RhcnQuPC90ZXh0PgogIDwvZz4KCiAgPGcgZmlsdGVyPSJ1cmwoI3NoYWRvdykiPgogICAgPHJlY3QgeD0iODI1IiB5PSIxNDUiIHdpZHRoPSIzMDUiIGhlaWdodD0iMzkwIiByeD0iMzIiIGZpbGw9IiMwYjEyMjAiIHN0cm9rZT0iIzFkNGVkOCIgc3Ryb2tlLW9wYWNpdHk9IjAuNjUiLz4KICAgIDx0ZXh0IHg9Ijg2NyIgeT0iMTk1IiBjbGFzcz0iYm94LXRpdGxlIj5EZWVwU2VlayBIYXJuZXNzIHN1cmZhY2U8L3RleHQ+CiAgICA8dGV4dCB4PSI4NjciIHk9IjIzMiIgY2xhc3M9ImJveC10ZXh0Ij5wcm9maWxlIC8gYnVuZGxlIC8gcGF0Y2g8L3RleHQ+CiAgICA8dGV4dCB4PSI4NjciIHk9IjI2NiIgY2xhc3M9ImJveC10ZXh0Ij5zeXN0ZW0gcHJvbXB0IHNlY3Rpb25zPC90ZXh0PgogICAgPHRleHQgeD0iODY3IiB5PSIzMDAiIGNsYXNzPSJib3gtdGV4dCI+dG9vbCByZWdpc3RyeSBhbmQgZ3VhcmRzPC90ZXh0PgogICAgPHRleHQgeD0iODY3IiB5PSIzMzQiIGNsYXNzPSJib3gtdGV4dCI+c2Vzc2lvbiBldmVudCBsb2c8L3RleHQ+CiAgICA8dGV4dCB4PSI4NjciIHk9IjM2OCIgY2xhc3M9ImJveC10ZXh0Ij5XZWIgVUkgYW5kIGhvc3QgQVBJPC90ZXh0PgogICAgPHRleHQgeD0iODY3IiB5PSI0MDIiIGNsYXNzPSJib3gtdGV4dCI+c2FuZGJveCBhbmQgYXBwcm92YWwgc2VhbXM8L3RleHQ+CiAgICA8cmVjdCB4PSI4NjciIHk9IjQ0NCIgd2lkdGg9IjIxMiIgaGVpZ2h0PSI0MiIgcng9IjIxIiBmaWxsPSIjMGVhNWU5IiBvcGFjaXR5PSIwLjE4IiBzdHJva2U9IiMzOGJkZjgiLz4KICAgIDx0ZXh0IHg9Ijg5NyIgeT0iNDcxIiBjbGFzcz0ic21hbGwiPmFnZW50IHJ1bnRpbWUsIG5vdCBjaGF0IHNraW48L3RleHQ+CiAgPC9nPgoKICA8cGF0aCBjbGFzcz0ibGluZSIgZD0iTTM3MCAyMzMgQzQxNSAyMzUgNDI1IDI5MCA0NTggMzIwIi8+CiAgPHBhdGggY2xhc3M9ImxpbmUiIGQ9Ik0zNzAgNDUyIEM0MjAgNDQ3IDQyOSAzOTUgNDU4IDM3MCIvPgogIDxwYXRoIGNsYXNzPSJsaW5lIiBkPSJNNzQ0IDM0MyBDNzgwIDM0MyA3OTUgMzQyIDgyNSAzNDIiLz4KCiAgPHBhdGggY2xhc3M9Im11dGVkLWxpbmUiIGQ9Ik0yMjAgMzEwIEMyNzAgMzQyIDMwMCAzNjQgMzQwIDM5MCIvPgogIDxwYXRoIGNsYXNzPSJtdXRlZC1saW5lIiBkPSJNMjIwIDM3NSBDMjcwIDM0NCAzMDAgMzIyIDM0MCAyOTciLz4KCiAgPHRleHQgeD0iNDMwIiB5PSI1NTUiIGNsYXNzPSJzdWJ0aXRsZSI+UGFwZXIgcmVhZGluZyBsZW5zPC90ZXh0PgogIDx0ZXh0IHg9IjQzMCIgeT0iNTg3IiBjbGFzcz0iYm94LXRleHQiPlRoZSBwYXBlciBpcyB1c2VmdWwgYmVjYXVzZSBpdCBleHBsYWlucyB3aHkgSGFybmVzcyB0cmVhdHMgcGx1Z2lucyBhcyBsaWZlY3ljbGUtb3duZWQ8L3RleHQ+CiAgPHRleHQgeD0iNDMwIiB5PSI2MTMiIGNsYXNzPSJib3gtdGV4dCI+cnVudGltZSBwYXJ0aWNpcGFudHMuIFRvb2xzLCBwcm9tcHRzLCBzZXNzaW9ucywgYW5kIFVJIGhvb2tzIGFyZSBpbnN0YWxsZWQgaW50byBjb250ZXh0LDwvdGV4dD4KICA8dGV4dCB4PSI0MzAiIHk9IjYzOSIgY2xhc3M9ImJveC10ZXh0Ij5hbmQgdGhlIHJ1bnRpbWUgbmVlZHMgcnVsZXMgZm9yIHdpdGhkcmF3aW5nIHRoZW0gc2FmZWx5LjwvdGV4dD4KPC9zdmc+Cg==" width="1200" height="680" class="img_ev3q"></p>
+<p>我会把论文里的形式化内容翻译成 agent runtime 视角。数学符号只保留必要部分，重点看它解释了 DeepSeek Harness 哪些设计。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="论文真正讨论的问题">论文真正讨论的问题<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#%E8%AE%BA%E6%96%87%E7%9C%9F%E6%AD%A3%E8%AE%A8%E8%AE%BA%E7%9A%84%E9%97%AE%E9%A2%98" class="hash-link" aria-label="论文真正讨论的问题的直接链接" title="论文真正讨论的问题的直接链接" translate="no">​</a></h2>
+<p>论文的对象不是“怎么写一个插件系统”。它问的是更底层的问题：一个组件运行时加入系统以后，既会改变共享环境，也会依赖共享环境；当这个组件被移除、热更新、或者它依赖的 provider 变化时，系统怎样保持一致？[3]</p>
+<p>论文把这个问题拆成两个方向：[3]</p>
+<table><thead><tr><th>方向</th><th>论文里的叫法</th><th>工程里的含义</th></tr></thead><tbody><tr><td>时间</td><td>temporal composability</td><td>组件卸载时，它安装过的 listener、service、状态和资源要能撤回</td></tr><tr><td>空间</td><td>spatial composability</td><td>组件依赖的 service/provider 要能声明、解析、变更和触发重组</td></tr></tbody></table>
+<p>这两个词听起来抽象，但放到 Harness 上就很具体。</p>
+<p>一个工具插件注册了 <code>ctx.tools.register()</code>，以后模型就可能调用它。一个 prompt 插件注册了 section，以后每轮模型上下文都会受到影响。一个 Web UI 插件监听 session event，以后前端能看到新的投影。它们都不是“函数调用完就没了”的代码。它们把能力安装进运行时。</p>
+<p>问题也跟着来了：</p>
+<ul>
+<li class="">插件卸载时，它注册的 tool、event listener、prompt section 是否会完全撤掉？</li>
+<li class="">provider 被换掉时，依赖它的组件是否会停下来重新解析？</li>
+<li class="">一个工具执行中途失败，runtime 能不能知道哪些状态已经安装、哪些需要回滚？</li>
+<li class="">HMR 能不能换模块而不是重启整个进程？</li>
+</ul>
+<p>论文用 effect / coeffect 这组概念回答这些问题。[3]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="revertible-effects安装能力时同时留下卸载路径">Revertible effects：安装能力时同时留下卸载路径<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#revertible-effects%E5%AE%89%E8%A3%85%E8%83%BD%E5%8A%9B%E6%97%B6%E5%90%8C%E6%97%B6%E7%95%99%E4%B8%8B%E5%8D%B8%E8%BD%BD%E8%B7%AF%E5%BE%84" class="hash-link" aria-label="Revertible effects：安装能力时同时留下卸载路径的直接链接" title="Revertible effects：安装能力时同时留下卸载路径的直接链接" translate="no">​</a></h2>
+<p>论文对 temporal composability 的建模叫 revertible effects。简化以后，它的意思是：一次对 context 的改变，不只返回新的 context，还要返回一个 inverse。论文把 effect 写成 <code>Γ -&gt; Γ × (Γ -&gt; Γ)</code>；应用 effect 得到新 context，同时得到一个能把它撤回去的函数。[3]</p>
+<p>这和普通插件 API 的差别很大。</p>
+<p>很多系统把插件卸载做成另一个生命周期钩子：<code>activate()</code> 里注册东西，<code>deactivate()</code> 里作者自己记得清理。论文认为这会把 effect creation 和 disposal 分开，清理是否完整依赖作者纪律。[3]</p>
+<p>Cordis 的思路更接近：注册本身就是一个带 disposer 的 effect。你注册 listener，运行时拿到反向操作；你提供 service，运行时拿到撤销 provider 的操作；你在 fiber 下安装多个 effect，运行时按顺序组合 disposer。论文后面把 Cordis 的 <code>ctx.effect()</code> 对应到这个模型：callback 产生 disposer，执行器把 disposer 累积起来，卸载时按 LIFO 恢复。[3]</p>
+<p>Harness 的官方架构文档和 extension cookbook 也沿着这条路走：扩展点不是随便 push 到全局数组，而是经过 Cordis context、service、events 和 fiber lifecycle。[1][7][8]</p>
+<p>在 agent runtime 里，这件事很重要。因为工具、prompt、session event、权限 hook 都会影响模型行为。注册不干净，比普通 Web 插件更危险。一个 UI 扩展没卸掉，最多界面多一块；一个 permission hook、tool schema 或 prompt section 没卸掉，模型看到的世界就变了。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="reactive-coeffects依赖不是读不到再报错">Reactive coeffects：依赖不是读不到再报错<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#reactive-coeffects%E4%BE%9D%E8%B5%96%E4%B8%8D%E6%98%AF%E8%AF%BB%E4%B8%8D%E5%88%B0%E5%86%8D%E6%8A%A5%E9%94%99" class="hash-link" aria-label="Reactive coeffects：依赖不是读不到再报错的直接链接" title="Reactive coeffects：依赖不是读不到再报错的直接链接" translate="no">​</a></h2>
+<p>另一个方向是 spatial composability。论文把 coeffect 用来描述“程序需要什么环境”。传统 IoC 容器通常就是 key-value mapping；Cordis 把它提升成一个会触发生命周期变化的 context。[3]</p>
+<p>论文里的核心判断很简单：组件不应该乐观访问一个可能不存在的依赖，然后在运行时炸掉。组件应该先声明依赖；只有当 context 满足声明时才激活；当依赖消失时，运行时要通知并触发 deactivation。[3]</p>
+<p>论文给出三种状态：[3]</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">activating   原来不满足依赖，现在满足</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">deactivating 原来满足依赖，现在不满足</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">neutral      依赖满足状态没有变化</span><br></div></code></pre></div></div>
+<p>放到 Harness 的插件树里，例子并不抽象：工具通过 registry 进入执行管线，system prompt section 通过 registry 进入模型上下文，UI 插件可以监听 session event。依赖不是 README 里写一句“需要 X”，而应该成为 runtime 能看见、能排序、能撤回的东西。[5][6][8]</p>
+<p>我读论文时最想带回 Harness 的也是这一点：它不是在为“插件化”找漂亮理论，而是在解释为什么插件化 agent runtime 不能只靠约定。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="fiber组件不是模块文件而是一次运行中的实例">Fiber：组件不是模块文件，而是一次运行中的实例<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#fiber%E7%BB%84%E4%BB%B6%E4%B8%8D%E6%98%AF%E6%A8%A1%E5%9D%97%E6%96%87%E4%BB%B6%E8%80%8C%E6%98%AF%E4%B8%80%E6%AC%A1%E8%BF%90%E8%A1%8C%E4%B8%AD%E7%9A%84%E5%AE%9E%E4%BE%8B" class="hash-link" aria-label="Fiber：组件不是模块文件，而是一次运行中的实例的直接链接" title="Fiber：组件不是模块文件，而是一次运行中的实例的直接链接" translate="no">​</a></h2>
+<p>论文把 component 的运行实例称为 fiber。一个 fiber 有自己的 context、依赖声明、提供的能力、生命周期状态和 accumulated disposer。[3]</p>
+<p>这个抽象在 Harness 里很自然。一个 package 只是代码；一个 profile / bundle / patch 启动以后，真正影响系统的是被加载出来的 plugin instance。它挂在一棵树里，能提供 service，能监听 event，能安装 effect，也能因为依赖变化进入 loading / active / unloading / failed 之类的状态。[1][4]</p>
+<p>沿着 fiber 这个视角看，前两篇 DeepSeek Harness 文章里提到的几个现象会更容易串起来：</p>
+<ul>
+<li class=""><code>profile / bundle / patch</code> 不是普通配置项，而是在决定插件树长什么样；</li>
+<li class=""><code>ctx.systemPrompt.section()</code> 不是改一个字符串模板，而是在当前 runtime 里贡献模型上下文；</li>
+<li class=""><code>ctx.tools.register()</code> 不是把函数塞进全局表，而是在工具 registry 和执行管线里注册一个可观察、可撤销、可拦截的能力；</li>
+<li class="">session event log 之所以重要，是因为 UI、replay、debug 都应该订阅 runtime 事件，而不是猜 DOM 或猜模型最后一句话。[4][5][6]</li>
+</ul>
+<p>论文给这个工程直觉补了一层语言：插件不是“扩展点回调”，而是生命周期受控的 component instance。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么这和-agent-harness-特别相关">为什么这和 agent harness 特别相关<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E5%92%8C-agent-harness-%E7%89%B9%E5%88%AB%E7%9B%B8%E5%85%B3" class="hash-link" aria-label="为什么这和 agent harness 特别相关的直接链接" title="为什么这和 agent harness 特别相关的直接链接" translate="no">​</a></h2>
+<p>论文在动机里直接提到了 self-evolving agent harnesses。现代 agent harness 会组合 tool suites、execution environments、permission / sandboxing、session persistence、context management、memory、subagents 和用户界面；未来还可能生成并部署自己的组件修改。[3]</p>
+<p>这个观察很准。一个 coding agent runtime 的风险不在“能不能调用模型”，而在它把很多高权限能力绑在一起：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">模型上下文</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 工具 schema</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ 文件系统能力</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ shell / subprocess</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ Web / MCP / subagent</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ session state</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ approval / guard</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">+ UI projection</span><br></div></code></pre></div></div>
+<p>这些能力要能动态组合，但不能乱组合。比如：</p>
+<ul>
+<li class="">工具 provider 加入后，模型 prompt 里的 tool schema 要更新；</li>
+<li class="">permission 插件撤掉后，不能留下半个 guard；</li>
+<li class="">credential provider 变化后，依赖它的 driver 要重新解析；</li>
+<li class="">Web UI 热更新时，session stream 和 host API 不能进半更新状态；</li>
+<li class="">不可信插件必须放到 sandbox 或桥接 context，不能因为语言层访问控制看起来存在就信任它。[3]</li>
+</ul>
+<p>论文第 6 节讨论系统边界、安全和 sandbox 时说得很清楚：语言层 access control 挡不住恶意代码直接触达 host runtime；不可信组件需要进单独 sandbox、进程或虚拟化边界，再通过 bridge 获取被削弱过的能力。[3]</p>
+<p>Harness 的部署判断也要按这个边界来做：不要把 Web UI 当普通静态页面裸放。它背后连接的是 workspace、文件系统、shell 和工具执行。反代、认证、Host / Origin trust fence、sandbox、approval 都会影响 runtime 的实际安全边界。[1][7]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="论文里最能落地的三块">论文里最能落地的三块<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#%E8%AE%BA%E6%96%87%E9%87%8C%E6%9C%80%E8%83%BD%E8%90%BD%E5%9C%B0%E7%9A%84%E4%B8%89%E5%9D%97" class="hash-link" aria-label="论文里最能落地的三块的直接链接" title="论文里最能落地的三块的直接链接" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-ctxeffect把清理责任从作者记忆里拿出来">1. <code>ctx.effect()</code>：把清理责任从作者记忆里拿出来<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#1-ctxeffect%E6%8A%8A%E6%B8%85%E7%90%86%E8%B4%A3%E4%BB%BB%E4%BB%8E%E4%BD%9C%E8%80%85%E8%AE%B0%E5%BF%86%E9%87%8C%E6%8B%BF%E5%87%BA%E6%9D%A5" class="hash-link" aria-label="1-ctxeffect把清理责任从作者记忆里拿出来的直接链接" title="1-ctxeffect把清理责任从作者记忆里拿出来的直接链接" translate="no">​</a></h3>
+<p>论文的 Cordis 实现部分把 effect tracking 落到 <code>ctx.effect()</code>。callback 执行时产生 disposer，运行时组合 disposer，卸载 fiber 时恢复。[3]</p>
+<p>对插件作者来说，这会变成几条很实际的要求：</p>
+<ul>
+<li class="">不要绕过 context 往全局随便挂状态；</li>
+<li class="">注册能力时返回 disposer；</li>
+<li class="">把资源获取和释放放在同一个局部结构里；</li>
+<li class="">外部世界的 irreversible emission 不能假装可回滚，只能 withheld、commit 或 compensation。[3]</li>
+</ul>
+<p>这个边界对 agent tool 尤其重要。读文件、打开 descriptor、启动子进程，可以被 runtime 记录和释放。向外部 API 发送请求、写入用户仓库、发消息，就不是同一种东西。文章和日志里也不能把这些外部副作用说成“可自动回滚”。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-ctxset--ctxget依赖访问需要被-runtime-看见">2. <code>ctx.set()</code> / <code>ctx.get()</code>：依赖访问需要被 runtime 看见<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#2-ctxset--ctxget%E4%BE%9D%E8%B5%96%E8%AE%BF%E9%97%AE%E9%9C%80%E8%A6%81%E8%A2%AB-runtime-%E7%9C%8B%E8%A7%81" class="hash-link" aria-label="2-ctxset--ctxget依赖访问需要被-runtime-看见的直接链接" title="2-ctxset--ctxget依赖访问需要被-runtime-看见的直接链接" translate="no">​</a></h3>
+<p>论文把 coeffect operations 落到 <code>ctx.set(key, value)</code>、<code>ctx.get(key)</code>，再在 Cordis 里加上 isolation、interception 和 proxy-mediated property access。[3]</p>
+<p>这比普通对象属性访问麻烦，但有收益：runtime 能知道一个 fiber 声明了什么依赖，当前 committed view 里有什么 provider，什么时候应该刷新 target，什么时候应该让 dependent 卸载。</p>
+<p>在 Harness 里，这个机制支撑了“可组合而不是硬编码”的设计：tools、system prompt、sessions、workflow、subagent、settings 这类能力可以通过 service / registry / event seam 进入同一套 runtime。agent loop 不需要把所有能力写死在自己里面。[1][5][6][7][8]</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-hmr--declarative-loader配置变更不是重启脚本">3. HMR / declarative loader：配置变更不是重启脚本<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#3-hmr--declarative-loader%E9%85%8D%E7%BD%AE%E5%8F%98%E6%9B%B4%E4%B8%8D%E6%98%AF%E9%87%8D%E5%90%AF%E8%84%9A%E6%9C%AC" class="hash-link" aria-label="3. HMR / declarative loader：配置变更不是重启脚本的直接链接" title="3. HMR / declarative loader：配置变更不是重启脚本的直接链接" translate="no">​</a></h3>
+<p>论文实现部分还讲到 declarative configuration 和 HMR。配置 entry 记录 id、url、isolate、intercept、config、disabled；loader 用 reconciliation key 调整 fiber。HMR 则通过 dispose 旧 fiber、import 新模块、失败时恢复 cache 的方式避免半更新状态。[3]</p>
+<p>这也解释了 Harness 的 <code>profile / bundle / patch</code> 为什么不该被理解成“给 CLI 加几个 flag”。它们描述的是一棵可协调的插件树：哪个 entry 插入，哪个被禁用，哪些配置层叠加到最终 runtime。[4]</p>
+<p>此前用 <code>--patch</code> 加载本地 Cordis 插件、再把 marker 注入 system prompt，本质上是在验证这条路线：树外插件能被 loader 装进 runtime，并通过 <code>ctx.systemPrompt.section()</code> 影响模型上下文。[4][6]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="论文没有解决完的地方">论文没有解决完的地方<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#%E8%AE%BA%E6%96%87%E6%B2%A1%E6%9C%89%E8%A7%A3%E5%86%B3%E5%AE%8C%E7%9A%84%E5%9C%B0%E6%96%B9" class="hash-link" aria-label="论文没有解决完的地方的直接链接" title="论文没有解决完的地方的直接链接" translate="no">​</a></h2>
+<p>这篇论文不是产品白皮书，也不是完整安全方案。有几处边界需要单独拎出来。</p>
+<p>第一，revertible effects 依赖插件给出正确 inverse。Cordis 可以追踪 disposer、按顺序调用 disposer，但它无法自动证明你返回的 disposer 真能撤回 effect。论文也承认 runtime 不检查 witnessed refinement 里的证明义务。[3]</p>
+<p>第二，外部副作用不是都能回滚。论文把系统边界讲得很谨慎：打开资源的 acquisition 可以记录，真正把数据写出边界的 emission 通常只能延迟提交或用补偿动作处理。[3]</p>
+<p>第三，依赖 typing 和 versioning 仍是开放问题。论文第 6.6 节标题就是 Dependency Typing and Versioning：单靠 key identity 不能解决独立组件生态里的 interface drift 和 key collision。provider 改了接口、消费者还声明同一个 key，coeffect 层会认为依赖满足，但运行时值可能已经不兼容。[3]</p>
+<p>这点放到 Harness 插件生态里很现实。一个 tool service 的 schema、一个 credentials provider 的 shape、一个 UI event payload 的版本，最终都需要 namespacing、schema check、manifest 或 capability negotiation。否则“依赖满足”只能说明名字对上了，不能说明协议对上了。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="读完论文后怎么看-deepseek-harness">读完论文后，怎么看 DeepSeek Harness<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#%E8%AF%BB%E5%AE%8C%E8%AE%BA%E6%96%87%E5%90%8E%E6%80%8E%E4%B9%88%E7%9C%8B-deepseek-harness" class="hash-link" aria-label="读完论文后，怎么看 DeepSeek Harness的直接链接" title="读完论文后，怎么看 DeepSeek Harness的直接链接" translate="no">​</a></h2>
+<p>前两篇文章分别讲了 Harness 的 runtime 架构和一次部署/插件实践：</p>
+<ul>
+<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/deepseek-harness-agent-runtime-architecture">DeepSeek Harness 是什么：把模型接进 workspace 的 Agent Runtime</a></li>
+<li class=""><a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/deepseek-harness-webui-plugin-practice">DeepSeek Harness 实战：部署、修 bug、加载一个本地插件</a></li>
+</ul>
+<p>这篇论文给它们补上了“为什么”。</p>
+<p>DeepSeek Harness 不是因为喜欢插件这个词，才把 everything 做成 plugin。它要解决的是 agent runtime 的组合问题：工具、prompt、session、UI、provider、guard、sandbox 这些东西都可能在运行中出现、消失、替换、拦截和重组。</p>
+<p>把它们硬写进一个 agent loop，会很快变成一团 if/else。把它们做成普通插件，也还不够，因为普通插件系统常常只管注册，不认真管撤回和依赖重排。Cordis 的价值在这里：它把插件从“扩展点”提升成“带生命周期、effect、coeffect 和 context 的运行单元”。[3]</p>
+<p>我现在对 Harness 的判断是：</p>
+<ul>
+<li class="">它还在 developer preview，不适合当成无边界公网产品裸跑；[1]</li>
+<li class="">它很适合研究现代 coding agent runtime 应该怎么拆；</li>
+<li class="">它最值得看的不是 Web UI 外观，而是 profile / bundle / patch、system prompt assembly、tool registry、session event、Cordis fiber lifecycle 这些 seam；[1][4][5][6]</li>
+<li class="">Cordis 不能替代部署层认证、权限策略或 sandbox 实现，但它提供了一个判断工具：哪些改动必须可撤回，哪些依赖必须被 runtime 看见。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="sources">Sources<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/cordis-spatiotemporal-composability-deepseek-harness#sources" class="hash-link" aria-label="Sources的直接链接" title="Sources的直接链接" translate="no">​</a></h2>
+<p>[1] <a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer" class="">https://github.com/deepseek-ai/deepseek-harness</a>
+[2] <a href="https://github.com/cordiverse/paper" target="_blank" rel="noopener noreferrer" class="">https://github.com/cordiverse/paper</a>
+[3] <a href="https://github.com/cordiverse/paper/blob/main/paper.pdf" target="_blank" rel="noopener noreferrer" class="">https://github.com/cordiverse/paper/blob/main/paper.pdf</a>
+[4] <a href="https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/boot/app-boot/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/boot/app-boot/README.md</a>
+[5] <a href="https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/tools/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/tools/README.md</a>
+[6] <a href="https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/system-prompt/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/system-prompt/README.md</a>
+[7] <a href="https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md</a>
+[8] <a href="https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/extension-cookbook.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/extension-cookbook.md</a></p>]]></content:encoded>
+            <category>deepseek</category>
+            <category>cordis</category>
+            <category>agent</category>
+            <category>paper</category>
+            <category>plugin</category>
+        </item>
+        <item>
             <title><![CDATA[DeepSeek Harness 是什么：把模型接进 workspace 的 Agent Runtime]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/deepseek-harness-agent-runtime-architecture</link>
             <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/deepseek-harness-agent-runtime-architecture</guid>
@@ -2896,114 +3015,6 @@
             <category>harmonic-analysis</category>
             <category>geometric-measure-theory</category>
             <category>kakeya</category>
-        </item>
-        <item>
-            <title><![CDATA[Agent 写文件到底用 patch 还是 replace：Codex、Claude Code、Qwen Code 的工具协议拆解]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace</guid>
-            <pubDate>Thu, 06 Aug 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[拆解 OpenAI Responses、Anthropic Messages、千问 OpenAI-compatible 与常见 agent client 的三层关系，比较 Codex、Claude Code、Qwen Code、Gemini CLI、OpenCode、Aider、Roo、Cline、Cursor 在文件编辑时到底偏 patch、replace、write_file 还是多工具并存。]]></description>
-            <content:encoded><![CDATA[<p>上一篇 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/qwen-token-plan-coding-crs">千问 Token Plan 调研</a> 解决的是“千问 Token Plan 怎么接进 Codex、Hermes 和 CRS”。但接完以后还有一个更容易混淆的问题：<strong>模型 API 是 OpenAI-compatible，并不代表 agent 改文件也按 OpenAI Codex 的 patch 方式来。</strong></p>
-<p>这篇文章专门拆开这个问题：OpenAI、Anthropic、Qwen、Gemini 这些 provider 的 wire API 是一层；Codex、Claude Code、Qwen Code、Gemini CLI、OpenCode、Aider、Roo Code、Cline、Cursor 这些 agent client 暴露给模型的文件工具是另一层；最后 client 在本地到底怎么落盘，又是第三层。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p><strong>OpenAI API 本身不规定“写文件=patch 还是 replace”；OpenAI Codex CLI 是 patch 派；Anthropic 官方 text editor tool 是 string replace 派；Qwen Code 继承/同构的是 Gemini CLI 的 <code>replace + write_file</code> 派。</strong></p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先分清三层不然一定会说错">先分清三层，不然一定会说错<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E5%85%88%E5%88%86%E6%B8%85%E4%B8%89%E5%B1%82%E4%B8%8D%E7%84%B6%E4%B8%80%E5%AE%9A%E4%BC%9A%E8%AF%B4%E9%94%99" class="hash-link" aria-label="先分清三层，不然一定会说错的直接链接" title="先分清三层，不然一定会说错的直接链接" translate="no">​</a></h2>
-<p>讨论“它写文件用 patch 还是 replace”时，至少要拆成三层：</p>
-<table><thead><tr><th>层</th><th>问题</th><th>例子</th></tr></thead><tbody><tr><td>Provider wire API</td><td>请求发给谁、用什么模型协议？</td><td>OpenAI Responses、Anthropic Messages、Gemini API、Qwen OpenAI-compatible</td></tr><tr><td>Agent client tool schema</td><td>模型在对话里看到什么工具？</td><td><code>apply_patch</code>、<code>Edit</code>、<code>replace</code>、<code>write_file</code>、<code>search_replace</code></td></tr><tr><td>Local apply implementation</td><td>client 在本地怎么改文件？</td><td>解析 patch、old/new string replace、whole-file overwrite、diff/fuzzy patch、shell 命令</td></tr></tbody></table>
-<p>所以，不能说“千问走 OpenAI-compatible，因此写文件就是 OpenAI patch”。OpenAI-compatible 只说明 HTTP/JSON 调用协议像 OpenAI；文件怎么改，取决于你用的是 Codex、Qwen Code、Hermes、Cline 还是别的 client。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="openaiapi-层不固定codex-client-是-patch-first">OpenAI：API 层不固定，Codex client 是 patch-first<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#openaiapi-%E5%B1%82%E4%B8%8D%E5%9B%BA%E5%AE%9Acodex-client-%E6%98%AF-patch-first" class="hash-link" aria-label="OpenAI：API 层不固定，Codex client 是 patch-first的直接链接" title="OpenAI：API 层不固定，Codex client 是 patch-first的直接链接" translate="no">​</a></h2>
-<p>OpenAI 的 Responses / function calling 文档讲的是通用工具调用流程：应用把工具定义发给模型，模型返回 tool call，应用侧执行，再把结果回传。这个机制本身没有规定“本地写文件工具”必须叫 <code>patch</code>、<code>replace</code> 或 <code>write_file</code>。</p>
-<p>但如果问的是 <strong>OpenAI 官方 Codex CLI / Codex client</strong>，结论就很明确：它是 <strong>patch-first</strong>。</p>
-<p>公开源码里可以看到 Codex 有 <code>apply_patch</code> 解析与审批路径；patch action 覆盖新增、删除、更新文件。也就是说，Codex 这类 coding client 倾向让模型产出结构化补丁，再由 client 解析、校验、展示 diff、申请批准和落盘。</p>
-<p>同时，Codex 的 app-server protocol 里也有类似 <code>FsWriteFileParams { filePath, content }</code> 的 whole-file write 参数。这说明它不是“永远只有 patch”。但从 coding agent 的核心编辑原语看，Codex 明显属于 patch 派。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="anthropic官方-text-editor-tool-是-replace-派claude-code-产品层是-editwrite-工具族">Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#anthropic%E5%AE%98%E6%96%B9-text-editor-tool-%E6%98%AF-replace-%E6%B4%BEclaude-code-%E4%BA%A7%E5%93%81%E5%B1%82%E6%98%AF-editwrite-%E5%B7%A5%E5%85%B7%E6%97%8F" class="hash-link" aria-label="Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族的直接链接" title="Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族的直接链接" translate="no">​</a></h2>
-<p>Anthropic 也要分 API 层和产品层。</p>
-<p>在 Anthropic Messages API 的通用 tool use 里，工具可以由应用自己定义，执行也发生在应用或环境侧。因此通用 API 层同样不固定。</p>
-<p>不过 Anthropic 官方文档现在有一个明确的 text editor tool：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">type: text_editor_20250728</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">name: str_replace_based_edit_tool</span><br></div></code></pre></div></div>
-<p>它支持 <code>view</code>、<code>str_replace</code>、<code>create</code>、<code>insert</code>、<code>undo_edit</code> 等命令。核心编辑命令叫 <code>str_replace</code>，参数是 <code>old_str</code> 和 <code>new_str</code>。官方流程也写得很直白：从 Claude 的 tool use request 里取出文件路径、old text、新 text，然后在文件里执行文本替换。</p>
-<p>所以如果问 <strong>Anthropic 官方 text editor tool</strong>，答案是：<strong>replace 派</strong>。</p>
-<p>但如果问 <strong>Claude Code</strong>，公开文档能确认的是产品层工具名：<code>Read</code>、<code>Edit</code>、<code>MultiEdit</code>、<code>Write</code>、<code>Bash</code> 等。Claude Code 本身不是完整开源项目，公开文档不足以严谨证明它每次 <code>Edit</code> 内部一定转成某种 unified diff 或某种 string replace。更稳妥的说法是：Claude Code 是 Anthropic / Claude 产品工具族，公开暴露的是 <code>Edit/MultiEdit/Write</code> 这套编辑能力。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="qwen-code不是-anthropic-native也不是-codex-patch它是-gemini-cli-式-replace--write_file">Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#qwen-code%E4%B8%8D%E6%98%AF-anthropic-native%E4%B9%9F%E4%B8%8D%E6%98%AF-codex-patch%E5%AE%83%E6%98%AF-gemini-cli-%E5%BC%8F-replace--write_file" class="hash-link" aria-label="Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file的直接链接" title="Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file的直接链接" translate="no">​</a></h2>
-<p>千问这里最容易混淆，因为有两个事实同时成立：</p>
-<ol>
-<li class=""><strong>千问 Token Plan 接入 ChatArch / CRS / Hermes 时，推荐走 OpenAI-compatible / Responses。</strong> 这是上一篇文章的结论，也是我们当前配置的 provider wire API。</li>
-<li class=""><strong>Qwen Code 这个 agent client 的文件工具形态，更像 Gemini CLI。</strong> 它的公开文档和源码里，文件编辑工具是 <code>replace</code> 和 <code>write_file</code>。</li>
-</ol>
-<p>Qwen Code 的 file-system tools 里，<code>replace</code> 使用 <code>old_string</code> / <code>new_string</code> 做精确替换；<code>write_file</code> 则写入完整文件内容，语义上就是 whole-file write / overwrite。</p>
-<p>这意味着：</p>
-<table><thead><tr><th>场景</th><th>判断</th></tr></thead><tbody><tr><td>Hermes / CRS 里接千问 Token Plan</td><td>OpenAI-compatible / Responses provider</td></tr><tr><td>用 Codex 调千问模型</td><td>Codex client 工具层仍是 patch-first</td></tr><tr><td>用 Qwen Code 调千问模型</td><td>Qwen Code 工具层是 Gemini 式 <code>replace + write_file</code></td></tr><tr><td>把千问硬说成 Anthropic-native</td><td>不推荐，除非中间网关明确做 Anthropic schema 转换</td></tr></tbody></table>
-<p>所以，“千问是 OpenAI 还是 Anthropic 派”这个问题要拆开答：<strong>模型接口推荐 OpenAI-compatible；Qwen Code 工具协议是 Gemini CLI 派；不是 Claude Code / Anthropic-native 派。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="常见-agent-client-快速矩阵">常见 agent client 快速矩阵<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E5%B8%B8%E8%A7%81-agent-client-%E5%BF%AB%E9%80%9F%E7%9F%A9%E9%98%B5" class="hash-link" aria-label="常见 agent client 快速矩阵的直接链接" title="常见 agent client 快速矩阵的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>Client</th><th>默认/主要平台派系</th><th>文件编辑原语</th><th>判断</th></tr></thead><tbody><tr><td>OpenAI Codex CLI</td><td>OpenAI / ChatGPT / Responses</td><td><code>apply_patch</code>；另有 whole-file write 参数</td><td><strong>patch-first</strong></td></tr><tr><td>Claude Code</td><td>Anthropic / Claude</td><td><code>Edit</code>、<code>MultiEdit</code>、<code>Write</code>、<code>Read</code>、<code>Bash</code></td><td>产品工具族；内部细节公开不足</td></tr><tr><td>Anthropic text editor tool</td><td>Anthropic Messages API</td><td><code>str_replace_based_edit_tool</code>，<code>str_replace(old_str,new_str)</code></td><td><strong>replace 派</strong></td></tr><tr><td>Gemini CLI</td><td>Google Gemini</td><td><code>replace(old_string,new_string)</code>、<code>write_file(content)</code></td><td><strong>replace + whole-file write</strong></td></tr><tr><td>Qwen Code</td><td>Qwen / DashScope；Gemini CLI 工具形态</td><td><code>replace(old_string,new_string)</code>、<code>write_file(content)</code></td><td><strong>Gemini/Qwen Code 派</strong></td></tr><tr><td>OpenCode</td><td>多 provider</td><td><code>edit(oldString,newString)</code>、<code>write(content)</code></td><td><strong>replace + whole-file write</strong></td></tr><tr><td>Aider</td><td>多 provider</td><td>whole-file、search/replace、unified diff 等 edit formats</td><td><strong>多格式</strong></td></tr><tr><td>Roo Code</td><td>多 provider / VS Code</td><td><code>apply_patch</code>、<code>apply_diff</code>、<code>search_replace</code>、<code>write_to_file</code>、<code>edit_file</code></td><td><strong>多原语并存</strong></td></tr><tr><td>Cline</td><td>多 provider / VS Code</td><td><code>replace_in_file</code>、<code>write_to_file</code>、<code>apply_patch</code>；SDK <code>editor</code> 有 <code>old_text/new_text/insert_line</code></td><td><strong>replace/write/patch 并存</strong></td></tr><tr><td>Cursor Agent / Cursor CLI</td><td>Cursor 产品，多模型入口</td><td>公开文档没明确到底 patch 还是 replace</td><td><strong>底层编辑原语未公开到足够粒度</strong></td></tr><tr><td>Hermes Agent</td><td>Hermes 自定义 agent，可接多 provider</td><td><code>patch</code>、<code>write_file</code>、<code>read_file</code> 等宿主工具</td><td><strong>由 Hermes 工具层决定，不由 provider 决定</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么这件事重要">为什么这件事重要<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E4%BB%B6%E4%BA%8B%E9%87%8D%E8%A6%81" class="hash-link" aria-label="为什么这件事重要的直接链接" title="为什么这件事重要的直接链接" translate="no">​</a></h2>
-<p>它不只是术语问题，而是会影响 agent 的可靠性和成本。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="patch-first-的优点">patch-first 的优点<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#patch-first-%E7%9A%84%E4%BC%98%E7%82%B9" class="hash-link" aria-label="patch-first 的优点的直接链接" title="patch-first 的优点的直接链接" translate="no">​</a></h3>
-<p>patch-first 的好处是 diff 明确、审阅友好、失败边界清楚。适合：</p>
-<ul>
-<li class="">跨文件但局部修改；</li>
-<li class="">需要人类 review 的代码改动；</li>
-<li class="">希望保留上下文、不让模型重写整文件；</li>
-<li class="">需要在 PR 里形成清晰补丁的工作流。</li>
-</ul>
-<p>Codex、Roo 的 <code>apply_patch</code>、Hermes 的 <code>patch</code> 都属于这类思路。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="replace-派的优点和风险">replace 派的优点和风险<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#replace-%E6%B4%BE%E7%9A%84%E4%BC%98%E7%82%B9%E5%92%8C%E9%A3%8E%E9%99%A9" class="hash-link" aria-label="replace 派的优点和风险的直接链接" title="replace 派的优点和风险的直接链接" translate="no">​</a></h3>
-<p><code>old_string/new_string</code> replace 对模型来说直观，工具实现也简单。它适合小范围、唯一上下文明确的修改。</p>
-<p>风险是：</p>
-<ul>
-<li class=""><code>old_string</code> 不唯一时可能误改；</li>
-<li class=""><code>old_string</code> 和真实文件只差一点点时会失败；</li>
-<li class="">大段 replace 对上下文完整性要求高；</li>
-<li class="">如果 client 自动 fuzzy match，可能需要额外审阅。</li>
-</ul>
-<p>Anthropic text editor、Gemini CLI、Qwen Code、OpenCode、Cline SDK editor 都有明显的 replace 色彩。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="write_file--whole-file-overwrite-的风险最大">write_file / whole-file overwrite 的风险最大<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#write_file--whole-file-overwrite-%E7%9A%84%E9%A3%8E%E9%99%A9%E6%9C%80%E5%A4%A7" class="hash-link" aria-label="write_file / whole-file overwrite 的风险最大的直接链接" title="write_file / whole-file overwrite 的风险最大的直接链接" translate="no">​</a></h3>
-<p><code>write_file(content)</code> 很适合新建文件或小文件重写，但对大文件风险最大：模型可能漏掉 imports、注释、边缘分支、配置项或格式细节。</p>
-<p>如果一个 client 暴露 <code>write_file</code>，系统提示和工具实现最好要求：</p>
-<ul>
-<li class="">先读文件；</li>
-<li class="">大文件避免整文件重写；</li>
-<li class="">重写后做 diff；</li>
-<li class="">运行格式/测试；</li>
-<li class="">明确失败时不要“猜一个完整文件”。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="对-chatarch-的实践建议">对 ChatArch 的实践建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E5%AF%B9-chatarch-%E7%9A%84%E5%AE%9E%E8%B7%B5%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="对 ChatArch 的实践建议的直接链接" title="对 ChatArch 的实践建议的直接链接" translate="no">​</a></h2>
-<p>第一，<strong>千问 Token Plan 继续按 OpenAI-compatible / Responses 接入 CRS/Hermes</strong>。这是模型调用协议最稳的路径。</p>
-<p>第二，<strong>不要为了“像 Claude Code”而把千问硬塞 Anthropic-native</strong>。只有当某个 client 明确强依赖 Anthropic Messages 或 Anthropic text editor schema，并且中间网关真的能转换字段时，才值得这么做。</p>
-<p>第三，<strong>评估新的 agent client 时，固定问三件事</strong>：</p>
-<ol>
-<li class="">provider wire API 是谁？</li>
-<li class="">model-visible tools 是什么 schema？</li>
-<li class="">local apply 是 patch、replace、write_file、diff 还是 shell？</li>
-</ol>
-<p>第四，<strong>在写适配文档时不要混用层级词</strong>。比如：</p>
-<ul>
-<li class="">“Qwen Token Plan 是 OpenAI-compatible provider”是对的；</li>
-<li class="">“Qwen Code 因为用了千问所以是 OpenAI Codex patch 派”是错的；</li>
-<li class="">“Claude Code 是 Anthropic 产品工具族”是对的；</li>
-<li class="">“Anthropic 所有 coding client 都是 <code>str_replace_based_edit_tool</code>”则过度外推。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="参考入口">参考入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E5%8F%82%E8%80%83%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="参考入口的直接链接" title="参考入口的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" rel="noopener noreferrer" class="">OpenAI function calling</a></li>
-<li class=""><a href="https://platform.openai.com/docs/api-reference/responses" target="_blank" rel="noopener noreferrer" class="">OpenAI Responses API</a></li>
-<li class=""><a href="https://github.com/openai/codex" target="_blank" rel="noopener noreferrer" class="">OpenAI Codex repository</a></li>
-<li class=""><a href="https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/text-editor-tool" target="_blank" rel="noopener noreferrer" class="">Anthropic text editor tool</a></li>
-<li class=""><a href="https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/overview" target="_blank" rel="noopener noreferrer" class="">Anthropic tool use overview</a></li>
-<li class=""><a href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank" rel="noopener noreferrer" class="">Claude Code settings</a></li>
-<li class=""><a href="https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/file-system.md" target="_blank" rel="noopener noreferrer" class="">Gemini CLI file-system tools</a></li>
-<li class=""><a href="https://github.com/QwenLM/qwen-code" target="_blank" rel="noopener noreferrer" class="">Qwen Code repository</a></li>
-<li class=""><a href="https://github.com/QwenLM/qwen-code/blob/main/docs/developers/tools/file-system.md" target="_blank" rel="noopener noreferrer" class="">Qwen Code file-system tools</a></li>
-<li class=""><a href="https://github.com/sst/opencode/blob/dev/packages/opencode/src/tool/edit.ts" target="_blank" rel="noopener noreferrer" class="">OpenCode edit tool</a></li>
-<li class=""><a href="https://aider.chat/docs/more/edit-formats.html" target="_blank" rel="noopener noreferrer" class="">Aider edit formats</a></li>
-<li class=""><a href="https://github.com/RooCodeInc/Roo-Code/tree/main/apps/docs/docs/advanced-usage/available-tools" target="_blank" rel="noopener noreferrer" class="">Roo Code available tools</a></li>
-<li class=""><a href="https://github.com/cline/cline" target="_blank" rel="noopener noreferrer" class="">Cline repository</a></li>
-<li class=""><a href="https://docs.cursor.com/en/cli/overview" target="_blank" rel="noopener noreferrer" class="">Cursor CLI overview</a></li>
-</ul>]]></content:encoded>
-            <category>agent</category>
-            <category>codex</category>
-            <category>claude-code</category>
-            <category>qwen</category>
-            <category>tooling</category>
         </item>
     </channel>
 </rss>
