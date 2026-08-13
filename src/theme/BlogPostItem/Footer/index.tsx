@@ -23,7 +23,7 @@ declare global {
         el: string | HTMLElement;
         path?: string;
         lang?: string;
-      }) => void;
+      }) => void | Promise<void>;
     };
   }
 }
@@ -112,25 +112,32 @@ function BlogPostComments({path}: {path: string}) {
     let cancelled = false;
     const container = containerRef.current;
 
-    if (container) {
-      container.replaceChildren();
-    }
+    const resetContainer = () => {
+      if (container) {
+        container.replaceChildren();
+      }
+    };
+
+    resetContainer();
 
     loadTwikooScript()
       .then(() => {
         if (cancelled || !container || !window.twikoo) {
           return;
         }
-        container.replaceChildren();
-        window.twikoo.init({
+        const mountNode = document.createElement('div');
+        mountNode.className = 'twikoo';
+        container.replaceChildren(mountNode);
+        return window.twikoo.init({
           envId: TWIKOO_ENV_ID,
-          el: container,
+          el: mountNode,
           path,
           lang: 'zh-CN',
         });
       })
       .catch((error) => {
         if (!cancelled) {
+          resetContainer();
           // Keep page rendering non-fatal if the comments script CDN is unavailable.
           console.warn(error);
         }
@@ -138,16 +145,14 @@ function BlogPostComments({path}: {path: string}) {
 
     return () => {
       cancelled = true;
-      if (container) {
-        container.replaceChildren();
-      }
+      resetContainer();
     };
   }, [path]);
 
   return (
     <section className={styles.commentsSection} aria-label="评论区">
       <h2 className={styles.commentsTitle}>评论</h2>
-      <div ref={containerRef} className="twikoo" />
+      <div ref={containerRef} />
     </section>
   );
 }
