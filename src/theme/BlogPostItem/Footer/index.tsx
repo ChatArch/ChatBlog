@@ -10,6 +10,10 @@ import styles from './styles.module.css';
 const TWIKOO_ENV_ID = 'https://twikoo-chatblog.public.wzhecnu.cn/';
 const TWIKOO_SCRIPT_ID = 'chatblog-twikoo-script';
 const TWIKOO_SCRIPT_SRC = 'https://cdn.jsdelivr.net/npm/twikoo@1.7.15/dist/twikoo.all.min.js';
+const TWIKOO_SCRIPT_INTEGRITY = 'sha384-XsVpk+eCJ/pm5ujR4PkgMBHUuN3VVwoJ4pbburK612ZTRGffVzipZPX0MNMDJn8V';
+const TWIKOO_SCRIPT_TIMEOUT_MS = 15000;
+
+let twikooScriptPromise: Promise<void> | undefined;
 
 declare global {
   interface Window {
@@ -31,24 +35,74 @@ function loadTwikooScript(): Promise<void> {
   if (window.twikoo) {
     return Promise.resolve();
   }
-
-  const existingScript = document.getElementById(TWIKOO_SCRIPT_ID) as HTMLScriptElement | null;
-  if (existingScript) {
-    return new Promise((resolve, reject) => {
-      existingScript.addEventListener('load', () => resolve(), {once: true});
-      existingScript.addEventListener('error', () => reject(new Error('Failed to load Twikoo script')), {once: true});
-    });
+  if (twikooScriptPromise) {
+    return twikooScriptPromise;
   }
 
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
+  const existingScript = document.getElementById(TWIKOO_SCRIPT_ID) as HTMLScriptElement | null;
+  if (existingScript && existingScript.dataset.loaded === 'true') {
+    if (window.twikoo) {
+      return Promise.resolve();
+    }
+    existingScript.remove();
+  } else if (existingScript && existingScript.dataset.failed === 'true') {
+    existingScript.remove();
+  }
+
+  twikooScriptPromise = new Promise((resolve, reject) => {
+    const pendingScript = document.getElementById(TWIKOO_SCRIPT_ID) as HTMLScriptElement | null;
+    const script = pendingScript ?? document.createElement('script');
+    let settled = false;
+    let timeoutId: ReturnType<typeof window.setTimeout> | undefined;
+
+    const cleanup = () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      script.removeEventListener('load', handleLoad);
+      script.removeEventListener('error', handleError);
+    };
+    const fail = (error: Error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      script.dataset.failed = 'true';
+      twikooScriptPromise = undefined;
+      script.remove();
+      reject(error);
+    };
+    const handleLoad = () => {
+      if (settled) {
+        return;
+      }
+      if (!window.twikoo) {
+        fail(new Error('Twikoo script loaded without exposing window.twikoo'));
+        return;
+      }
+      settled = true;
+      cleanup();
+      script.dataset.loaded = 'true';
+      resolve();
+    };
+    const handleError = () => fail(new Error('Failed to load Twikoo script'));
+
     script.id = TWIKOO_SCRIPT_ID;
     script.src = TWIKOO_SCRIPT_SRC;
     script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Twikoo script'));
-    document.head.appendChild(script);
+    script.integrity = TWIKOO_SCRIPT_INTEGRITY;
+    script.crossOrigin = 'anonymous';
+    script.addEventListener('load', handleLoad, {once: true});
+    script.addEventListener('error', handleError, {once: true});
+    timeoutId = window.setTimeout(() => fail(new Error('Timed out loading Twikoo script')), TWIKOO_SCRIPT_TIMEOUT_MS);
+
+    if (!pendingScript) {
+      document.head.appendChild(script);
+    }
   });
+
+  return twikooScriptPromise;
 }
 
 function BlogPostComments({path}: {path: string}) {
@@ -56,15 +110,21 @@ function BlogPostComments({path}: {path: string}) {
 
   useEffect(() => {
     let cancelled = false;
+    const container = containerRef.current;
+
+    if (container) {
+      container.replaceChildren();
+    }
 
     loadTwikooScript()
       .then(() => {
-        if (cancelled || !containerRef.current || !window.twikoo) {
+        if (cancelled || !container || !window.twikoo) {
           return;
         }
+        container.replaceChildren();
         window.twikoo.init({
           envId: TWIKOO_ENV_ID,
-          el: containerRef.current,
+          el: container,
           path,
           lang: 'zh-CN',
         });
@@ -78,6 +138,9 @@ function BlogPostComments({path}: {path: string}) {
 
     return () => {
       cancelled = true;
+      if (container) {
+        container.replaceChildren();
+      }
     };
   }, [path]);
 
@@ -103,7 +166,7 @@ export default function BlogPostItemFooter() {
   // A post is truncated if it's in the "list view" and it has a truncate marker
   const truncatedPost = !isBlogPostPage && hasTruncateMarker;
   const tagsExists = tags.length > 0;
-  const renderFooter = tagsExists || truncatedPost || editUrl || isBlogPostPage;
+  const renderFooter = tagsExists || truncatedPost || isBlogPostPage;
   if (!renderFooter) {
     return null;
   }
