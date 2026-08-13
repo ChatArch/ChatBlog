@@ -1,0 +1,209 @@
+---
+title: "ChatGlance 页面开发模式：把 Glance Dashboard 做成可审查的页面流水线"
+date: 2026-08-13
+slug: chatglance-page-development-pattern
+tags: [chatglance, dashboard, glance, operations]
+description: 介绍 ChatGlance 如何把 Glance 的页面配置、数据快照、渲染脚本和 live 验证组织成可测试、可回滚、可持续扩展的 Dashboard 页面开发模式。
+---
+
+如果要给 ChatGlance 增加一个新标签页，最重要的问题不是“要不要重写一个前端”，而是：**这个页面的数据从哪里来、怎么变成 Glance 能消费的配置、怎么验证不会把坏配置或敏感信息发布到 live 站点。**
+
+ChatGlance 的答案是把页面做成一条 repo-owned pipeline：源码负责生成和验证页面，runtime 只保存可再生成的数据快照，真正的 Web 服务仍由 upstream Glance 读取 `glance.yml` 提供。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+ChatGlance 的核心不是替代 Glance，而是把 `glance.yml`、页面 YAML、HTML widget、数据快照、刷新脚本和发布验证变成一套可审查、可测试、可回滚的工程流程。
+:::
+
+## 先把边界说清楚
+
+Glance 本身是一个 dashboard server。它读取 YAML 配置，渲染页面、columns、widgets。ChatGlance 不重新实现这个 server，也不把站点变成一个新的 React/NPM 前端项目。
+
+更准确地说，ChatGlance 做的是三件事：
+
+1. **生成页面**：把项目清单、服务器状态、网站服务、账号额度等数据渲染为 Glance page YAML，通常通过 `html` widget 放入可控的 HTML/CSS。
+2. **更新配置**：把生成页面插入一个 candidate `glance.yml`，并移除旧的 generated page，保持导航顺序稳定。
+3. **保护 live 更新**：先校验 candidate，再备份旧文件，最后一次性替换数据、页面和配置；服务生命周期交给外层执行。
+
+也就是说，ChatGlance 是“Glance 配置与页面生成的工程化层”，不是另一个 dashboard runtime。
+
+## 页面流水线长什么样
+
+一个 durable 页面通常遵循下面的流程：
+
+```text
+reviewed source / runtime source
+  -> collect or normalize data
+  -> render generated page YAML
+  -> update a candidate glance.yml copy
+  -> validate candidate with upstream Glance
+  -> backup old artifacts
+  -> replace data/page/config together
+  -> let an outer scheduler/operator handle service lifecycle
+```
+
+这里有两个关键词。
+
+第一个是 **candidate**。页面刷新不应该直接改 live `glance.yml`。先生成候选配置，再用 Glance 自己的 `config:validate` 校验。只有校验通过，才允许替换 live 文件。
+
+第二个是 **together**。数据 JSON、生成 page YAML、完整 `glance.yml` 必须作为同一批产物推进。否则很容易出现“页面 YAML 是新的，但数据还是旧的”或“配置已经引用新页面，但对应数据没刷新”的半更新状态。
+
+## 为什么要拆成 collect、render-page、update-config
+
+ChatGlance 的 CLI surface 基本按资源拆成三个动作：
+
+| 动作 | 作用 | 输出 |
+| --- | --- | --- |
+| `collect` / `json` | 采集或规范化数据 | JSON snapshot |
+| `render-page` | 把 JSON 渲染为 Glance page object | page YAML |
+| `update-config` | 把 page 替换进 `glance.yml` candidate | full candidate config |
+
+这样的拆分让每一层都可以单独测试：
+
+- 数据层可以测试 schema、脱敏、排序、失败状态；
+- renderer 可以用 fixture 直接检查 HTML/CSS 是否符合产品要求；
+- config patcher 可以检查 page 顺序、legacy page 移除、是否只改目标页面；
+- refresh script 可以检查 staging、validate、backup、replace 是否按顺序发生。
+
+脚本再把这些动作串起来，例如：
+
+```text
+scripts/refresh-projects-page.sh
+scripts/refresh-server-status.sh
+scripts/refresh-sites-page.sh
+scripts/refresh-account-limits-page.sh
+```
+
+这比把所有逻辑藏在一个不可测试的 “deploy” 命令里更容易 review，也更容易在失败时定位是哪一层出问题。
+
+## 当前几类页面的模式
+
+ChatGlance 已经有几类页面，它们展示了同一套模式在不同数据源上的用法。
+
+| 页面 | 数据来源 | 页面重点 | 特别边界 |
+| --- | --- | --- | --- |
+| `项目` | 仓库 inventory、版本和 CLI 证据 | 最近提交、PR/Issue、分类、一览表 | 版本展示走 PyPI-only；紧凑表格只放 entrypoint，不展开所有子命令 |
+| `服务器` | reviewed inventory + 只读 SSH probe | IP、CPU、内存、磁盘、状态、重启时间 | probe 不安装包、不写远端文件；离线回退要 fail closed |
+| `网站服务` | reviewed service inventory + Uptime 状态 | 服务卡片、封面、public 入口、监控状态 | 不自动扫所有 Nginx vhost；local host 只作为运维/probe 信息 |
+| `账号额度` | credentialed probe 的安全派生数据 + 公共 reset tracker | 左侧 reset calendar、右侧账号使用卡 | 不渲染 token、profile 明细、raw stderr、proxy 或诊断表 |
+
+这些页面不是同一种数据，但它们的工程契约一致：**数据可解释、页面可重建、配置可校验、live 更新可回滚。**
+
+## Config patcher 要 copy-on-write
+
+一个常见反模式是直接打开 live `glance.yml` 手工改。短期看很快，长期看会让站点变成“谁最后手改谁知道”的状态。
+
+ChatGlance 的 config patcher 应该做 copy-on-write：
+
+1. 读取当前 `glance.yml`；
+2. deepcopy 配置；
+3. 构造目标 generated page；
+4. 移除同类 legacy/generated page；
+5. 把新页面插到稳定位置；
+6. 写出 candidate config；
+7. 交给 Glance 校验。
+
+这样做还有一个好处：页面迁移时可以同时清理旧名字。例如 `Projects`、`ChatArch Projects`、`ChatArch Projects List` 都可以被视作同一类历史 generated page，在替换时统一移除，避免导航里出现重复标签页。
+
+## Renderer 不应该变成诊断 dump
+
+Glance 的 `html` widget 很自由，能放表格、卡片、tabs、calendar、进度条和样式。这种自由度很有用，但也带来一个风险：为了调试方便，把所有 raw data 都塞到页面里。
+
+人类 Dashboard 页面应该回答的是：
+
+- 现在状态是什么？
+- 哪些项需要注意？
+- 数据什么时候刷新？
+- 点击哪里能继续查看公开/安全的详情？
+
+它不应该默认展示：
+
+- token、cookie、auth header、proxy URL；
+- profile 列表、credential source、raw account diagnostic；
+- full stderr/stdout；
+- 私有机器路径和内部配置文件内容；
+- 未经校验的外部 URL。
+
+诊断证据可以进入独立的 JSON/TSV/report artifact，但 renderer 要有明确的“人类可读”边界。
+
+## 刷新脚本不是随手写的 shell
+
+一个页面一旦进入 live，就应该有 repo-owned refresh script，而不是依赖某次会话里的手工命令串。
+
+一个合格的 refresh script 至少应该满足：
+
+```bash
+set -euo pipefail
+set +x  # when credentials or proxy settings may be present
+```
+
+并且遵守这些规则：
+
+- 所有新产物先写 `.next` 或 candidate path；
+- candidate config 必须用 upstream Glance 校验；
+- 校验通过前不替换 live 文件；
+- 替换前备份旧 config/data/page；
+- 失败时保留旧 live 状态；
+- 不 echo token、proxy、password、cookie；
+- 不用 `eval` 解释 proxy/helper 输出；
+- 不把 service restart 藏在数据生成逻辑里。
+
+`service_action=external` 这类输出很重要：它把“页面刷新完成”和“服务何时重载/重启”分开，让 cron、systemd timer 或人工操作能在更外层做生命周期决策。
+
+## 新增一个标签页的推荐步骤
+
+假设要新增一个 `certificates` 标签页，建议从下面这条路径开始，而不是先写 HTML：
+
+1. **写 PRD**：这个页面回答什么问题？谁会看？哪些字段可以公开？哪些字段必须留在 runtime-only？
+2. **定义安全数据 schema**：例如证书页可以展示 SAN、issuer、not_after、days remaining、public TLS probe 状态；不能展示私钥、ACME account、secret 文件内容。
+3. **写 fixture 和 RED tests**：先固定期望页面结构、排序、失败状态、脱敏规则。
+4. **实现 renderer**：新增 `src/chatglance/certificates.py`，提供 `load_*_data`、`build_*_page`、`replace_*_page`。
+5. **接入 CLI**：增加 `chatglance certificates render-page/update-config`，如需要再加 `collect`。
+6. **写 refresh script**：`scripts/refresh-certificates-page.sh` 只负责 collect、render、candidate、validate、backup、replace。
+7. **补 docs/examples**：runtime inventory 用脱敏 example 表达；真实 inventory 不进仓库。
+8. **跑 gates**：`chatglance --tree`、targeted tests、full tests、build/compile、`git diff --check`、secret scan。
+9. **live readback**：刷新后结构化解析 generated page YAML 的 `columns[].widgets[].source`，不要只 grep folded YAML。
+
+这个流程的价值是把“新增页面”变成一个 reviewable change，而不是一次不可复现的现场配置。
+
+## Account-limits 页带来的几个经验
+
+账号额度页是一个很好的反例/正例结合案例，因为它同时碰到 UI、时间、外部来源和凭据边界。
+
+几个经验可以复用到后续页面：
+
+- **公共来源和账号窗口要分开**：官方/公共 reset tracker 是独立数据 section，不能把每个账号采样到的 reset window 冒充成官方日历。
+- **用户页面只放决策信息**：紧凑页面里保留 reset calendar、使用进度和重置时间；raw diagnostic 留给安全报告，不进卡片。
+- **时间展示不要依赖机器时区**：如果面向北京时区用户，就显式转换并测试 `TZ=UTC` 下仍然稳定。
+- **外部 URL 要校验 scheme**：不安全的 URL 不渲染成链接。
+- **stderr 进入数据前要脱敏**：截断不是脱敏；任何 token/auth/proxy 样式内容都应先 redaction。
+- **proxy helper 输出只能 allow-list parse**：不要用 `eval` 导入一段 shell 文本。
+
+这些不是只属于账号额度页的规则，而是所有“有外部 probe / credential / runtime data”的页面都应该遵守的基本安全线。
+
+## 什么应该进仓库，什么不应该进仓库
+
+推荐边界如下：
+
+| 应该进仓库 | 不应该进仓库 |
+| --- | --- |
+| renderer 源码 | live auth config |
+| config patcher | token / cookie / password |
+| refresh script 模板 | proxy credential |
+| sanitized example inventory | raw runtime backup |
+| docs / contract / tests | credentialed raw probe output |
+| fixture data | 私钥、ACME account、完整 SSH config |
+
+这个边界能让 ChatGlance 同时具备两种能力：
+
+- 源码仓库可以公开 review 页面逻辑和安全策略；
+- live runtime 可以保留实际部署所需的私有状态和数据快照。
+
+## 结语
+
+ChatGlance 的页面开发模式可以总结成一句话：**不要把 dashboard 当成一次性配置文件，而要把它当成一条可测试的数据产品流水线。**
+
+当页面有明确的数据契约、renderer、config patcher、refresh script、candidate validation、backup/replace 和 live readback 时，新标签页就不再是“在服务器上手工改一段 YAML”，而是一个可以 code review、可以 CI 验证、可以回滚、可以持续演进的 ChatArch 组件。
+
+这也是后续扩展证书、账单、资源用量、队列状态等页面时最值得复用的模式：先定义安全数据，再生成人类可读页面，最后用真实验证守住 live 边界。
