@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
   <title id="title">DeepSeek Harness web UI and plugin practice flow</title>
-  <desc id="desc">A practice flow diagram showing deployment, web UI task execution, test verification, plugin patch insertion, marker file, and prompt injection verification.</desc>
+  <desc id="desc">A practice flow diagram showing deployment, web UI task execution, test verification, plugin patch insertion, host-side marker verification, and prompt injection verification.</desc>
   <defs>
     <linearGradient id="bg2" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0%" stop-color="#08111f"/>
@@ -26,7 +26,7 @@
   </defs>
   <rect width="1280" height="720" fill="url(#bg2)"/>
   <text x="70" y="66" class="title">一次端到端实践：从 Web UI 修 bug 到插件注入上下文</text>
-  <text x="70" y="100" class="subtitle">实践目标不是“能打开页面”，而是验证 agent runtime 是否真的能读、改、跑、记录、扩展。</text>
+  <text x="70" y="100" class="subtitle">实践目标：验证 agent runtime 能读代码、改代码、跑测试、记录结果、加载插件。</text>
 
   <rect x="70" y="140" width="1140" height="175" class="lane"/>
   <text x="105" y="180" class="h">A. Web UI 任务链路</text>
@@ -57,19 +57,19 @@
   <text x="358" y="486" class="s">profile overlay</text>
   <rect x="565" y="430" width="180" height="82" fill="#334155" class="card"/>
   <text x="588" y="462" class="t">Loader import/apply</text>
-  <text x="588" y="486" class="s">marker file 落盘</text>
+  <text x="588" y="486" class="s">宿主 marker 写入</text>
   <rect x="795" y="430" width="180" height="82" fill="#334155" class="card"/>
   <text x="818" y="462" class="t">systemPrompt.section</text>
   <text x="818" y="486" class="s">注入模型上下文</text>
   <rect x="1025" y="430" width="140" height="82" fill="#15803d" class="card"/>
-  <text x="1050" y="462" class="t">模型回显</text>
-  <text x="1050" y="486" class="s">ACTIVE</text>
+  <text x="1050" y="462" class="t">模型回读</text>
+  <text x="1050" y="486" class="s">marker</text>
   <path d="M285 471 H335" class="arrow"/><path d="M515 471 H565" class="arrow"/><path d="M745 471 H795" class="arrow"/><path d="M975 471 H1025" class="arrow"/>
 
   <rect x="105" y="600" width="320" height="52" rx="16" fill="#052e16" stroke="#16a34a"/>
   <circle cx="132" cy="626" r="9" class="ok"/><text x="154" y="631" class="s">Web UI 工具链：Read / Edit / Bash / Write 全部真实发生</text>
   <rect x="480" y="600" width="320" height="52" rx="16" fill="#052e16" stroke="#16a34a"/>
-  <circle cx="507" cy="626" r="9" class="ok"/><text x="529" y="631" class="s">插件链路：marker + prompt 注入双重验证</text>
+  <circle cx="507" cy="626" r="9" class="ok"/><text x="529" y="631" class="s">插件链路：宿主 marker 与 prompt marker 分别验证</text>
   <rect x="855" y="600" width="310" height="52" rx="16" fill="#451a03" stroke="#f59e0b"/>
   <text x="883" y="631" class="s">安全口径：公开文章只写模式，不发布内部 live 入口</text>
 </svg>
