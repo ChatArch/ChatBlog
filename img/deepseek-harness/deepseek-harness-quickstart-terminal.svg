@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="620" viewBox="0 0 1180 620" role="img" aria-label="DeepSeek Harness quick start terminal evidence">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.28"/></filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1020"/><stop offset="1" stop-color="#111827"/></linearGradient>
+    <style><![CDATA[
+      .title { font: 700 34px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #e5edf7; }
+      .subtitle { font: 500 17px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #9fb0c8; }
+      .label { font: 700 20px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #e5edf7; }
+      .small { font: 500 15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #9fb0c8; }
+      .mono { font: 500 18px ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; fill: #e5edf7; }
+      .mono-small { font: 500 15px ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; fill: #9fb0c8; }
+      .note { font: 600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #93a4bd; }
+    ]]></style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#60a5fa"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <circle cx="1050" cy="80" r="180" fill="#1e3a8a" opacity="0.14"/>
+  <circle cx="90" cy="690" r="220" fill="#0f766e" opacity="0.12"/>
+<text x="54" y="62" class="title">Quick start：先证明包、Node、Web UI、headless 都能跑</text>
+<text x="56" y="96" class="subtitle">这组输出来自实践记录的脱敏重绘；保留命令顺序和结果，不保留机器路径、域名和密钥。</text>
+<g filter="url(#shadow)"><rect x="70" y="135" width="1040" height="410" rx="20" fill="#050816" stroke="#263244" stroke-width="2"/><circle cx="104" cy="166" r="7" fill="#fb7185"/><circle cx="128" cy="166" r="7" fill="#fbbf24"/><circle cx="152" cy="166" r="7" fill="#34d399"/><text x="184" y="172" class="mono-small">~/dsh-practice — quick start smoke</text><text x="104" y="220" class="mono" fill="#e5edf7">$ node -v</text>
+<text x="104" y="247" class="mono" fill="#9fb0c8">v22.19.0</text>
+<text x="104" y="274" class="mono" fill="#9fb0c8"></text>
+<text x="104" y="301" class="mono" fill="#e5edf7">$ npm install @deepseek-ai/dsh@0.1.0-rc.6</text>
+<text x="104" y="328" class="mono" fill="#9fb0c8">installed in an isolated runtime directory</text>
+<text x="104" y="355" class="mono" fill="#34d399">package: @deepseek-ai/dsh@0.1.0-rc.6</text>
+<text x="104" y="382" class="mono" fill="#9fb0c8"></text>
+<text x="104" y="409" class="mono" fill="#e5edf7">$ dsh web --host 127.0.0.1 --port 3080</text>
+<text x="104" y="436" class="mono" fill="#34d399">dsh web: http://127.0.0.1:3080</text>
+<text x="104" y="463" class="mono" fill="#34d399">HTTP 200, boot marker: DeepSeek Harness</text>
+<text x="104" y="490" class="mono" fill="#9fb0c8"></text>
+<text x="104" y="517" class="mono" fill="#e5edf7">$ dsh --profile headless &quot;Reply with exactly OK.&quot;</text>
+<text x="104" y="544" class="mono" fill="#34d399">OK</text>
+</g><text x="78" y="590" class="note">验收点：不是“页面能开”就结束；还要有 headless 最小任务返回，排除 profile / provider / 凭据 / 网络入口错位。</text>
+</svg>
