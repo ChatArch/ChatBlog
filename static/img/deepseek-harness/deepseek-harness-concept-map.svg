@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-label="DeepSeek Harness concept and runtime map">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.28"/></filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1020"/><stop offset="1" stop-color="#111827"/></linearGradient>
+    <style><![CDATA[
+      .title { font: 700 34px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #e5edf7; }
+      .subtitle { font: 500 17px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #9fb0c8; }
+      .label { font: 700 20px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #e5edf7; }
+      .small { font: 500 15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #9fb0c8; }
+      .mono { font: 500 18px ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; fill: #e5edf7; }
+      .mono-small { font: 500 15px ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; fill: #9fb0c8; }
+      .note { font: 600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; fill: #93a4bd; }
+    ]]></style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#60a5fa"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <circle cx="1050" cy="80" r="180" fill="#1e3a8a" opacity="0.14"/>
+  <circle cx="90" cy="690" r="220" fill="#0f766e" opacity="0.12"/>
+<text x="54" y="62" class="title">DeepSeek Harness：dsh 不是网页按钮，而是运行时装配器</text>
+<text x="56" y="96" class="subtitle">Quick start 跑出的同一棵 Cordis 插件树，可以被 Web UI、headless runner 和 patch 插件用不同方式装配。</text>
+<g filter="url(#shadow)">
+  <rect x="60" y="145" width="230" height="155" rx="18" fill="#111827" stroke="#60a5fa" stroke-width="2"/>
+  <rect x="60" y="145" width="230" height="6" rx="3" fill="#60a5fa"/>
+  <text x="82" y="185" class="label">dsh launcher</text>
+  <text x="82" y="215" class="small">
+<tspan x="82" dy="0">dsh web</tspan>
+<tspan x="82" dy="23">dsh --profile headless</tspan>
+<tspan x="82" dy="23">dsh plugin ...</tspan>
+</text>
+</g><g filter="url(#shadow)">
+  <rect x="370" y="120" width="245" height="115" rx="18" fill="#111827" stroke="#a78bfa" stroke-width="2"/>
+  <rect x="370" y="120" width="245" height="6" rx="3" fill="#a78bfa"/>
+  <text x="392" y="160" class="label">profile</text>
+  <text x="392" y="190" class="small">
+<tspan x="392" dy="0">package.json</tspan>
+<tspan x="392" dy="23">dsh.profile.bundles</tspan>
+<tspan x="392" dy="23">profile patch</tspan>
+</text>
+</g><g filter="url(#shadow)">
+  <rect x="370" y="275" width="245" height="115" rx="18" fill="#111827" stroke="#22d3ee" stroke-width="2"/>
+  <rect x="370" y="275" width="245" height="6" rx="3" fill="#22d3ee"/>
+  <text x="392" y="315" class="label">bundle</text>
+  <text x="392" y="345" class="small">
+<tspan x="392" dy="0">dsh-base</tspan>
+<tspan x="392" dy="23">dsh-web-app</tspan>
+<tspan x="392" dy="23">dsh-headless</tspan>
+</text>
+</g><g filter="url(#shadow)">
+  <rect x="700" y="120" width="250" height="115" rx="18" fill="#111827" stroke="#fbbf24" stroke-width="2"/>
+  <rect x="700" y="120" width="250" height="6" rx="3" fill="#fbbf24"/>
+  <text x="722" y="160" class="label">patch layers</text>
+  <text x="722" y="190" class="small">
+<tspan x="722" dy="0">bundle patch</tspan>
+<tspan x="722" dy="23">profile patch</tspan>
+<tspan x="722" dy="23">DSH_HOME patch</tspan>
+<tspan x="722" dy="23">command --patch</tspan>
+</text>
+</g><g filter="url(#shadow)">
+  <rect x="700" y="275" width="250" height="115" rx="18" fill="#111827" stroke="#34d399" stroke-width="2"/>
+  <rect x="700" y="275" width="250" height="6" rx="3" fill="#34d399"/>
+  <text x="722" y="315" class="label">Cordis plugin tree</text>
+  <text x="722" y="345" class="small">
+<tspan x="722" dy="0">apply(ctx)</tspan>
+<tspan x="722" dy="23">inject dependencies</tspan>
+<tspan x="722" dy="23">effect unwind</tspan>
+</text>
+</g><g filter="url(#shadow)">
+  <rect x="1020" y="145" width="210" height="155" rx="18" fill="#111827" stroke="#fb923c" stroke-width="2"/>
+  <rect x="1020" y="145" width="210" height="6" rx="3" fill="#fb923c"/>
+  <text x="1042" y="185" class="label">runtime seams</text>
+  <text x="1042" y="215" class="small">
+<tspan x="1042" dy="0">prompt sections</tspan>
+<tspan x="1042" dy="23">tool registry</tspan>
+<tspan x="1042" dy="23">session/event</tspan>
+<tspan x="1042" dy="23">LLM provider</tspan>
+<tspan x="1042" dy="23">workspace/sandbox</tspan>
+</text>
+</g><g filter="url(#shadow)">
+  <rect x="150" y="500" width="260" height="135" rx="18" fill="#111827" stroke="#34d399" stroke-width="2"/>
+  <rect x="150" y="500" width="260" height="6" rx="3" fill="#34d399"/>
+  <text x="172" y="540" class="label">Web UI task</text>
+  <text x="172" y="570" class="small">
+<tspan x="172" dy="0">选择 workspace</tspan>
+<tspan x="172" dy="23">模型发起工具调用</tspan>
+<tspan x="172" dy="23">文件读写 + Bash 测试</tspan>
+</text>
+</g><g filter="url(#shadow)">
+  <rect x="510" y="500" width="260" height="135" rx="18" fill="#111827" stroke="#60a5fa" stroke-width="2"/>
+  <rect x="510" y="500" width="260" height="6" rx="3" fill="#60a5fa"/>
+  <text x="532" y="540" class="label">Headless smoke</text>
+  <text x="532" y="570" class="small">
+<tspan x="532" dy="0">一轮任务即退</tspan>
+<tspan x="532" dy="23">适合 CI / 验证</tspan>
+<tspan x="532" dy="23">输出可保存</tspan>
+</text>
+</g><g filter="url(#shadow)">
+  <rect x="870" y="500" width="260" height="135" rx="18" fill="#111827" stroke="#a78bfa" stroke-width="2"/>
+  <rect x="870" y="500" width="260" height="6" rx="3" fill="#a78bfa"/>
+  <text x="892" y="540" class="label">Local plugin</text>
+  <text x="892" y="570" class="small">
+<tspan x="892" dy="0">--patch 插入</tspan>
+<tspan x="892" dy="23">marker 证明 apply</tspan>
+<tspan x="892" dy="23">模型路径再验证</tspan>
+</text>
+</g><path d="M 290 220 C 330.0 220, 330.0 178, 370 178" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 290 220 C 330.0 220, 330.0 330, 370 330" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 615 178 C 657.5 178, 657.5 178, 700 178" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 615 330 C 657.5 330, 657.5 178, 700 178" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 950 178 C 985.0 178, 985.0 220, 1020 220" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 950 330 C 985.0 330, 985.0 220, 1020 220" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 825 390 C 552.5 390, 552.5 500, 280 500" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 825 390 C 732.5 390, 732.5 500, 640 500" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M 825 390 C 912.5 390, 912.5 500, 1000 500" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="60" y="710" class="note">公开版只展示机制和脱敏实践信号：不含部署域名、内网地址、绝对路径、账号或凭据。</text>
+</svg>
