@@ -44,11 +44,15 @@ bundle 则更像一组可分发的运行时能力。`dsh-base` 提供模型适�
 
 我用本地环境跑过一轮。环境里 Node 是 `v22.19.0`，npm 包是 `@deepseek-ai/dsh@0.1.0-rc.6`。这里要特别说清楚：官方项目还在 developer preview，我抓到的源码快照里部分 package 版本和 npm 包也有差异，所以实践结论只对应这次包和这次环境，不该扩大成长期稳定性判断。
 
-第一步我先跑 headless smoke。它不负责证明 agent 多强，只负责证明包能启动、profile 能初始化、模型请求链路能返回。这个步骤很朴素，但做 agent 工程时很必要。很多后面看起来复杂的问题，最后其实是最基本的 profile、provider、凭据、网络和 workspace 入口没有对齐。
+下面这张是实践时回读的 DeepSeek Harness Web UI。页面已经进入中文会话界面，左侧能看到 `webui-workspace`，也留下了那次“修复百分比计算逻辑”的会话；中间是新会话输入框、Workspace Write 权限和模型选择。截图刻意不放地址栏、机器名、内网地址、绝对路径和凭据。
+
+![DeepSeek Harness Web UI practice screenshot](/img/deepseek-harness/deepseek-harness-web-ui-practice.png)
+
+这张图只说明入口真实打开了。第一步我仍然先跑 headless smoke。它不负责证明 agent 多强，只负责证明包能启动、profile 能初始化、模型请求链路能返回。这个步骤很朴素，但做 agent 工程时很必要。很多后面看起来复杂的问题，最后其实是最基本的 profile、provider、凭据、网络和 workspace 入口没有对齐。
 
 Web UI 路径里，我遇到过 `host.listDirectory` 403。这个错误比“页面打不开”更有信息量。它说明 Web UI 访问 workspace 时，会经过 Host、Origin、trust fence 这类边界。要把这类东西放到服务器上，不能把 `127.0.0.1:3080` 直接反代出去当完成。agent 会读文件、调 shell、写 workspace，这些能力一旦进入浏览器 UI，边界就必须提前设计。
 
-接着我用一个小 JS 仓库做了一次闭环验证。任务很小，百分比相关的价格计算/格式化有 bug，让 agent 定位、修改，然后跑 `npm test`。最后测试通过。这个测试不炫，但它比截图有用。一个 harness 能不能用，不能只看模型最后说“修好了”。要看真实文件是否被修改，测试命令是否有结果，输出是否能回读，session 里是否能解释模型为什么这么改。
+接着我用一个小 JS 仓库做了一次闭环验证。任务很小，百分比相关的价格计算/格式化有 bug，让 agent 定位、修改，然后跑 `npm test`。最后测试通过。这个测试不炫，但它和截图看的不是同一件事。一个 harness 能不能用，不能只看模型最后说“修好了”。要看真实文件是否被修改，测试命令是否有结果，输出是否能回读，session 里是否能解释模型为什么这么改。
 
 插件验证也做得很小。我通过 `--patch` 加载一个本地 Cordis 插件，让宿主侧写出 `DSH_PRACTICE_PLUGIN_ACTIVE`，再让模型路径回显 `PLUGIN_EXTENSION_VERIFIED=1`。这两个 marker 要分开看。前者证明宿主确实加载了插件，后者证明插件影响到了模型可见路径。只有目录里安装了 package，不代表它进了 runtime；只有模型口头说“我看到了插件”，也不代表宿主注册成功。两边都留下信号，结论才站得住。
 
