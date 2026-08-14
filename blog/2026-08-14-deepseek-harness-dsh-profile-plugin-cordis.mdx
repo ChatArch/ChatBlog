@@ -3,96 +3,118 @@ title: "DeepSeek Harness 上手读法：从 dsh、profile、plugin 到 Cordis"
 date: 2026-08-14
 slug: deepseek-harness-dsh-profile-plugin-cordis
 tags: [deepseek, agent, runtime, plugin, cordis]
-description: 把 DeepSeek Harness 的架构、部署实践和 Cordis 论文放在一条线上看：dsh 怎样装配 profile/bundle/patch，一轮 agent turn 怎样留下 session event，plugin lifecycle 为什么要用 Cordis 的时空可组合性来理解。
+description: 把 DeepSeek Harness 的上手过程和架构关系放在一条线上看：dsh 如何加载 profile/bundle/patch，Web UI 实践如何留下工具链证据，Cordis 插件为什么改变运行时边界。
 ---
 
-DeepSeek Harness 刚发布时，我第一反应没有停在 Web UI 截图上。我更想看它把 agent 拆成了哪些运行时部件。现在 coding agent 项目太多了，光能开一个聊天页、能调 shell、能改文件，已经不够说明问题。更值得看的地方在于：一次 agent 行动怎样被组织，工具怎样进入模型上下文，插件怎样改变运行时，workspace 权限怎样收边界，session log 能不能把模型实际看到的东西留下来。
+DeepSeek Harness 刚发布时，最容易被看见的是 Web UI：打开页面、选模型、发任务。那只是入口。更值得拆开的，是它怎样把一个 agent runtime 拼起来：`dsh` 负责启动，profile 决定装配，bundle 带来成组能力，patch 改变插件树，Cordis 负责插件生命周期，session/event 留下模型可见内容和工具执行痕迹。
 
-按这个角度读，DeepSeek Harness 的重点已经超过 "DeepSeek 出了一个 agent demo"。它更像一套还在 developer preview 阶段的 agent runtime。成熟度要保守看，但架构取向已经很明确：用 `dsh` 做 launcher，用 profile 和 bundle 拼运行环境，用 Cordis plugin tree 管能力和生命周期，再把 prompt、tool、session、provider、sandbox 这些 seam 暴露出来。
+我这次没有只停在页面能打开，而是按 quick start 到实践闭环跑了一遍：先让 npm 包在隔离 Node 运行时里启动，再用 headless 做最小 smoke；随后通过 Web UI 加 workspace，让它修一个有测试的小仓库；中间排过一次 workspace API 403；最后再写一个最小 Cordis 插件，用 `--patch` 插进 headless profile，验证宿主侧和模型侧都能看到 marker。
 
-我写过三篇笔记，一篇读架构，一篇做本地部署和插件实践，一篇读 Cordis 论文。单独看都容易散。合在一起之后，主线其实只有一条：DeepSeek Harness 关心的是一个可扩展 agent 系统怎样被装配、记录和拆卸，网页只是其中一个入口。
+这组过程比一张最终截图有用。它能回答一个更具体的问题：DeepSeek Harness 到底是普通聊天网页，还是已经把模型、工具、文件系统、权限、session、插件这些部件拆成了可观察、可替换的运行时结构。
 
 <!-- truncate -->
 
-## dsh 更像一个运行时 launcher
+## 先把对象摆正：dsh 是装配入口
 
-官方 README 里最显眼的几个词是 `dsh`、profile、bundle、plugin、Cordis。命令面也沿着这几个词展开：`dsh web` 启动 Web UI，默认服务在 `127.0.0.1:3080`；`dsh --profile headless "job"` 跑一次无 UI 任务；`dsh --profile <name>` 启动指定 profile；`dsh plugin --profile <name> ...` 给某个 profile 管理树外插件。
+官方 README 给出的最快入口是 `npx @deepseek-ai/dsh web`，默认服务在 `127.0.0.1:3080`。这条命令很短，背后不是“启动一个前端页面”这么简单。`dsh web` 会选择 Web 相关 profile/bundle，把模型 provider、工具、session、workspace、settings、client UI 等插件装进同一棵 Cordis plugin tree。
 
-这个设计意味着 DeepSeek Harness 没有把所有东西绑死在一个 Web 应用里。Web UI 是其中一个 profile/bundle 组合，headless runner 是另一个组合。它们共享同一套 Cordis 插件树，入口不同，加载的 bundle 也不同。
+同一个 `dsh` 还可以跑 headless：`dsh --profile headless "..."`。它不打开浏览器，而是执行一轮任务后退出。Web UI 和 headless 的关系，不是两个互不相干的程序，而是同一套 runtime 在不同入口下加载了不同的能力组合。
 
-profile 也比普通配置文件更重。官方文档里，一个 profile 目录通常会有 `package.json` 和 `cordis.patch.yml`。前者记录树外插件依赖和 `dsh.profile.bundles`，后者是这个 profile 自己的 patch layer。启动时，运行时从空 root 开始，先叠加 profile 选中的 bundle patch，再叠加 profile patch，再叠加 `$DSH_HOME/cordis.patch.yml`，最后再吃命令行传进来的 `--patch`。这个顺序很重要，因为 agent 系统里很多问题都出在“谁先注册能力、谁后覆盖能力、谁有权改模型上下文”。
+profile 也不是普通偏好设置。官方文档里，一个 profile 目录通常会包含 `package.json` 和 `cordis.patch.yml`。`package.json` 记录树外依赖和 `dsh.profile.bundles`，`cordis.patch.yml` 是这个 profile 自己的 patch layer。运行时从空 root 开始，先加载 bundle patch，再加载 profile patch，再加载 `$DSH_HOME/cordis.patch.yml`，最后叠命令行传进来的 `--patch`。这个顺序决定了哪个能力先注册，哪个插件可以覆盖或插入运行时。
 
-bundle 则更像一组可分发的运行时能力。`dsh-base` 提供模型适配器、工具、持久化、sandbox、审批策略、settings、credentials、telemetry；`dsh-web-app` 加浏览器应用；`dsh-headless` 加一轮即退的 runner。这样看，`dsh web` 和 headless 是同一棵树上的不同装配方式。
+![DeepSeek Harness concepts and runtime map](/img/deepseek-harness/deepseek-harness-concept-map.svg)
 
-我抓源码快照时，仓库里有两百多个 package，按名字能看到 `client`、`session`、`subagent`、`shell`、`host`、`fs`、`web`、`llm`、`skill`、`workflow` 等包族。这个数量本身不说明质量，但说明它已经超出薄 API 包装层。它把 agent runtime 里那些通常糊在一起的东西拆开了。拆开之后，才有机会分别讨论 prompt assembly、tool registry、session event、provider seam 和插件生命周期。
+把这些词串起来，DeepSeek Harness 的读法就清楚了：`dsh` 是 launcher，profile 是运行时装配方案，bundle 是可复用能力包，patch 是改装层，Cordis plugin tree 是实际被激活的能力图。Web UI 只是其中一个入口。
 
-![DeepSeek Harness agent runtime](/img/deepseek-harness/agent-runtime-architecture.svg)
+## Quick start 不是截图，而是一串验收点
 
-## 真正值得读的是一轮 turn 的结构
+我在实践机上没有改系统 Node，而是在隔离运行目录里使用符合要求的 Node。最终跑通的组合是 Node `v22.19.0` 和 `@deepseek-ai/dsh@0.1.0-rc.6`。Node `v24.x` 路线曾因为 `node-pty` rebuild 需要更高 C++ 标准而失败，后面改用 Node 22.19.0。
 
-官方架构文档里有一段 turn flow，比页面截图有用得多。一次 turn 从 `turn/start` 开始，运行时 claim 下一条输入，把 prompt section 和 tool schema 拼出来，进入 `agent/pre-step`。随后 step 开始，用户消息写进 log，运行时从 session log 里推导模型历史，发起 `agent/request`，接 `llm/stream`，生成 assistant chunk 和 assistant message。模型如果调用工具，会经过 `tools/pre-execute`、`tools/execute`、`tools/post-execute`，工具结果也会回到 session。最后 step 结束，turn stopping 决定要不要继续。
+quick start 的验收顺序如下：先确认 Node 版本，再安装 npm 包，启动 `dsh web`，用 HTTP 回读页面启动标记，最后跑一次 headless 最小任务。headless 那一步很重要，它能排除“网页壳能打开，但 profile/provider/凭据/模型请求链路没通”的情况。
 
-这条链路的价值在于，它把 agent 行动从“模型说了什么”拆成了很多个可观察点。
+![DeepSeek Harness quick start terminal evidence](/img/deepseek-harness/deepseek-harness-quickstart-terminal.svg)
 
-`session/event` 最值得盯。文档里有一句原则：model-visible means logged。只要进入模型请求的内容，就应该能从 log 里重建。这个要求看起来像工程洁癖，实际上很实际。agent 出问题时，最终回答经常帮不上忙。你需要知道 prompt 里到底有没有某段上下文，工具 schema 是哪个版本，审批策略有没有拦命令，provider streaming 中间有没有 partial，UI 渲染出来的结果是否漏了 session 里的事实。
+这一步不评价 agent 编码能力，只检查运行时底座是否站住。agent 系统里很多后续问题，最后会落回很基础的几件事：profile 是否初始化，provider 是否可用，凭据有没有被安全加载，workspace 入口有没有边界，Web UI 和 headless 是否指向同一套运行时状态。
 
-`agent/pre-step` 和 `agent/request` 则说明插件的工作层级高于“新增一个工具”。插件可以改 claimed messages，可以拒绝 step，可以参与模型请求；工具管线也有 pre-execute、execute、post-execute 的阶段。DeepSeek Harness 暴露出来的是一组 runtime seam。你可以沿着 prompt、LLM、tool、session、workspace、sandbox 这些位置接入，也必须为这些位置承担行为后果。
+## Web UI 实践：让它修一个能验收的小仓库
 
-这里能看出它和很多轻量 agent demo 的区别。轻量 demo 往往是把 prompt、工具、模型调用和文件读写塞在同一个主循环里，调试靠 print，扩展靠改代码。Harness 的路线更重：把 turn 切成事件，把工具执行包进管线，把模型请求和 provider 变成可替换 seam，把 session log 当成证据来源。它还没有因此自动变成熟，但方向是 runtime 化的。
+页面打开后，我没有直接用长项目测试，而是准备了一个很小的 Node.js 仓库。仓库里有 `package.json`、`src/quote.js`、`test/quote.test.js`，其中 `discountPercent` 被故意写错：传入 `10` 本来表示 10%，bug 版本却把它当成原始乘数。
 
-## 本地上手时，UI 能打开只是最低标准
+给 Harness 的任务也很明确：先读项目文件，理解测试失败原因，修复 `estimateQuote` 的百分比计算逻辑，运行 `npm test`，再写一个 `PRACTICE_RESULT.md` 记录改动、原因和测试输出。这个任务很小，但覆盖了 coding agent 的几个必要动作：读文件、定位 bug、编辑代码、执行测试、写产物、回读结果。
 
-我用本地环境跑过一轮。环境里 Node 是 `v22.19.0`，npm 包是 `@deepseek-ai/dsh@0.1.0-rc.6`。这里要特别说清楚：官方项目还在 developer preview，我抓到的源码快照里部分 package 版本和 npm 包也有差异，所以实践结论只对应这次包和这次环境，不该扩大成长期稳定性判断。
-
-下面这张是实践时回读的 DeepSeek Harness Web UI。页面已经进入中文会话界面，左侧能看到 `webui-workspace`，也留下了那次“修复百分比计算逻辑”的会话；中间是新会话输入框、Workspace Write 权限和模型选择。截图刻意不放地址栏、机器名、内网地址、绝对路径和凭据。
+下面是实践时回读的 DeepSeek Harness Web UI。页面已经进入中文会话界面，左侧能看到 `webui-workspace`，也留下了那次“修复百分比计算逻辑”的会话；中间是新会话输入框、Workspace Write 权限和模型选择。截图刻意不放地址栏、机器名、内网地址、绝对路径和凭据。
 
 ![DeepSeek Harness Web UI practice screenshot](/img/deepseek-harness/deepseek-harness-web-ui-practice.png)
 
-这张图只说明入口真实打开了。第一步我仍然先跑 headless smoke。它不负责证明 agent 多强，只负责证明包能启动、profile 能初始化、模型请求链路能返回。这个步骤很朴素，但做 agent 工程时很必要。很多后面看起来复杂的问题，最后其实是最基本的 profile、provider、凭据、网络和 workspace 入口没有对齐。
+Web UI 里观察到的工具链是：注入上下文，读取 `package.json`，读取 `src/quote.js`，读取 `test/quote.test.js`，编辑 `src/quote.js`，执行 `npm test`，写入 `PRACTICE_RESULT.md`，再做最终回读。服务端回读确认两个测试都通过，结果文件也存在。
 
-Web UI 路径里，我遇到过 `host.listDirectory` 403。这个错误比“页面打不开”更有信息量。它说明 Web UI 访问 workspace 时，会经过 Host、Origin、trust fence 这类边界。要把这类东西放到服务器上，不能把 `127.0.0.1:3080` 直接反代出去当完成。agent 会读文件、调 shell、写 workspace，这些能力一旦进入浏览器 UI，边界就必须提前设计。
+![DeepSeek Harness Web UI task flow](/img/deepseek-harness/deepseek-harness-webui-task-flow.svg)
 
-接着我用一个小 JS 仓库做了一次闭环验证。任务很小，百分比相关的价格计算/格式化有 bug，让 agent 定位、修改，然后跑 `npm test`。最后测试通过。这个测试不炫，但它和截图看的不是同一件事。一个 harness 能不能用，不能只看模型最后说“修好了”。要看真实文件是否被修改，测试命令是否有结果，输出是否能回读，session 里是否能解释模型为什么这么改。
+这类实践比“模型最后说修好了”更能说明问题。agent 输出的自然语言报告只能算一个线索；真实文件改动、测试命令退出、结果文件内容、session 中的工具调用链，合在一起才说明这轮任务闭合了。
 
-插件验证也做得很小。我通过 `--patch` 加载一个本地 Cordis 插件，让宿主侧写出 `DSH_PRACTICE_PLUGIN_ACTIVE`，再让模型路径回显 `PLUGIN_EXTENSION_VERIFIED=1`。这两个 marker 要分开看。前者证明宿主确实加载了插件，后者证明插件影响到了模型可见路径。只有目录里安装了 package，不代表它进了 runtime；只有模型口头说“我看到了插件”，也不代表宿主注册成功。两边都留下信号，结论才站得住。
+## 部署实践里卡住的不是页面，而是 workspace API
 
-![DeepSeek Harness practice flow](/img/deepseek-harness/webui-plugin-practice-flow.svg)
+Web UI 首次打开并不等于部署完成。我遇到的第一个实际卡点是：页面可以加载，但点击添加 workspace 时，`/api/host.listDirectory` 返回 HTTP 403。
 
-## Everything is a plugin 说的是运行时合约
+这个错误暴露出 Harness 的边界设计。浏览器请求会带 `Origin`，后端 API 又会看到反代传入的 `Host`。当 public edge 把 Host 改写成另一侧的本地 authority，而浏览器 Origin 仍是公开 authority 时，Harness 的 trust fence 会拒绝目录枚举。这个行为并不坏；它阻止的是跨边界的 workspace 访问。
 
-很多项目都会说自己有插件。DeepSeek Harness 这里的 “everything is a plugin” 更重一些。它说的是模型适配器、工具注册表、session log、agent loop 这些能力都应该通过 Cordis context 被组织。
+最后的修复不是绕过 403，而是在 public edge 上为对应入口加精确 vhost，保留浏览器请求的 Host。修好后，带 Origin 的 `/api/host.listDirectory` 返回 HTTP 200，Web UI 目录选择器恢复正常。
 
-官方架构文档里有一个挺关键的说法：没有特权 core 可供到处 patch；扩展应该是把插件挂到其他插件旁边。插件注册行为是 effect，插件卸载时这些 effect 会 unwind。这个句子如果放在普通前端插件市场里有点抽象，放在 agent runtime 里就很具体。
+![DeepSeek Harness trust fence debug](/img/deepseek-harness/deepseek-harness-trust-fence-debug.svg)
 
-agent 的插件远比换主题、加按钮复杂。它可能注册一个 shell tool，改变 prompt section，接入一个模型 provider，打开一个文件系统 provider，挂一个 session renderer，或者影响工具调用前后的审批。这样的插件如果没有生命周期，就会很危险。加载时加了监听，卸载时清不掉；profile 切换后还用旧 provider；workspace 边界变了但工具还拿着老权限；热更新一次多注册一个 handler。这些都是 agent 系统会真实遇到的问题。
+这一步改变了我对“部署 Harness”的判断标准。它不是一个静态网页服务。Web UI 背后有文件系统、shell、workspace 权限和模型工具调用。要把它放到服务器入口上，必须同时验证页面、API、Host/Origin、workspace 边界和停止/日志方式。
 
-Cordis 给 DeepSeek Harness 的意义就在这里。它把插件行为放进 context transformation 里，把注册能力看成 effect，把依赖看成 coeffect，把一个插件实例看成有生命周期的 fiber。这个抽象有明确的工程含义：能力注册在哪里，谁依赖谁，依赖变化时怎么重接线，卸载时怎么撤销，失败时能不能局部恢复，而不必重启整个进程。
+## 插件实践：证明它进入了运行时，而不是只在目录里
 
-## Cordis 论文给了检查 Harness 的尺子
+DeepSeek Harness 反复强调 “Everything is a Plugin”。这句话要落到实践里，不能只看目录里有没有 package，也不能只看文档说支持插件。我写了一个最小 Cordis 插件，通过 `--patch` 插入 headless profile。
 
-DeepSeek Harness README 指向 Cordis 和论文《A Programming Paradigm for Spatiotemporal Composability》。这篇论文有 88 页，里面有形式化定义，也有 Koishi 等系统经验。读 Harness 时，我最有用的收获来自两个检查插件系统的词：temporal composability 和 spatial composability。
+插件做两件很小的事。第一，在 `apply(ctx)` 被调用时写出 marker，证明宿主侧确实加载了插件。第二，通过 `ctx.systemPrompt.section()` 注入一段提示，让模型路径能返回 `DSH_PRACTICE_PLUGIN_ACTIVE`。最后再在运行日志里留下 `PLUGIN_EXTENSION_VERIFIED=1`。
 
-Temporal composability 关心时间。一个组件装进共享环境后，会产生 side effects。它可能注册 service、监听事件、添加命令、修改上下文。组件移除时，这些影响应该能完整撤回。对应到 agent harness，就是工具、prompt section、session hook、provider adapter、UI node、审批策略这些东西不能卸载后还残留在运行时里。
+![DeepSeek Harness plugin patch verification](/img/deepseek-harness/deepseek-harness-plugin-patch-verification.svg)
 
-Spatial composability 关心空间，也就是组件之间的依赖关系。一个插件可能依赖模型 provider，另一个插件依赖 workspace provider，还有一个插件依赖 shell backend 或 sandbox policy。依赖不能只靠启动顺序和全局变量默默约定。运行时要知道谁依赖谁，谁可以激活，谁应该等待，依赖变了谁需要停用或重接线。
+这轮也遇到两个细节。第一次用相对路径加载树外插件失败，因为 loader 不是从 overlay 文件所在目录解析模块，而是按 profile 侧的解析规则走；改成绝对 `file://` 后才进入插件树。第二次 headless 单独运行时缺 provider 环境，后面改为复用 Web 启动时的安全加载方式，只检查 `present`，不打印任何密钥值。
 
-论文里的 revertible effects 和 reactive coeffects，是这两个方向的机制化表达。前者要求 context transformation 能被 runtime 跟踪并撤销；后者要求 context 变化时，组件根据自己的 coeffect specification 进入 activating、deactivating 或 neutral。把这套语言放回 DeepSeek Harness，就能解释为什么它坚持 profile、bundle、patch、plugin tree，而没有在一个主循环里继续堆 if else。
+这两个坑反过来说明 `--patch` 的位置很重要。patch 文件不是“把 YAML 放在旁边就能加载”，它贡献的是运行时配置；模块路径、provider 环境、profile 选择、Cordis 依赖等待，都在同一套装配规则里。
 
-不过这里要小心。Cordis 论文不能当作 DeepSeek Harness 的实测报告，也不能反过来说“Cordis 证明 Harness 已经稳定可靠”。更合适的读法是，Cordis 给了一个评估 Harness 的尺子。以后看它的插件系统，应该看 effect 能否撤销，coeffect 能否声明，profile 切换是否干净，plugin reload 后有没有残留，session/event 能否把模型可见内容留下来，sandbox 和 workspace provider 有没有清晰边界。
+## 一轮 turn 的结构，比页面样子更值得看
+
+官方架构文档里有一条 turn flow。一次 turn 从 `turn/start` 开始，运行时 claim 下一条输入，拼 prompt section 和 tool schema，进入 `agent/pre-step`。step 开始后，用户消息写进 log，运行时从 session log 推导模型历史，发起 `agent/request`，接收 `llm/stream`，生成 assistant chunk 和 assistant message。模型调用工具时，会经过 `tools/pre-execute`、`tools/execute`、`tools/post-execute`，工具结果再回到 session。step 结束后，turn stopping 决定是否继续。
+
+![DeepSeek Harness agent runtime](/img/deepseek-harness/agent-runtime-architecture.svg)
+
+这条链路把 agent 行动拆成很多可观察点。`session/event` 尤其值得盯。文档里的原则是：model-visible means logged。只要进入模型请求的内容，就应该能从 log 重建。agent 出问题时，最终回答经常帮不上忙。你需要知道 prompt 里有没有某段上下文，工具 schema 是哪个版本，审批策略有没有拦命令，provider streaming 中间有没有 partial，UI 渲染结果是否漏掉 session 里的事实。
+
+`agent/pre-step`、`agent/request` 和工具管线也说明，插件的层级高于“新增一个工具按钮”。插件可以参与 prompt assembly，可以影响 claimed messages，可以接入模型请求，可以挂工具执行前后的阶段。Harness 暴露的是 runtime seam：prompt、LLM、tool、session、workspace、sandbox、provider。接入这些位置能带来扩展能力，也会带来权限和可追踪性责任。
+
+## Cordis 给 Harness 的插件系统提供语言
+
+DeepSeek Harness README 指向 Cordis 和论文《A Programming Paradigm for Spatiotemporal Composability》。读 Harness 时，Cordis 最有用的地方不是形式化符号，而是给了两个检查插件系统的词：temporal composability 和 spatial composability。
+
+Temporal composability 关心时间。一个插件注册 tool、监听事件、添加 prompt section、打开连接或挂 UI node，卸载时这些影响应该能撤回。对应到 agent runtime，工具、prompt、session hook、provider adapter、审批策略不能在 profile 切换或插件卸载后继续残留。
+
+Spatial composability 关心依赖空间。一个插件可能依赖模型 provider，另一个依赖 workspace provider，还有一个依赖 shell backend 或 sandbox policy。依赖不能只靠启动顺序和全局变量默契维持。运行时要知道谁依赖谁，谁可以激活，谁应该等待，依赖变化时谁需要停用或重接线。
 
 ![Cordis and Harness composability](/img/deepseek-harness/cordis-spatiotemporal-composability.svg)
 
+Cordis 论文里的 revertible effects 和 reactive coeffects，正好解释 Harness 为什么要把 profile、bundle、patch、plugin tree 放到前台。revertible effects 让 runtime 能跟踪并撤销插件产生的影响；reactive coeffects 让组件根据上下文依赖进入 activating、deactivating 或 neutral。放回 Harness，就是工具注册在哪里、provider 谁提供、workspace 权限从哪里来、session hook 怎么撤、profile 切换是否干净。
+
+要谨慎的是，Cordis 论文不能替代 Harness 实测，也不能证明 Harness 已经稳定。更合适的用法，是拿 Cordis 这套语言检查 Harness：effect 能否撤销，coeffect 能否声明，profile 切换是否干净，plugin reload 后有没有残留，session/event 能否把模型可见内容留下来，sandbox 和 workspace provider 是否有清楚边界。
+
 ## 我现在会怎么判断它
 
-DeepSeek Harness 现在最适合做两件事：研究 agent runtime，以及在受控环境里做插件和 workspace 实验。它还不适合被当成一个已经成熟的公网 coding agent 服务直接扔给团队用。官方自己也把它标成 developer preview，并提醒会有 breaking changes。
+DeepSeek Harness 目前更适合两类用途：研究 agent runtime，以及在受控环境里做插件、profile、workspace 实验。它还不适合被当成成熟的公网 coding agent 服务直接扔给团队。官方自己也标着 developer preview，并提醒会有 breaking changes。
 
-如果只是想尝鲜，跑 `dsh web` 很快。但更值得花时间的是读 `docs/architecture.md`，顺着 turn flow 看 session log、prompt assembly、tool pipeline、provider seam 和 sandbox。然后用 headless 做最小 smoke，用一个很小的仓库做可回读的修改和测试，再写一个 marker 插件验证 `--patch` 真的进了宿主和模型路径。这样做下来，比单纯看 UI 更能判断这个项目的方向。
+只想尝鲜时，`dsh web` 很快能打开。但有价值的上手路径应该长一点：读 `docs/architecture.md`，看 turn flow、session log、prompt assembly、tool pipeline、provider seam 和 sandbox；跑 headless 最小 smoke；准备一个小仓库让 Web UI 做可回读修改和测试；再写一个 marker 插件，用 `--patch` 证明它进入宿主和模型路径。这样跑完，看到的是 runtime 结构，不只是聊天页面。
 
-我不会把它吹成“可以立刻替代现有 IDE agent”。现在看，它更像 DeepSeek 把自家 agent runtime 的一部分设计公开出来，让开发者能看到模型调用之外的那几层：session 如何记录，工具如何执行，插件如何接线，workspace 如何隔离，运行时如何被 profile 和 bundle 拼出来。
+我不会把它说成可以马上替代现有 IDE agent。它现在更像 DeepSeek 把 agent runtime 的一部分设计公开出来：模型调用之外，还有 session 如何记录，工具如何执行，插件如何接线，workspace 如何隔离，运行时如何由 profile 和 bundle 拼出来。
 
-这也是它值得关注的原因。AI 编程工具这条线往后走，差异不会只在模型强弱。强模型当然重要，但长期使用时，工程问题会越来越具体：一次错误工具调用怎么追责，插件怎么升级，workspace 权限怎么收口，团队 profile 怎么复用，session 怎样回放，模型上下文怎样解释。DeepSeek Harness 现在给出的答案还在早期，但它把问题摆在了正确的位置。
+AI 编程工具继续往前走，差异不会只在模型强弱。长期使用时，工程问题会越来越具体：一次错误工具调用怎么追踪，插件怎么升级，workspace 权限怎么收口，团队 profile 怎么复用，session 怎样回放，模型上下文怎样解释。DeepSeek Harness 还早，但它把这些问题放到了运行时层面。
 
 ## 参考链接
 
 - DeepSeek Harness 官方仓库：https://github.com/deepseek-ai/deepseek-harness
+- DeepSeek Harness Architecture：https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md
+- DeepSeek Harness User Guide：https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/guide/index.md
+- DeepSeek Harness First Plugin：https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/index.md
+- DeepSeek Harness Capability Seams：https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/capability-seams.md
 - Cordis 论文仓库：https://github.com/cordiverse/paper
