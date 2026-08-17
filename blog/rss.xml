@@ -4,10 +4,72 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Fri, 14 Aug 2026 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 17 Aug 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[Speakr：我们现在用的网页录音与实时语音工作台]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace</guid>
+            <pubDate>Mon, 17 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[介绍当前 Speakr 网站的会议录音、实时转写、摘要、文字转语音和实时语音对话，以及它在 Recall 服务器上的真实模型与部署方式。]]></description>
+            <content:encoded><![CDATA[<p>我们最早只是想做一个顺手的网页录音页：打开浏览器，允许麦克风，然后一边说一边看到文字。真正开始使用以后，事情很快变复杂了。录音能不能暂停，结束后能不能接着录，临时识别结果为什么会反复变化，两小时的会议会不会把浏览器或 GPU 撑满，这些都比“接一个语音模型”更接近真实问题。</p>
+<p>现在这套网站放在 <a href="https://speakr.public.wzhecnu.cn/" target="_blank" rel="noopener noreferrer" class="">speakr.public.wzhecnu.cn</a>。页面中文名仍是“声笺”，代码来自我们持续改造的 Qwen Audio Demo 仓库。它目前有三个相互独立的工作区：会议记录、声音工作室和实时对话。</p>
+<p>这里的 Speakr 指 ChatArch 当前部署的这套语音工作台，并不是把同名开源项目原样部署后换了一个页面。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="会议记录怎么用">会议记录怎么用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace#%E4%BC%9A%E8%AE%AE%E8%AE%B0%E5%BD%95%E6%80%8E%E4%B9%88%E7%94%A8" class="hash-link" aria-label="会议记录怎么用的直接链接" title="会议记录怎么用的直接链接" translate="no">​</a></h2>
+<p>第一次进入时，可以选访客模式，也可以用受邀账号登录。</p>
+<ul>
+<li class="">访客记录只保存在当前浏览器的 IndexedDB，单个录音段最多 10 分钟。</li>
+<li class="">登录账号的会议文字和摘要会保存在服务器，可以跨设备打开，单个连续录音段最多 2 小时。</li>
+<li class="">暂停不计入录音段时长。点结束以后，可以在同一条会议里继续录；打开旧会议也可以继续追加。</li>
+<li class="">网站不开放自行注册。账号由管理员在服务器上创建。</li>
+</ul>
+<p>开始录音后，页面底部显示真实麦克风波形和本段剩余时间。文字区分成三层：</p>
+<ol>
+<li class=""><strong>正式记录</strong>：已经稳定的内容，只会继续增加，不会因为后面的短结果突然消失。</li>
+<li class=""><strong>上下文回写</strong>：模型根据稍后的语音重新识别后，仍可能调整的最近几句。</li>
+<li class=""><strong>实时识别</strong>：当前最新、最不稳定的一句话。</li>
+</ol>
+<p>结束录音时，最后一个识别窗口会先完成，再把文字并入正式记录。摘要页随后整理主题、行动项、风险和待确认问题。会议标题也会自动生成；如果用户自己改过标题，模型不会再覆盖它。</p>
+<p>原始录音和转写是两条独立链路。MediaRecorder 每秒产生一个音频分片并写入浏览器 IndexedDB，不会把两小时音频一直堆在 JavaScript 内存里。用户点击下载时，浏览器才读取这些分片并组装成完整文件。转写失败不会直接带走本地录音。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="回写到底用了什么">“回写”到底用了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace#%E5%9B%9E%E5%86%99%E5%88%B0%E5%BA%95%E7%94%A8%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="“回写”到底用了什么的直接链接" title="“回写”到底用了什么的直接链接" translate="no">​</a></h2>
+<p>这里最容易产生误解。当前的上下文回写没有为每一句话再调用一次大语言模型。</p>
+<p>浏览器把 16 kHz PCM 音频通过 WebSocket 发给服务端。服务端大约每 3 秒重新识别一次当前窗口，窗口长度控制在 42–45 秒。新结果会包含更多上下文，因此模型可能把刚才听错的词改回来。前端的 <code>TranscriptState</code> 再比较相邻版本，把稳定句子推到正式记录，把最近一句留在实时区，中间部分放进“回写中”。</p>
+<p>这套做法有两个直接好处：</p>
+<ul>
+<li class="">回写只使用同一个 ASR 模型，不需要为高频临时文本持续支付大模型调用成本。</li>
+<li class="">每次送进 GPU 的音频长度有上限。会议开两小时，识别窗口也不会增长到两小时。</li>
+</ul>
+<p>ASR 输出后还有一层很轻的本地整理，例如移除少量语气词、补齐末尾标点。它不是语义改写模型。真正的会议摘要才会进入大语言模型。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="声音工作室和实时对话">声音工作室和实时对话<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace#%E5%A3%B0%E9%9F%B3%E5%B7%A5%E4%BD%9C%E5%AE%A4%E5%92%8C%E5%AE%9E%E6%97%B6%E5%AF%B9%E8%AF%9D" class="hash-link" aria-label="声音工作室和实时对话的直接链接" title="声音工作室和实时对话的直接链接" translate="no">​</a></h2>
+<p>声音工作室目前可以把文字合成为 MP3 或 WAV，内置龙安灵心、龙安鲁风两个音色，也可以填写已经创建好的自定义 voice id。生成后的音频可以直接试听和下载。</p>
+<p>页面保留了声音复刻入口，不过当前正式部署没有配置独立的 DashScope Voice API Key，所以创建复刻音色的按钮会保持禁用。这个状态是服务端下发的，前端不会把未配置能力伪装成可用。</p>
+<p>实时对话是另一条链路。浏览器持续发送麦克风音频，由服务端 VAD 判断说话开始和结束；模型返回文字和 24 kHz PCM 音频，网页边收边播放。用户重新开口时可以打断正在播放的回答。对话支持模型和音色选择、历史记录、搜索、删除以及 Markdown 导出。当前账号实际可用的 Realtime 模型只有一个，页面不会列出无法调用的占位选项。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="当前实际使用的模型">当前实际使用的模型<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace#%E5%BD%93%E5%89%8D%E5%AE%9E%E9%99%85%E4%BD%BF%E7%94%A8%E7%9A%84%E6%A8%A1%E5%9E%8B" class="hash-link" aria-label="当前实际使用的模型的直接链接" title="当前实际使用的模型的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>功能</th><th>当前模型或实现</th><th>运行位置</th></tr></thead><tbody><tr><td>会议语音识别</td><td>FunASR <code>iic/SenseVoiceSmall</code></td><td>Recall 服务器，CUDA <code>cuda:0</code></td></tr><tr><td>临近文字回写</td><td>同一个 SenseVoiceSmall 对 42–45 秒窗口重新识别，加前端 revision 状态机</td><td>Recall + 浏览器</td></tr><tr><td>ASR 轻量清理</td><td>本地规则：空白、少量语气词和标点整理</td><td>FastAPI 服务</td></tr><tr><td>会议摘要与整理</td><td><code>qwen3.8-max</code></td><td>千问兼容 API，经服务端调用</td></tr><tr><td>自动会议标题</td><td><code>qwen3.6-flash</code>，关闭思考模式</td><td>千问兼容 API，经服务端调用</td></tr><tr><td>文字转语音</td><td><code>qwen-audio-3.0-tts-plus</code></td><td>千问 TTS WebSocket API</td></tr><tr><td>实时语音对话</td><td><code>qwen-audio-3.0-realtime-plus</code></td><td>千问 Realtime WebSocket API</td></tr></tbody></table>
+<p>API Key 只放在 Recall 服务器的私有环境文件中。浏览器访问的是我们自己的 FastAPI 接口，不会拿到供应商密钥。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="服务是怎么部署的">服务是怎么部署的<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace#%E6%9C%8D%E5%8A%A1%E6%98%AF%E6%80%8E%E4%B9%88%E9%83%A8%E7%BD%B2%E7%9A%84" class="hash-link" aria-label="服务是怎么部署的的直接链接" title="服务是怎么部署的的直接链接" translate="no">​</a></h2>
+<!-- -->
+<p>应用运行在 Recall 服务器上，由 FastAPI 同时提供页面、HTTP API 和 WebSocket。默认 ASR 在一张 RTX 2080 Ti 上运行，模型加载后留在进程缓存中；服务器还有第二张 GPU，但当前识别通道只使用 <code>cuda:0</code>。公网入口负责 HTTPS、WebSocket 升级和长连接超时，随后转发到 Recall。</p>
+<p>登录账号的会议文字、摘要和实时对话文字保存在服务器 SQLite。访客模式不把这些内容写入服务器数据库，但音频和文字仍会在转写、摘要请求期间经过服务端处理。ASR 使用的临时 WAV 文件会在每次推理后删除，服务日志只记录分片序号、字节数、输出字数和耗时，不记录完整正文。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我们实际测过什么">我们实际测过什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace#%E6%88%91%E4%BB%AC%E5%AE%9E%E9%99%85%E6%B5%8B%E8%BF%87%E4%BB%80%E4%B9%88" class="hash-link" aria-label="我们实际测过什么的直接链接" title="我们实际测过什么的直接链接" translate="no">​</a></h2>
+<p>为了避免用“应该可以”代替验证，目前自动化覆盖了暂停、继续、结束后续录、打开旧会议追加、短 revision 回退、重复句、长句拆分和 40 次连续回写等场景。</p>
+<p>长会议测试使用两小时 PCM 流做模拟，完成了 100 次以上上下文窗口轮换，并验证服务端音频历史保持有界。真实链路则用 Qwen TTS 生成中文测试音频，经公网 WebSocket 进入 GPU ASR，再调用 Qwen 生成摘要；最近一次测试得到 5 次累计 revision，最终转写与原文的归一化相似度为 1.0。</p>
+<p>还有几件事没有做完：iPhone 和 Android 连续两小时的真机浸泡仍待执行；网页切到后台或锁屏后不承诺继续录音；当前没有说话人分离；声音复刻还缺正式密钥配置。这些边界会直接保留在项目记录里，不会写成已经解决。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="源码">源码<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/speakr-realtime-voice-workspace#%E6%BA%90%E7%A0%81" class="hash-link" aria-label="源码的直接链接" title="源码的直接链接" translate="no">​</a></h2>
+<ul>
+<li class="">网站：<a href="https://speakr.public.wzhecnu.cn/" target="_blank" rel="noopener noreferrer" class="">https://speakr.public.wzhecnu.cn/</a></li>
+<li class="">GitHub：<a href="https://github.com/ChatArch/qwen-audio-tts-realtime-demo" target="_blank" rel="noopener noreferrer" class="">ChatArch/qwen-audio-tts-realtime-demo</a></li>
+</ul>
+<p>仓库里包含 FastAPI 后端、单页前端、FunASR worker、账号和会议存储，以及覆盖 UI、ASR、长会议和账号隔离的合同测试。仓库名还保留着早期 Demo 的历史痕迹，当前线上入口统一使用 Speakr。</p>]]></content:encoded>
+            <category>speakr</category>
+            <category>realtime-asr</category>
+            <category>meeting-notes</category>
+            <category>qwen-audio</category>
+            <category>funasr</category>
+            <category>self-hosted</category>
+        </item>
         <item>
             <title><![CDATA[DeepSeek Harness 上手笔记：dsh、workspace、patch 和 Cordis]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/deepseek-harness-dsh-profile-plugin-cordis</link>
@@ -2842,260 +2904,6 @@
             <category>claude-code</category>
             <category>qwen</category>
             <category>tooling</category>
-        </item>
-        <item>
-            <title><![CDATA[把 PPT 做成前端项目：Frontend Harness Slides 的工作流与实践路线]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow</guid>
-            <pubDate>Thu, 06 Aug 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[从 Patrick Fu 的 From Spec to Loop 演示页和 frontend-harness-slides 三个公开仓库出发，拆解这套 Web Slides 方法现在做什么、做了什么、能做什么，以及 ChatArch 如何把它变成自己的快速 slides 创建、发布和持续更新流程。]]></description>
-            <content:encoded><![CDATA[<p>有些“PPT”打开以后并不是 PowerPoint，也不是 Keynote，而是一个完整的前端应用。</p>
-<p>Patrick Fu 的 <a href="https://paaatrick.com/talks/from-spec-to-loop/" target="_blank" rel="noopener noreferrer" class="">From Spec to Loop</a> 就是这种形态：演讲页里的 Open slides 进入的是 <code>/talks/from-spec-to-loop/slides/</code> 下面的网页，URL 可以带 <code>?scene=1&amp;beat=0</code>，按方向键会推进场景，页面加载的是 Vite 风格的 JS/CSS bundle。换句话说，它不是把网页伪装成 PPT，而是把一套演示文稿当成一个小型前端项目来做。</p>
-<p>这篇文章分两部分。</p>
-<p>第一部分看 Patrick 这组三个公开项目：它现在做什么、已经做了什么、能做什么。第二部分转到我们自己的目的：以后有一个 idea、调研结论、项目成果或想展示/炫耀的东西时，怎么用一套固定开发流程快速做出类似的互动 Web Slides，并且能持续更新和发布。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>Frontend Harness Slides 的核心不是“用 React 写几页幻灯片”，而是给演示文稿加了一个工程化 harness：<strong>scene/beat 可寻址、固定 stage、URL deep link、互动隔离、frozen 截图模式、Playwright 审计、静态部署和生产 readback</strong>。它最适合把重要技术内容、调研结论、项目 showcase 做成可演示、可测试、可发布的 artifact。</p></div></div>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>本文快照时间为 <strong>2026-08-06</strong>。证据来自 Patrick Fu 的演讲页、线上 slides 构建产物、GitHub 公开仓库、README、<code>SKILL.md</code>、references、Workbench/Demo 源码、package scripts，以及 Workbench/Demo 线上站点 readback。本文没有找到 <code>from-spec-to-loop</code> 这套具体 deck 的公开源码，因此只把它归类为公开构建产物可证明的 Web slide deck，并把三个公开仓库作为制作范式和参考实现来分析。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一部分这个项目体系现在做什么">第一部分：这个项目体系现在做什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86%E8%BF%99%E4%B8%AA%E9%A1%B9%E7%9B%AE%E4%BD%93%E7%B3%BB%E7%8E%B0%E5%9C%A8%E5%81%9A%E4%BB%80%E4%B9%88" class="hash-link" aria-label="第一部分：这个项目体系现在做什么的直接链接" title="第一部分：这个项目体系现在做什么的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="from-spec-to-loop一套-bespoke-web-slide-deck">From Spec to Loop：一套 bespoke Web slide deck<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#from-spec-to-loop%E4%B8%80%E5%A5%97-bespoke-web-slide-deck" class="hash-link" aria-label="From Spec to Loop：一套 bespoke Web slide deck的直接链接" title="From Spec to Loop：一套 bespoke Web slide deck的直接链接" translate="no">​</a></h3>
-<p>Patrick 的演讲页是一个普通 talk landing page，真正的 slides 在：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">https://paaatrick.com/talks/from-spec-to-loop/slides/</span><br></div></code></pre></div></div>
-<p>它和传统 <code>.pptx</code> 的差异很明显：</p>
-<ul>
-<li class="">slides 是 HTML 入口加 JS/CSS 静态 bundle；</li>
-<li class="">CSS bundle 明确使用 Tailwind CSS；</li>
-<li class="">JS bundle 里有 React root、scene/beat 状态和组件式渲染逻辑；</li>
-<li class="">URL 支持 <code>?scene=1&amp;beat=0</code> 这类帧定位；</li>
-<li class="">键盘右箭头可以推进到下一 scene；</li>
-<li class="">页面是固定比例 stage，而不是普通滚动网页。</li>
-</ul>
-<p>所以这套 talk 更准确的名称是 <strong>bespoke Web slide deck</strong>。它的交付物是一个可以静态部署的网页应用，不是可以下载和编辑的 PowerPoint 文件。</p>
-<p>这点很关键：我们要学习的不是“怎么导出一份网页 PPT”，而是怎么把一套演示文稿做成一个小型前端产品。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="三个公开仓库的职责">三个公开仓库的职责<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E4%B8%89%E4%B8%AA%E5%85%AC%E5%BC%80%E4%BB%93%E5%BA%93%E7%9A%84%E8%81%8C%E8%B4%A3" class="hash-link" aria-label="三个公开仓库的职责的直接链接" title="三个公开仓库的职责的直接链接" translate="no">​</a></h3>
-<p>围绕这套方法，Patrick 公开了三个最相关的仓库。</p>
-<table><thead><tr><th>仓库</th><th>角色</th><th>适合我们学什么</th></tr></thead><tbody><tr><td><a href="https://github.com/patrick-fu/frontend-harness-slides" target="_blank" rel="noopener noreferrer" class="">frontend-harness-slides</a></td><td>方法论 / Agent Skill / 风格与流程手册</td><td>如何从 brief、scene、beat、视觉方向、验证和交付来组织一套 Web Slides</td></tr><tr><td><a href="https://github.com/patrick-fu/frontend-harness-slides-workbench" target="_blank" rel="noopener noreferrer" class="">frontend-harness-slides-workbench</a></td><td>生产级 Workbench</td><td>如何把 slides 做成有 domain contract、catalog、player、tests、thumbnail capture、publication pipeline 的前端系统</td></tr><tr><td><a href="https://github.com/patrick-fu/frontend-harness-slides-demo" target="_blank" rel="noopener noreferrer" class="">frontend-harness-slides-demo</a></td><td>轻量 Demo</td><td>单场 talk 或最小原型怎么组织 App、SlideRenderer、style components、URL state 和 navigation</td></tr></tbody></table>
-<p>我本地克隆后看了一下，三者不是同一个层级。</p>
-<p><code>frontend-harness-slides</code> 没有 <code>package.json</code>，不是可运行 app。它主要是 <code>SKILL.md</code>、README 和 <code>references/01-plan.md</code>、<code>02-design.md</code>、<code>03-build.md</code>、<code>04-verify-and-ship.md</code> 这些流程文档。它回答的是：Agent 或开发者应该怎样规划、设计、构建和验证一套高质量 Web Slides。</p>
-<p><code>frontend-harness-slides-workbench</code> 是完整工程。它使用 React 19、Vite 6、TypeScript、Tailwind CSS 4、Vitest、Testing Library 和 Playwright。线上 Workbench 的 <code>catalog-stats.json</code> 返回：</p>
-<div class="language-json codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-json codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token punctuation" style="color:#393A34">{</span><span class="token property" style="color:#36acaa">"styles"</span><span class="token operator" style="color:#393A34">:</span><span class="token number" style="color:#36acaa">49</span><span class="token punctuation" style="color:#393A34">,</span><span class="token property" style="color:#36acaa">"topics"</span><span class="token operator" style="color:#393A34">:</span><span class="token number" style="color:#36acaa">196</span><span class="token punctuation" style="color:#393A34">}</span><br></div></code></pre></div></div>
-<p>也就是说，它不是单场演讲模板，而是一个 slide style / topic gallery：有 catalog、有 player、有 style group、有 model filter、有 showcase thumbnails、有发布脚本。</p>
-<p><code>frontend-harness-slides-demo</code> 更小。README 直接写明：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">The app is built with React, Vite, Tailwind CSS, and Playwright.</span><br></div></code></pre></div></div>
-<p>它没有 Workbench 那么重的 TypeScript domain contract 和 generated manifest，但更适合作为单场 talk 的最小参考骨架。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="它已经做了什么">它已经做了什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E5%AE%83%E5%B7%B2%E7%BB%8F%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88" class="hash-link" aria-label="它已经做了什么的直接链接" title="它已经做了什么的直接链接" translate="no">​</a></h3>
-<p>把三个仓库放在一起看，Patrick 已经做的不是一个 slide 模板，而是一整套演示文稿工程化方法。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-把第几页升级成-scenebeat">1. 把“第几页”升级成 scene/beat<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#1-%E6%8A%8A%E7%AC%AC%E5%87%A0%E9%A1%B5%E5%8D%87%E7%BA%A7%E6%88%90-scenebeat" class="hash-link" aria-label="1. 把“第几页”升级成 scene/beat的直接链接" title="1. 把“第几页”升级成 scene/beat的直接链接" translate="no">​</a></h4>
-<p>传统 PPT 主要关心 slide number。Frontend Harness Slides 更关注：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">scene = 一个讲述场景</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">beat = 这个场景里的一个稳定故事状态</span><br></div></code></pre></div></div>
-<p>同一页里可以有多个 beat：先出现问题，再出现旧流程，再出现新 loop，再高亮关键差异。每个 beat 都应该能独立打开、截图、review，而不是依赖“从第一页开始点到这里”的历史状态。</p>
-<p>这解释了 Patrick 的线上 URL 为什么会出现：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">?scene=1&amp;beat=0</span><br></div></code></pre></div></div>
-<p>这不是普通 hash navigation，而是演示系统的 frame address。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-固定-stage而不是普通响应式网页">2. 固定 stage，而不是普通响应式网页<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#2-%E5%9B%BA%E5%AE%9A-stage%E8%80%8C%E4%B8%8D%E6%98%AF%E6%99%AE%E9%80%9A%E5%93%8D%E5%BA%94%E5%BC%8F%E7%BD%91%E9%A1%B5" class="hash-link" aria-label="2. 固定 stage，而不是普通响应式网页的直接链接" title="2. 固定 stage，而不是普通响应式网页的直接链接" translate="no">​</a></h4>
-<p>Workbench 的 stage 是 <code>1920x1080</code>。核心做法是：内容永远写在固定 16:9 画布里，外层按容器等比缩放。</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">scale = min(containerWidth / 1920, containerHeight / 1080)</span><br></div></code></pre></div></div>
-<p>这样投影、截图、CI、PDF export 和线上展示看到的是同一套几何关系。导航点、注释、图表、hover 区域不会因为 viewport 变宽突然漂移。</p>
-<p>这和做普通网页的响应式布局相反。Web Slides 更像舞台：舞台大小固定，观众席大小变化时整体缩放。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-用-domain-contract-约束每套-presentation">3. 用 domain contract 约束每套 presentation<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#3-%E7%94%A8-domain-contract-%E7%BA%A6%E6%9D%9F%E6%AF%8F%E5%A5%97-presentation" class="hash-link" aria-label="3. 用 domain contract 约束每套 presentation的直接链接" title="3. 用 domain contract 约束每套 presentation的直接链接" translate="no">​</a></h4>
-<p>Workbench 里的 <code>src/domain/topic.ts</code> 定义了 <code>TopicDefinition</code>：每套 Topic 要有语义 ID、style ID、双语标题、metadata、Stage component、navigation、transitionScore、evidence 等。</p>
-<p>它还会验证：</p>
-<ul>
-<li class="">Topic ID 必须是 semantic kebab-case；</li>
-<li class="">英文/中文 metadata 结构要对齐；</li>
-<li class="">scene/beat IDs 要稳定；</li>
-<li class="">transitionScore 要覆盖 scene edge；</li>
-<li class="">factual evidence 要有 source。</li>
-</ul>
-<p>这已经不是“页面好看就行”，而是让 slides 也有可测试的领域契约。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-player-负责位置scene-负责表现">4. Player 负责位置，Scene 负责表现<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#4-player-%E8%B4%9F%E8%B4%A3%E4%BD%8D%E7%BD%AEscene-%E8%B4%9F%E8%B4%A3%E8%A1%A8%E7%8E%B0" class="hash-link" aria-label="4. Player 负责位置，Scene 负责表现的直接链接" title="4. Player 负责位置，Scene 负责表现的直接链接" translate="no">​</a></h4>
-<p>Workbench 里有清晰分工：</p>
-<table><thead><tr><th>层</th><th>代表文件</th><th>职责</th></tr></thead><tbody><tr><td>Domain</td><td><code>src/domain/topic.ts</code></td><td>定义 Topic、metadata、navigation、transition、evidence 契约</td></tr><tr><td>Catalog</td><td><code>src/catalog/*</code></td><td>style definitions、topic registry、generated manifest、lazy topic loading</td></tr><tr><td>Player</td><td><code>src/player/PlayerRuntime.tsx</code></td><td>固定 stage、加载 Topic、键盘/点击/触摸导航、pure/frozen</td></tr><tr><td>Navigation</td><td><code>src/navigation/index.ts</code></td><td>query state、history、scene/beat clamp、next/prev</td></tr><tr><td>Stage fit</td><td><code>src/player/stage-fit.ts</code></td><td><code>1920x1080</code> stage 根据容器等比缩放</td></tr><tr><td>Scene transition</td><td><code>src/components/stage/SpatialSceneTrack.tsx</code></td><td>active/outgoing scene、transition kind、reduced motion</td></tr><tr><td>Tests</td><td><code>src/testing/topic-contract.tsx</code>、<code>e2e/audit.spec.ts</code></td><td>检查每个 scene/beat、导航、frozen、overflow、console 等</td></tr></tbody></table>
-<p>简单说：Player 处理“现在应该在哪一帧”，Scene 处理“这一帧应该怎么展示”。这个边界很值得我们复用。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-把测试和发布当成一等能力">5. 把测试和发布当成一等能力<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#5-%E6%8A%8A%E6%B5%8B%E8%AF%95%E5%92%8C%E5%8F%91%E5%B8%83%E5%BD%93%E6%88%90%E4%B8%80%E7%AD%89%E8%83%BD%E5%8A%9B" class="hash-link" aria-label="5. 把测试和发布当成一等能力的直接链接" title="5. 把测试和发布当成一等能力的直接链接" translate="no">​</a></h4>
-<p><code>frontend-harness-slides</code> 的 verify 文档很明确：交付不是“本地看起来能翻页”。至少要检查：</p>
-<ul>
-<li class="">direct frame URL 是否能打开；</li>
-<li class="">每个 beat 是否有可见 story element；</li>
-<li class="">keyboard/click/touch 是否一次推进一步；</li>
-<li class="">局部互动是否不会触发全局翻页；</li>
-<li class="">stage 是否可见、没有 overflow/collapse；</li>
-<li class="">console 是否无 runtime error；</li>
-<li class="">build 后 preview 是否不是 stale output；</li>
-<li class="">生产 URL 是否 200、assets 是否 404、移动端是否至少可见。</li>
-</ul>
-<p>这就是它和普通 slide 工具最大的区别：演示文稿变成了可以被 CI 和浏览器自动审计的 artifact。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="它能做什么">它能做什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E5%AE%83%E8%83%BD%E5%81%9A%E4%BB%80%E4%B9%88" class="hash-link" aria-label="它能做什么的直接链接" title="它能做什么的直接链接" translate="no">​</a></h3>
-<p>这套方法最有价值的能力可以分成四类。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-表达能力">1. 表达能力<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#1-%E8%A1%A8%E8%BE%BE%E8%83%BD%E5%8A%9B" class="hash-link" aria-label="1. 表达能力的直接链接" title="1. 表达能力的直接链接" translate="no">​</a></h4>
-<p>它可以做普通 PPT 很难稳定做到的表达：</p>
-<ul>
-<li class="">逐 beat reveal；</li>
-<li class="">Magic Move 式连续运动；</li>
-<li class="">SVG diagram 高亮；</li>
-<li class="">code diff 展开；</li>
-<li class="">hover/click annotation；</li>
-<li class="">局部 mini demo；</li>
-<li class="">图表、矩阵、流程、卡片、时间线、黑板、游戏化 metaphor。</li>
-</ul>
-<p>如果内容本身值得“演示”，这比一页页堆 bullet 更有效。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-协作能力">2. 协作能力<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#2-%E5%8D%8F%E4%BD%9C%E8%83%BD%E5%8A%9B" class="hash-link" aria-label="2. 协作能力的直接链接" title="2. 协作能力的直接链接" translate="no">​</a></h4>
-<p>每个状态都有 URL，意味着 review 可以这样说：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">看 ?scene=method&amp;beat=2 这一帧，diagram 右侧那条箭头太弱。</span><br></div></code></pre></div></div>
-<p>这比“你打开 PPT 点到第 17 页，再点两下动画”清楚得多。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-工程能力">3. 工程能力<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#3-%E5%B7%A5%E7%A8%8B%E8%83%BD%E5%8A%9B" class="hash-link" aria-label="3. 工程能力的直接链接" title="3. 工程能力的直接链接" translate="no">​</a></h4>
-<p>它可以走软件项目的流程：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Git branch -&gt; PR -&gt; build -&gt; Playwright smoke -&gt; Preview URL -&gt; production readback</span><br></div></code></pre></div></div>
-<p>这让 slides 可以持续迭代，不是会后遗失在一个二进制文件里。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-发布能力">4. 发布能力<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#4-%E5%8F%91%E5%B8%83%E8%83%BD%E5%8A%9B" class="hash-link" aria-label="4. 发布能力的直接链接" title="4. 发布能力的直接链接" translate="no">​</a></h4>
-<p>它最终是静态站点，可以部署到：</p>
-<ul>
-<li class="">Vercel；</li>
-<li class="">GitHub Pages；</li>
-<li class="">Cloudflare Pages；</li>
-<li class="">个人博客或文档站子路径；</li>
-<li class="">自己的静态服务。</li>
-</ul>
-<p>也可以额外导出 PDF 或截图归档，但核心交付是一个可访问 URL。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="它不是什么">它不是什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E5%AE%83%E4%B8%8D%E6%98%AF%E4%BB%80%E4%B9%88" class="hash-link" aria-label="它不是什么的直接链接" title="它不是什么的直接链接" translate="no">​</a></h3>
-<p>边界也要说清楚。</p>
-<p>第一，它不是 <code>.pptx</code> 生成器。非技术同事如果只会 PowerPoint，不会直接编辑它。</p>
-<p>第二，Workbench 不适合直接复制来做单场 talk。它有 49 styles、196 topics、overview、filters、model IDs、showcase thumbnails 和 publication plan，对单 deck 来说太重。</p>
-<p>第三，<code>from-spec-to-loop</code> 这套具体 talk 的未打包源码没有在公开仓库中直接找到。我们能确认的是：线上构建产物说明它是 Web slide deck；三个公开仓库说明 Patrick 的制作方法和参考实现。</p>
-<p>所以最合理的复用方式不是 fork 全部，而是抽取它的工作流和关键契约。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第二部分我们怎么用这套方法">第二部分：我们怎么用这套方法<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86%E6%88%91%E4%BB%AC%E6%80%8E%E4%B9%88%E7%94%A8%E8%BF%99%E5%A5%97%E6%96%B9%E6%B3%95" class="hash-link" aria-label="第二部分：我们怎么用这套方法的直接链接" title="第二部分：我们怎么用这套方法的直接链接" translate="no">​</a></h2>
-<p>我们的目标不是研究完 Patrick 就结束，而是建立一套自己的 Web Slides 发布流程：以后有知识、idea、调研结论、项目成果或想展示/炫耀的东西时，可以快速做出类似效果。</p>
-<p>我会把这个流程拆成三层。</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">第一层：Deck Starter</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  每次新建单场 slides 的代码骨架。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">第二层：Deck Brief + Registry 生成流程</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  把 idea / report / project result 转成 scene 和 beat。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">第三层：Publication Flow</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  build -&gt; preview -&gt; public URL -&gt; readback -&gt; update loop。</span><br></div></code></pre></div></div>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一层deck-starter">第一层：Deck Starter<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E7%AC%AC%E4%B8%80%E5%B1%82deck-starter" class="hash-link" aria-label="第一层：Deck Starter的直接链接" title="第一层：Deck Starter的直接链接" translate="no">​</a></h3>
-<p>第一版不应该做成 Workbench 那样的大 gallery。我们只需要一个 single-deck starter。</p>
-<p>推荐结构：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">src/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  deck/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    registry.ts</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    types.ts</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  player/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    Stage.tsx</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    navigation.ts</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    stageFit.ts</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    input.ts</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  scenes/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    opening.tsx</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    problem.tsx</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    method.tsx</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    demo.tsx</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    close.tsx</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  components/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    SpatialSceneTrack.tsx</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  test/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    sceneContract.tsx</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  e2e/</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    audit.spec.ts</span><br></div></code></pre></div></div>
-<p>核心契约是：</p>
-<ul>
-<li class=""><code>registry.ts</code> 声明 scenes、beats、标题、section、speaker intent；</li>
-<li class=""><code>Stage.tsx</code> 固定 <code>1920x1080</code> 并整体缩放；</li>
-<li class=""><code>navigation.ts</code> 解析和写回 <code>?scene=&lt;id&gt;&amp;beat=&lt;n&gt;&amp;frozen=1&amp;pure=1</code>；</li>
-<li class=""><code>input.ts</code> 处理 keyboard/click/touch，同时隔离 button/link/input/drag；</li>
-<li class=""><code>scenes/*.tsx</code> 只按当前 beat 渲染 settled state；</li>
-<li class=""><code>audit.spec.ts</code> 检查 direct frame、next/prev、console、stage visibility、interactive isolation。</li>
-</ul>
-<p><code>package.json</code> 可以保留最小脚本：</p>
-<div class="language-json codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-json codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">"scripts"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token property" style="color:#36acaa">"dev"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"vite --host 127.0.0.1 --port 5173"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token property" style="color:#36acaa">"build"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"tsc -b &amp;&amp; vite build"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token property" style="color:#36acaa">"preview"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"vite preview --host 127.0.0.1 --port 4173"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token property" style="color:#36acaa">"test"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"vitest run"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token property" style="color:#36acaa">"test:audit"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"playwright test"</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token property" style="color:#36acaa">"ci"</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">"npm run build &amp;&amp; npm run test &amp;&amp; npm run test:audit"</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">}</span><br></div></code></pre></div></div>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第二层把-idea-变成-scenebeat-registry">第二层：把 idea 变成 scene/beat registry<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E7%AC%AC%E4%BA%8C%E5%B1%82%E6%8A%8A-idea-%E5%8F%98%E6%88%90-scenebeat-registry" class="hash-link" aria-label="第二层：把 idea 变成 scene/beat registry的直接链接" title="第二层：把 idea 变成 scene/beat registry的直接链接" translate="no">​</a></h3>
-<p>以后不要对 Agent 说“帮我做 PPT”。更好的输入是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">请用 frontend harness slides 的方式做一套 Web Slides。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">先产出 deck brief、scene/beat registry 和 2-3 张真实视觉 preview。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">确认风格后，用 React + Vite + Tailwind 建一个 single-deck 项目。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">每个 frame 要能用 URL 打开，支持 keyboard/click navigation、pure/frozen mode。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">最后跑 build、preview、Playwright smoke，并给出 production readback 路径。</span><br></div></code></pre></div></div>
-<p>一个 deck brief 至少要回答：</p>
-<table><thead><tr><th>字段</th><th>问题</th></tr></thead><tbody><tr><td>audience</td><td>谁会看或听</td></tr><tr><td>goal</td><td>看完要相信什么、记住什么、做什么</td></tr><tr><td>duration</td><td>5 分钟、15 分钟、30 分钟还是阅读型</td></tr><tr><td>content orientation</td><td>教学、说服、产品演示、技术解释、showcase</td></tr><tr><td>density</td><td>speaker-led、reading-first、hybrid</td></tr><tr><td>visual direction</td><td>黑板、产品 keynote、系统架构、游戏化、研究报告等</td></tr><tr><td>delivery target</td><td>线上 URL、现场演示、PR Preview、PDF handout</td></tr></tbody></table>
-<p>然后生成 registry：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">scene: opening</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  title: 为什么 Spec 不是终点</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  intent: 让观众意识到“写完规格”不等于系统完成</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  beats:</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    0: 一份静态 spec 文档占据主视觉</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    1: 文档旁边出现失败反馈和真实世界输入</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    2: spec 被包进 loop，形成可验证循环</span><br></div></code></pre></div></div>
-<p>这个 registry 是事实来源。后续写 JSX、做截图、跑测试、生成 PDF，都应该从 registry 出发。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第三层做真实-interactive-preview">第三层：做真实 interactive preview<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E7%AC%AC%E4%B8%89%E5%B1%82%E5%81%9A%E7%9C%9F%E5%AE%9E-interactive-preview" class="hash-link" aria-label="第三层：做真实 interactive preview的直接链接" title="第三层：做真实 interactive preview的直接链接" translate="no">​</a></h3>
-<p>在全量实现前，应该先做 2-3 张真实 slide preview，而不是只生成 mockup 图。</p>
-<p>每张 preview 应该使用未来正式项目的同一套 stage、字体、颜色、导航和 beat 机制。这样才能尽早发现：</p>
-<ul>
-<li class="">中文字体是否稳；</li>
-<li class="">文字密度是否过高；</li>
-<li class="">动效是否过度；</li>
-<li class="">交互区域是否会误触翻页；</li>
-<li class="">视觉 metaphor 是否真的帮助理解；</li>
-<li class="">投影和截图时是否可读。</li>
-</ul>
-<p>preview 通过以后，再展开到完整 deck。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第四层互动能力怎么加">第四层：互动能力怎么加<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E7%AC%AC%E5%9B%9B%E5%B1%82%E4%BA%92%E5%8A%A8%E8%83%BD%E5%8A%9B%E6%80%8E%E4%B9%88%E5%8A%A0" class="hash-link" aria-label="第四层：互动能力怎么加的直接链接" title="第四层：互动能力怎么加的直接链接" translate="no">​</a></h3>
-<p>这种 Web Slides 可以比普通 PPT 多很多互动，但互动必须受控。</p>
-<p>适合第一版 starter 内置的互动包括：</p>
-<ul>
-<li class="">空格、左右箭头翻页；</li>
-<li class="">点击 stage 左/右区域前进后退；</li>
-<li class="">手机 swipe；</li>
-<li class="">页内 navigator；</li>
-<li class="">hover 高亮 diagram 节点；</li>
-<li class="">click-to-expand 卡片；</li>
-<li class="">code diff 展开/折叠；</li>
-<li class="">tab 切换；</li>
-<li class="">tooltip 或 annotation；</li>
-<li class="">局部 mini demo；</li>
-<li class="">URL deep link 到任何状态；</li>
-<li class="">pure mode 用于嵌入或无 chrome 演示；</li>
-<li class="">frozen mode 用于截图和审计。</li>
-</ul>
-<p>但有一个硬规则：<strong>局部互动不能泄漏到全局翻页。</strong></p>
-<p>例如按钮必须这样处理：</p>
-<div class="language-tsx codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-tsx codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token tag punctuation" style="color:#393A34">&lt;</span><span class="token tag" style="color:#00009f">button</span><span class="token tag" style="color:#00009f"></span><br></div><div class="token-line" style="color:#393A34"><span class="token tag" style="color:#00009f">  </span><span class="token tag attr-name" style="color:#00a4db">type</span><span class="token tag attr-value punctuation attr-equals" style="color:#393A34">=</span><span class="token tag attr-value punctuation" style="color:#393A34">"</span><span class="token tag attr-value" style="color:#e3116c">button</span><span class="token tag attr-value punctuation" style="color:#393A34">"</span><span class="token tag" style="color:#00009f"></span><br></div><div class="token-line" style="color:#393A34"><span class="token tag" style="color:#00009f">  </span><span class="token tag attr-name" style="color:#00a4db">onClick</span><span class="token tag script language-javascript script-punctuation punctuation" style="color:#393A34">=</span><span class="token tag script language-javascript punctuation" style="color:#393A34">{</span><span class="token tag script language-javascript punctuation" style="color:#393A34">(</span><span class="token tag script language-javascript" style="color:#00009f">event</span><span class="token tag script language-javascript punctuation" style="color:#393A34">)</span><span class="token tag script language-javascript" style="color:#00009f"> </span><span class="token tag script language-javascript arrow operator" style="color:#393A34">=&gt;</span><span class="token tag script language-javascript" style="color:#00009f"> </span><span class="token tag script language-javascript punctuation" style="color:#393A34">{</span><span class="token tag script language-javascript" style="color:#00009f"></span><br></div><div class="token-line" style="color:#393A34"><span class="token tag script language-javascript" style="color:#00009f">    event</span><span class="token tag script language-javascript punctuation" style="color:#393A34">.</span><span class="token tag script language-javascript method function property-access" style="color:#d73a49">stopPropagation</span><span class="token tag script language-javascript punctuation" style="color:#393A34">(</span><span class="token tag script language-javascript punctuation" style="color:#393A34">)</span><span class="token tag script language-javascript punctuation" style="color:#393A34">;</span><span class="token tag script language-javascript" style="color:#00009f"></span><br></div><div class="token-line" style="color:#393A34"><span class="token tag script language-javascript" style="color:#00009f">    onNavigate</span><span class="token tag script language-javascript operator" style="color:#393A34">?.</span><span class="token tag script language-javascript punctuation" style="color:#393A34">(</span><span class="token tag script language-javascript string" style="color:#e3116c">"method"</span><span class="token tag script language-javascript punctuation" style="color:#393A34">,</span><span class="token tag script language-javascript" style="color:#00009f"> </span><span class="token tag script language-javascript number" style="color:#36acaa">0</span><span class="token tag script language-javascript punctuation" style="color:#393A34">)</span><span class="token tag script language-javascript punctuation" style="color:#393A34">;</span><span class="token tag script language-javascript" style="color:#00009f"></span><br></div><div class="token-line" style="color:#393A34"><span class="token tag script language-javascript" style="color:#00009f">  </span><span class="token tag script language-javascript punctuation" style="color:#393A34">}</span><span class="token tag script language-javascript punctuation" style="color:#393A34">}</span><span class="token tag" style="color:#00009f"></span><br></div><div class="token-line" style="color:#393A34"><span class="token tag" style="color:#00009f"></span><span class="token tag punctuation" style="color:#393A34">&gt;</span><span class="token plain-text"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain-text">  跳到方法页</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain-text"></span><span class="token tag punctuation" style="color:#393A34">&lt;/</span><span class="token tag" style="color:#00009f">button</span><span class="token tag punctuation" style="color:#393A34">&gt;</span><br></div></code></pre></div></div>
-<p>键盘焦点在 input、textarea、select、dialog、menu、contenteditable 里时，Space/Arrow 也不应该翻页。移动端还要避免 <code>touchend</code> 后合成 click 造成一次手势推进两步。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第五层发布和-readback">第五层：发布和 readback<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E7%AC%AC%E4%BA%94%E5%B1%82%E5%8F%91%E5%B8%83%E5%92%8C-readback" class="hash-link" aria-label="第五层：发布和 readback的直接链接" title="第五层：发布和 readback的直接链接" translate="no">​</a></h3>
-<p>开发期可以本地跑：</p>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">npm run dev</span><br></div></code></pre></div></div>
-<p>交付前必须跑：</p>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">npm run build</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">npm run preview</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">npm run test:audit</span><br></div></code></pre></div></div>
-<p>然后验证 direct frame：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">?scene=method&amp;beat=2&amp;frozen=1</span><br></div></code></pre></div></div>
-<p>上线后不要只看首页。生产 smoke 至少包括：</p>
-<ul>
-<li class="">首页 HTTP 200；</li>
-<li class="">direct frame URL HTTP 200；</li>
-<li class="">JS/CSS/font/image assets 没有 404；</li>
-<li class="">键盘或点击能推进；</li>
-<li class="">console 没有 runtime error；</li>
-<li class="">移动端至少可见；</li>
-<li class="">URL、commit、部署命令和 readback 状态写回项目 progress。</li>
-</ul>
-<p>这一步决定它是不是交付物。localhost 只是 preview，稳定 URL 才是最终 handoff。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="第六层后续怎么更新完善">第六层：后续怎么更新完善<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E7%AC%AC%E5%85%AD%E5%B1%82%E5%90%8E%E7%BB%AD%E6%80%8E%E4%B9%88%E6%9B%B4%E6%96%B0%E5%AE%8C%E5%96%84" class="hash-link" aria-label="第六层：后续怎么更新完善的直接链接" title="第六层：后续怎么更新完善的直接链接" translate="no">​</a></h3>
-<p>Web Slides 最大价值之一是可以持续迭代。后续更新不应该是“打开旧 PPT 改两页”，而应该走一个小型软件变更流程。</p>
-<p>推荐更新路径：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">1. 记录新需求：新增内容、删减内容、修改叙事、强化互动、换视觉风格</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">2. 先改 registry：新增 scene、删 beat、调整顺序或改 speaker intent</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">3. 再改 scene component：让每个 beat 仍然是 settled state</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">4. 如果改了 shared player/navigation/stage，必须跑全量 audit</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">5. 如果只改某个 scene，至少跑该 scene direct frame + final beat screenshot</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">6. build / preview / production readback</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">7. 在 project progress 里记录 URL、变更点和验证结果</span><br></div></code></pre></div></div>
-<p>版本化也很自然：</p>
-<table><thead><tr><th>变更类型</th><th>处理方式</th></tr></thead><tbody><tr><td>修 typo / 调文案</td><td>直接改 scene 文案，跑 build 和关键 frame</td></tr><tr><td>加一页</td><td>先改 registry，再补 scene component 和 tests</td></tr><tr><td>加交互</td><td>先写 event isolation，再补 Playwright 检查</td></tr><tr><td>改视觉系统</td><td>做 2-3 张 preview，确认后再批量替换</td></tr><tr><td>发布新版本</td><td>保持旧 URL 或加版本路径，记录 production readback</td></tr></tbody></table>
-<p>这样 slides 就变成可以维护的知识 artifact，而不是一次性演示文件。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="对-chatarch-的建议">对 ChatArch 的建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E5%AF%B9-chatarch-%E7%9A%84%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="对 ChatArch 的建议的直接链接" title="对 ChatArch 的建议的直接链接" translate="no">​</a></h2>
-<p>下一步最值得做的不是继续研究 Patrick 仓库，而是开一个实现任务：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">chatarch-web-slides-starter</span><br></div></code></pre></div></div>
-<p>第一版验收标准可以很窄：</p>
-<ol>
-<li class="">Vite + React + Tailwind starter；</li>
-<li class="">固定 <code>1920x1080</code> stage，整体缩放；</li>
-<li class=""><code>src/deck/registry.ts</code> 管 scenes/beats；</li>
-<li class="">URL 支持 <code>?scene=&lt;id&gt;&amp;beat=&lt;n&gt;&amp;frozen=1&amp;pure=1</code>；</li>
-<li class="">支持 keyboard/click/touch navigation；</li>
-<li class="">支持局部 button/tab/hover 互动且不触发全局翻页；</li>
-<li class="">至少一套 demo deck：5 scenes，每个 1-3 beats；</li>
-<li class="">Playwright smoke：direct frame、next/prev、console、stage visible、interactive isolation；</li>
-<li class=""><code>npm run build</code> 和 <code>npm run preview</code> 可验证；</li>
-<li class="">有部署说明和生产 URL readback 流程。</li>
-</ol>
-<p>以后 ChatArch 的材料都可以进入同一条路径：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">idea / research note / project result</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; deck brief</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; scene/beat registry</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; interactive previews</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; starter scaffold</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; build</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; deploy</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; readback</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; update loop</span><br></div></code></pre></div></div>
-<p>适用场景包括：</p>
-<ul>
-<li class="">把技术 idea 做成可讲的演示；</li>
-<li class="">把调研结论做成带 diagram 和互动 reveal 的 deck；</li>
-<li class="">把项目成果做成 showcase，而不是只贴 README；</li>
-<li class="">把内部流程、Agent 工作流、系统架构做成可点击/可跳转/可复盘的演示页；</li>
-<li class="">对外传播时用 Web URL 交付，归档时导出 PDF 或静态截图。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="小结">小结<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E5%B0%8F%E7%BB%93" class="hash-link" aria-label="小结的直接链接" title="小结的直接链接" translate="no">​</a></h2>
-<p>Patrick Fu 这套 Web Slides 的核心启发是：<strong>把演示文稿从“不可测试的视觉文件”变成“可寻址、可验证、可部署、可持续更新的前端 artifact”。</strong></p>
-<p><code>frontend-harness-slides</code> 给方法论，<code>frontend-harness-slides-demo</code> 给轻量骨架，<code>frontend-harness-slides-workbench</code> 给生产级参考实现。单场演讲不需要搬整个 Workbench，但应该继承它的几个关键契约：固定 stage、scene/beat registry、URL deep link、互动隔离、frozen mode、Playwright audit、静态部署和生产 URL readback。</p>
-<p>如果只是临时五页 slides，PowerPoint 仍然更快。但如果这是一场重要技术演讲、产品发布、课程、Workshop、调研汇报或项目 showcase，把 PPT 做成前端项目是合理的。</p>
-<p>它的最终心智模型不是“网页版 PPT”，而是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">Deck = small frontend app</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Scene = addressable route state</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Beat = reviewable story state</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Stage = fixed presentation canvas</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Player = navigation and delivery harness</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Tests = slide quality guardrail</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Deployment = final handoff</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">Update loop = knowledge artifact lifecycle</span><br></div></code></pre></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要来源">主要来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/frontend-harness-slides-web-deck-workflow#%E4%B8%BB%E8%A6%81%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要来源的直接链接" title="主要来源的直接链接" translate="no">​</a></h2>
-<ul>
-<li class="">Patrick Fu talk: <a href="https://paaatrick.com/talks/from-spec-to-loop/" target="_blank" rel="noopener noreferrer" class="">From Spec to Loop</a></li>
-<li class="">Slides entry: <a href="https://paaatrick.com/talks/from-spec-to-loop/slides/" target="_blank" rel="noopener noreferrer" class="">paaatrick.com/talks/from-spec-to-loop/slides/</a></li>
-<li class="">Skill repo: <a href="https://github.com/patrick-fu/frontend-harness-slides" target="_blank" rel="noopener noreferrer" class="">patrick-fu/frontend-harness-slides</a></li>
-<li class="">Workbench repo: <a href="https://github.com/patrick-fu/frontend-harness-slides-workbench" target="_blank" rel="noopener noreferrer" class="">patrick-fu/frontend-harness-slides-workbench</a></li>
-<li class="">Workbench live demo: <a href="https://frontend-harness-slides-workbench.vercel.app/" target="_blank" rel="noopener noreferrer" class="">frontend-harness-slides-workbench.vercel.app</a></li>
-<li class="">Demo repo: <a href="https://github.com/patrick-fu/frontend-harness-slides-demo" target="_blank" rel="noopener noreferrer" class="">patrick-fu/frontend-harness-slides-demo</a></li>
-<li class="">Demo live site: <a href="https://frontend-harness-slides-demo.vercel.app/" target="_blank" rel="noopener noreferrer" class="">frontend-harness-slides-demo.vercel.app</a></li>
-<li class="">本地静态阅读的关键文件：<code>SKILL.md</code>、<code>references/01-plan.md</code>、<code>references/02-design.md</code>、<code>references/03-build.md</code>、<code>references/04-verify-and-ship.md</code>、Workbench <code>src/domain/topic.ts</code>、<code>src/navigation/index.ts</code>、<code>src/player/PlayerRuntime.tsx</code>、<code>src/player/stage-fit.ts</code>、<code>src/components/stage/SpatialSceneTrack.tsx</code>、<code>src/testing/topic-contract.tsx</code>、Demo <code>src/App.jsx</code>、<code>src/components/SlideRenderer.jsx</code>、<code>SLIDES_SPECIFICATION.md</code>。</li>
-</ul>]]></content:encoded>
-            <category>slides</category>
-            <category>frontend</category>
-            <category>react</category>
-            <category>vite</category>
-            <category>workflow</category>
-            <category>chatarch</category>
         </item>
     </channel>
 </rss>
