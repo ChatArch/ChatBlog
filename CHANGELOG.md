@@ -35,6 +35,7 @@
 - Added a PR-first iFLYTEK realtime ASR practice guide covering registration, service activation, free packages/pricing, SDK smoke tests, WebSocket routing, and secure relay design.
 - Added an Alibaba Cloud Bailian realtime ASR practice guide covering Token Plan boundaries, Workspace/API Key setup, Qwen-Audio/Fun-ASR/Paraformer model choice, DashScope SDK/WebSocket flows, pricing, and relay design.
 - Added a Volcengine Doubao Speech realtime ASR practice guide covering service activation, X-Api-Key vs legacy AppKey/AccessKey, Resource ID selection, bigmodel/bigmodel_async WebSocket modes, pricing, binary protocol caveats, and relay design.
+- Added a current-state Speakr article covering the deployed meeting recorder, bounded-context SenseVoice transcription and rewrite flow, Qwen summary/title/TTS/Realtime models, Recall topology, privacy modes, tests, and known limits.
 
 ### Changed
 
