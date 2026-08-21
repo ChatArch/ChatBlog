@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-Hans" dir="ltr" class="blog-wrapper blog-post-page plugin-blog plugin-id-default" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox | ChatBlog</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://arch.gh.wzhecnu.cn/ChatBlog/img/social-card.svg"><meta data-rh="true" name="twitter:image" content="https://arch.gh.wzhecnu.cn/ChatBlog/img/social-card.svg"><meta data-rh="true" property="og:url" content="https://arch.gh.wzhecnu.cn/ChatBlog/blog/open-source-voice-cloning-frameworks-2025"><meta data-rh="true" property="og:locale" content="zh_Hans"><meta data-rh="true" name="docusaurus_locale" content="zh-Hans"><meta data-rh="true" name="docusaurus_tag" content="default"><meta data-rh="true" name="docsearch:language" content="zh-Hans"><meta data-rh="true" name="docsearch:docusaurus_tag" content="default"><meta data-rh="true" property="og:title" content="2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox | ChatBlog"><meta data-rh="true" name="description" content="面向自用体验的 2025+ 开源语音克隆框架调研，比较 IndexTTS、CosyVoice、GPT-SoVITS、F5-TTS、Chatterbox、Fish Speech、Spark-TTS、Dia 等项目的 GitHub 星标、许可证、功能定位和试用建议。"><meta data-rh="true" property="og:description" content="面向自用体验的 2025+ 开源语音克隆框架调研，比较 IndexTTS、CosyVoice、GPT-SoVITS、F5-TTS、Chatterbox、Fish Speech、Spark-TTS、Dia 等项目的 GitHub 星标、许可证、功能定位和试用建议。"><meta data-rh="true" property="og:type" content="article"><meta data-rh="true" property="article:published_time" content="2026-08-22T00:00:00.000Z"><meta data-rh="true" property="article:tag" content="tts,voice-cloning,ai-audio,open-source,research"><link data-rh="true" rel="icon" href="/ChatBlog/img/favicon.svg"><link data-rh="true" rel="canonical" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/open-source-voice-cloning-frameworks-2025"><link data-rh="true" rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/open-source-voice-cloning-frameworks-2025" hreflang="zh-Hans"><link data-rh="true" rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/open-source-voice-cloning-frameworks-2025" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","@id":"https://arch.gh.wzhecnu.cn/ChatBlog/blog/open-source-voice-cloning-frameworks-2025","mainEntityOfPage":"https://arch.gh.wzhecnu.cn/ChatBlog/blog/open-source-voice-cloning-frameworks-2025","url":"https://arch.gh.wzhecnu.cn/ChatBlog/blog/open-source-voice-cloning-frameworks-2025","headline":"2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox","name":"2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox","description":"面向自用体验的 2025+ 开源语音克隆框架调研，比较 IndexTTS、CosyVoice、GPT-SoVITS、F5-TTS、Chatterbox、Fish Speech、Spark-TTS、Dia 等项目的 GitHub 星标、许可证、功能定位和试用建议。","datePublished":"2026-08-22T00:00:00.000Z","author":[],"keywords":[],"isPartOf":{"@type":"Blog","@id":"https://arch.gh.wzhecnu.cn/ChatBlog/blog","name":"ChatBlog 博客"}}</script><link rel="alternate" type="application/rss+xml" href="/ChatBlog/blog/rss.xml" title="ChatBlog RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/ChatBlog/blog/atom.xml" title="ChatBlog Atom Feed"><link rel="stylesheet" href="/ChatBlog/assets/css/styles.56965c77.css">
+<script src="/ChatBlog/assets/js/runtime~main.b1b6ae38.js" defer="defer"></script>
+<script src="/ChatBlog/assets/js/main.be685957.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ChatBlog/img/logo.svg"><div role="region" aria-label="跳到主要内容"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">跳到主要内容</a></div><nav aria-label="主导航" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="切换导航栏" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ChatBlog/"><div class="navbar__logo"><img src="/ChatBlog/img/logo.svg" alt="ChatBlog logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ChatBlog/img/logo.svg" alt="ChatBlog logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">ChatBlog</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ChatBlog/blog">博客</a><a class="navbar__item navbar__link" href="/ChatBlog/slides">Slides</a><a class="navbar__item navbar__link" href="/ChatBlog/blog/archive">时间轴</a><a class="navbar__item navbar__link" href="/ChatBlog/blog/tags">标签</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/ChatArch/ChatBlog" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="切换浅色/暗黑模式（当前为system mode）"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="container margin-vert--lg"><div class="row"><aside class="col col--3"><nav class="sidebar_re4s thin-scrollbar" aria-label="最近博文导航"><div class="sidebarItemTitle_pO2u margin-bottom--md">Recent posts</div><div role="group"><h3 class="yearGroupHeading_rMGB">2026</h3><ul class="sidebarItemList_Yudw clean-list"><li class="sidebarItem__DBe"><a aria-current="page" class="sidebarItemLink_mo7H sidebarItemLinkActive_I1ZP" href="/ChatBlog/blog/open-source-voice-cloning-frameworks-2025">2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/blog/speakr-realtime-voice-workspace">Speakr：我们现在用的网页录音与实时语音工作台</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/blog/deepseek-harness-dsh-profile-plugin-cordis">DeepSeek Harness 上手笔记：dsh、workspace、patch 和 Cordis</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/blog/chatglance-page-development-pattern">ChatGlance 页面开发模式：把 Glance Dashboard 做成可审查的页面流水线</a></li><li class="sidebarItem__DBe"><a class="sidebarItemLink_mo7H" href="/ChatBlog/blog/zulip-agent-community-patterns">从 17 万条 Zulip 消息看 Agent 社区应该怎么组织</a></li></ul></div></nav></aside><main class="col col--7"><article class=""><header><h1 class="title_f1Hy">2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox</h1><div class="container_mt6G margin-vert--md"><time datetime="2026-08-22T00:00:00.000Z">2026年8月22日</time> · <!-- -->阅读需 17 分钟</div></header><div id="__blog-post-container" class="markdown"><p>过去两年，语音克隆已经从早期的 Bark、Tortoise、VALL-E-X、XTTS-v2 时代，明显切换到“<strong>大模型 TTS + zero-shot/few-shot voice cloning</strong>”路线。现在主流体验不再只是“能不能模仿音色”，而是看它能不能稳定说长文本、能不能跨语言、能不能控制情绪和语速、能不能本地跑，以及有没有好用的 WebUI 或 Hugging Face demo。</p>
+<p>如果是自用场景，许可证不一定是第一过滤条件。更实际的筛选标准是：<strong>效果体验、中文/多语能力、上手成本、长文本稳定性、是否适合长期做自己的声音库。</strong> 本文按 2025 年以后仍活跃或有新版路线的项目做一次集中梳理。</p>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>数据口径</div><div class="admonitionContent_BuS1"><p>本文的 GitHub Stars、许可证和活跃度快照来自 GitHub API，时间为 <strong>2026-08-22</strong>。Stars 会持续变化，许可证也可能因“代码许可证”和“模型权重许可证”不同而出现差异；下表优先写出对实际使用影响最大的口径。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先区分两类问题tts-克隆和音频换声">先区分两类问题：TTS 克隆和音频换声<a href="#先区分两类问题tts-克隆和音频换声" class="hash-link" aria-label="先区分两类问题：TTS 克隆和音频换声的直接链接" title="先区分两类问题：TTS 克隆和音频换声的直接链接" translate="no">​</a></h2>
+<p>“语音克隆”这个词经常混用，但实际至少分两类：</p>
+<table><thead><tr><th>类型</th><th>输入</th><th>输出</th><th>典型项目</th><th>适合场景</th></tr></thead><tbody><tr><td>TTS voice cloning</td><td>文本 + 参考音频</td><td>用参考音色朗读新文本</td><td>IndexTTS、CosyVoice、GPT-SoVITS、F5-TTS、Chatterbox</td><td>配音、播客、个人语音助手、有声读物</td></tr><tr><td>Voice conversion</td><td>原始语音 + 目标音色</td><td>把已有录音转换成目标音色</td><td>RVC、Seed-VC</td><td>翻唱、已有录音换声、歌声转换</td></tr></tbody></table>
+<p>本文主要讨论第一类：<strong>文字转语音的音色克隆</strong>。如果目标是“我已经有一段录音，想把它换成另一个人的声音”，那应该优先看 RVC/Seed-VC，而不是 TTS 克隆模型。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="候选项目总览">候选项目总览<a href="#候选项目总览" class="hash-link" aria-label="候选项目总览的直接链接" title="候选项目总览的直接链接" translate="no">​</a></h2>
+<p>下面这些项目是本轮更值得优先体验的候选。排序不是绝对质量排名，而是综合了新鲜度、效果体验、中文可用性、Demo/本地上手和社区活跃度。</p>
+<table><thead><tr><th>框架</th><th style="text-align:right">GitHub Stars</th><th>License</th><th>新鲜度</th><th>核心能力</th><th>最适合</th></tr></thead><tbody><tr><td><a href="https://github.com/RVC-Boss/GPT-SoVITS" target="_blank" rel="noopener noreferrer" class="">GPT-SoVITS</a></td><td style="text-align:right">61.1k</td><td>MIT</td><td>2024 起，持续活跃</td><td>5 秒 zero-shot、1 分钟 few-shot、WebUI、数据处理链路完整</td><td>中文/日文/英文少样本克隆，长期做固定声音库</td></tr><tr><td><a href="https://github.com/fishaudio/fish-speech" target="_blank" rel="noopener noreferrer" class="">Fish Speech</a></td><td style="text-align:right">32.3k</td><td>Fish Audio Research License</td><td>2025+ 活跃</td><td>多语 TTS、情绪 tag、短参考音频克隆、服务端推理</td><td>追求表现力、角色化、情绪化声音</td></tr><tr><td><a href="https://github.com/resemble-ai/chatterbox" target="_blank" rel="noopener noreferrer" class="">Chatterbox</a></td><td style="text-align:right">26.1k</td><td>MIT</td><td>2025+ 活跃</td><td>多语 V3、Turbo、Nano、paralinguistic tags、内置水印</td><td>英文/多语 voice agent、自然聊天式 TTS</td></tr><tr><td><a href="https://github.com/index-tts/index-tts" target="_blank" rel="noopener noreferrer" class="">IndexTTS</a></td><td style="text-align:right">23.3k</td><td>bilibili Model Use License</td><td>2025+ 活跃</td><td>单条参考音频克隆，情绪/语速/发音控制，中英日西阿</td><td>中文可控配音、情绪克隆、发音精修</td></tr><tr><td><a href="https://github.com/FunAudioLLM/CosyVoice" target="_blank" rel="noopener noreferrer" class="">CosyVoice</a></td><td style="text-align:right">22.8k</td><td>Apache-2.0</td><td>CosyVoice2/3 路线持续更新</td><td>多语、方言、情绪、语速/音量指令、流式和部署支持</td><td>中文/多语综合 TTS、产品化自用服务</td></tr><tr><td><a href="https://github.com/nari-labs/dia" target="_blank" rel="noopener noreferrer" class="">Dia</a></td><td style="text-align:right">19.4k</td><td>Apache-2.0</td><td>2025+</td><td>英文对话 TTS、音频 prompt、笑声/咳嗽等非语言事件</td><td>英文播客、角色对话、双人对话感生成</td></tr><tr><td><a href="https://github.com/SWivid/F5-TTS" target="_blank" rel="noopener noreferrer" class="">F5-TTS</a></td><td style="text-align:right">15.1k</td><td>代码 MIT，权重 CC-BY-NC</td><td>2025 v1 以后持续活跃</td><td>Flow Matching TTS，高自然度 zero-shot，Demo 体验好</td><td>快速体验高自然度音色克隆</td></tr><tr><td><a href="https://github.com/SparkAudio/Spark-TTS" target="_blank" rel="noopener noreferrer" class="">Spark-TTS</a></td><td style="text-align:right">11.0k</td><td>代码 Apache-2.0，权重常见 CC-BY-NC-SA</td><td>2025</td><td>中英双语 zero-shot、voice creation、性别/音高/语速控制</td><td>中英克隆、虚拟声音创建</td></tr><tr><td><a href="https://github.com/myshell-ai/OpenVoice" target="_blank" rel="noopener noreferrer" class="">OpenVoice</a></td><td style="text-align:right">37.2k</td><td>MIT</td><td>2024 项目，仍有参考价值</td><td>instant voice cloning、跨语种 tone color cloning、情绪/口音控制</td><td>快速音色迁移、轻量 baseline</td></tr></tbody></table>
+<p>如果严格只保留“2025+ 主线”，OpenVoice 可以放到备选；但它的 MIT 许可证、简单度和历史影响力仍然让它值得作为 baseline 对照。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-indextts中文可控性很突出的-zero-shot-tts">1. IndexTTS：中文可控性很突出的 zero-shot TTS<a href="#1-indextts中文可控性很突出的-zero-shot-tts" class="hash-link" aria-label="1. IndexTTS：中文可控性很突出的 zero-shot TTS的直接链接" title="1. IndexTTS：中文可控性很突出的 zero-shot TTS的直接链接" translate="no">​</a></h2>
+<p>IndexTTS 是近两年中文语音克隆里很值得优先测的项目。它的定位不是“只要像”，而是把音色克隆和可控生成结合起来：参考音频负责音色，额外参数负责情绪、发音、语速和语言。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>单条参考音频克隆</strong>：上传一个 speaker audio prompt，就可以生成目标文本。</li>
+<li class=""><strong>多语支持</strong>：最新 IndexTTS-2.5 支持中文、英文、日文、西班牙文、阿拉伯文。</li>
+<li class=""><strong>情绪控制</strong>：可以通过参考音频、情绪描述文本等方式控制语气和表现力。</li>
+<li class=""><strong>发音控制</strong>：支持中文拼音、英文 CMU phonemes、日文 Kana 等更细粒度的发音修正。</li>
+<li class=""><strong>语速控制</strong>：通过 duration factor 控制整体说话速度。</li>
+<li class=""><strong>部署方向</strong>：官方提到 vLLM 生产部署路径，说明它不是只面向 notebook demo。</li>
+</ul>
+<p>体验判断：如果你主要测中文个人声音，IndexTTS 应该排在第一梯队。它的优势是“可控”：不是只能靠模型随机发挥，而是能对中文发音、情绪、语速做显式调节。自用时，如果你想做的是“自己的中文配音模型”，它比很多单纯 zero-shot demo 更值得反复调参数。</p>
+<p>可能的短板：安装和模型环境比纯在线 demo 更重；同时它采用自定义模型许可证，商用时要读细则。自用不太受影响。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/index-tts/index-tts" target="_blank" rel="noopener noreferrer" class="">https://github.com/index-tts/index-tts</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/IndexTeam/IndexTTS-2.5-Demo" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/IndexTeam/IndexTTS-2.5-Demo</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-cosyvoice综合能力最均衡的中文多语方案">2. CosyVoice：综合能力最均衡的中文/多语方案<a href="#2-cosyvoice综合能力最均衡的中文多语方案" class="hash-link" aria-label="2. CosyVoice：综合能力最均衡的中文/多语方案的直接链接" title="2. CosyVoice：综合能力最均衡的中文/多语方案的直接链接" translate="no">​</a></h2>
+<p>CosyVoice 来自 FunAudioLLM 生态，是当前中文和多语 TTS 里非常均衡的一条线。它不只是做“语音克隆”，而是覆盖了训练、推理、Web demo、流式、服务端部署等完整链路。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>多语和方言覆盖</strong>：CosyVoice 3 路线覆盖中英日韩德西法意俄等常见语言，也强调中文方言/口音。</li>
+<li class=""><strong>zero-shot / cross-lingual / instruct</strong>：可以做零样本克隆、跨语种生成，也能用自然语言指令控制风格。</li>
+<li class=""><strong>情绪和语速控制</strong>：支持情绪、速度、音量等指令式控制。</li>
+<li class=""><strong>流式能力</strong>：官方强调双向 streaming，适合低延迟交互场景。</li>
+<li class=""><strong>部署友好</strong>：支持 vLLM、TensorRT-LLM、FastAPI、Docker 等路径，更接近可长期自用的服务化方案。</li>
+</ul>
+<p>体验判断：如果只选一个“综合型”项目，CosyVoice 很可能是最稳的。它不一定在每个 demo 场景都秒杀其他模型，但在中文、多语、方言、服务化和长期维护之间非常平衡。</p>
+<p>可能的短板：环境安装、模型下载和部署链路比单个 HF Space 更复杂；不同版本模型的能力差异较大，测试时要明确是 CosyVoice2 还是 Fun-CosyVoice3。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/FunAudioLLM/CosyVoice" target="_blank" rel="noopener noreferrer" class="">https://github.com/FunAudioLLM/CosyVoice</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/FunAudioLLM/Fun-CosyVoice3-0.5B" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/FunAudioLLM/Fun-CosyVoice3-0.5B</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-gpt-sovits少样本微调生态最成熟">3. GPT-SoVITS：少样本微调生态最成熟<a href="#3-gpt-sovits少样本微调生态最成熟" class="hash-link" aria-label="3. GPT-SoVITS：少样本微调生态最成熟的直接链接" title="3. GPT-SoVITS：少样本微调生态最成熟的直接链接" translate="no">​</a></h2>
+<p>GPT-SoVITS 是中文社区里非常实用的一套语音克隆工具链。它的最大价值不是单点模型，而是“从数据准备到训练/推理”的完整 WebUI 工作流。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>5 秒 zero-shot</strong>：给一小段参考音频即可尝试克隆。</li>
+<li class=""><strong>1 分钟 few-shot 微调</strong>：用很少的目标声音数据训练出更稳定的个人音色。</li>
+<li class=""><strong>WebUI 成熟</strong>：提供推理、训练、数据处理等界面。</li>
+<li class=""><strong>数据工具齐全</strong>：集成伴奏分离、自动切片、多语 ASR、文本处理等环节。</li>
+<li class=""><strong>多语支持</strong>：覆盖中文、英文、日文、韩文、粤语等常见场景。</li>
+<li class=""><strong>推理速度优化</strong>：新版本强调 ProPlus 和更快的 RTF 表现。</li>
+</ul>
+<p>体验判断：如果你只是想一次性上传 10 秒音频试一下，GPT-SoVITS 不一定是最省事的；但如果你想长期用自己的声音生成内容，GPT-SoVITS 的 few-shot 微调非常关键。很多 zero-shot 模型听起来“像”，但长文本稳定性、口头禅、气息和语速可能不够一致；few-shot 微调往往能解决一部分问题。</p>
+<p>可能的短板：链路比纯 zero-shot 复杂，需要准备干净音频、切片、标注或 ASR 校正。要获得好效果，最好愿意花一点时间整理数据。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/RVC-Boss/GPT-SoVITS" target="_blank" rel="noopener noreferrer" class="">https://github.com/RVC-Boss/GPT-SoVITS</a></li>
+<li class="">Hugging Face Demo: <a href="https://lj1995-gpt-sovits-proplus.hf.space/" target="_blank" rel="noopener noreferrer" class="">https://lj1995-gpt-sovits-proplus.hf.space/</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-f5-tts自然度和在线体验都很好的-quick-win">4. F5-TTS：自然度和在线体验都很好的 quick win<a href="#4-f5-tts自然度和在线体验都很好的-quick-win" class="hash-link" aria-label="4. F5-TTS：自然度和在线体验都很好的 quick win的直接链接" title="4. F5-TTS：自然度和在线体验都很好的 quick win的直接链接" translate="no">​</a></h2>
+<p>F5-TTS 是 2025 后仍很活跃的高自然度 TTS 路线，官方描述是基于 flow matching 的语音生成模型。它在社区中的吸引力主要来自两个点：自然度好，以及 demo 很容易上手。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>zero-shot voice cloning</strong>：用参考音频和参考文本 prompt 生成目标文本。</li>
+<li class=""><strong>高自然度</strong>：在很多样例里，声音流畅度、节奏和自然感都比较好。</li>
+<li class=""><strong>推理脚本和包化使用</strong>：可通过 Python package、CLI、WebUI 等方式使用。</li>
+<li class=""><strong>多语言社区微调</strong>：Hugging Face 上有不少围绕 F5-TTS 的语言适配和衍生模型。</li>
+</ul>
+<p>体验判断：F5-TTS 适合作为“快速看效果上限”的第一批 demo。你准备一段干净参考音频，配好参考文本，通常能较快听出它的自然度优势。</p>
+<p>可能的短板：它比较依赖参考音频和对应 transcript 的质量；如果参考文本不准、音频噪声大或语气差异太大，克隆结果会变差。另一个现实问题是，预训练权重常见为非商用许可证；自用可以忽略，但公开产品要谨慎。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/SWivid/F5-TTS" target="_blank" rel="noopener noreferrer" class="">https://github.com/SWivid/F5-TTS</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/mrfakename/E2-F5-TTS" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/mrfakename/E2-F5-TTS</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-chatterbox英文多语-voice-agent-的强候选">5. Chatterbox：英文/多语 voice agent 的强候选<a href="#5-chatterbox英文多语-voice-agent-的强候选" class="hash-link" aria-label="5. Chatterbox：英文/多语 voice agent 的强候选的直接链接" title="5. Chatterbox：英文/多语 voice agent 的强候选的直接链接" translate="no">​</a></h2>
+<p>Chatterbox 来自 Resemble AI，定位很接近“自然语音代理”和“多语 voice cloning”。它不是中文生态里最强势的名字，但如果你要做英文、多语或者对话式语音，它非常值得测。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>模型族完整</strong>：包括 Chatterbox、Chatterbox-Turbo、Chatterbox-Nano、Chatterbox-Multilingual V3。</li>
+<li class=""><strong>多语 V3</strong>：官方强调 23+ 语言覆盖、更稳定的 speaker similarity、更少 hallucination。</li>
+<li class=""><strong>低资源变体</strong>：Nano 面向 CPU/端侧，Turbo 面向更快推理。</li>
+<li class=""><strong>paralinguistic tags</strong>：支持类似 <code>[laugh]</code> 的副语言标签，适合聊天和角色声音。</li>
+<li class=""><strong>内置水印</strong>：生成音频包含 Resemble AI 的 PerTh 水印，体现其 responsible AI 取向。</li>
+</ul>
+<p>体验判断：如果你测英文播客、英语 voice agent、跨语言说话风格，Chatterbox 应该放到第一梯队。它的优势不是“中文发音最精细”，而是自然、稳定、适合对话产品。</p>
+<p>可能的短板：中文能力要实测，不建议只看英文样例就直接判断它适合所有中文场景。参数如 cfg weight、exaggeration 会影响节奏和表现力，需要调。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/resemble-ai/chatterbox" target="_blank" rel="noopener noreferrer" class="">https://github.com/resemble-ai/chatterbox</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/ResembleAI/Chatterbox-Multilingual-TTS-V3" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/ResembleAI/Chatterbox-Multilingual-TTS-V3</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-fish-speech--openaudio表现力上限高但更像进阶玩家选项">6. Fish Speech / OpenAudio：表现力上限高，但更像进阶玩家选项<a href="#6-fish-speech--openaudio表现力上限高但更像进阶玩家选项" class="hash-link" aria-label="6. Fish Speech / OpenAudio：表现力上限高，但更像进阶玩家选项的直接链接" title="6. Fish Speech / OpenAudio：表现力上限高，但更像进阶玩家选项的直接链接" translate="no">​</a></h2>
+<p>Fish Speech 是近两年非常活跃的开源 TTS 项目之一。它强调多语、表现力、情绪 tag 和快速克隆，新的 Fish Audio / OpenAudio 路线也在持续推进。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>短参考音频克隆</strong>：官方文档提到典型 10-30 秒参考样本即可进行快速 voice cloning。</li>
+<li class=""><strong>多语能力</strong>：面向大量语言和多说话人场景。</li>
+<li class=""><strong>情绪 tag</strong>：可以在文本里通过标签控制 whisper、excited、angry 等表现。</li>
+<li class=""><strong>多轮生成</strong>：强调利用上下文提升后续生成自然度。</li>
+<li class=""><strong>服务端性能</strong>：结合 SGLang 等推理加速方向，适合进阶部署。</li>
+</ul>
+<p>体验判断：如果你追求的是“声音有灵魂”、角色感、情绪表达，而不是最简单的一键克隆，Fish Speech 值得测。它的上限可能很高，尤其适合做角色化声音或风格化朗读。</p>
+<p>可能的短板：整体生态更偏进阶，版本线、模型权重和部署方式需要仔细选；如果只想点开网页快速玩，体验门槛可能高于 F5-TTS 或 Chatterbox。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/fishaudio/fish-speech" target="_blank" rel="noopener noreferrer" class="">https://github.com/fishaudio/fish-speech</a></li>
+<li class="">文档入口: <a href="https://speech.fish.audio/" target="_blank" rel="noopener noreferrer" class="">https://speech.fish.audio/</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-spark-tts中英双语和-voice-creation-很有意思">7. Spark-TTS：中英双语和 voice creation 很有意思<a href="#7-spark-tts中英双语和-voice-creation-很有意思" class="hash-link" aria-label="7. Spark-TTS：中英双语和 voice creation 很有意思的直接链接" title="7. Spark-TTS：中英双语和 voice creation 很有意思的直接链接" translate="no">​</a></h2>
+<p>Spark-TTS 是 2025 年出现的中英双语 TTS/voice cloning 项目。它的一个特色是基于 Qwen2.5 路线，并把 voice cloning 和 voice creation 放在一起。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>中英双语</strong>：重点覆盖中文和英文，支持跨语言/code-switching 场景。</li>
+<li class=""><strong>zero-shot voice cloning</strong>：无需为目标说话人专门训练即可克隆。</li>
+<li class=""><strong>voice creation</strong>：可通过性别、音高、语速等参数创建虚拟声音。</li>
+<li class=""><strong>推理部署</strong>：提供 WebUI、CLI 和 Triton 推理服务相关说明。</li>
+</ul>
+<p>体验判断：Spark-TTS 适合自用时拿来玩两类东西：一是中英双语克隆，二是创建一个不存在的虚拟声音。如果你不仅想“复制自己的声音”，还想调一个新角色音色，它比纯克隆模型更有趣。</p>
+<p>可能的短板：语言覆盖不如 CosyVoice 或 Chatterbox Multilingual；权重许可证常见为非商用，虽然自用无所谓，但公开发布前仍需留意。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/SparkAudio/Spark-TTS" target="_blank" rel="noopener noreferrer" class="">https://github.com/SparkAudio/Spark-TTS</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/Mobvoi/Offical-Spark-TTS" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/Mobvoi/Offical-Spark-TTS</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="8-dia不是通用克隆首选但对话感很强">8. Dia：不是通用克隆首选，但对话感很强<a href="#8-dia不是通用克隆首选但对话感很强" class="hash-link" aria-label="8. Dia：不是通用克隆首选，但对话感很强的直接链接" title="8. Dia：不是通用克隆首选，但对话感很强的直接链接" translate="no">​</a></h2>
+<p>Dia 来自 Nari Labs，定位更像“超真实对话 TTS”。它可以从 transcript 直接生成对话音频，也能用音频 prompt 控制声音、语气和情绪。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>英文对话生成</strong>：适合播客、角色对话、两人对话等场景。</li>
+<li class=""><strong>音频 prompt</strong>：官方建议 5-10 秒参考音频作为 voice cloning/conditioning 输入。</li>
+<li class=""><strong>非语言事件</strong>：能生成笑声、咳嗽、清嗓等对话中的自然声音。</li>
+<li class=""><strong>Apache-2.0</strong>：许可证友好。</li>
+</ul>
+<p>体验判断：Dia 不应被当作“最通用的中文语音克隆工具”。它更适合英文对话、播客样式、角色互动。如果你的目标是做一个英语对话节目或模拟两个人聊天，它很值得加入测试。</p>
+<p>可能的短板：官方明确模型只支持英文生成和理解；中文自用场景应优先看 IndexTTS、CosyVoice、GPT-SoVITS。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/nari-labs/dia" target="_blank" rel="noopener noreferrer" class="">https://github.com/nari-labs/dia</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/nari-labs/Dia-1.6B" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/nari-labs/Dia-1.6B</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="9-openvoice2024-baseline仍适合做对照组">9. OpenVoice：2024 baseline，仍适合做对照组<a href="#9-openvoice2024-baseline仍适合做对照组" class="hash-link" aria-label="9. OpenVoice：2024 baseline，仍适合做对照组的直接链接" title="9. OpenVoice：2024 baseline，仍适合做对照组的直接链接" translate="no">​</a></h2>
+<p>OpenVoice V2 不完全符合“2025+”过滤条件，但作为轻量、MIT、跨语种 instant voice cloning baseline，它仍然值得在自用测试里保留一个对照位。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>instant voice cloning</strong>：快速克隆参考音色。</li>
+<li class=""><strong>跨语种 tone color cloning</strong>：能把音色迁移到不同语言和口音上。</li>
+<li class=""><strong>风格控制</strong>：支持情绪、口音、节奏、停顿、语调等控制思路。</li>
+<li class=""><strong>商业友好许可证</strong>：MIT，虽然本文不以许可证为主，但这让它很容易放进工具箱。</li>
+</ul>
+<p>体验判断：OpenVoice 的优势是简单、成熟、轻量。它不一定代表 2025+ 最新效果上限，但作为 baseline 很有价值：如果一个新模型比 OpenVoice 复杂很多，效果却没有明显超过它，那就不值得长期维护。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/myshell-ai/OpenVoice" target="_blank" rel="noopener noreferrer" class="">https://github.com/myshell-ai/OpenVoice</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/myshell-ai/OpenVoice" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/myshell-ai/OpenVoice</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="按自用目标选择">按自用目标选择<a href="#按自用目标选择" class="hash-link" aria-label="按自用目标选择的直接链接" title="按自用目标选择的直接链接" translate="no">​</a></h2>
+<p>如果不想把所有项目都跑一遍，可以按目标缩小范围。</p>
+<table><thead><tr><th>自用目标</th><th>优先候选</th><th>原因</th></tr></thead><tbody><tr><td>中文个人声音克隆，越像越好</td><td>GPT-SoVITS、IndexTTS、CosyVoice</td><td>GPT-SoVITS 适合 few-shot 稳定音色；IndexTTS/CosyVoice zero-shot 和可控性强</td></tr><tr><td>快速上传一段音频看效果</td><td>F5-TTS、IndexTTS、Chatterbox</td><td>Demo 体验相对直接，容易快速判断音色相似度和自然度</td></tr><tr><td>中文情绪配音/角色感</td><td>IndexTTS、Fish Speech、CosyVoice</td><td>情绪、语速、发音或 tag 控制更丰富</td></tr><tr><td>中英/多语切换</td><td>CosyVoice、Chatterbox、F5-TTS</td><td>综合多语能力强，跨语种克隆体验更值得测</td></tr><tr><td>长期本地使用</td><td>GPT-SoVITS、CosyVoice、F5-TTS</td><td>有本地推理、WebUI、训练或服务化路径</td></tr><tr><td>英文播客/对话</td><td>Chatterbox、Dia</td><td>对话自然度和副语言事件更适合英文内容</td></tr><tr><td>创建一个虚拟声音</td><td>Spark-TTS、Fish Speech</td><td>不只克隆，也能调性别、音高、语速或风格</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我会怎么排测试顺序">我会怎么排测试顺序<a href="#我会怎么排测试顺序" class="hash-link" aria-label="我会怎么排测试顺序的直接链接" title="我会怎么排测试顺序的直接链接" translate="no">​</a></h2>
+<p>如果测试对象主要是中文自用，我建议按这个顺序：</p>
+<ol>
+<li class=""><strong>IndexTTS 2.5</strong>：先看中文相似度、情绪控制、语速控制和发音修正能力。</li>
+<li class=""><strong>CosyVoice 3/2</strong>：看整体稳定性、多语和方言表现，以及是否适合做本地服务。</li>
+<li class=""><strong>F5-TTS v1</strong>：快速判断自然度上限，尤其是参考音频质量较好时的表现。</li>
+<li class=""><strong>GPT-SoVITS</strong>：如果 zero-shot 不够像，再投入时间做少样本微调。</li>
+<li class=""><strong>Chatterbox V3</strong>：补测英文/多语和聊天式 voice agent 场景。</li>
+<li class=""><strong>Fish Speech / Spark-TTS</strong>：当你想要更强表现力、情绪 tag 或虚拟声音时再测。</li>
+<li class=""><strong>Dia</strong>：只在英文对话/播客场景需要时测。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="测试素材建议">测试素材建议<a href="#测试素材建议" class="hash-link" aria-label="测试素材建议的直接链接" title="测试素材建议的直接链接" translate="no">​</a></h2>
+<p>语音克隆模型对素材非常敏感。为了公平比较，建议准备同一套测试集：</p>
+<ul>
+<li class=""><strong>参考音频</strong>：10-30 秒，干净人声，无 BGM，无明显混响，音量稳定。</li>
+<li class=""><strong>参考文本</strong>：如果模型需要 transcript，尽量手动校对，标点也要自然。</li>
+<li class=""><strong>目标文本</strong>：至少包含短句、长句、情绪句和中英混杂句。</li>
+<li class=""><strong>输出格式</strong>：统一采样率和音量后再听，避免被响度误导。</li>
+<li class=""><strong>评估维度</strong>：音色相似度、咬字准确率、长文本稳定性、情绪自然度、是否重复/乱续写。</li>
+</ul>
+<p>一组简单中文测试文本可以这样设计：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">今天我们来聊一下语音克隆模型的实际体验。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">这段话稍微长一点，用来测试模型在长文本下会不会断句奇怪、重复，或者出现发音不稳定的问题。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">哎，这个效果还真有点意思，比我想象中自然多了。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">我今天用的是 voice cloning demo，想测试一下中文、English words，还有一点点情绪变化。</span><br></div></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最终结论">最终结论<a href="#最终结论" class="hash-link" aria-label="最终结论的直接链接" title="最终结论的直接链接" translate="no">​</a></h2>
+<p>如果只从“自用体验”出发，我会把候选压缩成五个主力：</p>
+<table><thead><tr><th style="text-align:right">优先级</th><th>框架</th><th>一句话结论</th></tr></thead><tbody><tr><td style="text-align:right">1</td><td>IndexTTS 2.5</td><td>中文可控性最值得测，情绪、发音、语速都比较完整</td></tr><tr><td style="text-align:right">2</td><td>CosyVoice 3/2</td><td>综合能力最均衡，中文、多语、方言、部署都强</td></tr><tr><td style="text-align:right">3</td><td>GPT-SoVITS</td><td>想长期做自己的声音库，few-shot 微调很实用</td></tr><tr><td style="text-align:right">4</td><td>F5-TTS v1</td><td>快速体验自然度上限，demo 友好</td></tr><tr><td style="text-align:right">5</td><td>Chatterbox V3</td><td>英文/多语 voice agent 和对话式声音值得测</td></tr></tbody></table>
+<p>再往后，Fish Speech 适合追求表现力上限，Spark-TTS 适合中英克隆和虚拟声音创建，Dia 适合英文对话，OpenVoice 适合作为轻量 baseline。</p>
+<p>真正落地时，不要只听官方样例。最有价值的测试是：用自己的参考音频、自己的目标文本、同一套评估维度，把这些模型各跑一遍。语音克隆的效果差异常常不是“哪个模型绝对最好”，而是“哪个模型最适合你的声音、语言和使用习惯”。</p></div><footer class="docusaurus-mt-lg"><div class="row margin-top--sm theme-blog-footer-edit-meta-row"><div class="col"><b>标签：</b><ul class="tags_jXut padding--none margin-left--sm"><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/tts">tts</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/voice-cloning">voice-cloning</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/ai-audio">ai-audio</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/open-source">open-source</a></li><li class="tag_QGVx"><a rel="tag" class="tag_zVej tagRegular_sFm0" href="/ChatBlog/blog/tags/research">research</a></li></ul></div></div><div class="row margin-top--sm theme-blog-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/ChatArch/ChatBlog/tree/main/blog/2026-08-22-open-source-voice-cloning-frameworks.mdx" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>编辑此页</a></div><div class="col lastUpdated_JAkA"></div></div><section class="commentsSection_bruF" aria-label="评论区"><h2 class="commentsTitle_ZXPI">评论</h2><div></div></section></footer></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="博文分页导航"><a class="pagination-nav__link pagination-nav__link--next" href="/ChatBlog/blog/speakr-realtime-voice-workspace"><div class="pagination-nav__sublabel">较旧一篇</div><div class="pagination-nav__label">Speakr：我们现在用的网页录音与实时语音工作台</div></a></nav></main><div class="col col--2"><div class="tableOfContents_bqdL thin-scrollbar"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#先区分两类问题tts-克隆和音频换声" class="table-of-contents__link toc-highlight">先区分两类问题：TTS 克隆和音频换声</a></li><li><a href="#候选项目总览" class="table-of-contents__link toc-highlight">候选项目总览</a></li><li><a href="#1-indextts中文可控性很突出的-zero-shot-tts" class="table-of-contents__link toc-highlight">1. IndexTTS：中文可控性很突出的 zero-shot TTS</a></li><li><a href="#2-cosyvoice综合能力最均衡的中文多语方案" class="table-of-contents__link toc-highlight">2. CosyVoice：综合能力最均衡的中文/多语方案</a></li><li><a href="#3-gpt-sovits少样本微调生态最成熟" class="table-of-contents__link toc-highlight">3. GPT-SoVITS：少样本微调生态最成熟</a></li><li><a href="#4-f5-tts自然度和在线体验都很好的-quick-win" class="table-of-contents__link toc-highlight">4. F5-TTS：自然度和在线体验都很好的 quick win</a></li><li><a href="#5-chatterbox英文多语-voice-agent-的强候选" class="table-of-contents__link toc-highlight">5. Chatterbox：英文/多语 voice agent 的强候选</a></li><li><a href="#6-fish-speech--openaudio表现力上限高但更像进阶玩家选项" class="table-of-contents__link toc-highlight">6. Fish Speech / OpenAudio：表现力上限高，但更像进阶玩家选项</a></li><li><a href="#7-spark-tts中英双语和-voice-creation-很有意思" class="table-of-contents__link toc-highlight">7. Spark-TTS：中英双语和 voice creation 很有意思</a></li><li><a href="#8-dia不是通用克隆首选但对话感很强" class="table-of-contents__link toc-highlight">8. Dia：不是通用克隆首选，但对话感很强</a></li><li><a href="#9-openvoice2024-baseline仍适合做对照组" class="table-of-contents__link toc-highlight">9. OpenVoice：2024 baseline，仍适合做对照组</a></li><li><a href="#按自用目标选择" class="table-of-contents__link toc-highlight">按自用目标选择</a></li><li><a href="#我会怎么排测试顺序" class="table-of-contents__link toc-highlight">我会怎么排测试顺序</a></li><li><a href="#测试素材建议" class="table-of-contents__link toc-highlight">测试素材建议</a></li><li><a href="#最终结论" class="table-of-contents__link toc-highlight">最终结论</a></li></ul></div></div></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">内容</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/blog">最新博客</a></li><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/slides">Slides</a></li><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/blog/archive">时间轴</a></li><li class="footer__item"><a class="footer__link-item" href="/ChatBlog/blog/tags">标签</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">源码</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/ChatArch/ChatBlog" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 ChatArch. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>
