@@ -4,10 +4,213 @@
         <title>ChatBlog Blog</title>
         <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog</link>
         <description>ChatBlog Blog</description>
-        <lastBuildDate>Mon, 17 Aug 2026 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Sat, 22 Aug 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-Hans</language>
+        <item>
+            <title><![CDATA[2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox]]></title>
+            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025</link>
+            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025</guid>
+            <pubDate>Sat, 22 Aug 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[面向自用体验的 2025+ 开源语音克隆框架调研，比较 IndexTTS、CosyVoice、GPT-SoVITS、F5-TTS、Chatterbox、Fish Speech、Spark-TTS、Dia 等项目的 GitHub 星标、许可证、功能定位和试用建议。]]></description>
+            <content:encoded><![CDATA[<p>过去两年，语音克隆已经从早期的 Bark、Tortoise、VALL-E-X、XTTS-v2 时代，明显切换到“<strong>大模型 TTS + zero-shot/few-shot voice cloning</strong>”路线。现在主流体验不再只是“能不能模仿音色”，而是看它能不能稳定说长文本、能不能跨语言、能不能控制情绪和语速、能不能本地跑，以及有没有好用的 WebUI 或 Hugging Face demo。</p>
+<p>如果是自用场景，许可证不一定是第一过滤条件。更实际的筛选标准是：<strong>效果体验、中文/多语能力、上手成本、长文本稳定性、是否适合长期做自己的声音库。</strong> 本文按 2025 年以后仍活跃或有新版路线的项目做一次集中梳理。</p>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>数据口径</div><div class="admonitionContent_BuS1"><p>本文的 GitHub Stars、许可证和活跃度快照来自 GitHub API，时间为 <strong>2026-08-22</strong>。Stars 会持续变化，许可证也可能因“代码许可证”和“模型权重许可证”不同而出现差异；下表优先写出对实际使用影响最大的口径。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先区分两类问题tts-克隆和音频换声">先区分两类问题：TTS 克隆和音频换声<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#%E5%85%88%E5%8C%BA%E5%88%86%E4%B8%A4%E7%B1%BB%E9%97%AE%E9%A2%98tts-%E5%85%8B%E9%9A%86%E5%92%8C%E9%9F%B3%E9%A2%91%E6%8D%A2%E5%A3%B0" class="hash-link" aria-label="先区分两类问题：TTS 克隆和音频换声的直接链接" title="先区分两类问题：TTS 克隆和音频换声的直接链接" translate="no">​</a></h2>
+<p>“语音克隆”这个词经常混用，但实际至少分两类：</p>
+<table><thead><tr><th>类型</th><th>输入</th><th>输出</th><th>典型项目</th><th>适合场景</th></tr></thead><tbody><tr><td>TTS voice cloning</td><td>文本 + 参考音频</td><td>用参考音色朗读新文本</td><td>IndexTTS、CosyVoice、GPT-SoVITS、F5-TTS、Chatterbox</td><td>配音、播客、个人语音助手、有声读物</td></tr><tr><td>Voice conversion</td><td>原始语音 + 目标音色</td><td>把已有录音转换成目标音色</td><td>RVC、Seed-VC</td><td>翻唱、已有录音换声、歌声转换</td></tr></tbody></table>
+<p>本文主要讨论第一类：<strong>文字转语音的音色克隆</strong>。如果目标是“我已经有一段录音，想把它换成另一个人的声音”，那应该优先看 RVC/Seed-VC，而不是 TTS 克隆模型。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="候选项目总览">候选项目总览<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#%E5%80%99%E9%80%89%E9%A1%B9%E7%9B%AE%E6%80%BB%E8%A7%88" class="hash-link" aria-label="候选项目总览的直接链接" title="候选项目总览的直接链接" translate="no">​</a></h2>
+<p>下面这些项目是本轮更值得优先体验的候选。排序不是绝对质量排名，而是综合了新鲜度、效果体验、中文可用性、Demo/本地上手和社区活跃度。</p>
+<table><thead><tr><th>框架</th><th style="text-align:right">GitHub Stars</th><th>License</th><th>新鲜度</th><th>核心能力</th><th>最适合</th></tr></thead><tbody><tr><td><a href="https://github.com/RVC-Boss/GPT-SoVITS" target="_blank" rel="noopener noreferrer" class="">GPT-SoVITS</a></td><td style="text-align:right">61.1k</td><td>MIT</td><td>2024 起，持续活跃</td><td>5 秒 zero-shot、1 分钟 few-shot、WebUI、数据处理链路完整</td><td>中文/日文/英文少样本克隆，长期做固定声音库</td></tr><tr><td><a href="https://github.com/fishaudio/fish-speech" target="_blank" rel="noopener noreferrer" class="">Fish Speech</a></td><td style="text-align:right">32.3k</td><td>Fish Audio Research License</td><td>2025+ 活跃</td><td>多语 TTS、情绪 tag、短参考音频克隆、服务端推理</td><td>追求表现力、角色化、情绪化声音</td></tr><tr><td><a href="https://github.com/resemble-ai/chatterbox" target="_blank" rel="noopener noreferrer" class="">Chatterbox</a></td><td style="text-align:right">26.1k</td><td>MIT</td><td>2025+ 活跃</td><td>多语 V3、Turbo、Nano、paralinguistic tags、内置水印</td><td>英文/多语 voice agent、自然聊天式 TTS</td></tr><tr><td><a href="https://github.com/index-tts/index-tts" target="_blank" rel="noopener noreferrer" class="">IndexTTS</a></td><td style="text-align:right">23.3k</td><td>bilibili Model Use License</td><td>2025+ 活跃</td><td>单条参考音频克隆，情绪/语速/发音控制，中英日西阿</td><td>中文可控配音、情绪克隆、发音精修</td></tr><tr><td><a href="https://github.com/FunAudioLLM/CosyVoice" target="_blank" rel="noopener noreferrer" class="">CosyVoice</a></td><td style="text-align:right">22.8k</td><td>Apache-2.0</td><td>CosyVoice2/3 路线持续更新</td><td>多语、方言、情绪、语速/音量指令、流式和部署支持</td><td>中文/多语综合 TTS、产品化自用服务</td></tr><tr><td><a href="https://github.com/nari-labs/dia" target="_blank" rel="noopener noreferrer" class="">Dia</a></td><td style="text-align:right">19.4k</td><td>Apache-2.0</td><td>2025+</td><td>英文对话 TTS、音频 prompt、笑声/咳嗽等非语言事件</td><td>英文播客、角色对话、双人对话感生成</td></tr><tr><td><a href="https://github.com/SWivid/F5-TTS" target="_blank" rel="noopener noreferrer" class="">F5-TTS</a></td><td style="text-align:right">15.1k</td><td>代码 MIT，权重 CC-BY-NC</td><td>2025 v1 以后持续活跃</td><td>Flow Matching TTS，高自然度 zero-shot，Demo 体验好</td><td>快速体验高自然度音色克隆</td></tr><tr><td><a href="https://github.com/SparkAudio/Spark-TTS" target="_blank" rel="noopener noreferrer" class="">Spark-TTS</a></td><td style="text-align:right">11.0k</td><td>代码 Apache-2.0，权重常见 CC-BY-NC-SA</td><td>2025</td><td>中英双语 zero-shot、voice creation、性别/音高/语速控制</td><td>中英克隆、虚拟声音创建</td></tr><tr><td><a href="https://github.com/myshell-ai/OpenVoice" target="_blank" rel="noopener noreferrer" class="">OpenVoice</a></td><td style="text-align:right">37.2k</td><td>MIT</td><td>2024 项目，仍有参考价值</td><td>instant voice cloning、跨语种 tone color cloning、情绪/口音控制</td><td>快速音色迁移、轻量 baseline</td></tr></tbody></table>
+<p>如果严格只保留“2025+ 主线”，OpenVoice 可以放到备选；但它的 MIT 许可证、简单度和历史影响力仍然让它值得作为 baseline 对照。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-indextts中文可控性很突出的-zero-shot-tts">1. IndexTTS：中文可控性很突出的 zero-shot TTS<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#1-indextts%E4%B8%AD%E6%96%87%E5%8F%AF%E6%8E%A7%E6%80%A7%E5%BE%88%E7%AA%81%E5%87%BA%E7%9A%84-zero-shot-tts" class="hash-link" aria-label="1. IndexTTS：中文可控性很突出的 zero-shot TTS的直接链接" title="1. IndexTTS：中文可控性很突出的 zero-shot TTS的直接链接" translate="no">​</a></h2>
+<p>IndexTTS 是近两年中文语音克隆里很值得优先测的项目。它的定位不是“只要像”，而是把音色克隆和可控生成结合起来：参考音频负责音色，额外参数负责情绪、发音、语速和语言。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>单条参考音频克隆</strong>：上传一个 speaker audio prompt，就可以生成目标文本。</li>
+<li class=""><strong>多语支持</strong>：最新 IndexTTS-2.5 支持中文、英文、日文、西班牙文、阿拉伯文。</li>
+<li class=""><strong>情绪控制</strong>：可以通过参考音频、情绪描述文本等方式控制语气和表现力。</li>
+<li class=""><strong>发音控制</strong>：支持中文拼音、英文 CMU phonemes、日文 Kana 等更细粒度的发音修正。</li>
+<li class=""><strong>语速控制</strong>：通过 duration factor 控制整体说话速度。</li>
+<li class=""><strong>部署方向</strong>：官方提到 vLLM 生产部署路径，说明它不是只面向 notebook demo。</li>
+</ul>
+<p>体验判断：如果你主要测中文个人声音，IndexTTS 应该排在第一梯队。它的优势是“可控”：不是只能靠模型随机发挥，而是能对中文发音、情绪、语速做显式调节。自用时，如果你想做的是“自己的中文配音模型”，它比很多单纯 zero-shot demo 更值得反复调参数。</p>
+<p>可能的短板：安装和模型环境比纯在线 demo 更重；同时它采用自定义模型许可证，商用时要读细则。自用不太受影响。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/index-tts/index-tts" target="_blank" rel="noopener noreferrer" class="">https://github.com/index-tts/index-tts</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/IndexTeam/IndexTTS-2.5-Demo" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/IndexTeam/IndexTTS-2.5-Demo</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-cosyvoice综合能力最均衡的中文多语方案">2. CosyVoice：综合能力最均衡的中文/多语方案<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#2-cosyvoice%E7%BB%BC%E5%90%88%E8%83%BD%E5%8A%9B%E6%9C%80%E5%9D%87%E8%A1%A1%E7%9A%84%E4%B8%AD%E6%96%87%E5%A4%9A%E8%AF%AD%E6%96%B9%E6%A1%88" class="hash-link" aria-label="2. CosyVoice：综合能力最均衡的中文/多语方案的直接链接" title="2. CosyVoice：综合能力最均衡的中文/多语方案的直接链接" translate="no">​</a></h2>
+<p>CosyVoice 来自 FunAudioLLM 生态，是当前中文和多语 TTS 里非常均衡的一条线。它不只是做“语音克隆”，而是覆盖了训练、推理、Web demo、流式、服务端部署等完整链路。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>多语和方言覆盖</strong>：CosyVoice 3 路线覆盖中英日韩德西法意俄等常见语言，也强调中文方言/口音。</li>
+<li class=""><strong>zero-shot / cross-lingual / instruct</strong>：可以做零样本克隆、跨语种生成，也能用自然语言指令控制风格。</li>
+<li class=""><strong>情绪和语速控制</strong>：支持情绪、速度、音量等指令式控制。</li>
+<li class=""><strong>流式能力</strong>：官方强调双向 streaming，适合低延迟交互场景。</li>
+<li class=""><strong>部署友好</strong>：支持 vLLM、TensorRT-LLM、FastAPI、Docker 等路径，更接近可长期自用的服务化方案。</li>
+</ul>
+<p>体验判断：如果只选一个“综合型”项目，CosyVoice 很可能是最稳的。它不一定在每个 demo 场景都秒杀其他模型，但在中文、多语、方言、服务化和长期维护之间非常平衡。</p>
+<p>可能的短板：环境安装、模型下载和部署链路比单个 HF Space 更复杂；不同版本模型的能力差异较大，测试时要明确是 CosyVoice2 还是 Fun-CosyVoice3。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/FunAudioLLM/CosyVoice" target="_blank" rel="noopener noreferrer" class="">https://github.com/FunAudioLLM/CosyVoice</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/FunAudioLLM/Fun-CosyVoice3-0.5B" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/FunAudioLLM/Fun-CosyVoice3-0.5B</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-gpt-sovits少样本微调生态最成熟">3. GPT-SoVITS：少样本微调生态最成熟<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#3-gpt-sovits%E5%B0%91%E6%A0%B7%E6%9C%AC%E5%BE%AE%E8%B0%83%E7%94%9F%E6%80%81%E6%9C%80%E6%88%90%E7%86%9F" class="hash-link" aria-label="3. GPT-SoVITS：少样本微调生态最成熟的直接链接" title="3. GPT-SoVITS：少样本微调生态最成熟的直接链接" translate="no">​</a></h2>
+<p>GPT-SoVITS 是中文社区里非常实用的一套语音克隆工具链。它的最大价值不是单点模型，而是“从数据准备到训练/推理”的完整 WebUI 工作流。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>5 秒 zero-shot</strong>：给一小段参考音频即可尝试克隆。</li>
+<li class=""><strong>1 分钟 few-shot 微调</strong>：用很少的目标声音数据训练出更稳定的个人音色。</li>
+<li class=""><strong>WebUI 成熟</strong>：提供推理、训练、数据处理等界面。</li>
+<li class=""><strong>数据工具齐全</strong>：集成伴奏分离、自动切片、多语 ASR、文本处理等环节。</li>
+<li class=""><strong>多语支持</strong>：覆盖中文、英文、日文、韩文、粤语等常见场景。</li>
+<li class=""><strong>推理速度优化</strong>：新版本强调 ProPlus 和更快的 RTF 表现。</li>
+</ul>
+<p>体验判断：如果你只是想一次性上传 10 秒音频试一下，GPT-SoVITS 不一定是最省事的；但如果你想长期用自己的声音生成内容，GPT-SoVITS 的 few-shot 微调非常关键。很多 zero-shot 模型听起来“像”，但长文本稳定性、口头禅、气息和语速可能不够一致；few-shot 微调往往能解决一部分问题。</p>
+<p>可能的短板：链路比纯 zero-shot 复杂，需要准备干净音频、切片、标注或 ASR 校正。要获得好效果，最好愿意花一点时间整理数据。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/RVC-Boss/GPT-SoVITS" target="_blank" rel="noopener noreferrer" class="">https://github.com/RVC-Boss/GPT-SoVITS</a></li>
+<li class="">Hugging Face Demo: <a href="https://lj1995-gpt-sovits-proplus.hf.space/" target="_blank" rel="noopener noreferrer" class="">https://lj1995-gpt-sovits-proplus.hf.space/</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-f5-tts自然度和在线体验都很好的-quick-win">4. F5-TTS：自然度和在线体验都很好的 quick win<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#4-f5-tts%E8%87%AA%E7%84%B6%E5%BA%A6%E5%92%8C%E5%9C%A8%E7%BA%BF%E4%BD%93%E9%AA%8C%E9%83%BD%E5%BE%88%E5%A5%BD%E7%9A%84-quick-win" class="hash-link" aria-label="4. F5-TTS：自然度和在线体验都很好的 quick win的直接链接" title="4. F5-TTS：自然度和在线体验都很好的 quick win的直接链接" translate="no">​</a></h2>
+<p>F5-TTS 是 2025 后仍很活跃的高自然度 TTS 路线，官方描述是基于 flow matching 的语音生成模型。它在社区中的吸引力主要来自两个点：自然度好，以及 demo 很容易上手。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>zero-shot voice cloning</strong>：用参考音频和参考文本 prompt 生成目标文本。</li>
+<li class=""><strong>高自然度</strong>：在很多样例里，声音流畅度、节奏和自然感都比较好。</li>
+<li class=""><strong>推理脚本和包化使用</strong>：可通过 Python package、CLI、WebUI 等方式使用。</li>
+<li class=""><strong>多语言社区微调</strong>：Hugging Face 上有不少围绕 F5-TTS 的语言适配和衍生模型。</li>
+</ul>
+<p>体验判断：F5-TTS 适合作为“快速看效果上限”的第一批 demo。你准备一段干净参考音频，配好参考文本，通常能较快听出它的自然度优势。</p>
+<p>可能的短板：它比较依赖参考音频和对应 transcript 的质量；如果参考文本不准、音频噪声大或语气差异太大，克隆结果会变差。另一个现实问题是，预训练权重常见为非商用许可证；自用可以忽略，但公开产品要谨慎。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/SWivid/F5-TTS" target="_blank" rel="noopener noreferrer" class="">https://github.com/SWivid/F5-TTS</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/mrfakename/E2-F5-TTS" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/mrfakename/E2-F5-TTS</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-chatterbox英文多语-voice-agent-的强候选">5. Chatterbox：英文/多语 voice agent 的强候选<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#5-chatterbox%E8%8B%B1%E6%96%87%E5%A4%9A%E8%AF%AD-voice-agent-%E7%9A%84%E5%BC%BA%E5%80%99%E9%80%89" class="hash-link" aria-label="5. Chatterbox：英文/多语 voice agent 的强候选的直接链接" title="5. Chatterbox：英文/多语 voice agent 的强候选的直接链接" translate="no">​</a></h2>
+<p>Chatterbox 来自 Resemble AI，定位很接近“自然语音代理”和“多语 voice cloning”。它不是中文生态里最强势的名字，但如果你要做英文、多语或者对话式语音，它非常值得测。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>模型族完整</strong>：包括 Chatterbox、Chatterbox-Turbo、Chatterbox-Nano、Chatterbox-Multilingual V3。</li>
+<li class=""><strong>多语 V3</strong>：官方强调 23+ 语言覆盖、更稳定的 speaker similarity、更少 hallucination。</li>
+<li class=""><strong>低资源变体</strong>：Nano 面向 CPU/端侧，Turbo 面向更快推理。</li>
+<li class=""><strong>paralinguistic tags</strong>：支持类似 <code>[laugh]</code> 的副语言标签，适合聊天和角色声音。</li>
+<li class=""><strong>内置水印</strong>：生成音频包含 Resemble AI 的 PerTh 水印，体现其 responsible AI 取向。</li>
+</ul>
+<p>体验判断：如果你测英文播客、英语 voice agent、跨语言说话风格，Chatterbox 应该放到第一梯队。它的优势不是“中文发音最精细”，而是自然、稳定、适合对话产品。</p>
+<p>可能的短板：中文能力要实测，不建议只看英文样例就直接判断它适合所有中文场景。参数如 cfg weight、exaggeration 会影响节奏和表现力，需要调。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/resemble-ai/chatterbox" target="_blank" rel="noopener noreferrer" class="">https://github.com/resemble-ai/chatterbox</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/ResembleAI/Chatterbox-Multilingual-TTS-V3" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/ResembleAI/Chatterbox-Multilingual-TTS-V3</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-fish-speech--openaudio表现力上限高但更像进阶玩家选项">6. Fish Speech / OpenAudio：表现力上限高，但更像进阶玩家选项<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#6-fish-speech--openaudio%E8%A1%A8%E7%8E%B0%E5%8A%9B%E4%B8%8A%E9%99%90%E9%AB%98%E4%BD%86%E6%9B%B4%E5%83%8F%E8%BF%9B%E9%98%B6%E7%8E%A9%E5%AE%B6%E9%80%89%E9%A1%B9" class="hash-link" aria-label="6. Fish Speech / OpenAudio：表现力上限高，但更像进阶玩家选项的直接链接" title="6. Fish Speech / OpenAudio：表现力上限高，但更像进阶玩家选项的直接链接" translate="no">​</a></h2>
+<p>Fish Speech 是近两年非常活跃的开源 TTS 项目之一。它强调多语、表现力、情绪 tag 和快速克隆，新的 Fish Audio / OpenAudio 路线也在持续推进。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>短参考音频克隆</strong>：官方文档提到典型 10-30 秒参考样本即可进行快速 voice cloning。</li>
+<li class=""><strong>多语能力</strong>：面向大量语言和多说话人场景。</li>
+<li class=""><strong>情绪 tag</strong>：可以在文本里通过标签控制 whisper、excited、angry 等表现。</li>
+<li class=""><strong>多轮生成</strong>：强调利用上下文提升后续生成自然度。</li>
+<li class=""><strong>服务端性能</strong>：结合 SGLang 等推理加速方向，适合进阶部署。</li>
+</ul>
+<p>体验判断：如果你追求的是“声音有灵魂”、角色感、情绪表达，而不是最简单的一键克隆，Fish Speech 值得测。它的上限可能很高，尤其适合做角色化声音或风格化朗读。</p>
+<p>可能的短板：整体生态更偏进阶，版本线、模型权重和部署方式需要仔细选；如果只想点开网页快速玩，体验门槛可能高于 F5-TTS 或 Chatterbox。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/fishaudio/fish-speech" target="_blank" rel="noopener noreferrer" class="">https://github.com/fishaudio/fish-speech</a></li>
+<li class="">文档入口: <a href="https://speech.fish.audio/" target="_blank" rel="noopener noreferrer" class="">https://speech.fish.audio/</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="7-spark-tts中英双语和-voice-creation-很有意思">7. Spark-TTS：中英双语和 voice creation 很有意思<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#7-spark-tts%E4%B8%AD%E8%8B%B1%E5%8F%8C%E8%AF%AD%E5%92%8C-voice-creation-%E5%BE%88%E6%9C%89%E6%84%8F%E6%80%9D" class="hash-link" aria-label="7. Spark-TTS：中英双语和 voice creation 很有意思的直接链接" title="7. Spark-TTS：中英双语和 voice creation 很有意思的直接链接" translate="no">​</a></h2>
+<p>Spark-TTS 是 2025 年出现的中英双语 TTS/voice cloning 项目。它的一个特色是基于 Qwen2.5 路线，并把 voice cloning 和 voice creation 放在一起。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>中英双语</strong>：重点覆盖中文和英文，支持跨语言/code-switching 场景。</li>
+<li class=""><strong>zero-shot voice cloning</strong>：无需为目标说话人专门训练即可克隆。</li>
+<li class=""><strong>voice creation</strong>：可通过性别、音高、语速等参数创建虚拟声音。</li>
+<li class=""><strong>推理部署</strong>：提供 WebUI、CLI 和 Triton 推理服务相关说明。</li>
+</ul>
+<p>体验判断：Spark-TTS 适合自用时拿来玩两类东西：一是中英双语克隆，二是创建一个不存在的虚拟声音。如果你不仅想“复制自己的声音”，还想调一个新角色音色，它比纯克隆模型更有趣。</p>
+<p>可能的短板：语言覆盖不如 CosyVoice 或 Chatterbox Multilingual；权重许可证常见为非商用，虽然自用无所谓，但公开发布前仍需留意。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/SparkAudio/Spark-TTS" target="_blank" rel="noopener noreferrer" class="">https://github.com/SparkAudio/Spark-TTS</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/Mobvoi/Offical-Spark-TTS" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/Mobvoi/Offical-Spark-TTS</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="8-dia不是通用克隆首选但对话感很强">8. Dia：不是通用克隆首选，但对话感很强<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#8-dia%E4%B8%8D%E6%98%AF%E9%80%9A%E7%94%A8%E5%85%8B%E9%9A%86%E9%A6%96%E9%80%89%E4%BD%86%E5%AF%B9%E8%AF%9D%E6%84%9F%E5%BE%88%E5%BC%BA" class="hash-link" aria-label="8. Dia：不是通用克隆首选，但对话感很强的直接链接" title="8. Dia：不是通用克隆首选，但对话感很强的直接链接" translate="no">​</a></h2>
+<p>Dia 来自 Nari Labs，定位更像“超真实对话 TTS”。它可以从 transcript 直接生成对话音频，也能用音频 prompt 控制声音、语气和情绪。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>英文对话生成</strong>：适合播客、角色对话、两人对话等场景。</li>
+<li class=""><strong>音频 prompt</strong>：官方建议 5-10 秒参考音频作为 voice cloning/conditioning 输入。</li>
+<li class=""><strong>非语言事件</strong>：能生成笑声、咳嗽、清嗓等对话中的自然声音。</li>
+<li class=""><strong>Apache-2.0</strong>：许可证友好。</li>
+</ul>
+<p>体验判断：Dia 不应被当作“最通用的中文语音克隆工具”。它更适合英文对话、播客样式、角色互动。如果你的目标是做一个英语对话节目或模拟两个人聊天，它很值得加入测试。</p>
+<p>可能的短板：官方明确模型只支持英文生成和理解；中文自用场景应优先看 IndexTTS、CosyVoice、GPT-SoVITS。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/nari-labs/dia" target="_blank" rel="noopener noreferrer" class="">https://github.com/nari-labs/dia</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/nari-labs/Dia-1.6B" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/nari-labs/Dia-1.6B</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="9-openvoice2024-baseline仍适合做对照组">9. OpenVoice：2024 baseline，仍适合做对照组<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#9-openvoice2024-baseline%E4%BB%8D%E9%80%82%E5%90%88%E5%81%9A%E5%AF%B9%E7%85%A7%E7%BB%84" class="hash-link" aria-label="9. OpenVoice：2024 baseline，仍适合做对照组的直接链接" title="9. OpenVoice：2024 baseline，仍适合做对照组的直接链接" translate="no">​</a></h2>
+<p>OpenVoice V2 不完全符合“2025+”过滤条件，但作为轻量、MIT、跨语种 instant voice cloning baseline，它仍然值得在自用测试里保留一个对照位。</p>
+<p>关键能力：</p>
+<ul>
+<li class=""><strong>instant voice cloning</strong>：快速克隆参考音色。</li>
+<li class=""><strong>跨语种 tone color cloning</strong>：能把音色迁移到不同语言和口音上。</li>
+<li class=""><strong>风格控制</strong>：支持情绪、口音、节奏、停顿、语调等控制思路。</li>
+<li class=""><strong>商业友好许可证</strong>：MIT，虽然本文不以许可证为主，但这让它很容易放进工具箱。</li>
+</ul>
+<p>体验判断：OpenVoice 的优势是简单、成熟、轻量。它不一定代表 2025+ 最新效果上限，但作为 baseline 很有价值：如果一个新模型比 OpenVoice 复杂很多，效果却没有明显超过它，那就不值得长期维护。</p>
+<p>可试入口：</p>
+<ul>
+<li class="">GitHub: <a href="https://github.com/myshell-ai/OpenVoice" target="_blank" rel="noopener noreferrer" class="">https://github.com/myshell-ai/OpenVoice</a></li>
+<li class="">Hugging Face Demo: <a href="https://huggingface.co/spaces/myshell-ai/OpenVoice" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/myshell-ai/OpenVoice</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="按自用目标选择">按自用目标选择<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#%E6%8C%89%E8%87%AA%E7%94%A8%E7%9B%AE%E6%A0%87%E9%80%89%E6%8B%A9" class="hash-link" aria-label="按自用目标选择的直接链接" title="按自用目标选择的直接链接" translate="no">​</a></h2>
+<p>如果不想把所有项目都跑一遍，可以按目标缩小范围。</p>
+<table><thead><tr><th>自用目标</th><th>优先候选</th><th>原因</th></tr></thead><tbody><tr><td>中文个人声音克隆，越像越好</td><td>GPT-SoVITS、IndexTTS、CosyVoice</td><td>GPT-SoVITS 适合 few-shot 稳定音色；IndexTTS/CosyVoice zero-shot 和可控性强</td></tr><tr><td>快速上传一段音频看效果</td><td>F5-TTS、IndexTTS、Chatterbox</td><td>Demo 体验相对直接，容易快速判断音色相似度和自然度</td></tr><tr><td>中文情绪配音/角色感</td><td>IndexTTS、Fish Speech、CosyVoice</td><td>情绪、语速、发音或 tag 控制更丰富</td></tr><tr><td>中英/多语切换</td><td>CosyVoice、Chatterbox、F5-TTS</td><td>综合多语能力强，跨语种克隆体验更值得测</td></tr><tr><td>长期本地使用</td><td>GPT-SoVITS、CosyVoice、F5-TTS</td><td>有本地推理、WebUI、训练或服务化路径</td></tr><tr><td>英文播客/对话</td><td>Chatterbox、Dia</td><td>对话自然度和副语言事件更适合英文内容</td></tr><tr><td>创建一个虚拟声音</td><td>Spark-TTS、Fish Speech</td><td>不只克隆，也能调性别、音高、语速或风格</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我会怎么排测试顺序">我会怎么排测试顺序<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#%E6%88%91%E4%BC%9A%E6%80%8E%E4%B9%88%E6%8E%92%E6%B5%8B%E8%AF%95%E9%A1%BA%E5%BA%8F" class="hash-link" aria-label="我会怎么排测试顺序的直接链接" title="我会怎么排测试顺序的直接链接" translate="no">​</a></h2>
+<p>如果测试对象主要是中文自用，我建议按这个顺序：</p>
+<ol>
+<li class=""><strong>IndexTTS 2.5</strong>：先看中文相似度、情绪控制、语速控制和发音修正能力。</li>
+<li class=""><strong>CosyVoice 3/2</strong>：看整体稳定性、多语和方言表现，以及是否适合做本地服务。</li>
+<li class=""><strong>F5-TTS v1</strong>：快速判断自然度上限，尤其是参考音频质量较好时的表现。</li>
+<li class=""><strong>GPT-SoVITS</strong>：如果 zero-shot 不够像，再投入时间做少样本微调。</li>
+<li class=""><strong>Chatterbox V3</strong>：补测英文/多语和聊天式 voice agent 场景。</li>
+<li class=""><strong>Fish Speech / Spark-TTS</strong>：当你想要更强表现力、情绪 tag 或虚拟声音时再测。</li>
+<li class=""><strong>Dia</strong>：只在英文对话/播客场景需要时测。</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="测试素材建议">测试素材建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#%E6%B5%8B%E8%AF%95%E7%B4%A0%E6%9D%90%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="测试素材建议的直接链接" title="测试素材建议的直接链接" translate="no">​</a></h2>
+<p>语音克隆模型对素材非常敏感。为了公平比较，建议准备同一套测试集：</p>
+<ul>
+<li class=""><strong>参考音频</strong>：10-30 秒，干净人声，无 BGM，无明显混响，音量稳定。</li>
+<li class=""><strong>参考文本</strong>：如果模型需要 transcript，尽量手动校对，标点也要自然。</li>
+<li class=""><strong>目标文本</strong>：至少包含短句、长句、情绪句和中英混杂句。</li>
+<li class=""><strong>输出格式</strong>：统一采样率和音量后再听，避免被响度误导。</li>
+<li class=""><strong>评估维度</strong>：音色相似度、咬字准确率、长文本稳定性、情绪自然度、是否重复/乱续写。</li>
+</ul>
+<p>一组简单中文测试文本可以这样设计：</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">今天我们来聊一下语音克隆模型的实际体验。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">这段话稍微长一点，用来测试模型在长文本下会不会断句奇怪、重复，或者出现发音不稳定的问题。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">哎，这个效果还真有点意思，比我想象中自然多了。</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">我今天用的是 voice cloning demo，想测试一下中文、English words，还有一点点情绪变化。</span><br></div></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最终结论">最终结论<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025#%E6%9C%80%E7%BB%88%E7%BB%93%E8%AE%BA" class="hash-link" aria-label="最终结论的直接链接" title="最终结论的直接链接" translate="no">​</a></h2>
+<p>如果只从“自用体验”出发，我会把候选压缩成五个主力：</p>
+<table><thead><tr><th style="text-align:right">优先级</th><th>框架</th><th>一句话结论</th></tr></thead><tbody><tr><td style="text-align:right">1</td><td>IndexTTS 2.5</td><td>中文可控性最值得测，情绪、发音、语速都比较完整</td></tr><tr><td style="text-align:right">2</td><td>CosyVoice 3/2</td><td>综合能力最均衡，中文、多语、方言、部署都强</td></tr><tr><td style="text-align:right">3</td><td>GPT-SoVITS</td><td>想长期做自己的声音库，few-shot 微调很实用</td></tr><tr><td style="text-align:right">4</td><td>F5-TTS v1</td><td>快速体验自然度上限，demo 友好</td></tr><tr><td style="text-align:right">5</td><td>Chatterbox V3</td><td>英文/多语 voice agent 和对话式声音值得测</td></tr></tbody></table>
+<p>再往后，Fish Speech 适合追求表现力上限，Spark-TTS 适合中英克隆和虚拟声音创建，Dia 适合英文对话，OpenVoice 适合作为轻量 baseline。</p>
+<p>真正落地时，不要只听官方样例。最有价值的测试是：用自己的参考音频、自己的目标文本、同一套评估维度，把这些模型各跑一遍。语音克隆的效果差异常常不是“哪个模型绝对最好”，而是“哪个模型最适合你的声音、语言和使用习惯”。</p>]]></content:encoded>
+            <category>tts</category>
+            <category>voice-cloning</category>
+            <category>ai-audio</category>
+            <category>open-source</category>
+            <category>research</category>
+        </item>
         <item>
             <title><![CDATA[Speakr：我们现在用的网页录音与实时语音工作台]]></title>
             <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/speakr-realtime-voice-workspace</link>
@@ -2796,114 +2999,6 @@
             <category>harmonic-analysis</category>
             <category>geometric-measure-theory</category>
             <category>kakeya</category>
-        </item>
-        <item>
-            <title><![CDATA[Agent 写文件到底用 patch 还是 replace：Codex、Claude Code、Qwen Code 的工具协议拆解]]></title>
-            <link>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace</link>
-            <guid>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace</guid>
-            <pubDate>Thu, 06 Aug 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[拆解 OpenAI Responses、Anthropic Messages、千问 OpenAI-compatible 与常见 agent client 的三层关系，比较 Codex、Claude Code、Qwen Code、Gemini CLI、OpenCode、Aider、Roo、Cline、Cursor 在文件编辑时到底偏 patch、replace、write_file 还是多工具并存。]]></description>
-            <content:encoded><![CDATA[<p>上一篇 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/qwen-token-plan-coding-crs">千问 Token Plan 调研</a> 解决的是“千问 Token Plan 怎么接进 Codex、Hermes 和 CRS”。但接完以后还有一个更容易混淆的问题：<strong>模型 API 是 OpenAI-compatible，并不代表 agent 改文件也按 OpenAI Codex 的 patch 方式来。</strong></p>
-<p>这篇文章专门拆开这个问题：OpenAI、Anthropic、Qwen、Gemini 这些 provider 的 wire API 是一层；Codex、Claude Code、Qwen Code、Gemini CLI、OpenCode、Aider、Roo Code、Cline、Cursor 这些 agent client 暴露给模型的文件工具是另一层；最后 client 在本地到底怎么落盘，又是第三层。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p><strong>OpenAI API 本身不规定“写文件=patch 还是 replace”；OpenAI Codex CLI 是 patch 派；Anthropic 官方 text editor tool 是 string replace 派；Qwen Code 继承/同构的是 Gemini CLI 的 <code>replace + write_file</code> 派。</strong></p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先分清三层不然一定会说错">先分清三层，不然一定会说错<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E5%85%88%E5%88%86%E6%B8%85%E4%B8%89%E5%B1%82%E4%B8%8D%E7%84%B6%E4%B8%80%E5%AE%9A%E4%BC%9A%E8%AF%B4%E9%94%99" class="hash-link" aria-label="先分清三层，不然一定会说错的直接链接" title="先分清三层，不然一定会说错的直接链接" translate="no">​</a></h2>
-<p>讨论“它写文件用 patch 还是 replace”时，至少要拆成三层：</p>
-<table><thead><tr><th>层</th><th>问题</th><th>例子</th></tr></thead><tbody><tr><td>Provider wire API</td><td>请求发给谁、用什么模型协议？</td><td>OpenAI Responses、Anthropic Messages、Gemini API、Qwen OpenAI-compatible</td></tr><tr><td>Agent client tool schema</td><td>模型在对话里看到什么工具？</td><td><code>apply_patch</code>、<code>Edit</code>、<code>replace</code>、<code>write_file</code>、<code>search_replace</code></td></tr><tr><td>Local apply implementation</td><td>client 在本地怎么改文件？</td><td>解析 patch、old/new string replace、whole-file overwrite、diff/fuzzy patch、shell 命令</td></tr></tbody></table>
-<p>所以，不能说“千问走 OpenAI-compatible，因此写文件就是 OpenAI patch”。OpenAI-compatible 只说明 HTTP/JSON 调用协议像 OpenAI；文件怎么改，取决于你用的是 Codex、Qwen Code、Hermes、Cline 还是别的 client。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="openaiapi-层不固定codex-client-是-patch-first">OpenAI：API 层不固定，Codex client 是 patch-first<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#openaiapi-%E5%B1%82%E4%B8%8D%E5%9B%BA%E5%AE%9Acodex-client-%E6%98%AF-patch-first" class="hash-link" aria-label="OpenAI：API 层不固定，Codex client 是 patch-first的直接链接" title="OpenAI：API 层不固定，Codex client 是 patch-first的直接链接" translate="no">​</a></h2>
-<p>OpenAI 的 Responses / function calling 文档讲的是通用工具调用流程：应用把工具定义发给模型，模型返回 tool call，应用侧执行，再把结果回传。这个机制本身没有规定“本地写文件工具”必须叫 <code>patch</code>、<code>replace</code> 或 <code>write_file</code>。</p>
-<p>但如果问的是 <strong>OpenAI 官方 Codex CLI / Codex client</strong>，结论就很明确：它是 <strong>patch-first</strong>。</p>
-<p>公开源码里可以看到 Codex 有 <code>apply_patch</code> 解析与审批路径；patch action 覆盖新增、删除、更新文件。也就是说，Codex 这类 coding client 倾向让模型产出结构化补丁，再由 client 解析、校验、展示 diff、申请批准和落盘。</p>
-<p>同时，Codex 的 app-server protocol 里也有类似 <code>FsWriteFileParams { filePath, content }</code> 的 whole-file write 参数。这说明它不是“永远只有 patch”。但从 coding agent 的核心编辑原语看，Codex 明显属于 patch 派。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="anthropic官方-text-editor-tool-是-replace-派claude-code-产品层是-editwrite-工具族">Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#anthropic%E5%AE%98%E6%96%B9-text-editor-tool-%E6%98%AF-replace-%E6%B4%BEclaude-code-%E4%BA%A7%E5%93%81%E5%B1%82%E6%98%AF-editwrite-%E5%B7%A5%E5%85%B7%E6%97%8F" class="hash-link" aria-label="Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族的直接链接" title="Anthropic：官方 text editor tool 是 replace 派，Claude Code 产品层是 Edit/Write 工具族的直接链接" translate="no">​</a></h2>
-<p>Anthropic 也要分 API 层和产品层。</p>
-<p>在 Anthropic Messages API 的通用 tool use 里，工具可以由应用自己定义，执行也发生在应用或环境侧。因此通用 API 层同样不固定。</p>
-<p>不过 Anthropic 官方文档现在有一个明确的 text editor tool：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">type: text_editor_20250728</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">name: str_replace_based_edit_tool</span><br></div></code></pre></div></div>
-<p>它支持 <code>view</code>、<code>str_replace</code>、<code>create</code>、<code>insert</code>、<code>undo_edit</code> 等命令。核心编辑命令叫 <code>str_replace</code>，参数是 <code>old_str</code> 和 <code>new_str</code>。官方流程也写得很直白：从 Claude 的 tool use request 里取出文件路径、old text、新 text，然后在文件里执行文本替换。</p>
-<p>所以如果问 <strong>Anthropic 官方 text editor tool</strong>，答案是：<strong>replace 派</strong>。</p>
-<p>但如果问 <strong>Claude Code</strong>，公开文档能确认的是产品层工具名：<code>Read</code>、<code>Edit</code>、<code>MultiEdit</code>、<code>Write</code>、<code>Bash</code> 等。Claude Code 本身不是完整开源项目，公开文档不足以严谨证明它每次 <code>Edit</code> 内部一定转成某种 unified diff 或某种 string replace。更稳妥的说法是：Claude Code 是 Anthropic / Claude 产品工具族，公开暴露的是 <code>Edit/MultiEdit/Write</code> 这套编辑能力。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="qwen-code不是-anthropic-native也不是-codex-patch它是-gemini-cli-式-replace--write_file">Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#qwen-code%E4%B8%8D%E6%98%AF-anthropic-native%E4%B9%9F%E4%B8%8D%E6%98%AF-codex-patch%E5%AE%83%E6%98%AF-gemini-cli-%E5%BC%8F-replace--write_file" class="hash-link" aria-label="Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file的直接链接" title="Qwen Code：不是 Anthropic-native，也不是 Codex patch；它是 Gemini CLI 式 replace + write_file的直接链接" translate="no">​</a></h2>
-<p>千问这里最容易混淆，因为有两个事实同时成立：</p>
-<ol>
-<li class=""><strong>千问 Token Plan 接入 ChatArch / CRS / Hermes 时，推荐走 OpenAI-compatible / Responses。</strong> 这是上一篇文章的结论，也是我们当前配置的 provider wire API。</li>
-<li class=""><strong>Qwen Code 这个 agent client 的文件工具形态，更像 Gemini CLI。</strong> 它的公开文档和源码里，文件编辑工具是 <code>replace</code> 和 <code>write_file</code>。</li>
-</ol>
-<p>Qwen Code 的 file-system tools 里，<code>replace</code> 使用 <code>old_string</code> / <code>new_string</code> 做精确替换；<code>write_file</code> 则写入完整文件内容，语义上就是 whole-file write / overwrite。</p>
-<p>这意味着：</p>
-<table><thead><tr><th>场景</th><th>判断</th></tr></thead><tbody><tr><td>Hermes / CRS 里接千问 Token Plan</td><td>OpenAI-compatible / Responses provider</td></tr><tr><td>用 Codex 调千问模型</td><td>Codex client 工具层仍是 patch-first</td></tr><tr><td>用 Qwen Code 调千问模型</td><td>Qwen Code 工具层是 Gemini 式 <code>replace + write_file</code></td></tr><tr><td>把千问硬说成 Anthropic-native</td><td>不推荐，除非中间网关明确做 Anthropic schema 转换</td></tr></tbody></table>
-<p>所以，“千问是 OpenAI 还是 Anthropic 派”这个问题要拆开答：<strong>模型接口推荐 OpenAI-compatible；Qwen Code 工具协议是 Gemini CLI 派；不是 Claude Code / Anthropic-native 派。</strong></p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="常见-agent-client-快速矩阵">常见 agent client 快速矩阵<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E5%B8%B8%E8%A7%81-agent-client-%E5%BF%AB%E9%80%9F%E7%9F%A9%E9%98%B5" class="hash-link" aria-label="常见 agent client 快速矩阵的直接链接" title="常见 agent client 快速矩阵的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>Client</th><th>默认/主要平台派系</th><th>文件编辑原语</th><th>判断</th></tr></thead><tbody><tr><td>OpenAI Codex CLI</td><td>OpenAI / ChatGPT / Responses</td><td><code>apply_patch</code>；另有 whole-file write 参数</td><td><strong>patch-first</strong></td></tr><tr><td>Claude Code</td><td>Anthropic / Claude</td><td><code>Edit</code>、<code>MultiEdit</code>、<code>Write</code>、<code>Read</code>、<code>Bash</code></td><td>产品工具族；内部细节公开不足</td></tr><tr><td>Anthropic text editor tool</td><td>Anthropic Messages API</td><td><code>str_replace_based_edit_tool</code>，<code>str_replace(old_str,new_str)</code></td><td><strong>replace 派</strong></td></tr><tr><td>Gemini CLI</td><td>Google Gemini</td><td><code>replace(old_string,new_string)</code>、<code>write_file(content)</code></td><td><strong>replace + whole-file write</strong></td></tr><tr><td>Qwen Code</td><td>Qwen / DashScope；Gemini CLI 工具形态</td><td><code>replace(old_string,new_string)</code>、<code>write_file(content)</code></td><td><strong>Gemini/Qwen Code 派</strong></td></tr><tr><td>OpenCode</td><td>多 provider</td><td><code>edit(oldString,newString)</code>、<code>write(content)</code></td><td><strong>replace + whole-file write</strong></td></tr><tr><td>Aider</td><td>多 provider</td><td>whole-file、search/replace、unified diff 等 edit formats</td><td><strong>多格式</strong></td></tr><tr><td>Roo Code</td><td>多 provider / VS Code</td><td><code>apply_patch</code>、<code>apply_diff</code>、<code>search_replace</code>、<code>write_to_file</code>、<code>edit_file</code></td><td><strong>多原语并存</strong></td></tr><tr><td>Cline</td><td>多 provider / VS Code</td><td><code>replace_in_file</code>、<code>write_to_file</code>、<code>apply_patch</code>；SDK <code>editor</code> 有 <code>old_text/new_text/insert_line</code></td><td><strong>replace/write/patch 并存</strong></td></tr><tr><td>Cursor Agent / Cursor CLI</td><td>Cursor 产品，多模型入口</td><td>公开文档没明确到底 patch 还是 replace</td><td><strong>底层编辑原语未公开到足够粒度</strong></td></tr><tr><td>Hermes Agent</td><td>Hermes 自定义 agent，可接多 provider</td><td><code>patch</code>、<code>write_file</code>、<code>read_file</code> 等宿主工具</td><td><strong>由 Hermes 工具层决定，不由 provider 决定</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么这件事重要">为什么这件事重要<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E4%BB%B6%E4%BA%8B%E9%87%8D%E8%A6%81" class="hash-link" aria-label="为什么这件事重要的直接链接" title="为什么这件事重要的直接链接" translate="no">​</a></h2>
-<p>它不只是术语问题，而是会影响 agent 的可靠性和成本。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="patch-first-的优点">patch-first 的优点<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#patch-first-%E7%9A%84%E4%BC%98%E7%82%B9" class="hash-link" aria-label="patch-first 的优点的直接链接" title="patch-first 的优点的直接链接" translate="no">​</a></h3>
-<p>patch-first 的好处是 diff 明确、审阅友好、失败边界清楚。适合：</p>
-<ul>
-<li class="">跨文件但局部修改；</li>
-<li class="">需要人类 review 的代码改动；</li>
-<li class="">希望保留上下文、不让模型重写整文件；</li>
-<li class="">需要在 PR 里形成清晰补丁的工作流。</li>
-</ul>
-<p>Codex、Roo 的 <code>apply_patch</code>、Hermes 的 <code>patch</code> 都属于这类思路。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="replace-派的优点和风险">replace 派的优点和风险<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#replace-%E6%B4%BE%E7%9A%84%E4%BC%98%E7%82%B9%E5%92%8C%E9%A3%8E%E9%99%A9" class="hash-link" aria-label="replace 派的优点和风险的直接链接" title="replace 派的优点和风险的直接链接" translate="no">​</a></h3>
-<p><code>old_string/new_string</code> replace 对模型来说直观，工具实现也简单。它适合小范围、唯一上下文明确的修改。</p>
-<p>风险是：</p>
-<ul>
-<li class=""><code>old_string</code> 不唯一时可能误改；</li>
-<li class=""><code>old_string</code> 和真实文件只差一点点时会失败；</li>
-<li class="">大段 replace 对上下文完整性要求高；</li>
-<li class="">如果 client 自动 fuzzy match，可能需要额外审阅。</li>
-</ul>
-<p>Anthropic text editor、Gemini CLI、Qwen Code、OpenCode、Cline SDK editor 都有明显的 replace 色彩。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="write_file--whole-file-overwrite-的风险最大">write_file / whole-file overwrite 的风险最大<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#write_file--whole-file-overwrite-%E7%9A%84%E9%A3%8E%E9%99%A9%E6%9C%80%E5%A4%A7" class="hash-link" aria-label="write_file / whole-file overwrite 的风险最大的直接链接" title="write_file / whole-file overwrite 的风险最大的直接链接" translate="no">​</a></h3>
-<p><code>write_file(content)</code> 很适合新建文件或小文件重写，但对大文件风险最大：模型可能漏掉 imports、注释、边缘分支、配置项或格式细节。</p>
-<p>如果一个 client 暴露 <code>write_file</code>，系统提示和工具实现最好要求：</p>
-<ul>
-<li class="">先读文件；</li>
-<li class="">大文件避免整文件重写；</li>
-<li class="">重写后做 diff；</li>
-<li class="">运行格式/测试；</li>
-<li class="">明确失败时不要“猜一个完整文件”。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="对-chatarch-的实践建议">对 ChatArch 的实践建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E5%AF%B9-chatarch-%E7%9A%84%E5%AE%9E%E8%B7%B5%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="对 ChatArch 的实践建议的直接链接" title="对 ChatArch 的实践建议的直接链接" translate="no">​</a></h2>
-<p>第一，<strong>千问 Token Plan 继续按 OpenAI-compatible / Responses 接入 CRS/Hermes</strong>。这是模型调用协议最稳的路径。</p>
-<p>第二，<strong>不要为了“像 Claude Code”而把千问硬塞 Anthropic-native</strong>。只有当某个 client 明确强依赖 Anthropic Messages 或 Anthropic text editor schema，并且中间网关真的能转换字段时，才值得这么做。</p>
-<p>第三，<strong>评估新的 agent client 时，固定问三件事</strong>：</p>
-<ol>
-<li class="">provider wire API 是谁？</li>
-<li class="">model-visible tools 是什么 schema？</li>
-<li class="">local apply 是 patch、replace、write_file、diff 还是 shell？</li>
-</ol>
-<p>第四，<strong>在写适配文档时不要混用层级词</strong>。比如：</p>
-<ul>
-<li class="">“Qwen Token Plan 是 OpenAI-compatible provider”是对的；</li>
-<li class="">“Qwen Code 因为用了千问所以是 OpenAI Codex patch 派”是错的；</li>
-<li class="">“Claude Code 是 Anthropic 产品工具族”是对的；</li>
-<li class="">“Anthropic 所有 coding client 都是 <code>str_replace_based_edit_tool</code>”则过度外推。</li>
-</ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="参考入口">参考入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/agent-client-edit-protocols-patch-replace#%E5%8F%82%E8%80%83%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="参考入口的直接链接" title="参考入口的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" rel="noopener noreferrer" class="">OpenAI function calling</a></li>
-<li class=""><a href="https://platform.openai.com/docs/api-reference/responses" target="_blank" rel="noopener noreferrer" class="">OpenAI Responses API</a></li>
-<li class=""><a href="https://github.com/openai/codex" target="_blank" rel="noopener noreferrer" class="">OpenAI Codex repository</a></li>
-<li class=""><a href="https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/text-editor-tool" target="_blank" rel="noopener noreferrer" class="">Anthropic text editor tool</a></li>
-<li class=""><a href="https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/overview" target="_blank" rel="noopener noreferrer" class="">Anthropic tool use overview</a></li>
-<li class=""><a href="https://docs.anthropic.com/en/docs/claude-code/settings" target="_blank" rel="noopener noreferrer" class="">Claude Code settings</a></li>
-<li class=""><a href="https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/file-system.md" target="_blank" rel="noopener noreferrer" class="">Gemini CLI file-system tools</a></li>
-<li class=""><a href="https://github.com/QwenLM/qwen-code" target="_blank" rel="noopener noreferrer" class="">Qwen Code repository</a></li>
-<li class=""><a href="https://github.com/QwenLM/qwen-code/blob/main/docs/developers/tools/file-system.md" target="_blank" rel="noopener noreferrer" class="">Qwen Code file-system tools</a></li>
-<li class=""><a href="https://github.com/sst/opencode/blob/dev/packages/opencode/src/tool/edit.ts" target="_blank" rel="noopener noreferrer" class="">OpenCode edit tool</a></li>
-<li class=""><a href="https://aider.chat/docs/more/edit-formats.html" target="_blank" rel="noopener noreferrer" class="">Aider edit formats</a></li>
-<li class=""><a href="https://github.com/RooCodeInc/Roo-Code/tree/main/apps/docs/docs/advanced-usage/available-tools" target="_blank" rel="noopener noreferrer" class="">Roo Code available tools</a></li>
-<li class=""><a href="https://github.com/cline/cline" target="_blank" rel="noopener noreferrer" class="">Cline repository</a></li>
-<li class=""><a href="https://docs.cursor.com/en/cli/overview" target="_blank" rel="noopener noreferrer" class="">Cursor CLI overview</a></li>
-</ul>]]></content:encoded>
-            <category>agent</category>
-            <category>codex</category>
-            <category>claude-code</category>
-            <category>qwen</category>
-            <category>tooling</category>
         </item>
     </channel>
 </rss>
