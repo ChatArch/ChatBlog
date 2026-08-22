@@ -1,0 +1,239 @@
+---
+title: "Remotion：用 React 写代码生成视频的最小闭环"
+date: 2026-08-22
+slug: remotion-react-video-quickstart
+tags: [remotion, react, typescript, video, quickstart]
+description: 从 `npx create-video` 脚手架到真实渲染出一条 1080p 动画视频，再通过 ChatShare 分享 MP4 并嵌入 ChatBlog。用 HelloWorld 模板走完 Remotion 视频生产的最小闭环。
+---
+
+# Remotion：用 React 写代码生成视频的最小闭环
+
+**Remotion**（github.com/remotion-dev/remotion，约 5.7 万 star）是一个用 React 写代码来制作视频的框架。它的核心心智模型是：**React 代码就是视频的"源文件"**——你写一个 React 组件，Remotion 会按时间轴把它一帧一帧渲染出来，最终编码成真正的 MP4 视频。
+
+这篇文章不追求大片质感，只走一遍最小闭环：**脚手架 → 理解代码 → 真实渲染 → 分享 MP4 → 嵌入博客**。
+
+<!-- truncate -->
+
+:::tip 最终结果
+这就是本文在服务器上实际跑出来的视频：Remotion `4.0.515`，HelloWorld 官方模板，1920×1080，30 FPS，H.264，约 5 秒。
+:::
+
+<figure>
+  <video
+    controls
+    preload="metadata"
+    poster="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/hello-world-poster.jpg"
+    style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--ifm-color-emphasis-200)', background: '#ffffff' }}
+  >
+    <source src="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/hello-world.mp4" type="video/mp4" />
+    你的浏览器不支持 HTML5 video。可以直接打开：
+    https://share.public.wzhecnu.cn/chatblog/remotion-exploration/hello-world.mp4
+  </video>
+  <figcaption>
+    Remotion HelloWorld 模板：彩色原子 Logo 旋转、单词逐字缩放入场、副标题淡入。视频文件通过 ChatShare 暴露为稳定 URL，再由 ChatBlog 的 MDX <code>{'<video>'}</code> 标签嵌入。
+  </figcaption>
+</figure>
+
+## 这条 quickstart 演示什么
+
+```mermaid
+flowchart LR
+  Explore[克隆/读源码] --> Scaffold[create-video 脚手架]
+  Scaffold --> Code[React 模板源码]
+  Code --> Render[remotion render 逐帧渲染]
+  Render --> MP4[HelloWorld.mp4 1080p]
+  MP4 --> Share[ChatShare 稳定 URL]
+  Share --> Blog[ChatBlog video 嵌入]
+```
+
+这条流水线是通的三件事：
+
+- **理解**：Remotion 的 `<Composition>` / `useCurrentFrame()` / `spring()` / `interpolate()` 这几个核心概念；
+- **产出**：一条真实渲染的 1080p 动画视频；
+- **交付**：通过 ChatShare 分享 MP4，再嵌入静态博客。
+
+## Step 0：先克隆，了解它是什么
+
+在服务器上先浅克隆（仓库比较大，1.2 GB 的 monorepo）：
+
+```bash
+git clone --depth 1 --single-branch https://github.com/ChatArch/remotion.git core/remotion
+```
+
+monorepo 里有几十个 `packages/`：`core`（React 组件与动画原语）、`cli`（命令行）、`renderer`（渲染引擎）、`compositor`（Rust 合成器）、`player`（把视频组件嵌进网页）、`lambda`（AWS 云端渲染）、`studio`（可视化编辑器）、以及 20+ 个官方模板。核心 API 从 `packages/core/src/index.ts` 导出，约 60 个：`Composition / Sequence / Series / Loop / AbsoluteFill / Audio / Video / Img / interpolate / spring / staticFile / useCurrentFrame / useVideoConfig ...`。
+
+## Step 1：脚手架一个官方模板
+
+```bash
+npx create-video@latest --yes --hello-world remotion-demo
+cd remotion-demo && npm install
+```
+
+脚手架会生成一个标准 Remotion 工程：
+
+```text
+remotion-demo/
+  src/
+    index.ts          # registerRoot(RemotionRoot)
+    Root.tsx          # 声明 <Composition>（= 侧边栏里的每个"视频"）
+    HelloWorld.tsx    # 具体视频组件：一个 React FC
+    HelloWorld/
+      Title.tsx  Subtitle.tsx  Logo.tsx  Atom.tsx  Arc.tsx
+  remotion.config.ts  # 全局配置
+  package.json
+```
+
+## Step 2：模板源码在做什么
+
+`src/index.ts` 只有一行核心：`registerRoot(RemotionRoot)`，把根组件注册给 Remotion。
+
+`src/Root.tsx` 里声明"视频"——每个 `<Composition>` 就是一个可渲染的视频：
+
+```tsx
+<Composition
+  id="HelloWorld"
+  component={HelloWorld}
+  durationInFrames={150}   // 150 帧
+  fps={30}                 // 30 帧/秒 → 5 秒
+  width={1920}
+  height={1080}
+  schema={myCompSchema}    // zod 定义参数，支持参数化渲染
+  defaultProps={{ titleText: "Welcome to Remotion", ... }}
+/>
+```
+
+`src/HelloWorld.tsx` 是这个视频的内容。动画的关键是 **"每一帧是什么"**——Remotion 会为第 0、1、2…149 帧各渲染一次组件：
+
+```tsx
+const frame = useCurrentFrame();              // 当前是第几帧 = 时间轴
+const { fps } = useVideoConfig();             // 视频配置（fps、尺寸、时长）
+
+// spring：弹簧动画，25 帧后从 0 弹到 1
+const progress = spring({ frame: frame - 25, fps, config: { damping: 100 } });
+
+// interpolate：把时间映射成数值（透明度、位移、缩放）
+const opacity = interpolate(frame, [0, 25], [0, 1]);
+
+// Sequence：把子组件"时间平移"，像剪辑轨
+<Sequence from={35}>
+  <Title titleText={...} titleColor={...} />
+</Sequence>
+
+<AbsoluteFill style={{ background: "white" }}>...</AbsoluteFill>
+```
+
+所以"动画"就是**用帧号驱动 React 样式**：`spring` 给弹性缓动、`interpolate` 做数值映射、`Sequence` 编排出场时间。`Title.tsx` 里每个单词还会用 `spring` 错峰缩放，形成逐字入场的节奏。
+
+## Step 3：列出并渲染
+
+先看有哪些视频：
+
+```bash
+npx remotion compositions src/index.ts
+# HelloWorld    30  1920x1080  150 (5.00 sec)
+# OnlyLogo      30  1920x1080  150 (5.00 sec)
+```
+
+再渲染出 MP4：
+
+```bash
+npx remotion render src/index.ts HelloWorld out/hello-world.mp4
+```
+
+:::note 关于浏览器
+Remotion 渲染需要一个 headless Chrome 来执行 React 代码。首次运行它会自动下载 Chrome Headless Shell；如果网络受限，可以指定已有浏览器：`--browser-executable=/path/to/chrome-headless-shell`。本次在服务器上复用了已安装的 Chromium headless shell，150 帧全部渲染成功。
+:::
+
+渲染日志摘要：
+
+```text
+Rendered 149/150
+Encoded 150/150
++ out/hello-world.mp4  1.4 MB
+```
+
+用 `ffprobe` 回读真实产物：
+
+```json
+{
+  "codec_name": "h264",
+  "width": 1920,
+  "height": 1080,
+  "r_frame_rate": "30/1",
+  "duration": "5.056000",
+  "size": "1367893"
+}
+```
+
+## Step 4：生成 poster
+
+博客里直接放 `<video>` 时，配一张 poster 可以避免初始位置是黑框：
+
+```bash
+ffmpeg -y -ss 00:00:02.5 -i out/hello-world.mp4 -frames:v 1 -q:v 2 out/hello-world-poster.jpg
+```
+
+## Step 5：用 ChatShare 发布 MP4
+
+视频放进 Git 仓库会让仓库膨胀。更自然的做法是作为媒体对象分享出去，文章只嵌入 URL。用 ChatShare：
+
+```bash
+chatshare put --overwrite out/hello-world.mp4 chatblog/remotion-exploration/hello-world.mp4
+chatshare put --overwrite out/hello-world-poster.jpg chatblog/remotion-exploration/hello-world-poster.jpg
+```
+
+得到稳定 URL 并回读 HTTP 头：
+
+```text
+https://share.public.wzhecnu.cn/chatblog/remotion-exploration/hello-world.mp4
+  status=200  content-type=video/mp4   accept-ranges=bytes  content-length=1367893
+https://share.public.wzhecnu.cn/chatblog/remotion-exploration/hello-world-poster.jpg
+  status=200  content-type=image/jpeg  accept-ranges=bytes  content-length=64324
+```
+
+`accept-ranges=bytes` 很关键：浏览器可以按需拉取和拖动进度，不必一次性下载整个文件。
+
+## Step 6：在 ChatBlog 里嵌入视频
+
+ChatBlog 是 Docusaurus + MDX，可以直接写 HTML5 `<video>`：
+
+```mdx
+<video controls preload="metadata"
+  poster="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/hello-world-poster.jpg">
+  <source src="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/hello-world.mp4" type="video/mp4" />
+  你的浏览器不支持 HTML5 video。
+</video>
+```
+
+## 同类项目怎么选
+
+| 项目 | Star（2026-08 快照） | 语言 | 定位 |
+| --- | --- | --- | --- |
+| **Remotion** | 57.0K | TypeScript | React 代码 → 视频，可接数据批量出片、可嵌入应用 |
+| manim | 91.9K | Python | 数学/讲解动画引擎（3Blue1Brown） |
+| motion-canvas | 19.0K | TypeScript | Canvas 声明式动画 → 视频导出 |
+| p5.js | 23.9K | JavaScript | 网页创意编码（Processing 精神续作） |
+| moviepy | 14.9K | Python | Python 视频剪辑（ffmpeg 封装） |
+| lottie-web | 32.1K | JavaScript | After Effects 动画 → Web/移动端运行时 |
+
+如果目标是"用代码做能导出的视频"，**Remotion 是 star 最多、生态最完整的 TypeScript 方案**：官方 22 个模板、Studio 可视化编辑器、`@remotion/player` 嵌入应用、Lambda/Cloud Run 云端批量渲染、zod 参数化批量出片。Manim 偏数学/科普讲解视频，Motion Canvas 偏技术示意图动画。
+
+## 下一步
+
+| 层面 | 现在 | 下一步 |
+| --- | --- | --- |
+| 内容 | 官方 HelloWorld | 改文字/配色/时长，做成自己的片头 |
+| 参数化 | defaultProps 写死 | 用 zod schema + 数据批量渲染多个版本 |
+| 媒体 | 纯图形 | 加 Audio 配乐、Video 素材、字幕 |
+| 交付 | 本地渲染 | Lambda/Cloud Run 云端批量渲染 |
+| 嵌入 | 独立 MP4 | 用 `@remotion/player` 把动画组件嵌进网页应用 |
+
+最小闭环跑通后，Remotion 就从"一个 React 库"变成了"可以持续产出视频的工作流"。
+
+## 相关链接
+
+- [Remotion 官网](https://remotion.dev)
+- [Remotion 文档](https://remotion.dev/docs)
+- [Remotion GitHub](https://github.com/remotion-dev/remotion)
+- [本文 demo MP4](https://share.public.wzhecnu.cn/chatblog/remotion-exploration/hello-world.mp4)
+- [上一篇：Manim：用 Python 搭一条数学动画视频生产线](/blog/manim-python-math-animation-video-pipeline)
