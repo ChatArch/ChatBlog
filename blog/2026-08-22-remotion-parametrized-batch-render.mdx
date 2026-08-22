@@ -1,0 +1,174 @@
+---
+title: "Remotion 进阶：一份代码，参数化批量出片"
+date: 2026-08-22
+slug: remotion-parametrized-batch-render
+tags: [remotion, react, typescript, video, parameterization, batch-render]
+description: 同一个 React 组件，通过 zod schema 定义参数，换一换数据/配色就能批量渲染出不同版本——展示 Remotion 区别于其他动画工具的核心能力。
+---
+
+# Remotion 进阶：一份代码，参数化批量出片
+
+上一篇文章走完了 Remotion 的最小闭环。但要真正发挥 Remotion 的威力，关键在**参数化**——用 zod schema 定义参数，一份代码换不同数据，批量渲染出不同版本。
+
+这篇文章用柱状图动画演示：同一个 `<DataBars>` 组件，给它换三组参数，渲染出三份不同内容、不同配色的视频。
+
+<!-- truncate -->
+
+## 参数化模型
+
+Remotion 的 `<Composition>` 支持 `schema` 和 `defaultProps`：
+
+```tsx
+<Composition
+  id="DataBars"
+  component={DataBars}
+  durationInFrames={210}  // 7s
+  fps={30}
+  width={1920}
+  height={1080}
+  schema={dataBarsSchema}  // zod 定义参数结构
+  defaultProps={{ title: "ChatArch 服务增长", ... }}
+/>
+```
+
+`schema` 用 zod 定义，`@remotion/zod-types` 还提供了 `zColor()`——一个颜色类型，渲染时自动校验。`defaultProps` 给 Studio 预览和基础渲染用，`--props` 命令行参数随时覆盖。
+
+## 柱状图组件
+
+这个组件展示的是 Remotion 最擅长的场景：**数据驱动的可视化视频**。
+
+```tsx
+const dataBarsSchema = z.object({
+  title: z.string(),           // 标题
+  subtitle: z.string(),        // 副标题
+  accentColor: zColor(),       // 强调色（柱状图颜色）
+  data: z.array(               // 数据：{label, value}[]
+    z.object({ label: z.string(), value: z.number() })
+  ),
+});
+```
+
+<figure>
+  <video
+    controls
+    preload="metadata"
+    poster="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-poster.jpg"
+    style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--ifm-color-emphasis-200)', background: '#0b1020' }}
+  >
+    <source src="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-stars.mp4" type="video/mp4" />
+    你的浏览器不支持 HTML5 video。
+  </video>
+  <figcaption>
+    "生态对比"版（accentColor=#f472b6）：5 根柱子，manim 最高（91.9K star），Remotion 第二（57K），lottie/p5/motion-canvas 依次。柱高比例正确，数值从 0 计数递增。
+  </figcaption>
+</figure>
+
+动画原语：
+- `spring({ frame, fps, config: { damping, stiffness } })`——弹簧动画驱动柱子从 0 长到目标高度，每根柱子通过 `i * 8` 帧错峰入场
+- `interpolate(frame, [start, end], [0, 1])`——数值从 0 计到目标值，标题淡入上移
+- 每个数据点渲染为绝对定位的 `<div>`，由 `height` 和位置控制柱形
+
+## 三份参数，三份视频
+
+### 版本 1：ChatArch 服务增长（默认配色 #38bdf8）
+
+```tsx
+{
+  title: "ChatArch 服务增长",
+  subtitle: "2026 Q2 · 月度活跃服务（示意数据）",
+  accentColor: "#38bdf8",  // 蓝色
+  data: [
+    { label: "Apr", value: 320 },
+    { label: "May", value: 540 },
+    { label: "Jun", value: 860 },
+  ],
+}
+```
+
+<video controls preload="metadata" poster="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-poster.jpg" style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--ifm-color-emphasis-200)', background: '#0b1020' }}>
+  <source src="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-default.mp4" type="video/mp4" />
+</video>
+
+### 版本 2：生态对比（#f472b6 粉色）
+
+```tsx
+{
+  title: "代码写视频的生态对比",
+  subtitle: "GitHub Stars · 2026-08 快照",
+  accentColor: "#f472b6",  // 粉色
+  data: [
+    { label: "manim",         value: 91900 },
+    { label: "Remotion",      value: 57000 },
+    { label: "lottie-web",    value: 32100 },
+    { label: "p5.js",         value: 23900 },
+    { label: "motion-canvas", value: 19000 },
+  ],
+}
+```
+
+<video controls preload="metadata" poster="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-poster.jpg" style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--ifm-color-emphasis-200)', background: '#0b1020' }}>
+  <source src="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-stars.mp4" type="video/mp4" />
+</video>
+
+### 版本 3：月度渲染量（#34d399 绿色）
+
+```tsx
+{
+  title: "月度视频渲染量",
+  subtitle: "Playground 渲染流水线（示意数据）",
+  accentColor: "#34d399",  // 绿色
+  data: [
+    { label: "Jul", value: 120 },
+    { label: "Aug", value: 480 },
+    { label: "Sep", value: 720 },
+  ],
+}
+```
+
+<video controls preload="metadata" poster="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-poster.jpg" style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--ifm-color-emphasis-200)', background: '#0b1020' }}>
+  <source src="https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-monthly.mp4" type="video/mp4" />
+</video>
+
+## 如何批量渲染
+
+三种方式，灵活度递进。最简单的是`--props` 命令行参数：
+
+```bash
+# 用 --props 传 JSON 参数覆盖 defaultProps
+npx remotion render src/index.ts DataBars out/v1.mp4 \
+  --props='{"title":"生态对比","accentColor":"#f472b6","data":[...]}'
+
+# 换一组参数就是另一条视频
+npx remotion render src/index.ts DataBars out/v2.mp4 \
+  --props='{"title":"月度渲染量","accentColor":"#34d399","data":[...]}'
+```
+
+第二种方式：用 `inputProps` 从 Node.js API 调用，适合写脚本批量渲染。第三种：Studio 里直接改参数预览，所见即所得。
+
+## 参数化的边界
+
+- `schema` 用 zod 校验，`zColor()` 来自 `@remotion/zod-types`，支持十六进制颜色
+- 渲染时通过 `--props` 传 JSON，与 `defaultProps` 合并
+- 复杂参数（如嵌套对象、数组）完全支持，zod 的 `.object()` / `.array()` 天然适配
+- 参数错误时 Remotion 会给出明确校验错误，不会产出"不小心"坏掉的视频
+
+## 同一份代码，不同的可能
+
+| 参数 | 作用 | 示例 |
+| --- | --- | --- |
+| `title` / `subtitle` | 标题文字 | 任何语言，任何长度 |
+| `accentColor` | 全局色调 | 品牌色、数据分类色 |
+| `data` | 数值数组 | 周报、月报、KPI 对比 |
+| 未来扩展 | 更多字段 | 图表类型、动画速度、分辨率 |
+
+这个模式适用于任何数据驱动的视频：周报、KPI 简报、产品对比、榜单、年终总结……只要写一个组件，数据换一下，就是一个新视频。这就是 Remotion 的"参数化批量出片"——比写死脚本更灵活，比手动剪辑更可控。
+
+## 相关链接
+
+- [Remotion 参数化渲染文档](https://remotion.dev/docs/parametrized-rendering)
+- [上一篇：Remotion 最小闭环](/blog/remotion-react-video-quickstart)
+- demo 源码：`src/DataBars.tsx`（在 `ChatArch/remotion` fork 的 `packages/example` 目录）
+- 三个 demo MP4：
+  - [默认版](https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-default.mp4)
+  - [生态对比版](https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-stars.mp4)
+  - [月度渲染量版](https://share.public.wzhecnu.cn/chatblog/remotion-exploration/data-bars-monthly.mp4)
