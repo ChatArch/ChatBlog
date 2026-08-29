@@ -2,11 +2,135 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog</id>
     <title>ChatBlog Blog</title>
-    <updated>2026-08-22T00:00:00.000Z</updated>
+    <updated>2026-08-29T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog"/>
     <subtitle>ChatBlog Blog</subtitle>
     <icon>https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/favicon.svg</icon>
+    <entry>
+        <title type="html"><![CDATA[AI 研究狂飙的时代，为什么形式化会变得更重要]]></title>
+        <id>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era</id>
+        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era"/>
+        <updated>2026-08-29T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[当 AI 生成想法、代码和证明的速度越来越快，形式化不再只是数学家的洁癖，而会成为验证、复用和协作的基础设施：让机器生成的推理有一个可以被机器严格检查的落点。]]></summary>
+        <content type="html"><![CDATA[<p>这几年 AI 研究的节奏明显变了：模型能力、工具链、论文、开源项目、benchmark 和应用场景都在高速迭代。很多过去需要专家慢慢写、慢慢查的东西，现在可以由模型在几分钟内生成一个看起来很像样的版本：代码、实验计划、定理证明草稿、综述、数据分析、系统设计，甚至新的 conjecture。</p>
+<p>这当然是巨大的生产力提升。但它也带来一个更尖锐的问题：<strong>当生成速度远远超过人工验证速度时，我们到底靠什么维持可信度？</strong></p>
+<p>形式化的重要性，正是在这个背景下突然变得现实起来。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>AI 让“产生候选答案”变得便宜，形式化让“确认答案真的成立”变得可机械检查。未来很多关键知识工作，会越来越依赖这两者的组合：AI 负责搜索和生成，形式化系统负责约束和验收。</p></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="什么是形式化">什么是形式化<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#%E4%BB%80%E4%B9%88%E6%98%AF%E5%BD%A2%E5%BC%8F%E5%8C%96" class="hash-link" aria-label="什么是形式化的直接链接" title="什么是形式化的直接链接" translate="no">​</a></h2>
+<p>形式化并不是把数学或程序写得更“像代码”而已。它的核心是：把一个命题、规范或证明，写进一个有精确定义的逻辑系统里，让计算机可以逐步检查它是否真的成立。</p>
+<p>以 Lean 为例，我们可以把自然数、函数、群、环、拓扑空间、测度、范畴等对象都定义在系统中，再把证明写成 Lean 可以检查的项。Lean 的 kernel 不会因为一句“显然”就放行，也不会因为作者很有名就默认正确。它只做一件事：检查这个证明项是否真的具有目标命题对应的类型。</p>
+<p>所以形式化证明的意义不是“让电脑相信人类”，而是把证明变成一个可以被独立检查、可以被复用、可以被组合的 artifact。</p>
+<p>传统论文证明是面向人类阅读的文本；形式化证明则更像面向机器和人类共同使用的知识对象。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-时代的问题不是没有答案而是答案太多">AI 时代的问题不是没有答案，而是答案太多<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#ai-%E6%97%B6%E4%BB%A3%E7%9A%84%E9%97%AE%E9%A2%98%E4%B8%8D%E6%98%AF%E6%B2%A1%E6%9C%89%E7%AD%94%E6%A1%88%E8%80%8C%E6%98%AF%E7%AD%94%E6%A1%88%E5%A4%AA%E5%A4%9A" class="hash-link" aria-label="AI 时代的问题不是没有答案，而是答案太多的直接链接" title="AI 时代的问题不是没有答案，而是答案太多的直接链接" translate="no">​</a></h2>
+<p>在 AI 辅助研究之前，很多领域的瓶颈是“想不出方案”或“写不出草稿”。现在情况正在变化：模型可以一次给出十几个证明路线、几十个代码实现、上百个实验变体。问题开始从生成侧转移到验证侧。</p>
+<p>这会产生几个典型风险：</p>
+<ol>
+<li class=""><strong>幻觉变得更难发现。</strong> 模型生成的文本越流畅，越容易把缺失条件、偷换定义、错误引用藏在顺滑叙述里。</li>
+<li class=""><strong>局部正确不等于整体正确。</strong> 一个证明片段看起来没问题，一个程序函数测试通过，都不能保证完整系统满足目标性质。</li>
+<li class=""><strong>研究链条越来越长。</strong> AI 生成的中间结论如果没有可靠记录和检查，后续工作会在不稳固的地基上继续堆高。</li>
+<li class=""><strong>人工 review 速度跟不上。</strong> 人可以抽查，但很难持续审完机器每天生成的大量候选产物。</li>
+</ol>
+<p>这不是说 AI 不可靠，所以不能用。恰恰相反：AI 越有用，我们越需要一种机制，把它生成的结果接到可靠的验收层上。</p>
+<p>形式化就是这个验收层的重要候选。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="形式化把看起来对变成检查通过">形式化把“看起来对”变成“检查通过”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#%E5%BD%A2%E5%BC%8F%E5%8C%96%E6%8A%8A%E7%9C%8B%E8%B5%B7%E6%9D%A5%E5%AF%B9%E5%8F%98%E6%88%90%E6%A3%80%E6%9F%A5%E9%80%9A%E8%BF%87" class="hash-link" aria-label="形式化把“看起来对”变成“检查通过”的直接链接" title="形式化把“看起来对”变成“检查通过”的直接链接" translate="no">​</a></h2>
+<p>人类推理里有大量隐含上下文。数学家写“由紧性可得”，通常默认读者知道使用的是哪个紧性定理、空间满足哪些条件、映射在哪个拓扑下连续。软件工程师写“这个状态不会出现”，通常也默认了某些调用顺序、输入约束和并发假设。</p>
+<p>AI 很擅长模仿这种写法，但它不一定真的持有那些隐含条件。</p>
+<p>形式化系统会把这些隐含条件全部逼出来：</p>
+<ul>
+<li class="">定义必须明确；</li>
+<li class="">前提必须列出；</li>
+<li class="">类型必须匹配；</li>
+<li class="">引理必须已经证明；</li>
+<li class="">每一步推理必须能被 kernel 检查。</li>
+</ul>
+<p>这会让人一开始觉得繁琐，因为许多“人类觉得显然”的地方都要补全。但在 AI 高速生成的场景里，这种繁琐反而是价值所在：它把模糊的自然语言说法，转化成能被机器反复检查的精确结构。</p>
+<p>可以说，形式化不是为了降低表达成本，而是为了降低长期信任成本。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="lean-的角色数学知识的编译器">Lean 的角色：数学知识的编译器<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#lean-%E7%9A%84%E8%A7%92%E8%89%B2%E6%95%B0%E5%AD%A6%E7%9F%A5%E8%AF%86%E7%9A%84%E7%BC%96%E8%AF%91%E5%99%A8" class="hash-link" aria-label="Lean 的角色：数学知识的编译器的直接链接" title="Lean 的角色：数学知识的编译器的直接链接" translate="no">​</a></h2>
+<p>Lean 是今天最受关注的证明助手之一，尤其因为 <code>mathlib</code> 已经积累了大量现代数学基础库。它可以表达复杂的数学结构，也可以把定理、定义和证明之间的依赖关系组织成一个可搜索、可复用的库。</p>
+<p>如果把传统数学论文看成“自然语言源码”，那么 Lean 形式化有点像给数学加上编译器：</p>
+<ul>
+<li class="">定义不一致，编译不过；</li>
+<li class="">条件缺失，编译不过；</li>
+<li class="">引用的定理不适用，编译不过；</li>
+<li class="">证明跳步，编译不过；</li>
+<li class="">依赖关系可以被系统追踪。</li>
+</ul>
+<p>这对 AI 特别关键。因为 AI 可以生成 Lean 代码，也可以尝试补证明；但最终能不能进库，不由模型自己说了算，而由 Lean 检查。</p>
+<p>未来理想的工作流可能是这样的：</p>
+<ol>
+<li class="">人类提出问题、定义和研究目标；</li>
+<li class="">AI 生成候选证明、相关引理和搜索方向；</li>
+<li class="">Lean 检查每个候选 proof artifact；</li>
+<li class="">通过检查的部分进入知识库；</li>
+<li class="">新知识再被后续 AI 和人类复用。</li>
+</ol>
+<p>这个循环的关键不是“AI 是否聪明到永远不犯错”，而是“AI 犯错时能不能被低成本、系统性地拦下来”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="形式化会改变-ai-for-math-的评价方式">形式化会改变 AI for Math 的评价方式<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#%E5%BD%A2%E5%BC%8F%E5%8C%96%E4%BC%9A%E6%94%B9%E5%8F%98-ai-for-math-%E7%9A%84%E8%AF%84%E4%BB%B7%E6%96%B9%E5%BC%8F" class="hash-link" aria-label="形式化会改变 AI for Math 的评价方式的直接链接" title="形式化会改变 AI for Math 的评价方式的直接链接" translate="no">​</a></h2>
+<p>AI for Math 很容易被漂亮的 demo 吸引：模型解出一道题、生成一段证明、发现一个路线。但数学研究真正需要的是可积累的可靠知识，而不只是一次性答案。</p>
+<p>形式化系统提供了一种更硬的评价方式：</p>
+<ul>
+<li class="">证明是否通过 checker；</li>
+<li class="">是否使用了额外公理；</li>
+<li class="">依赖了哪些库和引理；</li>
+<li class="">是否能在新版本库中复现；</li>
+<li class="">是否能被后续定理复用。</li>
+</ul>
+<p>这比“看起来像证明”强得多。它也让 benchmark 从自然语言评分，转向 proof artifact 评分。模型不只是要说服评测者，而是要产出一个可以被 kernel 接受的对象。</p>
+<p>当然，checker 也不是神。形式系统本身、kernel 实现、库定义、问题建模都可能有边界和漏洞。但即便如此，形式化仍然把信任边界大幅收窄了：我们不再相信一整段自然语言推理，而是主要相信一个小得多的 kernel、清晰的定义和可审计的依赖链。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="不只是数学软件硬件和协议更需要它">不只是数学：软件、硬件和协议更需要它<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#%E4%B8%8D%E5%8F%AA%E6%98%AF%E6%95%B0%E5%AD%A6%E8%BD%AF%E4%BB%B6%E7%A1%AC%E4%BB%B6%E5%92%8C%E5%8D%8F%E8%AE%AE%E6%9B%B4%E9%9C%80%E8%A6%81%E5%AE%83" class="hash-link" aria-label="不只是数学：软件、硬件和协议更需要它的直接链接" title="不只是数学：软件、硬件和协议更需要它的直接链接" translate="no">​</a></h2>
+<p>形式化的价值不只在数学。AI 正在越来越多地写代码、改系统、生成配置、设计协议。普通测试只能说明“这些样例没坏”，但很多关键错误只会在极端状态、并发交错、安全边界或长期演化中出现。</p>
+<p>形式化方法可以表达并检查更强的性质，例如：</p>
+<ul>
+<li class="">编译器优化是否保持程序语义；</li>
+<li class="">加密协议是否满足认证和保密性质；</li>
+<li class="">智能合约是否不会在某类调用下丢资产；</li>
+<li class="">分布式系统是否满足一致性约束；</li>
+<li class="">控制系统是否不会进入危险状态；</li>
+<li class="">AI 生成的代码是否满足给定 specification。</li>
+</ul>
+<p>随着 coding agent 变得更强，软件生产会更快，也会更容易出现“看起来能跑，但没人真正理解完整行为”的系统。形式化规范和验证工具会成为抵消这种风险的基础设施。</p>
+<p>未来的高可靠工程里，AI 可能负责写实现、补测试、找反例；形式化工具负责定义不可妥协的边界：哪些状态不允许发生，哪些性质必须保持，哪些优化不能改变语义。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="形式化也是一种知识组织方式">形式化也是一种知识组织方式<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#%E5%BD%A2%E5%BC%8F%E5%8C%96%E4%B9%9F%E6%98%AF%E4%B8%80%E7%A7%8D%E7%9F%A5%E8%AF%86%E7%BB%84%E7%BB%87%E6%96%B9%E5%BC%8F" class="hash-link" aria-label="形式化也是一种知识组织方式的直接链接" title="形式化也是一种知识组织方式的直接链接" translate="no">​</a></h2>
+<p>还有一个常被低估的点：形式化不仅是在“证明正确”，也是在重新组织知识。</p>
+<p>自然语言知识库很适合阅读，但不擅长自动组合。一个定理能不能用于另一个场景，往往要专家自己判断。形式化库则把定义、实例、类型类、定理依赖都结构化了。它让机器知道：这个对象是什么类型，满足哪些性质，可以调用哪些定理，还缺哪些前提。</p>
+<p>这对 AI 很重要，因为模型需要的不只是更多文本，还需要更可靠的工具环境。一个大型形式化库相当于给 AI 提供了一个高精度的知识图谱和操作空间。模型可以在其中搜索、尝试、失败、修正，而不是只在自然语言相似性里游走。</p>
+<p>换句话说，形式化让知识从“可读”进一步变成“可计算”。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="最大障碍成本和体验">最大障碍：成本和体验<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#%E6%9C%80%E5%A4%A7%E9%9A%9C%E7%A2%8D%E6%88%90%E6%9C%AC%E5%92%8C%E4%BD%93%E9%AA%8C" class="hash-link" aria-label="最大障碍：成本和体验的直接链接" title="最大障碍：成本和体验的直接链接" translate="no">​</a></h2>
+<p>如果形式化这么重要，为什么还没有成为主流？主要原因也很直接：成本高。</p>
+<p>形式化一段数学证明，往往比写论文证明更费时。形式化一个工程系统，也需要提前定义 specification、抽象模型和不变量。对初学者来说，Lean、Coq、Isabelle、TLA+、Dafny、F* 等工具都有学习曲线。</p>
+<p>这也是 AI 可能反过来帮助形式化的地方。过去形式化最贵的是细节劳动：找定理、补类型、处理繁琐的 rewrite、把人类证明拆成机器可接受的小步。AI 如果能承担其中一部分，就会显著降低形式化门槛。</p>
+<p>所以 AI 和形式化不是对立关系。更可能出现的是互补：</p>
+<ul>
+<li class="">AI 降低形式化的书写成本；</li>
+<li class="">形式化降低 AI 输出的信任成本；</li>
+<li class="">AI 扩大可形式化的范围；</li>
+<li class="">形式化筛选真正可靠的 AI 产物。</li>
+</ul>
+<p>这是一种正反馈。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="未来重要的不是全自动证明而是可信流水线">未来重要的不是“全自动证明”，而是“可信流水线”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#%E6%9C%AA%E6%9D%A5%E9%87%8D%E8%A6%81%E7%9A%84%E4%B8%8D%E6%98%AF%E5%85%A8%E8%87%AA%E5%8A%A8%E8%AF%81%E6%98%8E%E8%80%8C%E6%98%AF%E5%8F%AF%E4%BF%A1%E6%B5%81%E6%B0%B4%E7%BA%BF" class="hash-link" aria-label="未来重要的不是“全自动证明”，而是“可信流水线”的直接链接" title="未来重要的不是“全自动证明”，而是“可信流水线”的直接链接" translate="no">​</a></h2>
+<p>很多讨论会把目标想成：AI 什么时候能完全自动证明所有定理？这个问题当然有趣，但可能不是最先改变世界的部分。</p>
+<p>更现实、更重要的变化，是可信流水线的形成：</p>
+<ul>
+<li class="">需求用更清晰的 specification 表达；</li>
+<li class="">AI 根据 specification 生成实现或证明；</li>
+<li class="">工具自动检查类型、性质、反例和依赖；</li>
+<li class="">人类审查抽象是否合理、目标是否值得、模型是否贴近现实；</li>
+<li class="">通过检查的 artifact 被纳入可复用库。</li>
+</ul>
+<p>这条流水线不会消灭人类判断。相反，它会把人类从大量机械验证里释放出来，把注意力放回建模、抽象、问题选择和概念创造上。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="结语">结语<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/formalization-ai-research-era#%E7%BB%93%E8%AF%AD" class="hash-link" aria-label="结语的直接链接" title="结语的直接链接" translate="no">​</a></h2>
+<p>在 AI 研究快速发展的时代，我们最不缺的是生成能力。模型会越来越会写，越来越会猜，越来越会组合已有知识。真正稀缺的是可验证性：哪些结果能被信任，哪些结论能被复用，哪些系统能在关键场景里承担责任。</p>
+<p>形式化的重要性正在于此。</p>
+<p>Lean 这样的证明助手，形式化验证这样的工程方法，不只是学术上的严谨爱好。它们可能会成为 AI 时代的基础设施：像编译器检查程序一样，检查证明、规范和推理；像类型系统约束代码一样，约束机器生成的知识；像版本库记录代码演化一样，记录可验证知识的积累过程。</p>
+<p>AI 让我们更快地产生可能性。形式化帮助我们分辨哪些可能性真的站得住。</p>
+<p>未来的关键不是在二者之间选一个，而是把它们接在一起。</p>]]></content>
+        <category label="ai" term="ai"/>
+        <category label="lean" term="lean"/>
+        <category label="formal-verification" term="formal-verification"/>
+        <category label="theorem-proving" term="theorem-proving"/>
+        <category label="mathematics" term="mathematics"/>
+    </entry>
     <entry>
         <title type="html"><![CDATA[2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox]]></title>
         <id>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/open-source-voice-cloning-frameworks-2025</id>
@@ -2711,172 +2835,5 @@
         <category label="web" term="web"/>
         <category label="meeting-notes" term="meeting-notes"/>
         <category label="self-hosted" term="self-hosted"/>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座]]></title>
-        <id>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source</id>
-        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source"/>
-        <updated>2026-08-07T00:00:00.000Z</updated>
-        <summary type="html"><![CDATA[静态调研 GitHub 上适合自建录音转写、在线会议实时转写和会议纪要的开源项目，区分会议 bot/API、录音文件后台、字幕媒体套件、团队媒体库与底层 ASR pipeline。]]></summary>
-        <content type="html"><![CDATA[<p>录音转写看起来像一个单点能力：给一段音频，返回文字。真的要自建时，它会很快拆成几个完全不同的问题：谁负责录音或进会？是实时字幕还是会后处理？要不要说话人？要不要摘要、行动项和问答？要不要 API、权限、队列和搜索？</p>
-<p>如果不先把这些产品形态分开，就很容易把 <code>openai/whisper</code>、<code>faster-whisper</code>、<code>WhisperX</code>、一个 Gradio WebUI、一个会议 bot、一个媒体库平台放进同一张表里比较，最后得到一堆“都能转写”的无效结论。</p>
-<p>这篇只做静态调研，关注 GitHub 上可自建、可部署或可封装的项目，重点场景是录音转写、会议笔记和后续 ChatArch/Agent 工作流集成。</p>
-<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>一句话结论</div><div class="admonitionContent_BuS1"><p>如果要自动进入在线会议并实时拿 transcript，先看 <strong>Vexa</strong>；如果已有录音/录屏要进一个自托管后台，先看 <strong>Scriberr</strong>；如果主线是字幕、翻译和媒体转写，先看 <strong>Whishper</strong>；如果要团队级媒体库、speaker profile、搜索和协作，观察 <strong>OpenTranscribe</strong>；如果只是缺一个 STT API 或实时流式底座，才看 <strong>docker-whisper / WhisperLive / WhisperX / faster-whisper / whisper.cpp</strong>。</p></div></div>
-<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>证据口径</div><div class="admonitionContent_BuS1"><p>本文快照日期为 <strong>2026-08-07</strong>。候选来自 GitHub 仓库、README、官方文档、release/license 状态和项目官方截图/架构图。本文没有在本机安装、构建、启动容器、下载模型或做统一 benchmark；运行实践属于 shortlist 之后的独立任务。</p></div></div>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先把转写拆成五类产品">先把“转写”拆成五类产品<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E5%85%88%E6%8A%8A%E8%BD%AC%E5%86%99%E6%8B%86%E6%88%90%E4%BA%94%E7%B1%BB%E4%BA%A7%E5%93%81" class="hash-link" aria-label="先把“转写”拆成五类产品的直接链接" title="先把“转写”拆成五类产品的直接链接" translate="no">​</a></h2>
-<p>录音转写至少有五条路线。它们都可能用 Whisper 或类似模型，但交付物完全不同。</p>
-<table><thead><tr><th>产品形态</th><th>典型输入</th><th>典型输出</th><th>最容易踩的坑</th></tr></thead><tbody><tr><td>会议 bot / transcription API</td><td>Google Meet、Teams、Zoom、Jitsi 等会议 URL</td><td>实时 speaker-attributed transcript、API/WebSocket</td><td>入会、音频捕获、平台限制比 ASR 本身更难</td></tr><tr><td>录音文件后台</td><td>音频、视频、会议录屏、文件夹 watcher</td><td>转写、说话人、摘要、问答、归档</td><td>不负责自动进会，实时性有限</td></tr><tr><td>字幕/媒体转写 WebUI</td><td>本地文件、URL、YouTube/yt-dlp</td><td>TXT、JSON、SRT、VTT、字幕编辑/翻译</td><td>适合媒体处理，不等于会议纪要系统</td></tr><tr><td>团队媒体库/分析平台</td><td>大量音视频、S3/SMB/watch sources</td><td>搜索、speaker profiles、RBAC、集合、AI 分析</td><td>功能重，成熟度与权限边界必须深审</td></tr><tr><td>ASR / diarization 底座</td><td>音频流或文件</td><td>文字、word timestamp、speaker label</td><td>只是 pipeline，不提供产品、权限、存储和 UI</td></tr></tbody></table>
-<p>这个分类比 stars 更重要。会议笔记需求一旦包含“自动进入会议”，普通上传转写 WebUI 就不在同一赛道；如果只是“录音文件进后台”，会议 bot 反而太重。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="vexa会议-bot-和实时-transcription-api">Vexa：会议 bot 和实时 transcription API<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#vexa%E4%BC%9A%E8%AE%AE-bot-%E5%92%8C%E5%AE%9E%E6%97%B6-transcription-api" class="hash-link" aria-label="Vexa：会议 bot 和实时 transcription API的直接链接" title="Vexa：会议 bot 和实时 transcription API的直接链接" translate="no">​</a></h2>
-<p>Repo: <a href="https://github.com/Vexa-ai/vexa" target="_blank" rel="noopener noreferrer" class="">Vexa-ai/vexa</a></p>
-<p>Vexa 是本轮最贴近“在线会议实时转写服务”的项目。它的 README 明确定位为 open-source、self-hosted meeting bot &amp; transcription API：bot 加入 Google Meet、Microsoft Teams、Zoom、Jitsi，然后通过你自托管的 API 输出 speaker-attributed transcripts。README 还特别说明，如果只需要 transcription API，可以忽略 agent lane，把它当独立产品使用。</p>
-<p><img decoding="async" loading="lazy" alt="Vexa official architecture" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MjAgNjEwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idCBkIiBmb250LWZhbWlseT0iLWFwcGxlLXN5c3RlbSxCbGlua01hY1N5c3RlbUZvbnQsJ1NlZ29lIFVJJyxSb2JvdG8sSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiPgogIDx0aXRsZSBpZD0idCI+VmV4YSBhcmNoaXRlY3R1cmU8L3RpdGxlPgogIDxkZXNjIGlkPSJkIj5PbmUgQVBJIGdhdGV3YXkgcm91dGVzIHRvIHR3byBkb21haW5zIOKAlCBNZWV0aW5ncyBhbmQgQWdlbnRzIOKAlCBib3RoIHJ1bm5pbmcgb24gb25lIHJ1bnRpbWUgdGhhdCBzcGF3bnMgZWFjaCBib3QgYW5kIGFnZW50IGluIGl0cyBvd24gc2FuZGJveGVkIGNvbnRhaW5lciBvbiBEb2NrZXIsIEt1YmVybmV0ZXMsIG9yIFByb2Nlc3MuPC9kZXNjPgoKICA8ZGVmcz4KICAgIDxtYXJrZXIgaWQ9ImFycm93IiB2aWV3Qm94PSIwIDAgMTAgMTAiIHJlZlg9IjgiIHJlZlk9IjUiIG1hcmtlcldpZHRoPSI3IiBtYXJrZXJIZWlnaHQ9IjciIG9yaWVudD0iYXV0by1zdGFydC1yZXZlcnNlIj4KICAgICAgPHBhdGggZD0iTTAsMCBMMTAsNSBMMCwxMCB6IiBmaWxsPSIjNjQ3NDhiIi8+CiAgICA8L21hcmtlcj4KICAgIDxzdHlsZT4KICAgICAgLm1vbm8geyBmb250LWZhbWlseTogdWktbW9ub3NwYWNlLCdTRiBNb25vJywnTWVubG8nLCdDb25zb2xhcycsbW9ub3NwYWNlOyB9CiAgICAgIC5lZGdlIHsgc3Ryb2tlOiAjNjQ3NDhiOyBzdHJva2Utd2lkdGg6IDEuODsgZmlsbDogbm9uZTsgfQogICAgICAubGJsICB7IGZpbGw6ICM2NDc0OGI7IH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgoKICA8IS0tIGRvbWFpbiBwYW5lbHMgLS0+CiAgPHJlY3QgeD0iMzYiICB5PSI4OCIgd2lkdGg9IjM4OCIgaGVpZ2h0PSI0ODYiIHJ4PSIxOCIgZmlsbD0iIzBlYTVlOSIgb3BhY2l0eT0iMC4wNyIvPgogIDxyZWN0IHg9IjQ5NiIgeT0iODgiIHdpZHRoPSIzODgiIGhlaWdodD0iNDg2IiByeD0iMTgiIGZpbGw9IiM4YjVjZjYiIG9wYWNpdHk9IjAuMDciLz4KCiAgPCEtLSBjb2x1bW4gaGVhZGVycyAtLT4KICA8dGV4dCB4PSIxNjAiIHk9IjExMiIgZmlsbD0iIzBlYTVlOSIgZm9udC1zaXplPSIxMyIgZm9udC13ZWlnaHQ9IjcwMCIgbGV0dGVyLXNwYWNpbmc9IjMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk1FRVRJTkdTPC90ZXh0PgogIDx0ZXh0IHg9Ijc2MCIgeT0iMTEyIiBmaWxsPSIjOGI1Y2Y2IiBmb250LXNpemU9IjEzIiBmb250LXdlaWdodD0iNzAwIiBsZXR0ZXItc3BhY2luZz0iMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QUdFTlRTPC90ZXh0PgoKICA8IS0tIGdhdGV3YXkgLS0+CiAgPHJlY3QgeD0iMjg1IiB5PSIzMCIgd2lkdGg9IjM1MCIgaGVpZ2h0PSI0NiIgcng9IjEwIiBmaWxsPSIjNjM2NmYxIi8+CiAgPHRleHQgeD0iNDYwIiB5PSI1OCIgZmlsbD0iI2ZmZmZmZiIgZm9udC1zaXplPSIxNi41IiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5BUEkgZ2F0ZXdheSDCtyBYLUFQSS1LZXk8L3RleHQ+CgogIDwhLS0gZ2F0ZXdheSAtPiBhcGlzIC0tPgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iMzUwIiB5MT0iNzYiIHgyPSIxNjgiIHkyPSIxNTAiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSI1NzAiIHkxPSI3NiIgeDI9Ijc1MiIgeTI9IjE1MCIgbWFya2VyLWVuZD0idXJsKCNhcnJvdykiLz4KICA8dGV4dCBjbGFzcz0ibW9ubyIgeD0iMzAwIiB5PSIxMjAiIGZpbGw9IiMwZWE1ZTkiIGZvbnQtc2l6ZT0iMTEiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBPU1QgL2JvdHM8L3RleHQ+CiAgPHRleHQgY2xhc3M9Im1vbm8iIHg9IjYyMCIgeT0iMTIwIiBmaWxsPSIjOGI1Y2Y2IiBmb250LXNpemU9IjExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5QT1NUIC9hZ2VudC8qPC90ZXh0PgoKICA8IS0tIG1lZXRpbmctYXBpIC8gYWdlbnQtYXBpIC0tPgogIDxyZWN0IHg9Ijc1IiAgeT0iMTUyIiB3aWR0aD0iMTc1IiBoZWlnaHQ9IjU2IiByeD0iMTAiIGZpbGw9IiMwZWE1ZTkiLz4KICA8dGV4dCB4PSIxNjIiIHk9IjE3OCIgZmlsbD0iI2ZmZmZmZiIgZm9udC1zaXplPSIxNSIgZm9udC13ZWlnaHQ9IjYwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+bWVldGluZy1hcGk8L3RleHQ+CiAgPHRleHQgeD0iMTYyIiB5PSIxOTciIGZpbGw9IiNlMGYyZmUiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Ym90cyDCtyB0cmFuc2NyaXB0cyDCtyByZWNvcmRpbmdzPC90ZXh0PgoKICA8cmVjdCB4PSI2NzAiIHk9IjE1MiIgd2lkdGg9IjE3NSIgaGVpZ2h0PSI1NiIgcng9IjEwIiBmaWxsPSIjOGI1Y2Y2Ii8+CiAgPHRleHQgeD0iNzU3IiB5PSIxNzgiIGZpbGw9IiNmZmZmZmYiIGZvbnQtc2l6ZT0iMTUiIGZvbnQtd2VpZ2h0PSI2MDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPmFnZW50LWFwaTwvdGV4dD4KICA8dGV4dCB4PSI3NTciIHk9IjE5NyIgZmlsbD0iI2VkZTlmZSIgZm9udC1zaXplPSIxMC41IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5jaGF0IMK3IHJvdXRpbmVzIMK3IGV2ZW50czwvdGV4dD4KCiAgPCEtLSBhcGlzIC0+IHJ1bnRpbWUgLS0+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSIyNTAiIHkxPSIxODIiIHgyPSIzNDYiIHkyPSIyNzYiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPGxpbmUgY2xhc3M9ImVkZ2UiIHgxPSI2NzAiIHkxPSIxODIiIHgyPSI1NzQiIHkyPSIyNzYiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIi8+CiAgPHRleHQgY2xhc3M9ImxibCIgeD0iMjg0IiB5PSIyMjAiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+ZGlzcGF0Y2g8L3RleHQ+CiAgPHRleHQgY2xhc3M9ImxibCIgeD0iNjM2IiB5PSIyMjAiIGZvbnQtc2l6ZT0iMTAuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+ZGlzcGF0Y2g8L3RleHQ+CgogIDwhLS0gcnVudGltZSAtLT4KICA8cmVjdCB4PSIzNTAiIHk9IjI0OCIgd2lkdGg9IjIyMCIgaGVpZ2h0PSI5OCIgcng9IjE2IiBmaWxsPSIjMGYxNzJhIiBzdHJva2U9IiMzNGQzOTkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDx0ZXh0IHg9IjQ2MCIgeT0iMjg2IiBmaWxsPSIjZmZmZmZmIiBmb250LXNpemU9IjIxIiBmb250LXdlaWdodD0iNzAwIiBsZXR0ZXItc3BhY2luZz0iMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UlVOVElNRTwvdGV4dD4KICA8dGV4dCB4PSI0NjAiIHk9IjMwOCIgZmlsbD0iIzk0YTNiOCIgZm9udC1zaXplPSIxMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+aXNvbGF0ZWQgwrcgZXBoZW1lcmFsIMK3IHJlYXBlZCBvbiBpZGxlPC90ZXh0PgogIDx0ZXh0IHg9IjQ2MCIgeT0iMzI4IiBmaWxsPSIjMzRkMzk5IiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Eb2NrZXIgwrcgS3ViZXJuZXRlcyDCtyBQcm9jZXNzPC90ZXh0PgoKICA8IS0tIHJ1bnRpbWUgLT4gY29udGFpbmVycyAtLT4KICA8dGV4dCBjbGFzcz0ibGJsIiB4PSI0NjAiIHk9IjM3OCIgZm9udC1zaXplPSIxMSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+c3Bhd25zIG9uZSBjb250YWluZXIgcGVyIHdvcmtsb2FkPC90ZXh0PgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iNDE1IiB5MT0iMzQ2IiB4Mj0iMjYwIiB5Mj0iNDI2IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPgogIDxsaW5lIGNsYXNzPSJlZGdlIiB4MT0iNTA1IiB5MT0iMzQ2IiB4Mj0iNjYwIiB5Mj0iNDI2IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIvPgoKICA8IS0tIGNvbnRhaW5lcnMgLS0+CiAgPHJlY3QgeD0iOTUiIHk9IjQzMCIgd2lkdGg9IjMxMCIgaGVpZ2h0PSIxMjgiIHJ4PSIxNCIgZmlsbD0iIzFlMjkzYiIgc3Ryb2tlPSIjMGVhNWU5IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDx0ZXh0IHg9IjI1MCIgeT0iNDYwIiBmaWxsPSIjZmZmZmZmIiBmb250LXNpemU9IjE1IiBmb250LXdlaWdodD0iNjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj52ZXhhLWJvdCBjb250YWluZXI8L3RleHQ+CiAgPHRleHQgeD0iMjUwIiB5PSI0ODciIGZpbGw9IiNjYmQ1ZTEiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+am9pbnMgdGhlIGNhbGwg4oaSIGNhcHR1cmVzIGF1ZGlvPC90ZXh0PgogIDx0ZXh0IHg9IjI1MCIgeT0iNTA5IiBmaWxsPSIjY2JkNWUxIiBmb250LXNpemU9IjExLjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPldoaXNwZXIg4oaSIHRyYW5zY3JpcHQudjE8L3RleHQ+CiAgPHRleHQgeD0iMjUwIiB5PSI1MzEiIGZpbGw9IiMzOGJkZjgiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+4oaSIFJlZGlzIHN0cmVhbSDihpIgeW91ciBBUEk8L3RleHQ+CgogIDxyZWN0IHg9IjUxNSIgeT0iNDMwIiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjEyOCIgcng9IjE0IiBmaWxsPSIjMWUyOTNiIiBzdHJva2U9IiM4YjVjZjYiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHRleHQgeD0iNjcwIiB5PSI0NjAiIGZpbGw9IiNmZmZmZmYiIGZvbnQtc2l6ZT0iMTUiIGZvbnQtd2VpZ2h0PSI2MDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPmFnZW50IGNvbnRhaW5lcjwvdGV4dD4KICA8dGV4dCB4PSI2NzAiIHk9IjQ4NyIgZmlsbD0iI2NiZDVlMSIgZm9udC1zaXplPSIxMS41IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5tb3VudHMgL3dvcmtzcGFjZSAoZ2l0IE1hcmtkb3duIMK3IE9LRik8L3RleHQ+CiAgPHRleHQgeD0iNjcwIiB5PSI1MDkiIGZpbGw9IiNjYmQ1ZTEiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+cmVhZHMgwrcgd3JpdGVzIMK3IGNvbW1pdHM8L3RleHQ+CiAgPHRleHQgeD0iNjcwIiB5PSI1MzEiIGZpbGw9IiNjNGI1ZmQiIGZvbnQtc2l6ZT0iMTEuNSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+4oaSIHN0cmVhbXMgU1NFIChtZXNzYWdlLWRlbHRhIMK3IGNvbW1pdCk8L3RleHQ+CgogIDwhLS0gY2FwdGlvbiAtLT4KICA8dGV4dCB4PSI0NjAiIHk9IjU5MCIgZmlsbD0iIzY0NzQ4YiIgZm9udC1zaXplPSIxMS41IiBmb250LXN0eWxlPSJpdGFsaWMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkEgYm90IGFuZCBhbiBhZ2VudCBhcmUgdGhlIHNhbWUgcnVudGltZS52MSB3b3JrbG9hZC48L3RleHQ+Cjwvc3ZnPgo=" width="920" height="610" class="img_ev3q"></p>
-<p><em>Vexa 官方架构图：同一个 runtime 调度 meeting bot 和 agent workload；会议侧重点是 bot 入会、捕获音频、产生 transcript stream。来源：Vexa 官方仓库。</em></p>
-<p>Vexa 的价值在于把“入会”这件最容易低估的工程工作产品化了：</p>
-<ul>
-<li class="">会议 URL 进入 <code>POST /bots</code>；</li>
-<li class="">bot 作为参会者进入会议；</li>
-<li class="">meeting-api 管理 bots、transcripts、recordings；</li>
-<li class="">transcript 可以被实时读取；</li>
-<li class="">后续 agent/workspace 只是它扩展出来的一条路线。</li>
-</ul>
-<p>它也有清晰的代价。README 标注 full Docker Compose stack 至少需要 8 vCPU / 16GB RAM；更小机器可以用 lighter path，但完整自托管仍不是“一个 Python 包跑起来”。默认 transcription 可以接 Vexa token；要完全 air-gap，需要把 GPU transcription unit 也自托管。</p>
-<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>在线会议实时转写、会议 bot API、后续接知识库/Agent</td></tr><tr><td>不适合</td><td>只是本地录音文件批量转写；只想要极简单容器 STT</td></tr><tr><td>API/集成</td><td>强，项目本身就是 API-first</td></tr><tr><td>运维面</td><td>中到高，完整栈和 bot fleet 是核心复杂度</td></tr><tr><td>初步结论</td><td><strong>如果目标是“会中自动获取 transcript”，第一优先级</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="scriberr自托管录音视频转写后台">Scriberr：自托管录音/视频转写后台<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#scriberr%E8%87%AA%E6%89%98%E7%AE%A1%E5%BD%95%E9%9F%B3%E8%A7%86%E9%A2%91%E8%BD%AC%E5%86%99%E5%90%8E%E5%8F%B0" class="hash-link" aria-label="Scriberr：自托管录音/视频转写后台的直接链接" title="Scriberr：自托管录音/视频转写后台的直接链接" translate="no">​</a></h2>
-<p>Repo: <a href="https://github.com/rishikanthc/Scriberr" target="_blank" rel="noopener noreferrer" class="">rishikanthc/Scriberr</a></p>
-<p>Scriberr 更像“把录音文件丢进去，它负责后续处理”的后台产品。README 说它可以本地转写 audio/video，支持 NVIDIA Parakeet、Canary 和 Whisper 模型，并提供 diarization、chat with audio、API、folder watcher、PWA、录音和笔记等能力。</p>
-<p><img decoding="async" loading="lazy" alt="Scriberr official recording library screenshot" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/scriberr-hero-f0b23f73bbe7cb2f9153ac3fb7fd927b.png" width="1404" height="1226" class="img_ev3q"></p>
-<p><em>官方截图展示了 Scriberr 的录音列表和移动端 PWA 体验。图片中是演示录音名，没有账号、token 或主机信息。来源：Scriberr 官方仓库。</em></p>
-<p><img decoding="async" loading="lazy" alt="Scriberr official chat screenshot" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/scriberr-chat-65569914faae04c1d8c4410427999b74.png" width="4220" height="1218" class="img_ev3q"></p>
-<p><em>Scriberr 官方截图里的 Chat with Audio：用户可以对转写内容提问并生成摘要。来源：Scriberr 官方仓库。</em></p>
-<p>Scriberr 的优势不是“最底层 ASR 性能”，而是它已经把会议文件处理常见的产品层补了很多：</p>
-<ul>
-<li class="">上传/管理录音；</li>
-<li class="">transcript reader、播放跟随和文本定位；</li>
-<li class="">speaker detection；</li>
-<li class="">notes/highlights；</li>
-<li class="">AI summary；</li>
-<li class="">chat with audio；</li>
-<li class="">folder watcher，方便接 n8n 或文件自动化；</li>
-<li class="">API 文档。</li>
-</ul>
-<p>这让它很适合做 ChatArch 里的“录音进入知识工作流”的第一版：先不解决自动入会，只解决文件进入、转写、总结、归档和后续问答。</p>
-<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>录音文件、会议录屏、语音备忘录进入自托管后台</td></tr><tr><td>不适合</td><td>自动加入 Zoom/Meet/Teams 获取实时 transcript</td></tr><tr><td>API/集成</td><td>中到高，有 API 和 folder watcher</td></tr><tr><td>运维面</td><td>中，模型环境和 diarization/LLM provider 仍需配置</td></tr><tr><td>初步结论</td><td><strong>如果第一版是“录音文件进来→转写→摘要/问答→归档”，第一优先级</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="whishper自托管媒体转写和字幕套件">Whishper：自托管媒体转写和字幕套件<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#whishper%E8%87%AA%E6%89%98%E7%AE%A1%E5%AA%92%E4%BD%93%E8%BD%AC%E5%86%99%E5%92%8C%E5%AD%97%E5%B9%95%E5%A5%97%E4%BB%B6" class="hash-link" aria-label="Whishper：自托管媒体转写和字幕套件的直接链接" title="Whishper：自托管媒体转写和字幕套件的直接链接" translate="no">​</a></h2>
-<p>Repo: <a href="https://github.com/pluja/whishper" target="_blank" rel="noopener noreferrer" class="">pluja/whishper</a></p>
-<p>Whishper 是 100% local 的 audio transcription and subtitling suite，主线是上传或 URL 导入媒体，转写、翻译、下载 TXT/JSON/VTT/SRT，并在 Web UI 里编辑字幕。它使用 FasterWhisper，支持 CPU/GPU，也用 LibreTranslate 做文本翻译。</p>
-<p><img decoding="async" loading="lazy" alt="Whishper official banner" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/whishper-banner-a63f30d78a60d67f85363e1b207599b8.png" width="1640" height="664" class="img_ev3q"></p>
-<p><em>Whishper 官方图：它把产品关键词直接写成 transcribe / translate / subtitle。来源：Whishper 官方仓库。</em></p>
-<p>Whishper 的“字幕产品”气质很强：</p>
-<ul>
-<li class="">URL / yt-dlp 输入；</li>
-<li class="">上传文件转写；</li>
-<li class="">SRT/VTT 等字幕导出；</li>
-<li class="">翻译；</li>
-<li class="">字幕编辑器；</li>
-<li class="">Nginx/MongoDB/LibreTranslate 等 compose 式结构。</li>
-</ul>
-<p>所以它很适合媒体工作流、视频字幕、课程/访谈整理；但会议纪要系统常见的行动项、参会人、任务抽取、会议空间归档不是它的主线。</p>
-<p>还要注意一个维护信号：README 顶部说明作者正在做 v4 完整重写，当前分支不会继续发新 release 或 update。不是不能选，而是不能把当前分支当长期稳定接口来深度耦合。</p>
-<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>媒体转写、字幕、翻译、人工编辑</td></tr><tr><td>不适合</td><td>会议 bot、团队会议知识库、行动项系统</td></tr><tr><td>API/集成</td><td>中，组件化但产品主线不是 API-first</td></tr><tr><td>运维面</td><td>中，MongoDB/LibreTranslate/Nginx/转写 API 组合</td></tr><tr><td>初步结论</td><td><strong>第二优先级：字幕/媒体工作流强，会议笔记要另补</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="opentranscribe团队媒体库方向功能很全但要深审">OpenTranscribe：团队媒体库方向，功能很全但要深审<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#opentranscribe%E5%9B%A2%E9%98%9F%E5%AA%92%E4%BD%93%E5%BA%93%E6%96%B9%E5%90%91%E5%8A%9F%E8%83%BD%E5%BE%88%E5%85%A8%E4%BD%86%E8%A6%81%E6%B7%B1%E5%AE%A1" class="hash-link" aria-label="OpenTranscribe：团队媒体库方向，功能很全但要深审的直接链接" title="OpenTranscribe：团队媒体库方向，功能很全但要深审的直接链接" translate="no">​</a></h2>
-<p>Repo: <a href="https://github.com/attevon-llc/OpenTranscribe" target="_blank" rel="noopener noreferrer" class="">attevon-llc/OpenTranscribe</a></p>
-<p>OpenTranscribe 是这批候选里功能面最宽的：README 定位为 containerized web application，基于 WhisperX + faster-whisper 做音视频转写，列出 PyAnnote diarization、speaker profiles、cross-video speaker recognition、S3/SMB/watch sources、搜索、RBAC、collection sharing、custom prompt summary、多 provider LLM 等能力。</p>
-<p><img decoding="async" loading="lazy" alt="OpenTranscribe official workflow" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/opentranscribe-workflow-7280f60b91ea8cd78a9b7a05ee4f5148.gif" width="1280" height="783" class="img_ev3q"></p>
-<p><em>OpenTranscribe 官方 workflow GIF：展示从 login、upload、process、transcribe 到 speaker identification 和 AI tags/collections 的完整链路。来源：OpenTranscribe 官方仓库。</em></p>
-<p>如果这些能力都稳定可用，它会非常接近“团队录音资产库”：</p>
-<ul>
-<li class="">多来源自动导入：local folders、S3、SMB；</li>
-<li class="">去重、分段合并、批量处理；</li>
-<li class="">speaker profile 和跨文件说话人识别；</li>
-<li class="">搜索、标签、collection；</li>
-<li class="">RBAC 与共享；</li>
-<li class="">custom JSON summary prompt；</li>
-<li class="">OpenAI/Ollama/Claude/OpenRouter/local vLLM 等 LLM provider。</li>
-</ul>
-<p>但它现在不应该直接被当成“成熟首选”。原因不是功能少，而是功能太多、社区规模还小，且 README 自述 99.9% written by AI using frontier models。对生产环境来说，权限模型、文件隔离、上传处理、队列恢复、prompt/LLM key 存储、OpenSearch/数据库配置、安全更新都需要代码级深审。</p>
-<table><thead><tr><th>维度</th><th>判断</th></tr></thead><tbody><tr><td>最适合</td><td>团队级媒体库、跨会议 speaker profile、搜索协作</td></tr><tr><td>不适合</td><td>想快速上线一个低运维转写服务</td></tr><tr><td>API/集成</td><td>中，偏平台内部能力，需继续深读 API/权限</td></tr><tr><td>运维面</td><td>高，组件多、权限面大</td></tr><tr><td>初步结论</td><td><strong>观察/深审候选：功能形态很对，但不能凭 README 上生产</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="docker-whisper-与-whisperlive当你只缺-stt-服务">docker-whisper 与 WhisperLive：当你只缺 STT 服务<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#docker-whisper-%E4%B8%8E-whisperlive%E5%BD%93%E4%BD%A0%E5%8F%AA%E7%BC%BA-stt-%E6%9C%8D%E5%8A%A1" class="hash-link" aria-label="docker-whisper 与 WhisperLive：当你只缺 STT 服务的直接链接" title="docker-whisper 与 WhisperLive：当你只缺 STT 服务的直接链接" translate="no">​</a></h2>
-<p>Repo: <a href="https://github.com/hwdsl2/docker-whisper" target="_blank" rel="noopener noreferrer" class="">hwdsl2/docker-whisper</a>、<a href="https://github.com/hwdsl2/docker-whisper-live" target="_blank" rel="noopener noreferrer" class="">hwdsl2/docker-whisper-live</a>、<a href="https://github.com/collabora/WhisperLive" target="_blank" rel="noopener noreferrer" class="">collabora/WhisperLive</a></p>
-<p>这组更适合作为“服务底座”而不是会议笔记产品。</p>
-<p><code>docker-whisper</code> 把 faster-whisper 包成 OpenAI-compatible API，提供 <code>/v1/audio/transcriptions</code> 和 <code>/v1/audio/translations</code>，支持 JSON/text/verbose JSON/SRT/VTT、SSE streaming、CUDA image、air-gapped mode 和持久模型 cache。</p>
-<p><code>docker-whisper-live</code> 把 WhisperLive 包成实时 STT server，提供 WebSocket live transcription 和 OpenAI-compatible REST。WhisperLive 本体则是 nearly-live implementation，支持 live microphone、预录音频、faster-whisper/TensorRT/OpenVINO backend、word timestamp、hotwords、speaker diarization 等高级路径。</p>
-<p>它们适合两种情况：</p>
-<ol>
-<li class="">已经有自己的录音入口、任务队列、对象存储、权限和摘要服务，只缺一个可替换 OpenAI Whisper API 的自建 STT；</li>
-<li class="">想给浏览器捕获、直播字幕或内部实时音频流接一个 WebSocket 转写服务。</li>
-</ol>
-<table><thead><tr><th>维度</th><th>docker-whisper</th><th>WhisperLive / docker-whisper-live</th></tr></thead><tbody><tr><td>输入</td><td>完整音频文件</td><td>麦克风/流式音频/文件</td></tr><tr><td>协议</td><td>HTTP REST，OpenAI-compatible</td><td>WebSocket + REST</td></tr><tr><td>适合</td><td>会后录音批处理、替换 Whisper API</td><td>实时字幕、浏览器/流媒体接入</td></tr><tr><td>缺口</td><td>UI、会议 bot、权限、摘要、归档</td><td>UI、会议 bot、权限、摘要、归档</td></tr><tr><td>初步结论</td><td><strong>可作为 STT microservice</strong></td><td><strong>可作为 live STT 底座</strong></td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="whisperxfaster-whisperwhispercpp底座不是产品">WhisperX、faster-whisper、whisper.cpp：底座不是产品<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#whisperxfaster-whisperwhispercpp%E5%BA%95%E5%BA%A7%E4%B8%8D%E6%98%AF%E4%BA%A7%E5%93%81" class="hash-link" aria-label="WhisperX、faster-whisper、whisper.cpp：底座不是产品的直接链接" title="WhisperX、faster-whisper、whisper.cpp：底座不是产品的直接链接" translate="no">​</a></h2>
-<p>Repo: <a href="https://github.com/m-bain/whisperX" target="_blank" rel="noopener noreferrer" class="">m-bain/whisperX</a>、<a href="https://github.com/SYSTRAN/faster-whisper" target="_blank" rel="noopener noreferrer" class="">SYSTRAN/faster-whisper</a>、<a href="https://github.com/ggml-org/whisper.cpp" target="_blank" rel="noopener noreferrer" class="">ggml-org/whisper.cpp</a>、<a href="https://github.com/openai/whisper" target="_blank" rel="noopener noreferrer" class="">openai/whisper</a></p>
-<p>这些项目非常重要，但不要把它们错当成“现成会议笔记服务”。</p>
-<ul>
-<li class=""><strong>WhisperX</strong>：提供 fast ASR、word-level timestamps、wav2vec2 alignment、VAD batching 和 pyannote diarization。它适合做高质量 pipeline 的核心。</li>
-<li class=""><strong>faster-whisper</strong>：CTranslate2 reimplementation，README 说明同等精度下可比 openai/whisper 更快、更省内存，并支持 int8、batch 等路径。很多 Web app 和服务都用它做底层转写。</li>
-<li class=""><strong>whisper.cpp</strong>：C/C++ 高性能端侧实现，支持 Apple Silicon、CPU、Vulkan、C API、Docker、多平台。它更适合边缘端、桌面本地化和嵌入式场景。</li>
-<li class=""><strong>openai/whisper</strong>：原始模型和 CLI，是生态基准，但生产服务化、队列、权限、diarization、摘要都需要另建。</li>
-</ul>
-<p>如果我们准备自研，比较自然的底座组合是：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">入口层：上传 / 会议 bot / 浏览器音频捕获</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">队列层：任务调度、重试、进度、资源隔离</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">ASR 层：faster-whisper 或 whisper.cpp</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">对齐/说话人：WhisperX + pyannote/sherpa-onnx 等</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">LLM 层：摘要、行动项、问答、标题、章节</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">知识层：Markdown / 文档 / 搜索 / 向量索引 / ChatArch workspace</span><br></div></code></pre></div></div>
-<p>但这已经是工程项目，不是“拿一个现成服务适配”。如果有 Vexa/Scriberr/Whishper 能覆盖 70% 需求，应该先复用产品，再把底座作为替换点。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="其他项目怎么放">其他项目怎么放<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E5%85%B6%E4%BB%96%E9%A1%B9%E7%9B%AE%E6%80%8E%E4%B9%88%E6%94%BE" class="hash-link" aria-label="其他项目怎么放的直接链接" title="其他项目怎么放的直接链接" translate="no">​</a></h2>
-<p>本轮还看了几个不是主线但有参考价值的项目。</p>
-<table><thead><tr><th>项目</th><th>价值</th><th>不作为主线原因</th></tr></thead><tbody><tr><td><a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" rel="noopener noreferrer" class="">Meetily</a></td><td>本地 privacy-first AI meeting assistant，实时转写、摘要、Ollama/OpenAI-compatible provider</td><td>更像桌面/本地 app，中心 API/后台服务不是第一定位</td></tr><tr><td><a href="https://github.com/chidiwilliams/buzz" target="_blank" rel="noopener noreferrer" class="">Buzz</a></td><td>成熟桌面转写/字幕工具，离线、live mic、speaker identification、CLI/watch folder/plugin</td><td>适合个人工作站，不是自建后台</td></tr><tr><td><a href="https://github.com/jhj0517/Whisper-WebUI" target="_blank" rel="noopener noreferrer" class="">Whisper-WebUI</a></td><td>Gradio 字幕/转写 WebUI，支持多后端、YouTube/mic、VAD、pyannote</td><td>实验/字幕 UI 好，团队服务化弱</td></tr><tr><td><a href="https://github.com/joinly-ai/joinly" target="_blank" rel="noopener noreferrer" class="">joinly</a></td><td>让 AI agent 加入会议，STT/TTS 模块化</td><td>重点是 agent 参会和交互，不是单纯录音转写</td></tr><tr><td><a href="https://github.com/zoom/arlo" target="_blank" rel="noopener noreferrer" class="">zoom/arlo</a></td><td>Zoom RTMS reference，无 bot live transcript 路线</td><td>Zoom-only 参考实现，不是通用产品</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="推荐路线先选产品形态再做-runtime-实践">推荐路线：先选产品形态，再做 runtime 实践<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E6%8E%A8%E8%8D%90%E8%B7%AF%E7%BA%BF%E5%85%88%E9%80%89%E4%BA%A7%E5%93%81%E5%BD%A2%E6%80%81%E5%86%8D%E5%81%9A-runtime-%E5%AE%9E%E8%B7%B5" class="hash-link" aria-label="推荐路线：先选产品形态，再做 runtime 实践的直接链接" title="推荐路线：先选产品形态，再做 runtime 实践的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-a会议实时-transcript">路线 A：会议实时 transcript<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-a%E4%BC%9A%E8%AE%AE%E5%AE%9E%E6%97%B6-transcript" class="hash-link" aria-label="路线 A：会议实时 transcript的直接链接" title="路线 A：会议实时 transcript的直接链接" translate="no">​</a></h3>
-<p>如果第一需求是“把会议链接给系统，系统自动入会并实时输出文字”，优先看 Vexa。这个问题的难点不只是模型，而是：</p>
-<ul>
-<li class="">各会议平台的加入流程；</li>
-<li class="">音频捕获和稳定性；</li>
-<li class="">实时 transcript stream；</li>
-<li class="">bot 权限、命名和合规提示；</li>
-<li class="">会后录音、转写和知识库归档。</li>
-</ul>
-<p>Vexa 至少把这些问题放在同一个产品边界里了。后续实践应该只问具体问题：目标平台能否稳定加入？Transcript 延迟和 speaker attribution 是否满足需求？API 能否接到 ChatArch 文档/任务/知识库？</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-b已有录音录屏处理后台">路线 B：已有录音/录屏处理后台<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-b%E5%B7%B2%E6%9C%89%E5%BD%95%E9%9F%B3%E5%BD%95%E5%B1%8F%E5%A4%84%E7%90%86%E5%90%8E%E5%8F%B0" class="hash-link" aria-label="路线 B：已有录音/录屏处理后台的直接链接" title="路线 B：已有录音/录屏处理后台的直接链接" translate="no">​</a></h3>
-<p>如果第一需求是“录音文件进来，系统自动转写、总结、问答、归档”，优先看 Scriberr。</p>
-<p>这条路线对 ChatArch 更容易快速落地：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">录音文件 / 会议录屏</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → Scriberr folder watcher / API</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → transcript + summary + notes</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → ChatArch 文档 / Feishu / Git-backed meeting notes</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  → 后续由 Agent 检索、问答、拆任务</span><br></div></code></pre></div></div>
-<p>它不解决自动进会，但把会后处理链路补得更完整。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-c媒体字幕和内容生产">路线 C：媒体字幕和内容生产<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-c%E5%AA%92%E4%BD%93%E5%AD%97%E5%B9%95%E5%92%8C%E5%86%85%E5%AE%B9%E7%94%9F%E4%BA%A7" class="hash-link" aria-label="路线 C：媒体字幕和内容生产的直接链接" title="路线 C：媒体字幕和内容生产的直接链接" translate="no">​</a></h3>
-<p>如果大量输入是视频、播客、课程、访谈、YouTube URL，Whishper 更自然。它的强项是字幕、翻译和编辑，而不是会议任务系统。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-d团队媒体资产库">路线 D：团队媒体资产库<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-d%E5%9B%A2%E9%98%9F%E5%AA%92%E4%BD%93%E8%B5%84%E4%BA%A7%E5%BA%93" class="hash-link" aria-label="路线 D：团队媒体资产库的直接链接" title="路线 D：团队媒体资产库的直接链接" translate="no">​</a></h3>
-<p>如果目标是把所有会议、访谈、音视频资料变成可搜索、可标注、可共享、可跨文件识别 speaker 的团队资产，OpenTranscribe 值得深读。但它应该先过安全/代码质量/部署复杂度审查，再做实践。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="路线-e自己做最小服务">路线 E：自己做最小服务<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E8%B7%AF%E7%BA%BF-e%E8%87%AA%E5%B7%B1%E5%81%9A%E6%9C%80%E5%B0%8F%E6%9C%8D%E5%8A%A1" class="hash-link" aria-label="路线 E：自己做最小服务的直接链接" title="路线 E：自己做最小服务的直接链接" translate="no">​</a></h3>
-<p>如果现成产品都太重，最小自研可以从 docker-whisper 或 WhisperLive 开始，而不是直接从模型代码开始。这样至少保留一个稳定的 HTTP/WebSocket 边界。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="第一轮-shortlist">第一轮 shortlist<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E7%AC%AC%E4%B8%80%E8%BD%AE-shortlist" class="hash-link" aria-label="第一轮 shortlist的直接链接" title="第一轮 shortlist的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>场景</th><th>第一候选</th><th>第二候选</th><th>暂不选原因</th></tr></thead><tbody><tr><td>自动入会 + 实时 transcript API</td><td><strong>Vexa</strong></td><td>joinly / Zoom Arlo 作参考</td><td>普通 WebUI 不负责进会</td></tr><tr><td>上传录音/录屏 + 摘要/问答</td><td><strong>Scriberr</strong></td><td>OpenTranscribe</td><td>Vexa 太重，Whishper 偏字幕</td></tr><tr><td>字幕/翻译/媒体处理</td><td><strong>Whishper</strong></td><td>Whisper-WebUI / Buzz</td><td>会议纪要要另补</td></tr><tr><td>团队媒体库 + speaker profile</td><td><strong>OpenTranscribe（观察）</strong></td><td>Scriberr</td><td>需要代码和安全深审</td></tr><tr><td>自建 STT API</td><td><strong>docker-whisper</strong></td><td>faster-whisper 自封装</td><td>不是会议产品</td></tr><tr><td>实时流式 STT</td><td><strong>WhisperLive / docker-whisper-live</strong></td><td>Vexa 的会议 API</td><td>没有会议文档层</td></tr><tr><td>自研 pipeline</td><td><strong>WhisperX + faster-whisper</strong></td><td>whisper.cpp</td><td>需要自己做产品层</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="下一步实践不要一次跑完所有项目">下一步实践不要一次跑完所有项目<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%B8%8B%E4%B8%80%E6%AD%A5%E5%AE%9E%E8%B7%B5%E4%B8%8D%E8%A6%81%E4%B8%80%E6%AC%A1%E8%B7%91%E5%AE%8C%E6%89%80%E6%9C%89%E9%A1%B9%E7%9B%AE" class="hash-link" aria-label="下一步实践不要一次跑完所有项目的直接链接" title="下一步实践不要一次跑完所有项目的直接链接" translate="no">​</a></h2>
-<p>静态调研已经足够把候选压到两个主线：<strong>Vexa</strong> 和 <strong>Scriberr</strong>。</p>
-<p>下一步如果要实践，建议拆成两个受控任务，而不是在本机把所有项目都启动一遍：</p>
-<ol>
-<li class=""><strong>Vexa 实时会议 transcript smoke</strong>：指定一台有足够资源的 Linux 主机，定义一个测试会议平台、一个会议链接、一个最长运行时间、一个 API readback 标准和清理方式。</li>
-<li class=""><strong>Scriberr 录音文件后台 smoke</strong>：准备一段公开/自有测试音频，验证上传/转写/diarization/summary/API/folder watcher 中最关键的一条链路。</li>
-</ol>
-<p>只有当这两个都不能满足需求，才进入自研 pipeline：docker-whisper / WhisperLive / WhisperX / faster-whisper / whisper.cpp 的组合工程化。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="主要一手来源">主要一手来源<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/audio-transcription-meeting-notes-open-source#%E4%B8%BB%E8%A6%81%E4%B8%80%E6%89%8B%E6%9D%A5%E6%BA%90" class="hash-link" aria-label="主要一手来源的直接链接" title="主要一手来源的直接链接" translate="no">​</a></h2>
-<ul>
-<li class=""><a href="https://github.com/Vexa-ai/vexa" target="_blank" rel="noopener noreferrer" class="">Vexa</a></li>
-<li class=""><a href="https://github.com/rishikanthc/Scriberr" target="_blank" rel="noopener noreferrer" class="">Scriberr</a></li>
-<li class=""><a href="https://github.com/pluja/whishper" target="_blank" rel="noopener noreferrer" class="">Whishper</a></li>
-<li class=""><a href="https://github.com/attevon-llc/OpenTranscribe" target="_blank" rel="noopener noreferrer" class="">OpenTranscribe</a></li>
-<li class=""><a href="https://github.com/hwdsl2/docker-whisper" target="_blank" rel="noopener noreferrer" class="">docker-whisper</a></li>
-<li class=""><a href="https://github.com/hwdsl2/docker-whisper-live" target="_blank" rel="noopener noreferrer" class="">docker-whisper-live</a></li>
-<li class=""><a href="https://github.com/collabora/WhisperLive" target="_blank" rel="noopener noreferrer" class="">WhisperLive</a></li>
-<li class=""><a href="https://github.com/m-bain/whisperX" target="_blank" rel="noopener noreferrer" class="">WhisperX</a></li>
-<li class=""><a href="https://github.com/SYSTRAN/faster-whisper" target="_blank" rel="noopener noreferrer" class="">faster-whisper</a></li>
-<li class=""><a href="https://github.com/ggml-org/whisper.cpp" target="_blank" rel="noopener noreferrer" class="">whisper.cpp</a></li>
-<li class=""><a href="https://github.com/openai/whisper" target="_blank" rel="noopener noreferrer" class="">openai/whisper</a></li>
-<li class=""><a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" rel="noopener noreferrer" class="">Meetily</a></li>
-<li class=""><a href="https://github.com/chidiwilliams/buzz" target="_blank" rel="noopener noreferrer" class="">Buzz</a></li>
-<li class=""><a href="https://github.com/jhj0517/Whisper-WebUI" target="_blank" rel="noopener noreferrer" class="">Whisper-WebUI</a></li>
-<li class=""><a href="https://github.com/joinly-ai/joinly" target="_blank" rel="noopener noreferrer" class="">joinly</a></li>
-<li class=""><a href="https://github.com/zoom/arlo" target="_blank" rel="noopener noreferrer" class="">zoom/arlo</a></li>
-</ul>]]></content>
-        <category label="transcription" term="transcription"/>
-        <category label="meeting-notes" term="meeting-notes"/>
-        <category label="self-hosted" term="self-hosted"/>
-        <category label="whisper" term="whisper"/>
-        <category label="open-source" term="open-source"/>
     </entry>
 </feed>
