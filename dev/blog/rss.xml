@@ -136,7 +136,7 @@
             <description><![CDATA[从一张快速排序教学图出发，用 ChatEnv 管理 CRS Key，通过 Python 示例或纯 curl 调用 image_generation，并把返回结果保存为 PNG。]]></description>
             <content:encoded><![CDATA[<p>给出一段描述，调用图像工具，得到一张可以直接放进课件的图片——这篇指南把这个过程落实到配置和代码。</p>
 <p>下面这张快速排序示意图，就是通过 <strong>CRS API Key → Responses API → <code>image_generation</code></strong> 实际生成的。客户端只需要服务地址和一把 CRS 调用 Key。</p>
-<p><img decoding="async" loading="lazy" alt="通过 CRS image_generation 工具生成的中文快速排序教学图" src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/assets/images/quicksort-d1547407a18259e29dd7bb6887cbd8e3.png" width="1536" height="1024" class="img_ev3q"></p>
+<p><img decoding="async" loading="lazy" src="https://share.public.wzhecnu.cn/images/chatblog/crs-image-generation/quicksort-9c42781894fb.png" alt="通过 CRS image_generation 工具生成的中文快速排序教学图" class="img_ev3q"></p>
 <p>本次生成使用 <code>gpt-5.5</code> 承载工具调用、<code>gpt-image-2</code> 绘图，返回一张 <strong>1536 × 1024 的 PNG</strong>，请求约 57 秒完成。图中的输入数组、基准 4、左右分区和最终排序均经过核对。</p>
 <p>本文给出两种使用方式：</p>
 <ol>
@@ -202,7 +202,7 @@
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="换一个主题保留同一套调用方式">换一个主题，保留同一套调用方式<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/crs-image-generation-guide#%E6%8D%A2%E4%B8%80%E4%B8%AA%E4%B8%BB%E9%A2%98%E4%BF%9D%E7%95%99%E5%90%8C%E4%B8%80%E5%A5%97%E8%B0%83%E7%94%A8%E6%96%B9%E5%BC%8F" class="hash-link" aria-label="换一个主题，保留同一套调用方式的直接链接" title="换一个主题，保留同一套调用方式的直接链接" translate="no">​</a></h3>
 <p>做其他图片时，先改提示词，再调整 <code>size</code> 和 <code>quality</code> 即可。流程图应给出节点和连线，教学图应提供准确的数据与步骤，封面图应描述主题、构图和配色。</p>
 <p>这张快速排序图采用的是<strong>分治概念示意</strong>：分区阶段保留 <code>[3, 2, 1]</code> 与 <code>[6, 8, 5, 7]</code>，下一步才展示递归排序结果。将算法事实先写清楚，模型才能把正确的内容转成清晰的画面。用于正式材料前，再核对图里的文字、数字和关系。</p>
-<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/downloads/crs-image-guide/quicksort.png">下载本次生成的 PNG 原图</a>
+<a href="https://share.public.wzhecnu.cn/images/chatblog/crs-image-generation/quicksort-9c42781894fb.png">下载本次生成的 PNG 原图</a>
 <p>相关项目：<a href="https://github.com/ChatArch/ChatImg" target="_blank" rel="noopener noreferrer" class="">ChatImg</a>、<a href="https://github.com/ChatArch/ChatEnv" target="_blank" rel="noopener noreferrer" class="">ChatEnv</a>、<a href="https://github.com/Wei-Shaw/claude-relay-service" target="_blank" rel="noopener noreferrer" class="">CRS</a>。</p>]]></content:encoded>
             <category>ChatImg</category>
             <category>CRS</category>
