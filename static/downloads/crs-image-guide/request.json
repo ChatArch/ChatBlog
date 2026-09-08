@@ -1,0 +1,30 @@
+{
+  "model": "gpt-5.5",
+  "instructions": "Use the image_generation tool to create the requested teaching infographic. Output a real image, not code or a textual substitute.",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "生成一张中文计算机算法教学信息图，主题“快速排序 Quicksort”。横向 3:2，白色背景，清晰矢量风，简洁蓝绿橙配色，大字号、工整中文字体，适合课堂投影。版面从上到下四行，用数字方块和方向明确的箭头展示。\n\n第一行标题：快速排序；副标题：选基准 → 分区 → 递归排序。\n第二行标注“① 选择基准”，原数组必须准确为：[6, 3, 8, 2, 5, 1, 7, 4]。最右侧的 4 是基准，橙色方块，标注“基准 pivot = 4”。\n第三行标注“② 分区”，严格呈现三个横向分组：左边蓝色数字方块 [3, 2, 1]，标签“小于 4”；中间橙色单独方块 [4]，标签“基准”；右边绿色数字方块 [6, 8, 5, 7]，标签“大于 4”。上一行箭头分流到这三个组。\n第四行标注“③ 递归处理左右两组”，从左组向下箭头到蓝色 [1, 2, 3]，中间橙色 [4] 保持固定，从右组向下箭头到绿色 [5, 6, 7, 8]。左右箭头旁标注“重复选基准与分区”。\n底部标注“④ 得到有序数组”，完整结果严格为：[1, 2, 3, 4, 5, 6, 7, 8]，用清晰连续的数字方块表示。下方附短句：“递归终止：子数组长度 ≤ 1”；“平均时间 O(n log n) · 最坏 O(n²)”。角落小字：“分治概念示意”。\n\n确保数组中每个数字出现次数正确，分区步骤不提前排序。精简文字，让数字、基准与箭头成为视觉主体。直接输出一张完整教学图片。\n"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "image_generation",
+      "model": "gpt-image-2",
+      "action": "generate",
+      "quality": "medium",
+      "size": "1536x1024",
+      "partial_images": 1
+    }
+  ],
+  "tool_choice": {
+    "type": "image_generation"
+  },
+  "stream": true,
+  "store": false
+}
