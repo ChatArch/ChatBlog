@@ -17,16 +17,22 @@ printf '%s: %s %s\n' Authorization Bearer "$CRS_API_KEY" |
     "$CRS_API_BASE/responses" --output "$RESPONSE"
 
 jq -rRn '
-  [inputs
-   | select(startswith("data: "))
-   | .[6:] | fromjson?
-   | if .type == "response.output_item.done" then .item
-     elif .type == "response.completed" then .response.output[]?
-     else empty end
-   | select(.type == "image_generation_call")
-   | .result
-   | select(type == "string" and length > 0)]
-  | last // error("No final image in the stream; inspect the SSE response")
+  [inputs | select(startswith("data: ")) | .[6:] | fromjson?] as $events
+  | if any($events[];
+           .type == "error" or .type == "response.failed"
+           or .type == "response.incomplete")
+       or ([$events[] | select(.type == "response.completed")
+            | .response.status] | last) != "completed"
+    then error("No successfully completed response")
+    else
+      [$events[]
+       | if .type == "response.output_item.done" then .item
+         elif .type == "response.completed" then .response.output[]?
+         else empty end
+       | select(.type == "image_generation_call")
+       | .result | select(type == "string" and length > 0)]
+      | last // error("No final image in the stream")
+    end
 ' "$RESPONSE" | base64 --decode > "$OUTPUT"
 [[ -s "$OUTPUT" ]]
 printf 'Image saved to %s\n' "$OUTPUT"
