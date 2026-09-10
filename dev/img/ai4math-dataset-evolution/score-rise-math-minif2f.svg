@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1410" viewBox="0 0 960 1410" role="img" aria-labelledby="title desc">
+<title id="title">分数上升：分别看历史节点</title><desc id="desc">不同测试集分面板，不同预算不连线；这些节点不是统一口径的 SOTA 曲线。</desc>
+<g font-family="&quot;PingFang SC&quot;, &quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, sans-serif">
+<rect x="0" y="0" width="960" height="1410" rx="22" fill="#f7f9fc" stroke="#f7f9fc"/>
+<text x="40" y="58" font-size="32" fill="#172b4d" font-weight="700">分数上升：分别看历史节点</text>
+<text x="40" y="96" font-size="19" fill="#52657b" font-weight="400">不同测试集分面板，不同预算不连线；这些节点不是统一口径的 SOTA 曲线。</text>
+<rect x="38" y="128" width="884" height="342" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="162" font-size="23" fill="#d25345" font-weight="700">A  完整 MATH 测试集</text>
+<text x="60" y="193" font-size="20" fill="#172b4d" font-weight="600">2021-03  原论文最佳基线</text>
+<text x="60" y="219" font-size="18" fill="#52657b" font-weight="400">accuracy</text>
+<rect x="60" y="232" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="232" width="51.888000000000005" height="13" rx="6" fill="#d25345" stroke="#d25345"/>
+<text x="830" y="245" font-size="22" fill="#d25345" font-weight="700">6.9%</text>
+<text x="60" y="289" font-size="20" fill="#172b4d" font-weight="600">2022-06  Minerva 540B</text>
+<text x="60" y="315" font-size="18" fill="#52657b" font-weight="400">majority vote；单次 33.6%</text>
+<rect x="60" y="328" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="328" width="378.256" height="13" rx="6" fill="#d25345" stroke="#d25345"/>
+<text x="830" y="341" font-size="22" fill="#d25345" font-weight="700">50.3%</text>
+<text x="60" y="385" font-size="20" fill="#172b4d" font-weight="600">2024-02  DeepSeekMath-RL 7B</text>
+<text x="60" y="411" font-size="18" fill="#52657b" font-weight="400">self-consistency 64；top-1 51.7%</text>
+<rect x="60" y="424" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="424" width="457.96799999999996" height="13" rx="6" fill="#d25345" stroke="#d25345"/>
+<text x="830" y="437" font-size="22" fill="#d25345" font-weight="700">60.9%</text>
+<rect x="38" y="490" width="884" height="246" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="524" font-size="23" fill="#007f82" font-weight="700">B  MATH-500：另一个测试集合</text>
+<text x="60" y="555" font-size="20" fill="#172b4d" font-weight="600">2025-01  DeepSeek-R1</text>
+<text x="60" y="581" font-size="18" fill="#52657b" font-weight="400">论文报告 pass@1</text>
+<rect x="60" y="594" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="594" width="731.6959999999999" height="13" rx="6" fill="#007f82" stroke="#007f82"/>
+<text x="830" y="607" font-size="22" fill="#007f82" font-weight="700">97.3%</text>
+<text x="60" y="651" font-size="20" fill="#172b4d" font-weight="600">2026-08  AA 榜单快照：GPT-5 high</text>
+<text x="60" y="677" font-size="18" fill="#52657b" font-weight="400">独立评测；此日期不是模型发布日期</text>
+<rect x="60" y="690" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="690" width="747.488" height="13" rx="6" fill="#007f82" stroke="#007f82"/>
+<text x="830" y="703" font-size="22" fill="#007f82" font-weight="700">99.4%</text>
+<rect x="38" y="756" width="884" height="534" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="790" font-size="23" fill="#3066be" font-weight="700">C  miniF2F-test：不同搜索预算</text>
+<text x="60" y="821" font-size="20" fill="#172b4d" font-weight="600">2021/2022  原论文 Lean GPT-f</text>
+<text x="60" y="847" font-size="18" fill="#52657b" font-weight="400">Pass@8；Pass@1 为 24.6%</text>
+<rect x="60" y="860" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="860" width="219.58399999999997" height="13" rx="6" fill="#3066be" stroke="#3066be"/>
+<text x="830" y="873" font-size="22" fill="#3066be" font-weight="700">29.2%</text>
+<text x="60" y="917" font-size="20" fill="#172b4d" font-weight="600">2022-05  HTPS / Evariste</text>
+<text x="60" y="943" font-size="18" fill="#52657b" font-weight="400">pass@64</text>
+<rect x="60" y="956" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="956" width="308.32" height="13" rx="6" fill="#3066be" stroke="#3066be"/>
+<text x="830" y="969" font-size="22" fill="#3066be" font-weight="700">41.0%</text>
+<text x="60" y="1013" font-size="20" fill="#172b4d" font-weight="600">2024-08  DeepSeek-Prover-V1.5</text>
+<text x="60" y="1039" font-size="18" fill="#52657b" font-weight="400">RL + RMaxTS 搜索配置</text>
+<rect x="60" y="1052" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="1052" width="477.52" height="13" rx="6" fill="#3066be" stroke="#3066be"/>
+<text x="830" y="1065" font-size="22" fill="#3066be" font-weight="700">63.5%</text>
+<text x="60" y="1109" font-size="20" fill="#172b4d" font-weight="600">2025-04  DeepSeek-Prover-V2</text>
+<text x="60" y="1135" font-size="18" fill="#52657b" font-weight="400">作者报告的整体证明流程通过率</text>
+<rect x="60" y="1148" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="1148" width="668.528" height="13" rx="6" fill="#3066be" stroke="#3066be"/>
+<text x="830" y="1161" font-size="22" fill="#3066be" font-weight="700">88.9%</text>
+<text x="60" y="1205" font-size="20" fill="#172b4d" font-weight="600">2025-08  Goedel-Prover-V2-32B</text>
+<text x="60" y="1231" font-size="18" fill="#52657b" font-weight="400">Pass@32 + self-correction</text>
+<rect x="60" y="1244" width="752" height="13" rx="6" fill="#e4eaf1" stroke="#e4eaf1"/>
+<rect x="60" y="1244" width="679.808" height="13" rx="6" fill="#3066be" stroke="#3066be"/>
+<text x="830" y="1257" font-size="22" fill="#3066be" font-weight="700">90.4%</text>
+<text x="40" y="1350" font-size="19" fill="#52657b" font-weight="400">来源：原论文、作者报告与 Artificial Analysis；正文逐项列出指标和来源。</text>
+<text x="40" y="1380" font-size="19" fill="#52657b" font-weight="400">完整 MATH ≠ MATH-500；pass@1 ≠ pass@k；核验通过也不自动证明题意忠实。</text>
+</g></svg>
