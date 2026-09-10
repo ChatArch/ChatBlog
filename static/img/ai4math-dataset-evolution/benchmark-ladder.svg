@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1000" viewBox="0 0 960 1000" role="img" aria-labelledby="title desc">
+<title id="title">两条轴：题目内容 × 验证方式</title><desc id="desc">形式化并不等于更难；不同数据集也不能排成统一能力排行榜。</desc>
+<g font-family="&quot;PingFang SC&quot;, &quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, sans-serif">
+<rect x="0" y="0" width="960" height="1000" rx="22" fill="#f7f9fc" stroke="#f7f9fc"/>
+<text x="40" y="58" font-size="32" fill="#172b4d" font-weight="700">两条轴：题目内容 × 验证方式</text>
+<text x="40" y="96" font-size="19" fill="#52657b" font-weight="400">形式化并不等于更难；不同数据集也不能排成统一能力排行榜。</text>
+<rect x="38" y="130" width="884" height="98" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="160" font-size="22" fill="#3066be" font-weight="700">GSM8K</text>
+<text x="60" y="190" font-size="20" fill="#172b4d" font-weight="400">小学至早期代数应用题</text>
+<text x="60" y="216" font-size="19" fill="#52657b" font-weight="400">开放式答案 + 解题过程；不是选择题</text>
+<rect x="38" y="242" width="884" height="98" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="272" font-size="22" fill="#3066be" font-weight="700">MATH / MATH-500</text>
+<text x="60" y="302" font-size="20" fill="#172b4d" font-weight="400">高中竞赛：代数、几何、数论等</text>
+<text x="60" y="328" font-size="19" fill="#52657b" font-weight="400">最终答案评测；完整测试集与 500 题子集分开</text>
+<rect x="38" y="354" width="884" height="98" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="384" font-size="22" fill="#3066be" font-weight="700">miniF2F</text>
+<text x="60" y="414" font-size="20" fill="#172b4d" font-weight="400">课程题与竞赛题的形式化命题</text>
+<text x="60" y="440" font-size="19" fill="#52657b" font-weight="400">证明通过 proof assistant；固定测试划分</text>
+<rect x="38" y="466" width="884" height="98" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="496" font-size="22" fill="#3066be" font-weight="700">Compfiles / MathOlympiadBench</text>
+<text x="60" y="526" font-size="20" fill="#172b4d" font-weight="400">IMO、shortlist 与其他奥赛题</text>
+<text x="60" y="552" font-size="19" fill="#52657b" font-weight="400">持续建设的 Lean 仓库 / 人工核验的评测题集</text>
+<rect x="38" y="578" width="884" height="98" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="608" font-size="22" fill="#3066be" font-weight="700">PutnamBench</text>
+<text x="60" y="638" font-size="20" fill="#172b4d" font-weight="400">更广的本科数学竞赛知识</text>
+<text x="60" y="664" font-size="19" fill="#52657b" font-weight="400">Lean、Isabelle、Coq；注意题库版本与答案模式</text>
+<rect x="38" y="690" width="884" height="98" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="720" font-size="22" fill="#3066be" font-weight="700">FrontierMath</text>
+<text x="60" y="750" font-size="20" fill="#172b4d" font-weight="400">本科高难题至研究级数学</text>
+<text x="60" y="776" font-size="19" fill="#52657b" font-weight="400">专家原创、保留题集、程序辅助答案验证</text>
+<rect x="38" y="802" width="884" height="98" rx="14" fill="white" stroke="#dbe3ed"/>
+<text x="60" y="832" font-size="22" fill="#3066be" font-weight="700">LeanEval v1</text>
+<text x="60" y="862" font-size="20" fill="#172b4d" font-weight="400">困难数学形式化任务</text>
+<text x="60" y="888" font-size="19" fill="#52657b" font-weight="400">冻结集合 + 可信题意 + Comparator + 提交回放</text>
+<text x="40" y="957" font-size="19" fill="#52657b" font-weight="400">Compfiles 的库覆盖率 ≠ 模型解题率；LeanEval 的提交数 ≠ 统一 pass@1。</text>
+</g></svg>

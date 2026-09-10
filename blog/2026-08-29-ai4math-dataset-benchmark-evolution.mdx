@@ -1,0 +1,315 @@
+---
+title: "AI4Math 的数据集十年：从小学应用题到 Lean Eval"
+date: 2026-08-29T18:40:00+08:00
+slug: ai4math-dataset-benchmark-evolution
+tags: [ai-math, benchmark, dataset, lean, theorem-proving, reasoning]
+description: "从 GSM8K、MATH、miniF2F 到 Compfiles、PutnamBench、FrontierMath、LeanEval v1，沿着数据集内容看 AI4Math 研究重点如何从最终答案转向过程、验证器、形式化证明、live eval 和研究级数学。"
+---
+
+如果从传统数学史看，数学的发展可以讲成代数、几何、分析、概率、拓扑、逻辑不断分化又统一。但如果从计算机和 AI4Math 看，近十年的主线更像一部**数据集形态变化史**。
+
+一开始，AI 做数学主要是在回答题：给出最终答案，算 exact match。后来，数据集开始要求模型写过程、生成多条解法、接受 verifier 打分、调用代码执行器、进入 Lean/Coq/Isabelle 这样的 proof assistant，最后又发展出 live leaderboard、去污染评测、研究级问题和提交制 formalization 平台。
+
+换句话说，前沿不只是“模型更会做题了”，而是数学数据集本身从静态题库变成了可执行、可验证、可审计、可持续更新的数学工作流。
+
+<!-- truncate -->
+
+:::tip 一句话结论
+AI4Math 的 benchmark 正在从 `problem -> answer` 迁移到 `problem -> process -> verifier -> environment -> live workflow`。GSM8K 和 MATH 证明了自然语言数学推理的缺口；miniF2F 把答案变成可验证证明；PutnamBench、FrontierMath、MathArena、LeanEval v1 则说明：前沿已经转向更难、更鲜、更形式化、更像真实研究过程的评测。
+:::
+
+:::info 时间与比较口径
+本文沿用 **2026-08-29 的资料与榜单快照**，不是实时排行榜。MATH 与 MATH-500、不同 proof assistant、不同 Pass@k 和搜索预算分别标注；快照日期不等于模型发布日期。各条路线并行发展，不是后一个完全取代前一个。
+:::
+
+GSM8K 是开放式应用题，不是选择题；MATH 已经是高中竞赛问题，也不只是更复杂的四则运算。
+
+### 2015–2020：从文字列式到解题程序
+
+早期工作集中于把应用题转换成算式或方程，例如 [2015 年的算术应用题研究](https://aclanthology.org/D15-1202/)。[AQuA-RAT（2017）](https://arxiv.org/abs/1705.04146) 为选择题提供自然语言解释；[MathQA（2019）](https://arxiv.org/abs/1905.13319) 则引入操作序列表示。这个阶段已经出现“过程数据”，但规模、题目多样性与标注质量仍是主要限制。随后 GSM8K 和 MATH 把挑战集中到更稳定的多步推理与竞赛解题上。
+
+## 先看总图：数据集的六次换挡
+
+![AI4Math 数据集六次换挡](/img/ai4math-dataset-evolution/ai4math-stage-timeline.svg)
+
+图中时间采用分阶段展开，非等距时间轴；越接近近年，粒度越细。关键是“数据对象”在变：
+
+```text
+题目 + 答案
+-> 题目 + 标准解 / CoT
+-> 多条解题轨迹 + verifier
+-> 代码执行 / 形式化证明环境
+-> 动态、去污染、live evaluation
+-> 研究级数学 + 提交制 formalization workflow
+```
+
+所以我们不应只问“哪个模型在 MATH 上多少分”，还要问：这个 benchmark 到底把数学能力定义成什么？是最终答案？自然语言推理？可执行程序？Lean 证明？还是在持续更新的题库里提交可复现 artifact？
+
+## 1. 小学应用题阶段：GSM8K 把“简单数学也会翻车”钉在墙上
+
+代表数据集：[GSM8K](https://arxiv.org/abs/2110.14168)。
+
+GSM8K 只有小学到初中早期的算术和代数概念，规模约 8.5K，7.5K train / 1K test。题目通常需要 2 到 8 步，重点不是高等数学，而是读懂自然语言、分解条件、连续计算、不要中途跑偏。
+
+这类数据集把研究重点从“会不会算”推到“能不能稳定地多步推理”。它还很早就引入了 verifier 的思路：生成多个候选解，再训练 verifier 判断哪条解更可能正确。
+
+这一步很重要，因为它预告了后来 AI4Math 的一条主线：**数学的价值不只是答案可检查，而是 verifier 可以成为训练和搜索的一部分。**
+
+## 2. 竞赛题阶段：MATH 把 benchmark 从算术推进到 problem solving
+
+代表数据集：[MATH](https://arxiv.org/abs/2103.03874)。
+
+MATH 是一个转折点。它有 12,500 道高中竞赛数学题，来自 AMC、AIME 等来源；题目覆盖 prealgebra、algebra、number theory、counting and probability、geometry、intermediate algebra、precalculus，并带有 difficulty level 1 到 5。每题有 step-by-step solution 和 boxed final answer。
+
+MATH 的内容设计改变了研究重点：
+
+- 不再只测 plug-and-chug calculation；
+- 要求模型掌握启发式 problem solving；
+- LaTeX、文本图形、标准解成为训练信号；
+- exact answer 仍然便宜可评测，但过程开始变重要。
+
+MATH 提出时，最大的模型也只有个位数准确率。到 2025-2026，MATH-500 这类代表子集已经接近饱和。这是 AI benchmark 最典型的一条曲线：**今天的 frontier，明天的 sanity check。**
+
+## 3. 形式化阶段：miniF2F 把“答对”变成“证明可检查”
+
+代表数据集：[miniF2F](https://arxiv.org/abs/2109.00110)。
+
+MATH 的答案可以 exact-match，但自然语言证明本身仍然难以自动判定。miniF2F 走了另一条路：把 Olympiad-level problem statements 形式化到 proof assistant 里，让机器检查证明是否通过。
+
+miniF2F v1 有 488 个 formal statements，244 validation / 244 test，覆盖 Lean、Metamath、Isabelle，HOL Light 部分支持；来源包括 AMC、AIME、IMO、MATH 和课程材料。
+
+这里的数据字段已经变了：
+
+```text
+problem, solution, answer
+-> formal statement, proof state, tactic, theorem library, kernel check
+```
+
+这使得 AI4Math 研究重点从“生成一个像证明的文本”转向“生成一个 proof assistant 接受的 artifact”。模型不再只是在写答案，而是在和 Lean/Metamath/Isabelle 的逻辑环境交互。
+
+## 4. IMO 竞赛级：Compfiles 和 MathOlympiadBench 把题库变成 Lean 资产
+
+Compfiles 不是带固定测试划分和统一刷榜口径的题库，而是一个持续增长的 Lean 形式化仓库：[Compfiles](https://dwrensha.github.io/compfiles/) 把 olympiad-style problems 和完整解法形式化到 Lean 4 中。它更像一座正在建设的“竞赛数学 proof artifact 仓库”。
+
+后来的 [MathOlympiadBench](https://huggingface.co/datasets/Goedel-LM/MathOlympiadBench) 明确吸收了这条线：它包含 360 个 human-verified Olympiad-level formalization，其中包括 158 道 IMO 问题、131 道 IMO shortlist 问题、68 道 national olympiad 问题和 3 道 puzzles，来源包括 Compfiles 和 IMOSLLean4。
+
+这代表一个新的研究重点：
+
+- 不是只把题面放进 benchmark；
+- 而是要把题面、Lean formal statement、是否 solved、proof code、Mathlib compatibility 都纳入数据；
+- 数据质量问题也变成研究对象，例如题意不完整、多文件分布、一个问题多个 theorem、formal statement 与 informal statement 不匹配。
+
+到了这里，数据集不再只是“题库”，而是 formal mathematics library 的一部分。
+
+## 5. 本科竞赛级：PutnamBench 把难度和多语言形式化一起拉高
+
+代表数据集：[PutnamBench](https://arxiv.org/abs/2407.11214)。
+
+PutnamBench 面向 William Lowell Putnam Mathematical Competition，也就是北美最有名的本科数学竞赛。它比高中 Olympiad 更接近大学数学，需要分析、抽象代数、线性代数、数论、组合等更广的本科知识。
+
+早期论文版本包含 640 个 Putnam problems 的多语言 formalization；2026-08-29 的仓库快照统计为 1724 个 manually-crafted formalizations，覆盖 672 个 Lean 4、640 个 Isabelle、412 个 Coq formalizations。
+
+PutnamBench 的意义是：
+
+- 它不是自然语言 answer-only；
+- 它不是单一 proof assistant；
+- 它把同一数学问题推向 Lean、Isabelle、Coq；
+- 它让 benchmark 既测数学推理，也测 formal language proficiency。
+
+原论文的 baseline 非常低：GPT-4、COPRA、Sledgehammer、CoqHammer 等方法合计只证明了少数问题。到 2026 的 public leaderboard，PutnamBench 已经出现一次爆发：一些系统在 Lean 版本上从 single digits / dozens solved 跳到 hundreds solved，甚至接近全覆盖。但这里必须非常谨慎：compute budget、是否带 factored answer、版本、提交规则都不同，所以更适合把它看成“形式化数学 benchmark 的压力计”，而不是简单排名。
+
+## 6. 研究级数学：FrontierMath 说明静态竞赛题已经不够了
+
+代表数据集：[FrontierMath](https://arxiv.org/abs/2411.04872)，以及 Epoch AI 的 [FrontierMath Tiers 1-4](https://epoch.ai/frontiermath/tiers-1-4/about)。
+
+FrontierMath 的设计动机很直接：GSM8K、MATH、MATH-500 被刷高以后，模型需要更难、更不容易污染的数学问题。FrontierMath 由专家数学家编写和审查，题目覆盖现代数学多个分支，强调 original、unpublished、guessproof。
+
+根据 Epoch 的版本说明：
+
+- 2024-10-22 版本有 119 题，是论文分析版本；
+- 2024-11-26 版本有 180 题；OpenAI 2024-12-20 的 o3 announcement 声称在该版本上达到 25.2%；
+- 2025-02-28 版本扩到 300 core dataset；
+- 2025-06-30 又有 Tier 4 extreme difficulty expansion。
+
+FrontierMath 代表的是另一个方向：不再靠公开固定题库，而是用专家原创、隐藏 held-out、难猜答案和版本化策略对抗污染。数学 benchmark 从“考试卷”变成“研究级能力探针”。
+
+## 7. Lean Eval v1：benchmark 变成 public submission workflow
+
+代表平台：[Lean Eval](https://lean-lang.org/eval/) 和 [leanprover/lean-eval](https://github.com/leanprover/lean-eval)。
+
+Lean Eval 是更晚近的一步。它不是一个普通静态 PDF benchmark，而是 comparator-based Lean formal mathematics eval。benchmark authors 在共享 Lean modules 中写 trusted problem statements，系统为每个 problem 生成 comparator workspace；submission 是否 solved，由 comparator 接受与否决定。
+
+2026-08-29 读取的 [官方榜单数据](https://lean-lang.org/eval/site-data/v2/groups/formalization-evaluation.json) 中，LeanEval v1 是于 **2026-08-20 发布的 128 题冻结集合**；站点提供问题历史、最近提交与回放状态。[Lean 官方时间线](https://lean-lang.org/)将 Lean Eval 的公开发布列在 **2026 年 6 月**。这两个日期分别对应平台上线和 v1 冻结集合，不能混为“年初发布了同一个基准”。
+
+榜单的提交可能来自有人类参与的系统，且不一定共享推理预算；已接受证明数不是统一条件下的模型 pass@1，也不自动意味着发现了新定理。
+
+这意味着数据集进一步变成 workflow：
+
+```text
+problem set
+-> trusted theorem modules
+-> comparator workspace
+-> public submissions
+-> accepted solutions
+-> replay / lifecycle / problem history
+```
+
+这是 AI4Math 很可能长期演化的形态：不再只有“模型报告里的一张表”，而是一个持续运行的公共验证系统。
+
+## 数据集定位：难度和验证方式是两条轴
+
+![AI4Math 数据集内容与验证方式对照](/img/ai4math-dataset-evolution/benchmark-ladder.svg)
+
+这些数据集不能严格排成一条难度阶梯。GSM8K、MATH 和 Putnam 描述题目内容；miniF2F 同时限定形式化输入；LeanEval 更强调可信提交和验证协议。图中把题目内容与验收方式并列，避免把“验证更严格”误当成“每一题都更难”。
+
+| 层级 | 代表 | 数据内容 | 验收层 |
+|---|---|---|---|
+| 小学 word problem | GSM8K | 题面、自然语言解、最终答案 | answer parser / verifier |
+| 高中竞赛 | MATH, MATH-500 | LaTeX、标准解、boxed answer、difficulty | exact match / symbolic equivalence |
+| 形式化 Olympiad | miniF2F | formal statement、proof state、tactic | Lean / Metamath / Isabelle kernel |
+| IMO 题库资产 | Compfiles, MathOlympiadBench | Lean problem、solution code、solved flag | Mathlib + Lean checker |
+| 本科竞赛 | PutnamBench | Lean / Isabelle / Coq formalizations | multi-proof-assistant verification |
+| 研究级数学 | FrontierMath, Riemann-Bench, Soohak | expert-created unpublished problems | hidden set、versioning、专家审查 |
+| 提交制 formalization | LeanEval v1 | trusted module、comparator、submission、replay | comparator acceptance + lifecycle |
+
+这也是为什么旧 benchmark 被刷满以后不会消失。它们会降级成低阶 sanity check，同时逼出更高层的 benchmark。
+
+## 分数如何上升：MATH family 和 miniF2F 的历史节点
+
+![MATH、MATH-500 与 miniF2F 分开呈现的历史分数节点](/img/ai4math-dataset-evolution/score-rise-math-minif2f.svg)
+
+图中将 **完整 MATH 测试集、MATH-500 子集、miniF2F** 分成三个面板；不同预算的分数不连成同口径增长曲线。它展示已报告的历史节点，不宣称是完整 SOTA 纪录。
+
+第一条是 MATH / MATH-500 family：自然语言数学 benchmark 从“做不了”到“接近刷满”。
+
+| 时间 | 模型/事件 | 指标 | 分数 |
+|---|---|---|---:|
+| 2021-03 | MATH 原论文 baseline | MATH accuracy | 3.0%-6.9% |
+| 2022-06 | Minerva 540B | MATH single / majority vote | 33.6% / 50.3% |
+| 2024-02 | DeepSeekMath-RL 7B | MATH top-1 / self-consistency 64 | 51.7% / 60.9% |
+| 2025-01 | DeepSeek-R1 / OpenAI o1-1217 | MATH-500 pass@1 | 97.3% / 96.4% |
+| 2026-08 | Artificial Analysis snapshot | MATH-500 score | GPT-5 high 99.4%, o3 99.2% |
+
+这里不能把 full MATH 和 MATH-500 当作完全同口径比较。但作为一个 family，它非常清楚地说明：静态自然语言竞赛题一旦进入 CoT、majority vote、specialized pretraining、RL reasoning model 的主航道，就会快速从 frontier benchmark 变成 display benchmark。
+
+第二条是 miniF2F：形式化证明 benchmark 从“proof code 很难写”到“被 proof search 和 verifier feedback 迅速推高”。
+
+| 时间 | 模型/事件 | 指标 | 分数 |
+|---|---|---|---:|
+| 2021-09 / 2022-02 | miniF2F 原论文 | miniF2F-test Pass@1 / Pass@8 | Lean GPT-f 24.6% / 29.2%；Metamath GPT-f 1.3% / 1.6% |
+| 2022-05 | HyperTree Proof Search / Evariste | miniF2F-test pass@64 | 41.0% |
+| 2024-08 | DeepSeek-Prover-V1.5-RL + RMaxTS | miniF2F-test | 63.5% |
+| 2025-04 | DeepSeek-Prover-V2-671B | miniF2F-test pass ratio | 88.9% |
+| 2025-08 | Goedel-Prover-V2-32B | miniF2F Pass@32 / self-correction | 88.0% / 90.4% |
+
+miniF2F 的 caveat 更大：Pass@1、Pass@32、Pass@64、Pass@1024 不是同一回事；Lean 版本、statement 版本、timeout、proof search budget、是否有 self-correction 都会影响分数。因此，miniF2F 的“被刷高”更准确的解释不是“形式化数学解决了”，而是“固定小 benchmark 在强 search + verifier + data synthesis 下不再足够区分”。
+
+## 数据集内容如何反推研究重点
+
+如果把这些 benchmark 的内容拆开，会看到 AI4Math 研究重点至少发生了六次迁移。
+
+### 从答案监督到标准解监督
+
+早期问题是：模型能不能给出正确答案？GSM8K 和 MATH 都是 answer-checkable，但它们加入了自然语言解法，让模型不只学答案，还学中间步骤。
+
+这推动了 CoT、scratchpad、majority voting。模型开始被要求“先想，再答”。
+
+### 从标准解到过程监督
+
+GSM8K 原论文的 verifier 用最终答案正确与否构造监督；[PRM800K](https://arxiv.org/abs/2305.20050) 则收集步骤级人工反馈。这是结果监督与过程监督的区别，不能把两者都称为逐步正确性标注。研究重点变成：哪一步错？如何给中间过程打分？reward model 是不是会奖励看起来像推理但其实错误的步骤？
+
+### 从自然语言到可执行验证
+
+代码 benchmark、APPS、HumanEval、LiveCodeBench 让数学推理进入 test cases；miniF2F、ProofNet、LeanDojo 让证明进入 proof kernel。共同点是：评测器变硬了，不再完全依赖人类读自然语言。
+
+### 从 benchmark 到训练数据工程
+
+OpenWebMath、Proof-Pile-2、DeepSeekMath、OpenThoughts、Big-Math、DeepMath-103K、CrystalMath 说明数据集不只是评测模型，也直接塑造模型。数据字段开始关心 source、dedup、difficulty、teacher、rollout、verifier result、decontamination。
+
+### 从固定题库到 live / 去污染
+
+MATH 和 GSM8K 公开并长期使用后，训练测试重叠的风险越来越值得审计；高分本身并不能证明污染。MathArena、LiveCodeBench、AIME fresh evaluation、GSM-SEM、DynaSolidGeo 的共同点是让题目随时间更新，或者让题目通过 semantic variant / dynamic generation 抵抗 memorization。
+
+### 从解题到可复用 proof artifact
+
+LeanEval、PutnamBench、FormalMATH、Compfiles、MathOlympiadBench 把“做对一道题”变成“产出可验证、可复现、可进入库的 artifact”。这一步最接近真实数学研究，因为数学的目标不是一次性答题，而是可积累的可靠知识。
+
+## Hugging Face trending 给出的外部信号
+
+[Hugging Face Papers Trending](https://huggingface.co/papers/trending) 可作为新论文发现入口，但综合热榜不是 AI for Math 的领域统计。本文 2026-08-29 快照中的 agent、verifier 与评测框架论文只能提供邻近方向线索，不能据此断言数学研究的主流占比。
+
+更直接的证据来自本文介绍的数据与评测协议：
+
+- agent 可以长时间搜索证明；
+- verifier 决定 reward 和筛选；
+- harness 决定 evaluation 是否可信；
+- document/math parsing 决定数学语料能不能保留公式结构；
+- live benchmark 决定模型是否只是记住旧题。
+
+所以现在看 AI4Math，不能只看数学题库，还要看它背后的工具链：Lean server、compiler feedback、retrieval、answer parser、rollout budget、submission workflow、benchmark versioning。
+
+## 当前前沿到底在做什么
+
+我会把 2025-2026 的主流工作压成七个方向。
+
+1. **Live / uncontaminated evaluation。** 代表是 MathArena、LiveCodeBench、AIME/USAMO fresh evaluation。目标是解决固定题库污染和刷榜。
+2. **Research-level math。** 代表是 FrontierMath、Riemann-Bench、Soohak。目标是把难度从考试题推向专家原创和研究级问题。
+3. **Formal theorem proving。** 代表是 miniF2F 后的 FormalMATH、CombiBench、PutnamBench、MathOlympiadBench、LeanEval。目标是生成 machine-checkable proof artifact。
+4. **Verifier / reward data。** 代表是 DeepMath-103K、Big-Math、CrystalMath、FormalRewardBench、AIME CoT Verification。目标是把数学变成 RLVR 环境。
+5. **Benchmark audit。** 代表是 miniF2F-Lean Revisited、Faults in Formal Benchmarking、GSM-SEM。目标是发现 benchmark statement defects、过度简化、语义不匹配和 evaluation loopholes。
+6. **Multimodal and geometry。** 代表是 MathVista、MathVerse、SolidGeo、DynaSolidGeo、MathNet、Math-Vision Diagrams。目标是处理图形、空间、几何构造和视觉依赖。
+7. **Code-as-math。** 代表是 CodeContests、LiveCodeBench、AetherCode、OJBench、OIBench、rStar-Coder。目标是用测试、执行和竞赛编程把推理变成可验证程序。
+
+## 这条时间线给我们的启发
+
+第一，多个经典 benchmark 对最强系统的区分度正在下降。GSM8K 和 MATH 仍然重要，但它们已经从 frontier benchmark 变成基础能力检查。MATH-500 接近 99% 后，再报一个 MATH 分数已经说明不了太多。
+
+第二，分数越来越依赖 evaluation protocol。尤其是 miniF2F、PutnamBench、LeanEval：Pass@1 和 Pass@1024 不是同一个能力；单次生成、tree search、self-correction、human-in-the-loop、compiler feedback 的边界必须写清楚。
+
+第三，前沿数学能力越来越像系统能力。模型权重只是其中一部分，真正决定效果的是：数据、检索、工具、verifier、proof assistant、budget、版本控制、submission rules、人工审计。
+
+第四，形式化是 AI4Math 的一条重要可信出口，而不是唯一出口。Lean/Coq/Isabelle 证明与 Comparator 回放加强了机器验证；自然语言研究仍依赖专家审查。两者都还需要检查题意建模、所用假设和结论的新颖性。
+
+## 一个简短的路线图
+
+如果要继续追 AI4Math，我会按下面的顺序读：
+
+1. GSM8K 和 MATH：理解自然语言数学 benchmark 为什么成立，又为什么会被刷满。
+2. miniF2F 和 LeanDojo：理解 proof assistant 为什么改变评价方式。
+3. Compfiles、MathOlympiadBench、PutnamBench：理解竞赛级 formalization 如何变成库资产。
+4. FrontierMath、MathArena、LiveCodeBench：理解去污染和 live evaluation。
+5. FormalMATH、CombiBench、MathlibLemma、LeanEval v1：理解 2025-2026 的 formal benchmark ecology。
+6. DeepMath-103K、Big-Math、CrystalMath、FormalRewardBench：理解 RLVR 为什么成为训练范式。
+
+## 资料索引
+
+- [GSM8K: Training Verifiers to Solve Math Word Problems](https://arxiv.org/abs/2110.14168)
+- [MATH: Measuring Mathematical Problem Solving With the MATH Dataset](https://arxiv.org/abs/2103.03874)
+- [Minerva: Solving Quantitative Reasoning Problems with Language Models](https://arxiv.org/abs/2206.14858)
+- [DeepSeekMath](https://arxiv.org/abs/2402.03300)
+- [DeepSeek-R1](https://arxiv.org/abs/2501.12948)
+- [MATH-500 Artificial Analysis snapshot](https://artificialanalysis.ai/evaluations/math-500)
+- [miniF2F](https://arxiv.org/abs/2109.00110)
+- [HyperTree Proof Search](https://arxiv.org/abs/2205.11491)
+- [DeepSeek-Prover-V1.5](https://arxiv.org/abs/2408.08152)
+- [DeepSeek-Prover-V2](https://github.com/deepseek-ai/DeepSeek-Prover-V2)
+- [Goedel-Prover-V2 and MathOlympiadBench](https://github.com/Goedel-LM/Goedel-Prover-V2)
+- [Compfiles](https://dwrensha.github.io/compfiles/)
+- [MathOlympiadBench](https://huggingface.co/datasets/Goedel-LM/MathOlympiadBench)
+- [PutnamBench](https://arxiv.org/abs/2407.11214)
+- [PutnamBench leaderboard](https://trishullab.github.io/PutnamBench/leaderboard.html)
+- [FrontierMath](https://arxiv.org/abs/2411.04872)
+- [Epoch AI FrontierMath](https://epoch.ai/frontiermath)
+- [Lean Eval](https://lean-lang.org/eval/)
+- [leanprover/lean-eval](https://github.com/leanprover/lean-eval)
+- [Hugging Face Papers Trending](https://huggingface.co/papers/trending)
+
+## 最后
+
+从 GSM8K 到 LeanEval，AI4Math 的变化不是一条简单的“分数越来越高”曲线，而是一条不断加验证层的路线。
+
+先是答案可检查，然后是过程可解释，再是证明可编译，最后是提交可复现、评测可更新、历史可追踪。
+
+数学给 AI 提供了最好的训练场之一，因为它既需要创造性，又有硬验证边界。未来真正重要的系统，可能不是只会在旧 benchmark 上拿 99 分的模型，而是能在新的数学环境里提出候选、调用工具、接受失败、修正证明、留下可验证 artifact 的研究伙伴。
+
+这也是为什么 AI4Math 的数据集史，最终会走向形式化、live eval 和 verified discovery。
