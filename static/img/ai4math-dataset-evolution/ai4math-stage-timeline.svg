@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="960" viewBox="0 0 960 960" role="img" aria-labelledby="title desc">
+<title id="title">AI for Math：数据对象的演进</title><desc id="desc">阶段相互重叠；这是分阶段时间线，不是等距年份轴。</desc>
+<g font-family="&quot;PingFang SC&quot;, &quot;Noto Sans CJK SC&quot;, &quot;Microsoft YaHei&quot;, sans-serif">
+<rect x="0" y="0" width="960" height="960" rx="22" fill="#f7f9fc" stroke="#f7f9fc"/>
+<text x="40" y="58" font-size="32" fill="#172b4d" font-weight="700">AI for Math：数据对象的演进</text>
+<text x="40" y="96" font-size="19" fill="#52657b" font-weight="400">阶段相互重叠；这是分阶段时间线，不是等距年份轴。</text>
+<rect x="38" y="126" width="884" height="110" rx="14" fill="white" stroke="#dbe3ed"/>
+<rect x="38" y="126" width="8" height="110" rx="3" fill="#bf7800" stroke="#bf7800"/>
+<text x="64" y="156" font-size="19" fill="#bf7800" font-weight="700">2015–2020</text>
+<text x="264" y="156" font-size="23" fill="#172b4d" font-weight="700">文字列式与程序化表示</text>
+<text x="64" y="189" font-size="20" fill="#172b4d" font-weight="400">算术应用题 · AQuA-RAT · MathQA</text>
+<text x="64" y="219" font-size="19" fill="#52657b" font-weight="400">题目 → 算式、操作序列与自然语言解释</text>
+<rect x="38" y="250" width="884" height="110" rx="14" fill="white" stroke="#dbe3ed"/>
+<rect x="38" y="250" width="8" height="110" rx="3" fill="#d25345" stroke="#d25345"/>
+<text x="64" y="280" font-size="19" fill="#d25345" font-weight="700">2021–2022</text>
+<text x="264" y="280" font-size="23" fill="#172b4d" font-weight="700">多步推理与解法选择</text>
+<text x="64" y="313" font-size="20" fill="#172b4d" font-weight="400">MATH（2021-03）· GSM8K（2021-10）</text>
+<text x="64" y="343" font-size="19" fill="#52657b" font-weight="400">标准解、CoT 与候选解排序；验证并非后来才出现</text>
+<rect x="38" y="374" width="884" height="110" rx="14" fill="white" stroke="#dbe3ed"/>
+<rect x="38" y="374" width="8" height="110" rx="3" fill="#007f82" stroke="#007f82"/>
+<text x="64" y="404" font-size="19" fill="#007f82" font-weight="700">2021–2023</text>
+<text x="264" y="404" font-size="23" fill="#172b4d" font-weight="700">并行路线：机器检查证明</text>
+<text x="64" y="437" font-size="20" fill="#172b4d" font-weight="400">miniF2F（2021-09）· LeanDojo（2023-06）</text>
+<text x="64" y="467" font-size="19" fill="#52657b" font-weight="400">形式化命题、证明状态、tactic 与引理检索</text>
+<rect x="38" y="498" width="884" height="110" rx="14" fill="white" stroke="#dbe3ed"/>
+<rect x="38" y="498" width="8" height="110" rx="3" fill="#3066be" stroke="#3066be"/>
+<text x="64" y="528" font-size="19" fill="#3066be" font-weight="700">2023–2024</text>
+<text x="264" y="528" font-size="23" fill="#172b4d" font-weight="700">数据工程成为训练方法</text>
+<text x="64" y="561" font-size="20" fill="#172b4d" font-weight="400">PRM800K · OpenWebMath · DeepSeekMath</text>
+<text x="64" y="591" font-size="19" fill="#52657b" font-weight="400">步骤标注、数学语料与可验证反馈</text>
+<rect x="38" y="622" width="884" height="110" rx="14" fill="white" stroke="#dbe3ed"/>
+<rect x="38" y="622" width="8" height="110" rx="3" fill="#7651b5" stroke="#7651b5"/>
+<text x="64" y="652" font-size="19" fill="#7651b5" font-weight="700">2024-07 → 2025</text>
+<text x="264" y="652" font-size="23" fill="#172b4d" font-weight="700">更广的数学与更新的试题</text>
+<text x="64" y="685" font-size="20" fill="#172b4d" font-weight="400">PutnamBench · FrontierMath · MathArena</text>
+<text x="64" y="715" font-size="19" fill="#52657b" font-weight="400">本科知识、专家原创题、按比赛时间更新的评测</text>
+<rect x="38" y="746" width="884" height="110" rx="14" fill="white" stroke="#dbe3ed"/>
+<rect x="38" y="746" width="8" height="110" rx="3" fill="#25815b" stroke="#25815b"/>
+<text x="64" y="776" font-size="19" fill="#25815b" font-weight="700">2026-06 → 08</text>
+<text x="264" y="776" font-size="23" fill="#172b4d" font-weight="700">提交、回放与基准生命周期</text>
+<text x="64" y="809" font-size="20" fill="#172b4d" font-weight="400">Lean Eval 上线 → LeanEval v1 冻结集合</text>
+<text x="64" y="839" font-size="19" fill="#52657b" font-weight="400">可信题意、Comparator 验证、版本与提交记录</text>
+<text x="40" y="911" font-size="20" fill="#52657b" font-weight="400">阅读重点：题目如何组织，决定了模型被训练和评价的能力。</text>
+</g></svg>
