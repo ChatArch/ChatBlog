@@ -303,6 +303,8 @@ SERVICE_HOME="$HOME/.chatarch/jupyter-courses"
 source "$HOME/miniconda3/etc/profile.d/conda.sh"
 conda activate courses-dm2026
 export JUPYTER_CONFIG_DIR="$SERVICE_HOME/config"
+export JUPYTER_RUNTIME_DIR="$SERVICE_HOME/runtime"
+install -d -m 700 "$SERVICE_HOME" "$JUPYTER_CONFIG_DIR" "$JUPYTER_RUNTIME_DIR"
 export JUPYTER_PATH="$SERVICE_HOME/share/jupyter"
 export PYTHONNOUSERSITE=1
 export JAVA_HOME="$CONDA_PREFIX/lib/jvm"
@@ -316,7 +318,8 @@ exec python -m jupyterlab --no-browser \
 在启用服务前创建配置目录，并用主环境的 Jupyter 设置密码；保留认证，不能用空 token、空密码来换取“方便访问”。这里的命令会交互式提示密码，不应把密码写进命令行、文章或 Notebook：
 
 ```bash
-mkdir -p "$HOME/.chatarch/jupyter-courses/config"
+install -d -m 700 "$HOME/.chatarch/jupyter-courses" \
+  "$HOME/.chatarch/jupyter-courses/config"
 conda activate courses-dm2026
 JUPYTER_CONFIG_DIR="$HOME/.chatarch/jupyter-courses/config" \
   python -m jupyter server password
@@ -339,7 +342,9 @@ conda run -n courses-legacy python -m ipykernel install \
 ```python
 from pathlib import Path
 
+c = get_config()
 service_home = Path.home() / ".chatarch" / "jupyter-courses"
+c.MultiKernelManager.default_kernel_name = "python3"
 c.KernelSpecManager.allowed_kernelspecs = {"python3", "courses-legacy"}
 c.ServerApp.terminado_settings = {
     "shell_command": ["/bin/bash", "--rcfile", str(service_home / "terminal.bashrc"), "-i"]
@@ -380,7 +385,7 @@ loginctl show-user "$USER" -p Linger
 
 如果需要退出登录后继续运行，应由有权限的管理员为**指定课程账号**启用 linger，再回读确认。不要把服务注册成功当成使用成功：仍需检查实际解释器、受保护 API 和一个新内核的执行结果。配置文件与状态目录应仅对该账号开放；历史环境作为隔离教学内核使用，不负责对外提供 Web 服务。
 
-长期网页入口在回环监听的 JupyterLab 前增加 Nginx 反向代理、TLS 和 WebSocket 转发；证书与账号配置属于部署者的私有运行配置，不随文章分发。保留 Jupyter 认证与跨站请求保护，不使用通配的跨域放行。不要仅用登录页返回 200 验收反向代理，Notebook 执行还依赖 WebSocket。可参考 [Jupyter Server 安全与公网服务说明](https://jupyter-server.readthedocs.io/en/latest/operators/public-server.html)。
+新建长期网页入口时，推荐让 JupyterLab 监听回环地址，再增加 Nginx 反向代理、TLS 和 WebSocket 转发。对已有活跃会话的实例，先无中断接入 HTTPS，不为整理入口而强制重启或迁移监听地址；证书与账号配置属于部署者的私有运行配置，不随文章分发。保留 Jupyter 认证与跨站请求保护，不使用通配的跨域放行。不要仅用登录页返回 200 验收反向代理，Notebook 执行还依赖 WebSocket。可参考 [Jupyter Server 安全与公网服务说明](https://jupyter-server.readthedocs.io/en/latest/operators/public-server.html)。
 
 ### 7. 临时使用：回环监听与 SSH 转发
 
