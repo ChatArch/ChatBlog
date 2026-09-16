@@ -1,0 +1,120 @@
+name: courses-legacy
+channels:
+- conda-forge
+dependencies:
+- _openmp_mutex=4.5
+- ca-certificates=2026.7.22
+- icu=78.3
+- ld_impl_linux-64=2.46.1
+- libffi=3.4.6
+- libgcc=16.2.0
+- libgcc-ng=16.2.0
+- libgomp=16.2.0
+- liblzma=5.8.3
+- liblzma-devel=5.8.3
+- libnsl=2.0.1
+- libsqlite=3.53.4
+- libstdcxx=16.2.0
+- libstdcxx-ng=16.2.0
+- libzlib=1.3.2
+- ncurses=6.6
+- openssl=3.6.4
+- pip=24.0
+- python=3.7.12
+- readline=8.3
+- sqlite=3.53.4
+- tk=8.6.13
+- wheel=0.42.0
+- xz=5.8.3
+- xz-gpl-tools=5.8.3
+- xz-tools=5.8.3
+- zstd=1.5.7
+- pip:
+  - absl-py==2.1.0
+  - astor==0.8.1
+  - backcall==0.2.0
+  - certifi==2026.7.22
+  - charset-normalizer==3.5.1
+  - click==8.1.8
+  - comm==0.1.4
+  - cycler==0.11.0
+  - debugpy==1.7.0
+  - decorator==5.1.1
+  - entrypoints==0.4
+  - et-xmlfile==1.1.0
+  - gast==0.2.2
+  - gensim==3.8.3
+  - google-pasta==0.2.0
+  - greenlet==3.1.1
+  - grpcio==1.62.3
+  - h5py==2.10.0
+  - idna==3.10
+  - importlib-metadata==6.7.0
+  - ipykernel==6.16.2
+  - ipython==7.34.0
+  - ipywidgets==8.1.7
+  - jedi==0.19.2
+  - jieba==0.42.1
+  - joblib==1.3.2
+  - jupyter-client==7.4.9
+  - jupyter-core==4.12.0
+  - jupyterlab-widgets==3.0.17
+  - keras==2.2.4
+  - keras-applications==1.0.8
+  - keras-preprocessing==1.1.2
+  - kiwisolver==1.4.5
+  - markdown==3.4.4
+  - matplotlib==3.2.2
+  - matplotlib-inline==0.1.6
+  - nest-asyncio==1.6.0
+  - nltk==3.8.1
+  - numpy==1.18.5
+  - opencv-python-headless==4.5.5.64
+  - openpyxl==3.0.10
+  - opt-einsum==3.3.0
+  - packaging==24.0
+  - pandas==0.25.3
+  - parso==0.8.7
+  - patsy==1.0.3
+  - pexpect==4.9.0
+  - pickleshare==0.7.5
+  - pillow==9.5.0
+  - prompt-toolkit==3.0.48
+  - protobuf==3.20.3
+  - psutil==7.2.2
+  - ptyprocess==0.7.0
+  - pygments==2.17.2
+  - pymysql==1.1.1
+  - pyparsing==3.1.4
+  - python-dateutil==2.9.0.post0
+  - pytz==2026.3.post1
+  - pyyaml==5.4.1
+  - pyzmq==26.2.1
+  - regex==2024.4.16
+  - requests==2.31.0
+  - scikit-learn==0.22.2.post1
+  - scipy==1.4.1
+  - seaborn==0.10.1
+  - setuptools==67.8.0
+  - six==1.17.0
+  - smart-open==7.1.0
+  - snownlp==0.12.3
+  - sqlalchemy==1.4.54
+  - stanfordcorenlp==3.9.1.1
+  - statsmodels==0.11.1
+  - tensorboard==1.15.0
+  - tensorflow==1.15.5
+  - tensorflow-estimator==1.15.1
+  - termcolor==2.3.0
+  - tornado==6.2
+  - tqdm==4.68.2
+  - traitlets==5.9.0
+  - typing-extensions==4.7.1
+  - urllib3==2.0.7
+  - wcwidth==0.2.14
+  - werkzeug==1.0.1
+  - widgetsnbextension==4.0.16
+  - wordcloud==1.9.3
+  - wrapt==1.16.0
+  - xlrd==1.2.0
+  - zipp==3.15.0
