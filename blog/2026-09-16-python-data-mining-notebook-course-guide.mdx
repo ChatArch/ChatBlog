@@ -1,0 +1,449 @@
+---
+title: "Python 数据分析与挖掘实践：Notebook 课程导读、环境 Setup 与使用方式"
+date: 2026-09-16
+slug: python-data-mining-notebook-course-guide
+authors:
+  - name: ChatArch
+    url: https://github.com/ChatArch
+tags: [Python, Jupyter, 数据分析, 数据挖掘, 课程实践]
+description: "从 Python、Pandas 到推荐、聚类、文本图像、Spark 与 AI：梳理 Notebook 课程能力地图，提供两套 Linux 环境快照、内核与 HTTPS 使用参考，并明确抽样验证边界。"
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+一套数据挖掘课程，最值得学的不是记住多少个模型名称，而是能否把一个实际问题走完：数据从哪里来，如何整理成可计算的表示，为什么选择这个方法，以及怎样解释和检查结果。
+
+这次整理的 Notebook 材料，大多以 **Python 数据分析实践（Data Analysis Action）** 或 **Python 数据挖掘实践（Data Mining Action）** 为题。内容从 Python 基础延伸到客户聚类、推荐、评论情感、图像识别、Spark，再到 AI 辅助分析。目录里还保留了补充示例、历史实现和备份，因此本文按学习目的组织内容，不把文件数量当成课程章数。
+
+文章分两部分：先看课程在训练什么能力，再看怎样把教材、解释器和 Notebook 内核组织成一个可用的学习环境。文末给出本次抽样运行的实际覆盖范围。
+
+<!-- truncate -->
+
+## 一、课程地图：从数据进入，到结果解释
+
+可以把整套材料理解为下面这条路线：
+
+**编程与实验工具 → 数据获取与整理 → 建模与比较 → 专题案例 → 大数据与 AI 协作**
+
+| 学习阶段 | Notebook 中的主要内容 | 要掌握的能力 |
+| --- | --- | --- |
+| Python 与 Notebook 基础 | 环境、包导入、魔术命令、列表/元组/字典/集合、条件与循环，图表和媒体输出 | 分清代码、运行状态与解释性文字，能复现一个小实验 |
+| 数据获取与整理 | NumPy、Pandas、缺失值与索引、CSV/Excel、JSON/HTML/XML、数据库、新闻与金融数据 | 知道数据的来源、结构和质量问题，而不是拿到表就训练 |
+| 经典数据挖掘 | 回归、时间序列、协同过滤、Apriori/FP-Growth、kNN、决策树等 | 把业务问题转成预测、推荐、分类或频繁模式任务 |
+| 用户与空间分析 | 航空客户价值、客户流失、K-means、基于定位数据的商圈聚类 | 构造有意义的特征，并解释聚类结果 |
+| 文本与图像 | 评论情感、LDA、TF-IDF、Word2Vec、CNN/RNN/LSTM/GRU、颜色特征、手写数字与交通标志 | 理解“如何表示数据”与“使用什么模型”之间的关系 |
+| 大数据与 AI 协作 | Spark MLlib/ML、Jupyter AI、TRAE/Copilot、多文件数据分析、结构化创造力评分 | 把已有分析流程迁移到新的执行方式，同时保留可检查的中间结果 |
+
+这条路线并非严格的单向阶梯。读完一个专题，再回看 Pandas 的索引、数据对齐或标准化，往往会比第一次学习时更有感觉。
+
+## 二、前半段的重点，是把数据问题说清楚
+
+### 1. Jupyter 是实验记录，不只是代码编辑器
+
+入门部分同时介绍解释器、包、IPython 和 Notebook，随后才进入 Python 数据结构。这样的顺序有实际意义：初学者常把“文件能打开”“包已安装”“当前内核能导入”当成同一件事。
+
+Notebook 将叙述、代码和输出放在一起，适合展示一个分析过程；但它也保存运行状态。上一个单元定义的变量、执行顺序、当前工作目录和内核选择，都会影响结果。学习时应当能够回答：
+
+- 当前使用哪个 Python？
+- 数据路径相对于哪里？
+- 这个输出是刚算出来的，还是文件里保存的旧结果？
+- 重启一个自己的实验内核后，前面的必要单元能否按顺序运行？
+
+入门案例里的曲线、图片、表格和音频，不是装饰，而是在建立这种实验记录习惯。
+
+### 2. Pandas 章节建立的是“理解数据”的能力
+
+Pandas 部分覆盖 Series、DataFrame、索引、筛选、排序、数据对齐、描述统计、缺失值和层次化索引。后面的文件与网络章节，则把数据来源扩展到 CSV、Excel、JSON、HTML/XML、SQL 和 MongoDB。
+
+这里值得反复练习的不是函数名，而是操作的含义。例如：
+
+- 删除一行缺失数据，会不会连同有效样本一起删掉？
+- 合并两张表时，连接键是否唯一？有没有产生重复行？
+- 一个看起来正常的总数，是否混用了不同时间范围或统计口径？
+- 从网页提取的字段，是否因页面结构变化而变成空值？
+
+网页和行情接口适合作为数据获取案例，但接口会变化。客户端库能导入，并不保证外部网站此刻还能返回教材预期的结构。
+
+## 三、经典案例把算法放回问题里
+
+### 航空客户与商圈：聚类之后，还要解释
+
+用户画像章节以航空客户价值为主要案例，从数据探索、清洗和标准化走到 K-means；定位数据章节则用层次聚类分析商圈特征。
+
+两者都说明：聚类算法输出的簇编号，不是现成的业务结论。需要回到特征分布，解释各组之间的区别。量纲不同的特征为何要标准化、聚类数如何影响结果、某个异常值是否主导了距离，这些问题比画出不同颜色的点更重要。
+
+涉及用户和定位数据时，还应采用有授权的数据，优先报告聚合结果。课堂分析不等于可以据此推断个人的敏感属性。
+
+### 回归、时序与异常识别：先确定预测目标
+
+回归材料包含最小二乘、局部加权回归、岭回归、Lasso 等内容，并用鲍鱼年龄、台风路径等问题说明连续值预测。时间序列材料讨论平稳性、差分、AR/MA/ARMA/ARIMA，以及产品销量等案例。
+
+阅读时要把“预测什么”“用哪些过去信息”“如何划分训练与测试”写清楚。时间序列尤其不能随意打乱时间顺序。回归得到的关系也不自动等于因果关系。
+
+电力窃漏电识别进一步引入分类模型比较、混淆矩阵和 ROC 等观察角度。它提醒学习者：误报与漏报的代价可能不同，不能只看一个准确率，更不能把教学模型的输出直接当成真实违规事实。
+
+### 推荐与关联规则：相似和共现不是一回事
+
+推荐章节围绕网页访问行为、数据库准备与协同过滤展开；关联规则章节则实现 Apriori 和 FP-Growth，寻找频繁共现项集。
+
+这两条线可以对照着学：推荐要回答“给这个用户哪些候选”，频繁模式要回答“哪些项目经常一起出现”。共现可以提供线索，但不天然意味着因果，也不必然产生有效的个性化推荐。
+
+## 四、文本和图像，重点在表示方式的变化
+
+### 从评论文本到可比较的情感模型
+
+评论情感分析材料不是只给出一个神经网络。它先处理中文文本、分词和停用词，再探索主题、构造 TF-IDF 或词向量，最后比较传统分类方法与 CNN、RNN、LSTM、GRU。
+
+这组 Notebook 很适合用来理解三个层次：
+
+1. **数据处理**：评论是否去重，标签如何形成，正负样本是否均衡？
+2. **表示方式**：词频、TF-IDF 和词向量分别保留了什么信息？
+3. **模型比较**：在相同数据划分和指标下，模型的收益与代价是什么？
+
+LDA 的主题探索、词云的高频展示与情感分类不是同一项任务。不能仅凭一张词云就断言产品的优缺点，也不应把某次教材实验里的模型排名推广到所有文本任务。
+
+### 从颜色特征、kNN 到卷积网络
+
+图像部分形成了一条很直观的学习路径：颜色图像的预处理与特征表达，手写数字的向量化与 kNN，再到卷积网络和德国交通标志识别。
+
+颜色章节包含水色图像评价、流行色分析等案例；手写数字章节既有算法实现，也有分类器比较。到交通标志识别时，学习重心转向模型学习特征、输入张量形状和不同网络结构的比较。
+
+建议在这一段多做一件小事：每经过一次变换，都打印数据形状。图像尺寸、通道数、批次大小和输出类别数对不上时，问题通常不能靠换一个更复杂的模型解决。
+
+## 五、Spark 与 AI，是分析流程的延伸
+
+Spark 部分将前面学过的分类、回归、聚类和频繁模式挖掘放到 MLlib/ML 中，并对照 RDD 与 DataFrame 两种接口。先用本地小样本理解执行和数据表示，再考虑更大的数据规模，通常比直接搭集群更有效。
+
+AI 部分则有两种不同用途。
+
+**第一种是辅助分析工作。** Jupyter AI 的示例涉及生成代码、解释代码和调试；TRAE/Copilot 的材料进一步讨论单文件、跨文件分析，并使用 Stack Overflow 调研与 Retailrocket 电商数据作为案例。这里应检查 AI 生成的连接键、清洗规则、指标口径和代码，而不只是看最终图表是否好看。
+
+**第二种是把模型输出变成结构化数据。** 音乐创造力 Notebook 设计了多维评分示例，用 Pydantic 描述输出结构，再将模型结果与专家标注放在一起，通过雷达图、误差棒、热力图和箱线图观察。
+
+这是评分与专家对照的示例，不是自动作曲工具。这个案例的关键，不是“让大模型替代专家打分”，而是把输出格式、评分依据和对照分析明确下来。格式正确不等于评价有效，也不能把模型分数视为有效的人格测量；涉及学生评价时，模型结果只能作为辅助信息，不能直接决定教育评价结论。本文也不公开学生回答或标注数据。
+
+## 六、环境 Setup：分清文件、服务与内核
+
+同一份 Notebook 可以被不同机器读取，但它使用的 Python 环境并不会随文件共享。一个常见结构是：
+
+```text
+课程文件与数据
+      ↓
+当前 Notebook 内核 → Python 解释器 → 该环境里的包
+      ↑
+VS Code Remote SSH 或 JupyterLab
+```
+
+因此，排查“明明安装了却不能导入”时，先在当前 Notebook 中检查解释器，而不是继续向另一个终端的 Python 安装包。
+
+### 1. 两套参考环境
+
+本次参考 setup 面向 **Linux x86_64、CPU 运行**，保留原有环境，另外建立主课程和历史兼容环境。
+
+| 环境 | 关键版本 | 用途 |
+| --- | --- | --- |
+| `courses-dm2026` | Python 3.10.21、NumPy 1.26.4、Pandas 1.5.3、SciPy 1.11.4、scikit-learn 1.3.2、TensorFlow CPU 2.15.1 | 主课程、常规数据分析、较新的 TensorFlow 示例、Spark 和 AI 工具 |
+| `courses-legacy` | Python 3.7.12、NumPy 1.18.5、Pandas 0.25.3、TensorFlow 1.15.5、Keras 2.2.4、Gensim 3.8.3 | 明确依赖旧 API 的历史示例 |
+
+历史环境只用于兼容旧教材，不应成为新项目的默认环境，也不应作为面向公网的服务运行时。两套环境也不是对所有旧代码的自动适配器：遇到混合新旧 API 的单元，仍要看代码实际调用了什么。
+
+完整的环境参考快照在这里，已移除机器路径和私有配置：
+
+- <a href={useBaseUrl('/assets/course-notebook-guide/courses-dm2026-linux.yml')}>主课程 Linux 环境文件</a>
+- <a href={useBaseUrl('/assets/course-notebook-guide/courses-legacy-linux.yml')}>历史兼容 Linux 环境文件</a>
+
+这是完整参考快照，不是“最小依赖”，也不是跨平台锁文件。导出保留了包版本，但未锁定全部构建号和下载哈希；新机器重建仍依赖对应渠道的包可用性，不能据此保证任意平台逐字节复现。已有配置好的环境时，不要重复创建；基础学习也不必先安装所有历史工具和模型资源。
+
+在新机器上，先按 [Conda 官方环境管理说明](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) 准备 Conda，再使用下载的文件：
+
+```bash
+conda env create --file courses-dm2026-linux.yml
+conda env create --file courses-legacy-linux.yml
+```
+
+### 2. 注册并选择正确内核
+
+```bash
+conda activate courses-dm2026
+python -m ipykernel install --user \
+  --name courses-dm2026 \
+  --display-name "Courses 主课程 · Python 3.10 / TF2 CPU"
+
+conda activate courses-legacy
+python -m ipykernel install --user \
+  --name courses-legacy \
+  --display-name "Courses 历史兼容 · Python 3.7 / TF1 CPU"
+```
+
+在 VS Code 或 JupyterLab 中，显式选择对应内核。创建环境或注册内核，并不会自动替换一个已经运行的旧内核。
+
+```python
+import sys
+import numpy as np
+import pandas as pd
+
+print(sys.executable)
+print(sys.version)
+print(np.__version__, pd.__version__)
+```
+
+安装包时，在已激活的终端中使用 `python -m pip`；在 Notebook 单元中使用 `%pip`。直接把 `pip install ...` 写成普通 Python 语句，会得到语法错误。
+
+### 3. 把路径和辅助工具配到内核里
+
+本次内核配置还包含了以下设置：
+
+- `PATH` 优先指向当前环境的 `bin`，避免 Notebook 的 Python 与 `%system python` 指向不同解释器。
+- `PYTHONNOUSERSITE=1`，减少用户级包混入参考环境的可能。
+- `JAVA_HOME` 指向主环境的 JDK，供 Spark 和 Java 工具使用。
+- `IPYTHONDIR`、`MPLCONFIGDIR`、临时目录与缓存目录分开存放在课程环境中。
+- 用有限的 BLAS/TensorFlow 线程执行课堂小样本；本次 setup 不包含 CUDA/GPU 训练环境。
+
+使用 Conda-forge OpenJDK 的这一参考环境，其 Java 位置为环境前缀下的 `lib/jvm`。激活环境后可检查：
+
+```bash
+export JAVA_HOME="$CONDA_PREFIX/lib/jvm"
+export NLTK_DATA="$CONDA_PREFIX/share/nltk_data"
+export OMP_NUM_THREADS=2
+export OPENBLAS_NUM_THREADS=2
+
+"$JAVA_HOME/bin/java" -version
+python -m pip check
+```
+
+需要由 Notebook 子进程使用的值，应写入所选 kernelspec 的 `env` 字段，或在启动 Jupyter 前导出；仅在另一个终端设置变量，不会改变已经启动的内核。
+
+### 4. 中文字体、数据目录和附加资源
+
+部分教材代码显式指定 `SimHei`。本次利用课程已有、可使用的中文字体，在课程内核的 IPython startup 中注册字体，并建立兼容别名；没有修改系统字体或其他用户配置。公开附件不包含字体二进制。
+
+以下是这一配置的核心做法，`COURSES_FONT_FILE` 应指向你有权使用的字体文件：
+
+```python
+import os
+import matplotlib as mpl
+from matplotlib import font_manager
+
+font_file = os.environ["COURSES_FONT_FILE"]
+font_manager.fontManager.addfont(font_file)
+font_manager.fontManager.ttflist.append(
+    font_manager.FontEntry(fname=font_file, name="SimHei", weight=400)
+)
+mpl.rcParams["font.sans-serif"] = ["SimHei", "DejaVu Sans"]
+mpl.rcParams["axes.unicode_minus"] = False
+```
+
+这里的 `SimHei` 是兼容别名，不代表安装了另一份字体。
+
+<img src={useBaseUrl('/assets/course-notebook-guide/course-chinese-plot.png')} alt="课程入门示例的中文绘图验收：正弦与余弦曲线" width="1120" height="560" style={{height: 'auto'}} />
+
+*图中使用入门材料同类的正弦、余弦示例检查中文显示；它不是后续模型训练效果图。*
+
+此外，应按章节区分资源：
+
+| 资源 | 需要说明的边界 |
+| --- | --- |
+| CSV、Excel、图片、音频 | 多数路径相对当前章节目录；先检查工作目录，不要直接照抄别人的绝对路径 |
+| NLTK / WordNet | Python 包与语料数据分开；按章节准备所需语料 |
+| Stanford CoreNLP | Python 包装库之外，还需要 Java、程序 JAR 和对应语言模型；版本与路径应匹配 |
+| MySQL / MongoDB | 安装 Python 客户端不等于数据库、教学数据和授权账号已经准备好 |
+| 行情、新闻与其他网站 | 网页结构、接口权限和返回格式可能变化，失败时要区分环境与数据源问题 |
+| LLM / Jupyter AI | 使用自己的授权配置，凭据不放进公开 Notebook；真实调用的费用与权限单独确认 |
+
+对于课程中使用 `yf.pdr_override()` 的旧示例，主环境锁定了保留该接口的 `yfinance 0.2.38`，并检查了接口适配。这个检查没有请求真实行情，因此不意味着所有行情示例在任何时间都能联网成功。
+
+### 5. 如何访问和使用
+
+已有部署应先确认：**网页服务在哪台机器运行、当前内核在哪台机器运行、教材文件放在哪里。** 共享目录不代表共享解释器。
+
+- **VS Code Remote SSH**：连接实际运行环境所在的机器，打开课程目录，再选择上述内核。
+- **常驻 JupyterLab 网页**：使用课程部署者私下提供的 HTTPS 入口和认证方式。通用地址形如 `https://notebook.example.org/lab`，这里的域名仅用于说明，不是本文提供的公共教学服务；校园内部部署还需要位于获准的校园网络或远程接入网络中。
+- **进入网页后**：先用主课程内核打开自己的练习副本；只有遇到明确依赖 TF1 等旧 API 的章节，才切到历史内核。核对 `sys.executable` 与包版本，不要仅凭顶部显示的 “Python 3” 判断环境。
+- **在网页终端安装包前**：再运行 `python -m pip --version`，确认它属于主课程环境。网页终端和 Notebook 内核是两个进程，不能用其中一处的激活状态推断另一处。
+
+本次已完成的部署采用用户级 `jupyter-courses.service`，服务处于 **enabled、active** 状态，并启用用户 **Linger**，因此不依赖一个持续打开的 SSH 窗口。JupyterLab 使用主课程环境运行；Web 终端通过专用 Bash 启动文件激活同一环境，不修改全局 `python3` 或 Conda `base`。
+
+对于元数据中仍写着 `python3` 的旧 Notebook，部署中额外设置了**仅对该服务生效的 `python3` kernelspec 别名**，明确指向主课程解释器；网页只展示主课程和历史兼容两类内核。这比把系统 Python 或全局同名内核改掉更可控。已有运行内核不会因为新增别名而切换解释器，也不应为验证新入口而重启别人的实验。
+
+正式入口已经检查了严格 TLS、HTTP 到 HTTPS 的跳转、登录后的受保护 kernelspec API 和安全 WebSocket。通过该 HTTPS 入口新建临时测试内核，核对解释器确实属于主课程环境后，执行了 NumPy 导入和小型求和，核心输出如下：
+
+```python
+import numpy as np
+
+print(np.__version__)
+print(np.arange(5).sum())
+```
+
+```text
+1.26.4
+10
+```
+
+这条证据贯通的是“HTTPS 认证 → WebSocket → 正确内核 → 小型计算”。测试结束后已删除临时内核，保留原有用户内核；它不等于完整课程训练验收，也不能证明此前另一个 `base` 窗口中的 Conda/pip 安装失败原因已经修复——同入口的完整原始报错仍然缺失。
+
+### 6. 常驻服务的参考组织方式
+
+如果要在自己的 Linux 机器上复用这一组织方式，可把配置、启动脚本和服务专用状态放在 `~/.chatarch/jupyter-courses/`，把 `~/.config/systemd/user/jupyter-courses.service` 仅作为薄入口。下面是参考结构，不是读者机器上已安装好的服务：
+
+```text
+~/.chatarch/jupyter-courses/
+  start.sh                    # 激活主环境并启动 JupyterLab
+  config/                     # 服务配置与本机认证配置（不要公开）
+  share/jupyter/kernels/      # 仅供该服务使用的内核定义
+  terminal.bashrc             # 网页终端使用的主环境激活脚本
+~/.config/systemd/user/jupyter-courses.service
+```
+
+服务脚本要使用自己的 Conda 安装位置与课程目录，而不是从一台机器复制绝对路径。例如，保存以下内容为 `start.sh`；示例假设 Conda 位于 `$HOME/miniconda3`，课程副本位于 `$HOME/Courses`，两者都应按实际位置调整：
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+SERVICE_HOME="$HOME/.chatarch/jupyter-courses"
+source "$HOME/miniconda3/etc/profile.d/conda.sh"
+conda activate courses-dm2026
+export JUPYTER_CONFIG_DIR="$SERVICE_HOME/config"
+export JUPYTER_RUNTIME_DIR="$SERVICE_HOME/runtime"
+install -d -m 700 "$SERVICE_HOME" "$JUPYTER_CONFIG_DIR" "$JUPYTER_RUNTIME_DIR"
+export JUPYTER_PATH="$SERVICE_HOME/share/jupyter"
+export PYTHONNOUSERSITE=1
+export JAVA_HOME="$CONDA_PREFIX/lib/jvm"
+export OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2
+exec python -m jupyterlab --no-browser \
+  --ip=127.0.0.1 --port=8924 \
+  --ServerApp.port_retries=0 \
+  --ServerApp.root_dir="$HOME/Courses"
+```
+
+在启用服务前创建配置目录，并用主环境的 Jupyter 设置密码；保留认证，不能用空 token、空密码来换取“方便访问”。这里的命令会交互式提示密码，不应把密码写进命令行、文章或 Notebook：
+
+```bash
+install -d -m 700 "$HOME/.chatarch/jupyter-courses" \
+  "$HOME/.chatarch/jupyter-courses/config"
+conda activate courses-dm2026
+JUPYTER_CONFIG_DIR="$HOME/.chatarch/jupyter-courses/config" \
+  python -m jupyter server password
+```
+
+服务级内核可通过 `ipykernel install --prefix` 放在上述专用前缀下。主内核使用 `python3` 这个兼容名称，但它的 `argv[0]` 必须是主环境解释器；历史内核使用独立名称：
+
+```bash
+SERVICE_HOME="$HOME/.chatarch/jupyter-courses"
+conda run -n courses-dm2026 python -m ipykernel install \
+  --prefix "$SERVICE_HOME" --name python3 \
+  --display-name "Courses 主课程 · Python 3.10 / TF2 CPU"
+conda run -n courses-legacy python -m ipykernel install \
+  --prefix "$SERVICE_HOME" --name courses-legacy \
+  --display-name "Courses 历史兼容 · Python 3.7 / TF1 CPU"
+```
+
+在 `config/jupyter_server_config.py` 中限制该服务展示的内核，同时为网页终端指定自己的启动脚本：
+
+```python
+from pathlib import Path
+
+c = get_config()
+service_home = Path.home() / ".chatarch" / "jupyter-courses"
+c.MultiKernelManager.default_kernel_name = "python3"
+c.KernelSpecManager.allowed_kernelspecs = {"python3", "courses-legacy"}
+c.ServerApp.terminado_settings = {
+    "shell_command": ["/bin/bash", "--rcfile", str(service_home / "terminal.bashrc"), "-i"]
+}
+```
+
+`terminal.bashrc` 的最小内容如下。它只作用于服务打开的 Bash 终端，不需要改用户的全局 shell 默认环境：
+
+```bash
+source "$HOME/miniconda3/etc/profile.d/conda.sh"
+conda activate courses-dm2026
+```
+
+将下面的薄入口保存到用户 systemd unit 位置：
+
+```ini
+[Unit]
+Description=Course JupyterLab
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash %h/.chatarch/jupyter-courses/start.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now jupyter-courses.service
+systemctl --user is-enabled jupyter-courses.service
+systemctl --user is-active jupyter-courses.service
+loginctl show-user "$USER" -p Linger
+```
+
+如果需要退出登录后继续运行，应由有权限的管理员为**指定课程账号**启用 linger，再回读确认。不要把服务注册成功当成使用成功：仍需检查实际解释器、受保护 API 和一个新内核的执行结果。配置文件与状态目录应仅对该账号开放；历史环境作为隔离教学内核使用，不负责对外提供 Web 服务。
+
+新建长期网页入口时，推荐让 JupyterLab 监听回环地址，再增加 Nginx 反向代理、TLS 和 WebSocket 转发。对已有活跃会话的实例，先无中断接入 HTTPS，不为整理入口而强制重启或迁移监听地址；证书与账号配置属于部署者的私有运行配置，不随文章分发。保留 Jupyter 认证与跨站请求保护，不使用通配的跨域放行。不要仅用登录页返回 200 验收反向代理，Notebook 执行还依赖 WebSocket。可参考 [Jupyter Server 安全与公网服务说明](https://jupyter-server.readthedocs.io/en/latest/operators/public-server.html)。
+
+### 7. 临时使用：回环监听与 SSH 转发
+
+不需要常驻网页时，可以在已激活主环境、持有课程副本的机器上临时启动，并保留 Jupyter 认证：
+
+```bash
+COURSE_ROOT="$HOME/Courses"
+jupyter lab --no-browser \
+  --ip=127.0.0.1 --port=8924 \
+  --ServerApp.port_retries=0 \
+  --ServerApp.root_dir="$COURSE_ROOT"
+```
+
+再从自己的电脑建立 SSH 转发；`course-user` 与 `server.example.org` 都是需要替换的通用示例：
+
+```bash
+ssh -N -L 127.0.0.1:8924:127.0.0.1:8924 course-user@server.example.org
+```
+
+随后通过本机 `http://127.0.0.1:8924/lab` 和 Jupyter 提供的认证访问。若端口已被现有服务占用，应明确选择其他端口并同步修改转发命令，不要结束别人的进程，也不要让程序悄悄换端口后仍沿用旧地址。
+
+公开文章不刊登教学内网地址、个人账号或认证信息。现有部署的实际地址随私有交付提供；这些配置示例不是一个已经为读者启动的新服务。
+
+## 七、抽样运行，而不是把整套课程训练一遍
+
+环境是否可用，可以通过有代表性的任务建立证据，不必把每个完整训练、外部数据库和模型接口都跑一遍。
+
+内容地图来自 39 个 Notebook 文件的全量结构与案例阅读：其中 38 个有效，另 1 个为空文件。阅读覆盖不等于执行覆盖；本次实际完成的运行验证如下：
+
+| 验证对象 | 实际范围 | 结果 |
+| --- | --- | --- |
+| 入门 Notebook | 整本执行，37 个代码单元 | 通过，原文件未改 |
+| Python 基础 Notebook | 整本执行，84 个代码单元 | 通过，原文件未改 |
+| 科学计算与分析 | 聚类、回归、时序及基础 NLP 小样本 | 通过 |
+| 课程 CNN 类 | 图像/文本模型前向，图像模型一个小批次的反向更新 | 通过，不代表完整训练效果 |
+| Spark | `local[2]` 下的 DataFrame 与 ML 小样本 | 通过 |
+| 历史 API | TF1 placeholder/session、旧 Keras、Word2Vec 与 ARIMA 小样本 | 通过 |
+| 展示 | 中文绘图、Widget 输出与 HTML 导出 | 通过所列样本 |
+
+两套参考环境的 `pip check` 均通过。以上结果不能推广为“所有 Notebook、所有网络接口及所有训练结论都已复现”。
+
+展示时优先保留 Notebook 和 HTML。PDF 还涉及 TeX、Pandoc、字体和教材 Markdown 的转义规则；本次基础中文公式 PDF 和部分 Notebook 导出通过，但个别教材的 PDF 表格兼容问题不在课程计算环境的通过结论之内。
+
+## 八、建议的学习顺序
+
+初学者可以先完成 Python/Jupyter 和 Pandas，再选一个小型回归或 kNN 案例，走通“读数据—做变换—训练—检查结果”的完整过程。之后再选用户聚类、评论情感或图像识别，比较不同数据表示带来的变化。
+
+已经有编程基础的人，可以从一个感兴趣的问题倒着读：先明确任务和评估方式，再回到数据清洗、特征构造与实现细节。Spark 和 AI 工具放在这个过程之后，才更容易理解它们改善了哪一部分工作。
+
+这套材料最有价值的连接，是让编程、数据处理、建模、可视化与解释回到同一个实验里。工具和版本会变，能够清楚说明“输入是什么、做了什么、如何检查输出”，才是可以继续复用的能力。
+
+## 参考与阅读入口
+
+本文基于本次提供的教学 Notebook 的章节说明、代码结构与抽样运行记录整理。环境文件仅供同类平台参考，不附原始课件、学生问答、业务数据或访问凭据。
+
+- [Jupyter](https://jupyter.org/)
+- [Pandas 用户指南](https://pandas.pydata.org/docs/user_guide/index.html)
+- [scikit-learn 用户指南](https://scikit-learn.org/stable/user_guide.html)
+- [TensorFlow 教程](https://www.tensorflow.org/tutorials)
+- [Spark MLlib 指南](https://spark.apache.org/docs/latest/ml-guide.html)
+- [Jupyter AI 文档](https://jupyter-ai.readthedocs.io/)
