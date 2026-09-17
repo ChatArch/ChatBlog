@@ -155,8 +155,7 @@ python generate_image.py \
 
 换成别的教学主题时，也从这些可检查的内容开始：要画哪些对象，它们有什么关系，哪些步骤不能省略。再把描述写进 `prompt.txt`，用新的输出文件名生成。
 
-<details>
-<summary>补充：不用 ChatEnv，直接使用 curl</summary>
+## 补充：不用 ChatEnv，直接使用 curl
 
 如果不使用 ChatEnv，示例包也提供了 `request.json` 和 `curl_image_tool.sh`。它们调用同一个接口，需要 curl、jq 和 Base64 解码工具。
 
@@ -171,8 +170,6 @@ bash curl_image_tool.sh request.json quicksort-curl.png
 ```
 
 这也是一次新的生成请求，不是前面 Python 路径的下一步。修改图像内容时，编辑 `request.json` 中的 `input_text`；两条路径选一条即可。认证头通过标准输入交给 curl，Key 不写入请求 JSON 或 curl 参数。
-
-</details>
 
 ## 示例与源码
 
