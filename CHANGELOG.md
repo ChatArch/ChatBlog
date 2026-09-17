@@ -4,6 +4,10 @@
 
 ### Added
 
+- Added a separate AI Slop archive with per-article reasons, original-URL warnings, and noindex metadata.
+- Reviewed all 61 posts: 18 remain in the main blog; 43 are unlisted without changing their bodies or assets.
+- Added classification/frontmatter consistency tests to every site build.
+
 - Added a Hermes Multi-Agent architecture article covering Profile, `delegate_task`, Kanban, Gateway multiplex, and terminal backends.
 - Rebuilt ChatBlog as a Docusaurus public knowledge and blog site.
 - Added the first hello world blog post and knowledge block.
@@ -38,6 +42,8 @@
 - Added a current-state Speakr article covering the deployed meeting recorder, bounded-context SenseVoice transcription and rewrite flow, Qwen summary/title/TTS/Realtime models, Recall topology, privacy modes, tests, and known limits.
 
 ### Changed
+
+- Reworked the CRS image guide around one teaching-diagram example, corrected the script dependency/configuration instructions, and updated only its companion README.
 
 - Expanded the mail service deployment guide with a concrete Docker Mailserver / DMS path derived from the prior Butterfly blog note, including DNS, TLS, DKIM, users, ports, and verification steps.
 - Replaced the placeholder Python package scaffold with a static site source tree.
