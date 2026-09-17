@@ -17,7 +17,7 @@
   },
   {
     "file": "blog/2026-09-08-crs-image-generation/index.mdx",
-    "title": "用 CRS API Key 生成图片：ChatEnv 与 curl 实用指南",
+    "title": "用 CRS 生成一张中文教学图",
     "slug": "crs-image-generation-guide",
     "date": "2026-09-08",
     "status": "keep",

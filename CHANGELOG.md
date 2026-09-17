@@ -43,6 +43,8 @@
 
 ### Changed
 
+- Reworked the CRS image guide around one teaching-diagram example, corrected the script dependency/configuration instructions, and updated only its companion README.
+
 - Expanded the mail service deployment guide with a concrete Docker Mailserver / DMS path derived from the prior Butterfly blog note, including DNS, TLS, DKIM, users, ports, and verification steps.
 - Replaced the placeholder Python package scaffold with a static site source tree.
 - Updated the Docusaurus canonical site URL to the ChatArch shared Pages domain.
