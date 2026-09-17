@@ -38,7 +38,8 @@ const config = {
         blog: {
           showReadingTime: true,
           blogTitle: 'ChatBlog 博客',
-          blogDescription: '公开技术笔记、知识块与项目文章。',
+          blogDescription: '经过筛选保留的技术文章与实践笔记。',
+          blogSidebarTitle: '保留文章',
           postsPerPage: 10,
           editUrl: 'https://github.com/ChatArch/ChatBlog/tree/main/',
         },
@@ -66,6 +67,7 @@ const config = {
           {to: '/slides', label: 'Slides', position: 'left'},
           {to: '/blog/archive', label: '时间轴', position: 'left'},
           {to: '/blog/tags', label: '标签', position: 'left'},
+          {to: '/ai-slop', label: 'AI Slop', position: 'right'},
           {href: 'https://github.com/ChatArch/ChatBlog', label: 'GitHub', position: 'right'},
         ],
       },

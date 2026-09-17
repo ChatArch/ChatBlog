@@ -7,7 +7,7 @@ import styles from './index.module.css';
 const entries = [
   {
     title: '博客',
-    description: '最新的技术文章、项目调研和实践笔记。',
+    description: '经过筛选保留的技术文章与实践笔记。',
     to: '/blog',
     action: '阅读文章',
   },
@@ -38,7 +38,7 @@ function HomepageHeader() {
         <p className={styles.eyebrow}>ChatArch Notes</p>
         <Heading as="h1" className={styles.title}>ChatBlog</Heading>
         <p className={styles.subtitle}>
-          ChatArch 的公开技术笔记、项目调研和实践文章。这里保留可以公开阅读、引用和复盘的内容。
+          ChatArch 的技术文章与实践笔记。主区保留有使用价值的内容，其余历史文章单独归档。
         </p>
         <div className={styles.actions}>
           <Link className="button button--primary button--lg" to="/blog">

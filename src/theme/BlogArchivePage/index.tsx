@@ -102,15 +102,15 @@ export default function BlogArchive({archive}: Props): ReactNode {
 
   return (
     <>
-      <PageMetadata title="时间轴" description="按时间轴浏览全部 ChatBlog 历史文章" />
-      <Layout title="时间轴" description="按时间轴浏览全部 ChatBlog 历史文章">
+      <PageMetadata title="时间轴" description="按时间轴浏览 ChatBlog 保留文章" />
+      <Layout title="时间轴" description="按时间轴浏览 ChatBlog 保留文章">
         <header className={styles.hero}>
           <div className="container">
             <p className={styles.kicker}>Archive</p>
             <Heading as="h1">时间轴</Heading>
             <p className={styles.summary}>文章总览 - {totalCount}</p>
             <p className={styles.description}>
-              按年份和发布日期浏览全部 ChatBlog 文章。日期单独成列，标题保持干净，适合快速回看完整历史。
+              按年份和发布日期浏览主区保留的文章。AI Slop 内容单独归档，不计入此处。
             </p>
             <div className={styles.actions}>
               <Link className="button button--secondary" to="/blog">

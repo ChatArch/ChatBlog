@@ -1,0 +1,490 @@
+[
+  {
+    "file": "blog/2026-09-16-python-data-mining-notebook-course-guide.mdx",
+    "title": "Python 数据分析与挖掘实践：Notebook 课程导读、环境 Setup 与使用方式",
+    "slug": "python-data-mining-notebook-course-guide",
+    "date": "2026-09-16",
+    "status": "slop",
+    "reason": "课程导读缺少读者可取得的教材入口，大量篇幅变成某次部署与验收记录。"
+  },
+  {
+    "file": "blog/2026-09-08-volcengine-agent-coding-plan-guide.mdx",
+    "title": "用 Python 接入火山方舟：从 AK/SK 到两套 Plan 密钥",
+    "slug": "volcengine-agent-coding-plan-guide",
+    "date": "2026-09-08",
+    "status": "keep",
+    "reason": "给出两套Plan入口、完整调用代码与可下载工具包，解决可直接操作的接入问题。"
+  },
+  {
+    "file": "blog/2026-09-08-crs-image-generation/index.mdx",
+    "title": "用 CRS API Key 生成图片：ChatEnv 与 curl 实用指南",
+    "slug": "crs-image-generation-guide",
+    "date": "2026-09-08",
+    "status": "keep",
+    "reason": "有实际生成图片、完整请求及可下载代码，读者能复用从请求到保存PNG的路径。"
+  },
+  {
+    "file": "blog/2026-08-29-ai4math-dataset-benchmark-evolution.mdx",
+    "title": "AI4Math 的数据集十年：从小学应用题到 Lean Eval",
+    "slug": "ai4math-dataset-benchmark-evolution",
+    "date": "2026-08-29",
+    "status": "slop",
+    "reason": "资料多但被套进单一演进叙事，反复升华为工作流；缺少贯穿比较的具体数学例题。"
+  },
+  {
+    "file": "blog/2026-08-29-formalization-ai-era.mdx",
+    "title": "AI 研究狂飙的时代，为什么形式化会变得更重要",
+    "slug": "formalization-ai-research-era",
+    "date": "2026-08-29",
+    "status": "slop",
+    "reason": "主要反复申说形式化重要，缺少一个展开的命题或代码例子支撑论点。"
+  },
+  {
+    "file": "blog/2026-08-22-remotion-react-video-quickstart.mdx",
+    "title": "Remotion：用 React 写代码生成视频的最小闭环",
+    "slug": "remotion-react-video-quickstart",
+    "date": "2026-08-22",
+    "status": "keep",
+    "reason": "模板源码解释、渲染命令和可播放MP4串成可操作入门，虽有冗余仍有直接使用价值。"
+  },
+  {
+    "file": "blog/2026-08-22-remotion-parametrized-batch-render.mdx",
+    "title": "Remotion 进阶：一份代码，参数化批量出片",
+    "slug": "remotion-parametrized-batch-render",
+    "date": "2026-08-22",
+    "status": "slop",
+    "reason": "核心DataBars实现未给出，所谓批量命令使用省略号JSON，展示多但读者无法照着复现。"
+  },
+  {
+    "file": "blog/2026-08-22-open-source-voice-cloning-frameworks.mdx",
+    "title": "2025+ 开源语音克隆框架调研：从 IndexTTS、CosyVoice 到 Chatterbox",
+    "slug": "open-source-voice-cloning-frameworks-2025",
+    "date": "2026-08-22",
+    "status": "slop",
+    "reason": "对自然度、均衡和效果给出排名，却没有同输入音频或测试结果支撑。"
+  },
+  {
+    "file": "blog/2026-08-17-speakr-realtime-voice-workspace.mdx",
+    "title": "Speakr：我们现在用的网页录音与实时语音工作台",
+    "slug": "speakr-realtime-voice-workspace",
+    "date": "2026-08-17",
+    "status": "slop",
+    "reason": "正文依赖一次具体部署与账号状态，缺少独立可复用的演示，适合历史记录而非精选。"
+  },
+  {
+    "file": "blog/2026-08-14-deepseek-harness-dsh-profile-plugin-cordis.mdx",
+    "title": "DeepSeek Harness 上手笔记：dsh、workspace、patch 和 Cordis",
+    "slug": "deepseek-harness-dsh-profile-plugin-cordis",
+    "date": "2026-08-14",
+    "status": "slop",
+    "reason": "围绕验收术语复述任务，关键插件和测试仓库缺少完整代码，不能支撑上手复用。"
+  },
+  {
+    "file": "blog/2026-08-13-zulip-agent-community-patterns.mdx",
+    "title": "从 17 万条 Zulip 消息看 Agent 社区应该怎么组织",
+    "slug": "zulip-agent-community-patterns",
+    "date": "2026-08-13",
+    "status": "slop",
+    "reason": "统计对象与采样不可公开核查，后半从统计直接跳到频道与Agent规范，论证跨度过大。"
+  },
+  {
+    "file": "blog/2026-08-13-chatglance-page-development-pattern.mdx",
+    "title": "ChatGlance 页面开发模式：把 Glance Dashboard 做成可审查的页面流水线",
+    "slug": "chatglance-page-development-pattern",
+    "date": "2026-08-13",
+    "status": "slop",
+    "reason": "有部署边界知识，但以内部规范和应当清单为主，缺少具体故障、改动前后或验证产物。"
+  },
+  {
+    "file": "blog/2026-08-12-zarazhangrui-frontend-slides-skill.mdx",
+    "title": "Frontend Slides：zarazhangrui 的 AI Agent HTML 演示文稿 Skill 详解",
+    "slug": "zarazhangrui-frontend-slides-skill",
+    "date": "2026-08-12",
+    "status": "slop",
+    "reason": "固定画布与视觉预览有启发，但主体是 Skill 转述和本站落地规划，未见生成实例验证。"
+  },
+  {
+    "file": "blog/2026-08-12-mattermost-chatrss-multi-agent-conversation-rules.mdx",
+    "title": "当两个 Agent 进同一个 Mattermost Thread：ChatRSS、Hermes 与 cc-connect 的对话规则",
+    "slug": "mattermost-chatrss-multi-agent-conversation-rules",
+    "date": "2026-08-12",
+    "status": "keep",
+    "reason": "线程实测加 session_scope 对照，讲清 UI 可见不等于模型已摄入，也明确未完成的路由能力。"
+  },
+  {
+    "file": "blog/2026-08-12-bilibili-publishing-api-cli-field-guide.mdx",
+    "title": "B站发文和视频投稿：官方开放平台、插件能力与 CLI 工具调研",
+    "slug": "bilibili-publishing-api-cli-field-guide",
+    "date": "2026-08-12",
+    "status": "keep",
+    "reason": "权限、端点和适配器源码互相印证，区分官方投稿、浏览器草稿及第三方 CLI，能避免选错路线。"
+  },
+  {
+    "file": "blog/2026-08-10-volcengine-realtime-asr-practice-guide.mdx",
+    "title": "火山引擎实时语音识别从注册到接入：豆包语音 ASR 实践教程",
+    "slug": "volcengine-realtime-asr-practice-guide",
+    "date": "2026-08-10",
+    "status": "slop",
+    "reason": "协议与资源 ID 有资料价值，但无调用结果却冠以实践教程，大量你做我做和待补验收。"
+  },
+  {
+    "file": "blog/2026-08-10-iflytek-realtime-asr-practice-guide.mdx",
+    "title": "科大讯飞实时语音转写从注册到接入：一份可边实践边更新的教程",
+    "slug": "iflytek-realtime-asr-practice-guide",
+    "date": "2026-08-10",
+    "status": "slop",
+    "reason": "正文把真实测试和结果留到后续，实践教程实际是待办手册，控制台协作口吻过重。"
+  },
+  {
+    "file": "blog/2026-08-10-domestic-realtime-asr-provider-integration.mdx",
+    "title": "实时语音转录怎么接：讯飞、阿里云、火山引擎、腾讯云四条路线",
+    "slug": "domestic-realtime-asr-provider-integration",
+    "date": "2026-08-10",
+    "status": "slop",
+    "reason": "四家协议入口有用，但没有同音频结果，后半主要回答助手能代办什么，选型结论未落地。"
+  },
+  {
+    "file": "blog/2026-08-10-aliyun-realtime-asr-practice-guide.mdx",
+    "title": "阿里云实时语音识别从注册到接入：百炼 ASR 实践教程",
+    "slug": "aliyun-realtime-asr-practice-guide",
+    "date": "2026-08-10",
+    "status": "slop",
+    "reason": "计费与地域提醒有价值，但测试输出仍待补，和同系列重复大量开通清单及人机分工。"
+  },
+  {
+    "file": "blog/2026-08-09-speakr-recording-ai-notes-practice.mdx",
+    "title": "Speakr 实操：录完之后，转写和 AI 纪要到底在哪里",
+    "slug": "speakr-recording-ai-notes-practice",
+    "date": "2026-08-09",
+    "status": "slop",
+    "reason": "案例停留在测试实例的按钮与交付说明，用演讲短句展示会议纪要，未评估纪要忠实度。"
+  },
+  {
+    "file": "blog/2026-08-09-mattermost-posting-model-slack-comparison.mdx",
+    "title": "看懂 Mattermost：频道、帖子、Thread、私聊，以及它和 Slack/飞书哪里不一样",
+    "slug": "mattermost-posting-model-slack-comparison",
+    "date": "2026-08-09",
+    "status": "slop",
+    "reason": "频道和线程解释清楚，但反复套用内部 Agent 工作间愿景与约定，独立知识增量较有限。"
+  },
+  {
+    "file": "blog/2026-08-09-mail-service-deployment-options.mdx",
+    "title": "自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择",
+    "slug": "mail-service-deployment-options",
+    "date": "2026-08-09",
+    "status": "slop",
+    "reason": "将DNS公开的DKIM公钥也当成敏感材料，PTR示例写法不规范；配置部分需重新核对。"
+  },
+  {
+    "file": "blog/2026-08-08-mobile-web-realtime-transcription-pwa.mdx",
+    "title": "网页录音到 AI 纪要：先选成熟 ASR，再看现成产品",
+    "slug": "mobile-web-realtime-transcription-pwa",
+    "date": "2026-08-08",
+    "status": "slop",
+    "reason": "主要是产品候选清单和下一步实测计划，缺少对中文实时效果的实证，选型依据仍偏宣传。"
+  },
+  {
+    "file": "blog/2026-08-08-mattermost-hermes-agent-workspace.mdx",
+    "title": "把 Agent 放进自己的实时工作间：Mattermost、Hermes 与 ChatArch 的下一块拼图",
+    "slug": "mattermost-hermes-agent-workspace",
+    "date": "2026-08-08",
+    "status": "slop",
+    "reason": "篇幅围绕内部社区愿景，真实验收只有健康接口，核心 Agent 接入仍是未来计划。"
+  },
+  {
+    "file": "blog/2026-08-07-hermes-codex-computer-use-comparison.mdx",
+    "title": "Hermes 和 Codex 的 Computer Use：谁在做桌面控制，差别在哪里",
+    "slug": "hermes-codex-computer-use-comparison",
+    "date": "2026-08-07",
+    "status": "keep",
+    "reason": "比较落实到工具注册、配置字段和具体路由冲突，说明内置插件与外部 MCP 为什么不能混谈。"
+  },
+  {
+    "file": "blog/2026-08-07-audio-transcription-meeting-notes-open-source.mdx",
+    "title": "录音转写与会议笔记自建选型：Vexa、Scriberr、Whishper 与 Whisper 底座",
+    "slug": "audio-transcription-meeting-notes-open-source",
+    "date": "2026-08-07",
+    "status": "slop",
+    "reason": "产品形态划分有用，但大段 README 转述与候选表重复，缺少能拉开差距的细读案例。"
+  },
+  {
+    "file": "blog/2026-08-06-hong-wang-fields-medal-harmonic-analysis-kakeya.mdx",
+    "title": "王虹的菲尔兹奖：从波的平滑到三维 Kakeya",
+    "slug": "hong-wang-fields-medal-harmonic-analysis-kakeya",
+    "date": "2026-08-06",
+    "status": "keep",
+    "reason": "不止列论文名，还解释波包几何、维数问题与两尺度自改进，给出可继续阅读的证明依赖图。"
+  },
+  {
+    "file": "blog/2026-08-06-qwen-token-plan-coding-crs.mdx",
+    "title": "千问 Token Plan 调研：把 Coding 额度接进 Codex 与 CRS",
+    "slug": "qwen-token-plan-coding-crs",
+    "date": "2026-08-06",
+    "status": "slop",
+    "reason": "前称个人版不得作后端/API 池，后又建议共享池，边界矛盾；OK 烟测也不足以支撑模型能力推荐。"
+  },
+  {
+    "file": "blog/2026-08-06-manim-quickstart-water-ripple-video.mdx",
+    "title": "Manim Quickstart：从 plan.md 到第一条水波纹视频",
+    "slug": "manim-quickstart-water-ripple-video",
+    "date": "2026-08-06",
+    "status": "keep",
+    "reason": "给出完整单场景脚本、真实渲染日志和 ffprobe 结果，覆盖发布与嵌入，读者能照着复现。"
+  },
+  {
+    "file": "blog/2026-08-06-manim-python-math-animation-video-pipeline.mdx",
+    "title": "Manim：用 Python 搭一条数学动画视频生产线",
+    "slug": "manim-python-math-animation-video-pipeline",
+    "date": "2026-08-06",
+    "status": "slop",
+    "reason": "安装依赖有用，但生产流多为通用清单；示例先清空场景，却再用末帧导出检查公式，步骤矛盾。"
+  },
+  {
+    "file": "blog/2026-08-06-frontend-harness-slides-web-deck-workflow.mdx",
+    "title": "把 PPT 做成前端项目：Frontend Harness Slides 的工作流与实践路线",
+    "slug": "frontend-harness-slides-web-deck-workflow",
+    "date": "2026-08-06",
+    "status": "slop",
+    "reason": "scene/beat 深链接有启发，但主线转为内部 starter 规划，未交付对应的完整演示实例。"
+  },
+  {
+    "file": "blog/2026-08-06-agent-client-edit-protocols-patch-replace.mdx",
+    "title": "Agent 写文件到底用 patch 还是 replace：Codex、Claude Code、Qwen Code 的工具协议拆解",
+    "slug": "agent-client-edit-protocols-patch-replace",
+    "date": "2026-08-06",
+    "status": "slop",
+    "reason": "工具版本与命令表不匹配：新版仍列undo_edit；协议矩阵需重新核对，暂不作为教程。"
+  },
+  {
+    "file": "blog/2026-08-05-rss-and-rsshub-for-chatrss.mdx",
+    "title": "RSS 与 RSSHub 入门：把网页更新变成可订阅的信息流",
+    "slug": "rss-and-rsshub-foundation-for-chatrss",
+    "date": "2026-08-05",
+    "status": "slop",
+    "reason": "XML 与 route 示例有资料价值，但入门说明后转向内部 minor 发版待办，未形成完整订阅使用例子。"
+  },
+  {
+    "file": "blog/2026-08-05-multica-managed-agents-platform.mdx",
+    "title": "Multica 调研：把 Coding Agent 变成可以分配 Issue 的队友",
+    "slug": "multica-managed-agents-platform",
+    "date": "2026-08-05",
+    "status": "keep",
+    "reason": "对象模型、任务执行链路与权限/许可限制相互关联，能改变采用决策，不是单纯功能清单。"
+  },
+  {
+    "file": "blog/2026-08-05-hermes-supported-platforms-field-guide.mdx",
+    "title": "Hermes 支持平台图鉴：从聊天窗口到 Agent 工作间",
+    "slug": "hermes-supported-platforms-field-guide",
+    "date": "2026-08-05",
+    "status": "slop",
+    "reason": "支持层级分类有用，但大量平台卡片和内部角色定位重复，覆盖面代替了具体接入说明。"
+  },
+  {
+    "file": "blog/2026-08-05-discourse-ai-practice-guide.mdx",
+    "title": "Discourse AI 实践指南：把论坛变成 Agent 社区的 AI 工作台",
+    "slug": "discourse-ai-practice-guide",
+    "date": "2026-08-05",
+    "status": "slop",
+    "reason": "承认未启用多项功能，但实测主体仍是模型验证与记录回帖，难支撑整篇 AI 工作台实践定位。"
+  },
+  {
+    "file": "blog/2026-08-03-chatshare-file-sharing-backend-survey.mdx",
+    "title": "ChatShare 文件分享底座选型：从 Droppy 到 Dufs、Copyparty 与 Gokapi",
+    "slug": "chatshare-file-sharing-backend-survey",
+    "date": "2026-08-03",
+    "status": "keep",
+    "reason": "按URL与生命周期契约区分底座，淘汰理由具体，并明确静态调研不等于实跑。"
+  },
+  {
+    "file": "blog/2026-08-03-agent-community-human-admin-autonomy-loop.mdx",
+    "title": "Agent Community 应该如何工作：Human Admin、任务流与自治闭环",
+    "slug": "agent-community-human-admin-autonomy-loop",
+    "date": "2026-08-03",
+    "status": "slop",
+    "reason": "内部愿景和任务关卡命名占主导，未核实引用及草稿状态不适合精选。"
+  },
+  {
+    "file": "blog/2026-08-02-openai-astra-ten-math-problems-guide.mdx",
+    "title": "OpenAI Astra 的十个数学问题到底在研究什么？一篇读懂背景、难点与结果边界",
+    "slug": "openai-astra-ten-math-problems-guide",
+    "date": "2026-08-02",
+    "status": "slop",
+    "reason": "所读段落把证明思路压成术语与结论，缺少可跟随的小例子，读懂背景的承诺偏大。"
+  },
+  {
+    "file": "blog/2026-08-01-openai-astra-ten-math-advances.mdx",
+    "title": "OpenAI Astra 真的解决了十道数学难题吗？逐项审计论文、Lean 证书与争议",
+    "slug": "openai-astra-ten-math-advances",
+    "date": "2026-08-01",
+    "status": "slop",
+    "reason": "标题承诺逐项审计，正文自述只做字面扫描；未给逐题语义核验或构建结果，结论偏强。"
+  },
+  {
+    "file": "blog/2026-07-31-zhihu-draft-chrome-bridge-pipeline.mdx",
+    "title": "从 Chrome 登录态到知乎草稿：我们如何打通一条可控的写入链路",
+    "slug": "zhihu-draft-chrome-bridge-pipeline",
+    "date": "2026-07-31",
+    "status": "keep",
+    "reason": "MV3时序、旧连接清空新连接及update误建稿的因果清楚，且区分真实验收与离线测试。"
+  },
+  {
+    "file": "blog/2026-07-31-ccf-ab-ai-math-science-deadlines.mdx",
+    "title": "别只搜 AI for Math：2026 下半年 CCF A/B 会议怎么选",
+    "slug": "ccf-ab-ai-math-science-deadlines-2026",
+    "date": "2026-07-31",
+    "status": "slop",
+    "reason": "时效性选会清单停留在7月快照，部分主推窗口已过；保留作历史资料，不作当前推荐。"
+  },
+  {
+    "file": "blog/2026-07-31-tauceti-ai-mathlib.mdx",
+    "title": "Tau Ceti：人类写 roadmap，AI 真的能维护一座数学库吗？",
+    "slug": "tauceti-ai-mathlib-roadmap-review-system",
+    "date": "2026-07-31",
+    "status": "keep",
+    "reason": "用五轮PR审查展示代码如何被改变，并用人工校准缺口反驳吞吐量等于质量。"
+  },
+  {
+    "file": "blog/2026-07-31-zhihu-cli-publishing-server-control-plane.mdx",
+    "title": "把知乎发布做成服务器任务：哪种 CLI 方案最稳？",
+    "slug": "zhihu-cli-publishing-server-control-plane",
+    "date": "2026-07-31",
+    "status": "slop",
+    "reason": "设计建议与拟建接口较多，后续真实草稿复盘已提供更扎实的证据。"
+  },
+  {
+    "file": "blog/2026-07-31-are-we-stuck-with-lean.mdx",
+    "title": "我们真的被 Lean 锁定了吗？Mathlib、soundness 与证明可移植性",
+    "slug": "are-we-stuck-with-lean-mathlib-proof-portability",
+    "date": "2026-07-31",
+    "status": "keep",
+    "reason": "逐一归属争论观点，并解释库语义、实现与基础逻辑的迁移差别，不止站队。"
+  },
+  {
+    "file": "blog/2026-07-31-autoresearch-solutions-and-practice.mdx",
+    "title": "AutoResearch 怎么落地：验证债务与可信闭环",
+    "slug": "autoresearch-open-source-landscape",
+    "date": "2026-07-31",
+    "status": "keep",
+    "reason": "以反复查询holdout解释假改进的因果，再给独立确认规则，明显超出项目罗列。"
+  },
+  {
+    "file": "blog/2026-07-31-ai-math-open-conjectures-icm-2026.mdx",
+    "title": "AI 数学进入开放问题时代了吗：ICM 2026 后的数据集、系统与真实进展",
+    "slug": "ai-math-open-conjectures-icm-2026",
+    "date": "2026-07-31",
+    "status": "slop",
+    "reason": "所读部分主要提供项目索引与证据分级，跨度过大，关键研究机制缺少展开。"
+  },
+  {
+    "file": "blog/2026-07-31-lean-conjecture-soundness-bug.mdx",
+    "title": "一份‘反证 Collatz 猜想’的 Lean 代码，为什么同时通过了两个 checker",
+    "slug": "lean-conjecture-soundness-bug-collatz-comparator-nanoda",
+    "date": "2026-07-31",
+    "status": "keep",
+    "reason": "从漏检参数到False再到双漏洞交集给出连续机制，版本、修复和归因边界明确。"
+  },
+  {
+    "file": "blog/2026-07-31-lean-comparator-guide.mdx",
+    "title": "Comparator 到底在检查什么：从 Challenge/Solution 到 external kernel",
+    "slug": "lean-comparator-trust-boundary-guide",
+    "date": "2026-07-31",
+    "status": "keep",
+    "reason": "按实际检查链解释信任边界，definition-hole与instance diamond例子具体可迁移。"
+  },
+  {
+    "file": "blog/2026-07-31-nanoda-external-kernel-guide.mdx",
+    "title": "nanoda：为什么 Lean 还需要另一个 kernel",
+    "slug": "nanoda-lean-external-kernel-guide",
+    "date": "2026-07-31",
+    "status": "keep",
+    "reason": "从export、配置到metadata重建讲清实现职责，并用projection反例限定独立性。"
+  },
+  {
+    "file": "blog/2026-07-29-selfhosted-dashboard-roundup.mdx",
+    "title": "自托管 Dashboard 选型：Homepage、Homarr、Dashy、Homer、Glance",
+    "slug": "selfhosted-dashboard-homepage-homarr-dashy-homer-glance",
+    "date": "2026-07-29",
+    "status": "slop",
+    "reason": "统一功能清单与部署模板主导，优劣结论缺少同场景对照或独特实测。"
+  },
+  {
+    "file": "blog/2026-07-29-glance-dashboard-widgets-guide.mdx",
+    "title": "Glance 配置指南：怎么添加服务、RSS，以及它到底能放什么",
+    "slug": "glance-dashboard-widgets-rss-services-guide",
+    "date": "2026-07-29",
+    "status": "keep",
+    "reason": "缓存重载、服务端探活与RSS分源限额解释具体，从结构到配置形成可跟随路径。"
+  },
+  {
+    "file": "blog/2026-07-28-smtp-email-delivery.mdx",
+    "title": "SMTP 入门：邮件是怎么发出去的，以及常见平台怎么配置",
+    "slug": "smtp-email-delivery-basics-and-provider-configuration",
+    "date": "2026-07-28",
+    "status": "slop",
+    "reason": "多平台参数没有官方来源或验证记录，关键协议边界讲得偏粗，不足以支撑上线速查。"
+  },
+  {
+    "file": "blog/2026-07-28-discord-revolt-stoat-intro.mdx",
+    "title": "Discord 是什么？以及我们为什么部署了 Revolt / Stoat",
+    "slug": "discord-revolt-stoat-self-hosted-intro",
+    "date": "2026-07-28",
+    "status": "slop",
+    "reason": "正文主要说明内部demo入口和未完成事项，尚未体验到核心社区功能。"
+  },
+  {
+    "file": "blog/2026-07-27-discourse-ai-community-usage.mdx",
+    "title": "ChatArch Agent Community：Discourse + AI 社区使用说明",
+    "slug": "chatarch-discourse-ai-community-usage",
+    "date": "2026-07-27",
+    "status": "slop",
+    "reason": "具体部署记录不少，但目录、标签和待确认清单是内部使用手册，不是公共精选文章。"
+  },
+  {
+    "file": "blog/2026-07-27-chatvideo-video-url-pipeline.mdx",
+    "title": "ChatVideo：从视频网页 URL 自己搭建内容理解流水线",
+    "slug": "chatvideo-video-url-understanding-pipeline",
+    "date": "2026-07-27",
+    "status": "slop",
+    "reason": "流水线设计合理但仍是未来命令和PoC清单，没有实际视频输入输出的结果证据。"
+  },
+  {
+    "file": "blog/2026-07-27-chatvideo-open-source-video-platforms.mdx",
+    "title": "ChatVideo：可以直接部署的视频总结与知识库项目整理",
+    "slug": "chatvideo-deployable-video-understanding-projects",
+    "date": "2026-07-27",
+    "status": "slop",
+    "reason": "部署候选与README截图堆叠，夹带本机环境和后续计划，缺少真实效果比较。"
+  },
+  {
+    "file": "blog/2026-07-25-hermes-multi-agent.mdx",
+    "title": "Hermes Multi-Agent：Profile、Subagent 与 Kanban 的三层协作模型",
+    "slug": "hermes-multi-agent-profile-subagent-kanban",
+    "date": "2026-07-25",
+    "status": "slop",
+    "reason": "源码行号未绑定仓库版本或公开链接，操作契约难复查；概念有用但尚不足精选。"
+  },
+  {
+    "file": "blog/2026-07-24-agent-discussion-community.mdx",
+    "title": "Agent Discussion Community：从机器人社区到可部署的智能体议事厅",
+    "slug": "agent-discussion-community-self-hosted-discourse-router",
+    "date": "2026-07-24",
+    "status": "slop",
+    "reason": "角色表、状态机和里程碑主要是未落地组织蓝图，没有一次完整讨论闭环证据。"
+  },
+  {
+    "file": "blog/2026-06-29-hermes-ssh-mode.mdx",
+    "title": "Hermes SSH Mode：让模型安全地进入远端工作区",
+    "slug": "hermes-ssh-mode-model-controlled-remote-workspace",
+    "date": "2026-06-29",
+    "status": "slop",
+    "reason": "操作与授权蓝图缺少版本锚点和实际验证，命令密集但证明链不足。"
+  },
+  {
+    "file": "blog/2026-06-29-hello-world.mdx",
+    "title": "Hello World：ChatBlog 框架能力展示",
+    "slug": "hello-world-writing-public-notes-with-chatblog",
+    "date": "2026-06-29",
+    "status": "slop",
+    "reason": "站点能力展示和写作模板，不提供独立问题的知识或论证。"
+  }
+]

@@ -4,6 +4,10 @@
 
 ### Added
 
+- Added a separate AI Slop archive with per-article reasons, original-URL warnings, and noindex metadata.
+- Reviewed all 61 posts: 18 remain in the main blog; 43 are unlisted without changing their bodies or assets.
+- Added classification/frontmatter consistency tests to every site build.
+
 - Added a Hermes Multi-Agent architecture article covering Profile, `delegate_task`, Kanban, Gateway multiplex, and terminal backends.
 - Rebuilt ChatBlog as a Docusaurus public knowledge and blog site.
 - Added the first hello world blog post and knowledge block.

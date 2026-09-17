@@ -5,9 +5,10 @@
   "description": "Public knowledge and blog site for ChatArch work.",
   "scripts": {
     "start": "docusaurus start --host 0.0.0.0",
-    "build": "docusaurus build",
+    "build": "npm test && docusaurus build",
     "serve": "docusaurus serve --host 0.0.0.0",
-    "clear": "docusaurus clear"
+    "clear": "docusaurus clear",
+    "test": "node --test scripts/tests/*.test.cjs"
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.1",
