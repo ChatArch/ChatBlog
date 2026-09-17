@@ -40,6 +40,7 @@ const config = {
           blogTitle: 'ChatBlog 博客',
           blogDescription: '经过筛选保留的技术文章与实践笔记。',
           blogSidebarTitle: '保留文章',
+          blogSidebarCount: 'ALL',
           postsPerPage: 10,
           editUrl: 'https://github.com/ChatArch/ChatBlog/tree/main/',
         },

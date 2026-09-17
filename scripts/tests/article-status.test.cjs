@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const {test} = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
-const {articleUrl, validateArticleStatus, getSlopArticles} = require('../article-status.cjs');
+const {articleUrl, validateArticleStatus, getSlopArticles, isSlopPath, filterSidebarItems} = require('../article-status.cjs');
 
 const entry = (overrides = {}) => ({
   file: 'blog/2026-08-01-example.mdx', title: '示例文章', slug: 'example',
@@ -61,6 +61,23 @@ test('optional inventory validation rejects missing and extra articles', () => {
   assert.doesNotThrow(() => validateArticleStatus([entry()], [entry().file]));
   assert.throws(() => validateArticleStatus([entry()], [entry().file, 'blog/missing.md']), /inventory/);
   assert.throws(() => validateArticleStatus([entry()], []), /inventory/);
+});
+
+test('quarantine paths match production and preview bases without matching sibling slugs', () => {
+  assert.equal(typeof isSlopPath, 'function');
+  const manifest = [entry(), entry({file: 'blog/keep.md', slug: 'keep', status: 'keep'})];
+  assert.equal(isSlopPath('/ChatBlog/blog/example', manifest), true);
+  assert.equal(isSlopPath('/ChatBlog/dev/blog/example.html#section', manifest), true);
+  assert.equal(isSlopPath('/ChatBlog/blog/keep', manifest), false);
+  assert.equal(isSlopPath('/ChatBlog/blog/example-other', manifest), false);
+});
+test('sidebar excludes the current archived article as well as other archived entries', () => {
+  assert.equal(typeof filterSidebarItems, 'function');
+  const manifest = [entry()];
+  const items = [{permalink: '/ChatBlog/dev/blog/example'}, {permalink: '/ChatBlog/dev/blog/keep'}];
+  const before = JSON.stringify(items);
+  assert.deepEqual(filterSidebarItems(items, manifest), [items[1]]);
+  assert.equal(JSON.stringify(items), before);
 });
 
 const root = path.resolve(__dirname, '../..');

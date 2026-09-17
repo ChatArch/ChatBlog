@@ -53,4 +53,19 @@ function getSlopArticles(manifest) {
     .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
 }
 
-module.exports = {articleUrl, validateArticleStatus, getSlopArticles};
+function isSlopPath(pathname, manifest) {
+  if (typeof pathname !== 'string') return false;
+  let path;
+  try {
+    path = decodeURIComponent(pathname.split(/[?#]/, 1)[0]).replace(/\/$/, '').replace(/\.html$/, '');
+  } catch {
+    return false;
+  }
+  return getSlopArticles(manifest).some(({slug}) => path.endsWith(articleUrl(slug)));
+}
+
+function filterSidebarItems(items, manifest) {
+  return items.filter(({permalink}) => !isSlopPath(permalink, manifest));
+}
+
+module.exports = {articleUrl, validateArticleStatus, getSlopArticles, isSlopPath, filterSidebarItems};
