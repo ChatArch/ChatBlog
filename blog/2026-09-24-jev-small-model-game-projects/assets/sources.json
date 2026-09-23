@@ -1,0 +1,42 @@
+[
+  {
+    "file": "decision-paths.webp",
+    "source": "original diagram based on cited project source",
+    "kind": "original diagram",
+    "caption": "三条决策路径的原创源码分工图。",
+    "capture_date": "2026-09-24",
+    "transform": "cropped where noted; WebP conversion; none"
+  },
+  {
+    "file": "microduck-interface.webp",
+    "source": "https://typesafe-ai-playground.vercel.app/microduck",
+    "kind": "browser screenshot",
+    "caption": "MicroDuck原项目界面与七动作控制入口；待机状态，截图未调用Jev。",
+    "capture_date": "2026-09-24",
+    "transform": "cropped where noted; WebP conversion; none"
+  },
+  {
+    "file": "playjev-recorded-demo.webp",
+    "source": "https://omnijev.github.io/PlayJev/?game=snake",
+    "kind": "browser screenshot",
+    "caption": "PlayJev公开展示页的已录制Snake轨迹；截图未进行新的模型推理。",
+    "capture_date": "2026-09-24",
+    "transform": "cropped where noted; WebP conversion; none"
+  },
+  {
+    "file": "playjev-repository.webp",
+    "source": "https://github.com/OmniJev/PlayJev",
+    "kind": "browser screenshot",
+    "caption": "PlayJev仓库入口，展示代码目录、项目说明与许可；非模型运行截图。",
+    "capture_date": "2026-09-24",
+    "transform": "cropped where noted; WebP conversion; global GitHub navigation removed"
+  },
+  {
+    "file": "arena-kombat-guide.webp",
+    "source": "https://github.com/PromptEngineer48/laya-vs-jev-arena#kombat--the-fighting-benchmark",
+    "kind": "browser screenshot",
+    "caption": "Arena原仓库的格斗机制与键盘操作说明，非本轮模型实测。",
+    "capture_date": "2026-09-24",
+    "transform": "cropped where noted; WebP conversion; README column only; verified section scroll"
+  }
+]
