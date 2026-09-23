@@ -2,11 +2,146 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog</id>
     <title>ChatBlog Blog</title>
-    <updated>2026-09-16T00:00:00.000Z</updated>
+    <updated>2026-09-24T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/blog"/>
     <subtitle>ChatBlog Blog</subtitle>
     <icon>https://arch.gh.wzhecnu.cn/ChatBlog/img/favicon.svg</icon>
+    <entry>
+        <title type="html"><![CDATA[Jev 与小模型玩游戏：三个现成项目的源码、部署与边界]]></title>
+        <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects</id>
+        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects"/>
+        <updated>2026-09-24T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[从 PlayJev、Laya vs Jev Arena 和 MicroDuck 出发，核对模型看到什么、代码执行什么，以及如何区分实时推理、录制回放和规则接管。]]></summary>
+        <content type="html"><![CDATA[<p>想用一个低延迟模型玩游戏，最省事的起点是找一套已经能运行、还能看清决策过程的项目。画面动起来只是第一步：还要知道模型看到了什么、返回了什么，以及代码有没有替它改动作。</p>
+<p>这次筛选了十个现成项目，重点读了三套实现：<strong>PlayJev、本地 Laya 与 Jev 的对战 Arena，以及社区 Playground 里的 MicroDuck</strong>。它们分别代表画面输入、游戏状态输入和传感器输入三条路线。本文整理源码与启动方式，没有把作者报告的速度和得分当作自己的复现实测。</p>
+<p><a href="https://arch.gh.wzhecnu.cn/ChatBlog/assets/files/decision-paths-96711405d024c89a602fba475a8b37dd.webp" target="_blank" class=""><img decoding="async" loading="lazy" alt="三个现成项目的观察、模型决策与执行分工" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/decision-paths-96711405d024c89a602fba475a8b37dd.webp" width="1160" height="820" class="img_ev3q"></a></p>
+<p><em>图1：根据项目源码整理的决策路径。图中“执行”包括游戏规则和动作落实，不代表模型已经完成了全部规划。点击图片可查看大图。</em></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先按目标选项目">先按目标选项目<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E5%85%88%E6%8C%89%E7%9B%AE%E6%A0%87%E9%80%89%E9%A1%B9%E7%9B%AE" class="hash-link" aria-label="先按目标选项目的直接链接" title="先按目标选项目的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>你想验证什么</th><th>优先项目</th><th>运行方式</th></tr></thead><tbody><tr><td>公开的小模型能否直接看画面选动作</td><td>PlayJev</td><td>本地 CUDA 推理＋浏览器游戏</td></tr><tr><td>同一游戏里比较本地 Laya、Jev 和人类</td><td>Laya vs Jev Arena 的 Kombat</td><td>Python 服务器＋浏览器对战</td></tr><tr><td>Jev 如何把传感器状态变成实时动作</td><td>Community Playground 的 MicroDuck</td><td>Web 应用＋Jev API</td></tr></tbody></table>
+<p>这里有一个名称区别：Jev 是 TypeSafe 的托管模型；Laya 是另一个开源决策模型；PlayJev 则是基于 Qwen3.5-0.8B 训练的社区视觉决策模型。它们可以采用相近的“状态＋候选→选择”接口，但不能因此视为同一个模型。[7][17]</p>
+<p>下面的 stars 是 2026-09-24 调研快照，只作项目定位，不代表可靠性排名。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="playjev从画面到动作权重也公开">PlayJev：从画面到动作，权重也公开<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#playjev%E4%BB%8E%E7%94%BB%E9%9D%A2%E5%88%B0%E5%8A%A8%E4%BD%9C%E6%9D%83%E9%87%8D%E4%B9%9F%E5%85%AC%E5%BC%80" class="hash-link" aria-label="PlayJev：从画面到动作，权重也公开的直接链接" title="PlayJev：从画面到动作，权重也公开的直接链接" translate="no">​</a></h2>
+<p><strong>仓库：</strong> <a href="https://github.com/OmniJev/PlayJev" target="_blank" rel="noopener noreferrer" class="">https://github.com/OmniJev/PlayJev</a><br>
+<strong>权重：</strong> <a href="https://huggingface.co/OmniJev/PlayJev-0.8B" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/OmniJev/PlayJev-0.8B</a><br>
+<strong>快照：</strong> 27 stars；项目代码与模型权重标注 Apache-2.0。[16][63]</p>
+<p><a href="https://arch.gh.wzhecnu.cn/ChatBlog/assets/files/playjev-repository-e264b76b30bc5db7262705242134e12d.webp" target="_blank" class=""><img decoding="async" loading="lazy" alt="PlayJev 的 GitHub 仓库入口与代码目录" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/playjev-repository-e264b76b30bc5db7262705242134e12d.webp" width="1225" height="840" class="img_ev3q"></a></p>
+<p><em>图2：PlayJev 仓库截图。项目同时提供模型代码、游戏环境、训练脚本和展示页面；截图不是运行性能证据。来源：OmniJev/PlayJev。</em></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="模型确实读画面">模型确实读画面<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E6%A8%A1%E5%9E%8B%E7%A1%AE%E5%AE%9E%E8%AF%BB%E7%94%BB%E9%9D%A2" class="hash-link" aria-label="模型确实读画面的直接链接" title="模型确实读画面的直接链接" translate="no">​</a></h3>
+<p><code>LocalPolicy.decide()</code>把当前截图和动作说明交给模型，没有把游戏内部的教师答案一起送进去。<code>model.py</code>执行一次视觉模型前向，读取答案位置上候选字母的 logits，再转成动作概率；这条路径没有逐 token 的文本生成循环。[22][23]</p>
+<p>例如贪吃蛇的候选是“向上、向下、向左、向右”。这些描述解释动作本身，不会按当前棋盘把某个方向预先标成“Best route”。游戏收到概率最高的动作后推进，再生成下一张图。[22][24]</p>
+<p>这是一个适合研究模型贡献的接口：环境负责生成观察、执行动作和计分，模型负责选择。若把模型换成随机策略或教师策略，游戏环境仍然保持不变。[23]</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="展示页与实时模式要分开看">展示页与实时模式要分开看<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E5%B1%95%E7%A4%BA%E9%A1%B5%E4%B8%8E%E5%AE%9E%E6%97%B6%E6%A8%A1%E5%BC%8F%E8%A6%81%E5%88%86%E5%BC%80%E7%9C%8B" class="hash-link" aria-label="展示页与实时模式要分开看的直接链接" title="展示页与实时模式要分开看的直接链接" translate="no">​</a></h3>
+<p><a href="https://arch.gh.wzhecnu.cn/ChatBlog/assets/files/playjev-recorded-demo-b0ff2bf061a7ee93d97d00b549210adf.webp" target="_blank" class=""><img decoding="async" loading="lazy" alt="PlayJev 展示页中的 Snake 录制轨迹与概率面板" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/playjev-recorded-demo-b0ff2bf061a7ee93d97d00b549210adf.webp" width="1280" height="920" class="img_ev3q"></a></p>
+<p><em>图3：PlayJev 公开展示页的已录制 Snake 轨迹。图上的得分、动作概率和置信度来自原作者保存的运行记录，不是截图时新发起的推理。来源：PlayJev 展示站。</em></p>
+<p>公开的 GitHub Pages 和 Hugging Face Space 默认展示录制结果。HF Space 的类型也是静态站点，不承载 GPU 推理。因此，点开网页看见蛇在移动，不能算完成了实时模型部署。[64][67]</p>
+<p>项目已经写好了实时路径，不需要另外开发：网页指定 <code>?server=...</code> 后进入 <code>runLive()</code>，将新截图发给 <code>/v1/systemone</code>，读回概率并执行动作；<code>playjev.serve</code>负责加载权重和实际推理。[24][67]</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="按原项目方式启动">按原项目方式启动<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E6%8C%89%E5%8E%9F%E9%A1%B9%E7%9B%AE%E6%96%B9%E5%BC%8F%E5%90%AF%E5%8A%A8" class="hash-link" aria-label="按原项目方式启动的直接链接" title="按原项目方式启动的直接链接" translate="no">​</a></h3>
+<p>作者给出的环境是 Python 3.12 和 CUDA GPU，推理约需3GB显存。README里的43ms来自H200，不能直接套用到其他显卡或Mac上。[17]</p>
+<p>依赖准备遵循原仓库说明：</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">git clone https://github.com/OmniJev/PlayJev.git</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">cd PlayJev</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">python3.12 -m venv .venv</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">source .venv/bin/activate</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">pip install -r requirements.txt</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">playwright install chromium</span><br></div></code></pre></div></div>
+<p>先跑一个有界的本地模型 episode：</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">python -m playjev.play snake \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --policy local \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --ckpt OmniJev/PlayJev-0.8B \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --pages 1 --episodes 1 --max-steps 2000 \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --no-skip-noop</span><br></div></code></pre></div></div>
+<p>这会下载尚未缓存的权重并启动浏览器环境。上面的参数按源码核对过，本文没有执行这次安装与推理。[17][23]</p>
+<p>有两个开关值得先看清：</p>
+<ul>
+<li class="">不传 <code>--handover</code>，就不启用运行时教师接管。</li>
+<li class=""><code>--no-skip-noop</code>关闭“动作没改变画面时改走次优动作”的执行器规则。正式使用可以打开辅助，但评估时应分开统计。[23]</li>
+</ul>
+<p>需要接网页时，原项目已有服务入口：</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">python -m playjev.serve \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --ckpt OmniJev/PlayJev-0.8B \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --host 127.0.0.1 --port 18732</span><br></div></code></pre></div></div>
+<p>该服务默认没有鉴权，CORS允许所有来源。先在本地或受控网络使用；对外提供网页时应补访问控制，并验证网页到服务的协议、跨域和浏览器网络限制。不要把一个能在本机监听的接口直接裸露到公网。[24]</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="已有的优化过程是什么">已有的优化过程是什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E5%B7%B2%E6%9C%89%E7%9A%84%E4%BC%98%E5%8C%96%E8%BF%87%E7%A8%8B%E6%98%AF%E4%BB%80%E4%B9%88" class="hash-link" aria-label="已有的优化过程是什么的直接链接" title="已有的优化过程是什么的直接链接" translate="no">​</a></h3>
+<p>项目提供行为克隆和多轮 DAgger 的训练结果，以及相同留出种子上的随机、模型、教师比较。这里的改进来自模型权重训练，不是只换提示词。个别游戏的阶段成绩会回落，不能只挑增长的几列来描述效果。[17]</p>
+<p>教师在离线阶段提供标签，与在线阶段替模型做决定是两回事。PlayJev把二者做成不同路径：纯模型运行、教师运行、显式接管运行都可以分别检查。[23]</p>
+<p>如果目标是部署一个真正从游戏画面选择动作的小模型，我会优先原样研究这个项目。打包游戏各有许可证，美术素材的权利也不自动包含在模型的Apache许可内，发布游戏素材前还要单独核对。[17]</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="laya-vs-jev-arena直接比较模型先看格斗">Laya vs Jev Arena：直接比较模型，先看格斗<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#laya-vs-jev-arena%E7%9B%B4%E6%8E%A5%E6%AF%94%E8%BE%83%E6%A8%A1%E5%9E%8B%E5%85%88%E7%9C%8B%E6%A0%BC%E6%96%97" class="hash-link" aria-label="Laya vs Jev Arena：直接比较模型，先看格斗的直接链接" title="Laya vs Jev Arena：直接比较模型，先看格斗的直接链接" translate="no">​</a></h2>
+<p><strong>仓库：</strong> <a href="https://github.com/PromptEngineer48/laya-vs-jev-arena" target="_blank" rel="noopener noreferrer" class="">https://github.com/PromptEngineer48/laya-vs-jev-arena</a><br>
+<strong>快照：</strong> 27 stars，应用代码MIT。[6]</p>
+<p>这个项目已经有模型选择器、双方对战、人工控制、概率面板和JSON导出。如果想继续使用Laya，没必要先重写一套游戏。[7]</p>
+<p><a href="https://arch.gh.wzhecnu.cn/ChatBlog/assets/files/arena-kombat-guide-e460f770f02ce59fcba927f04e52df11.webp" target="_blank" class=""><img decoding="async" loading="lazy" alt="Arena 仓库中的 Kombat 机制与键盘控制说明" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/arena-kombat-guide-e460f770f02ce59fcba927f04e52df11.webp" width="890" height="820" class="img_ev3q"></a></p>
+<p><em>图4：原仓库的Kombat用法说明，展示动作、观测与人工操作方式。这里是文档截图，不是本文新跑出的对战成绩。来源：PromptEngineer48/laya-vs-jev-arena。</em></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="格斗中的决策分工">格斗中的决策分工<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E6%A0%BC%E6%96%97%E4%B8%AD%E7%9A%84%E5%86%B3%E7%AD%96%E5%88%86%E5%B7%A5" class="hash-link" aria-label="格斗中的决策分工的直接链接" title="格斗中的决策分工的直接链接" translate="no">​</a></h3>
+<p><code>fight.js:senseFor()</code>提供双方血量、距离、攻击前摇、生效与恢复阶段，以及是否正在防御。模型选择以下动作之一：[31][32]</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">ADVANCE / RETREAT / PUNCH / KICK / BLOCK / JUMP</span><br></div></code></pre></div></div>
+<p>另一个 <code>noul</code> 判断是否适合承诺慢速重击。动作说明告诉模型拳脚的距离、速度和风险，代码负责物理、伤害与动作时序。这些都是重要的辅助信息，但源码没有先为当前状态算出一个“最佳动作”再把它作为答案标签交给模型。[31][32]</p>
+<p>这类实验仍需做随机或规则对照，才能衡量模型增加了多少价值；接口设计合理，并不自动等于模型强。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="原生启动入口">原生启动入口<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E5%8E%9F%E7%94%9F%E5%90%AF%E5%8A%A8%E5%85%A5%E5%8F%A3" class="hash-link" aria-label="原生启动入口的直接链接" title="原生启动入口的直接链接" translate="no">​</a></h3>
+<p>安装原仓库的依赖后：</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">python server.py 8740</span><br></div></code></pre></div></div>
+<p>浏览器打开 <code>/fight/</code> 是Kombat，<code>/snake/</code>是追苹果比赛。双方可以选Laya、Jev或人类；Jev需要TypeSafe API key，本地Laya不需要Jev key。凭据应通过运行环境或私密配置注入，不放进前端和Git提交。[7]</p>
+<p>服务器的本地路径是进程内 <code>laya.Router</code>，默认checkpoint为 <code>typed-decisions</code>。它不是一个自动连接任意Laya服务的前端。作者还注明CPU-only VPS可能约1.8秒一次，Docker镜像默认关闭Laya，所以不能把Human-vs-Jev镜像启动成功当成已经部署了本地模型。[29]</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="哪些成绩不能混着比较">哪些成绩不能混着比较<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E5%93%AA%E4%BA%9B%E6%88%90%E7%BB%A9%E4%B8%8D%E8%83%BD%E6%B7%B7%E7%9D%80%E6%AF%94%E8%BE%83" class="hash-link" aria-label="哪些成绩不能混着比较的直接链接" title="哪些成绩不能混着比较的直接链接" translate="no">​</a></h3>
+<p>Arena按较慢模型的时延调整双方仿真节奏，Kombat也会扩大反应窗口。这让慢模型有机会作出判断，但需要把“调整后的仿真表现”和真实请求的P50/P95分开报告。[7][31]</p>
+<p>Snake分支允许穿过身体、从边缘环绕，并非经典的碰撞即死玩法。Runner和Flappy等分支也把一部分动作控制交给代码。各游戏的分工不同，不能用一句“每一步都是模型决定”概括整个仓库。[7]</p>
+<p>因此，第一轮我更建议固定Kombat：保留原输入、动作与节奏说明，直接比较模型，再判断是否值得改造。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="microduck七个动作驱动一只搬运机器人">MicroDuck：七个动作驱动一只搬运机器人<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#microduck%E4%B8%83%E4%B8%AA%E5%8A%A8%E4%BD%9C%E9%A9%B1%E5%8A%A8%E4%B8%80%E5%8F%AA%E6%90%AC%E8%BF%90%E6%9C%BA%E5%99%A8%E4%BA%BA" class="hash-link" aria-label="MicroDuck：七个动作驱动一只搬运机器人的直接链接" title="MicroDuck：七个动作驱动一只搬运机器人的直接链接" translate="no">​</a></h2>
+<p><strong>仓库：</strong> <a href="https://github.com/TypeSafeAI/typesafe-playground" target="_blank" rel="noopener noreferrer" class="">https://github.com/TypeSafeAI/typesafe-playground</a><br>
+<strong>入口：</strong> <a href="https://typesafe-ai-playground.vercel.app/microduck" target="_blank" rel="noopener noreferrer" class="">https://typesafe-ai-playground.vercel.app/microduck</a><br>
+<strong>快照：</strong> 20 stars，MIT。README明确说明这是独立社区项目，不是TypeSafe官方产品。[2][3]</p>
+<p><a href="https://arch.gh.wzhecnu.cn/ChatBlog/assets/files/microduck-interface-12971f2e0dcf4d3c4f6101fc5ddaa6e1.webp" target="_blank" class=""><img decoding="async" loading="lazy" alt="MicroDuck 原项目的仿真场景、控制入口和决策面板" src="https://arch.gh.wzhecnu.cn/ChatBlog/assets/images/microduck-interface-12971f2e0dcf4d3c4f6101fc5ddaa6e1.webp" width="1280" height="1000" class="img_ev3q"></a></p>
+<p><em>图5：MicroDuck原项目界面。截图停在初始状态，右上角为0 calls；它展示应用布局和实验入口，本次截图没有调用Jev。来源：TypeSafe Community Playground。</em></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="输入是观察不是预标的最佳动作">输入是观察，不是预标的最佳动作<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E8%BE%93%E5%85%A5%E6%98%AF%E8%A7%82%E5%AF%9F%E4%B8%8D%E6%98%AF%E9%A2%84%E6%A0%87%E7%9A%84%E6%9C%80%E4%BD%B3%E5%8A%A8%E4%BD%9C" class="hash-link" aria-label="输入是观察，不是预标的最佳动作的直接链接" title="输入是观察，不是预标的最佳动作的直接链接" translate="no">​</a></h3>
+<p><code>observe()</code>构造九个当前状态字段：目标距离与方向、前方及左右障碍、电量、是否载货、是否到达目标、上个动作。请求给出七个候选：[42][66][68]</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">move_forward / move_backward / turn_left / turn_right</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">stop / pick_up / drop</span><br></div></code></pre></div></div>
+<p>候选说明描述每个动作的含义。模型选择有效动作后，仿真直接执行；撞墙会消耗步数并增加碰撞记录，不被导航算法悄悄改成正确路线。响应格式无效时，解析层会尝试模型概率的argmax；完全没有可用回答则停下，这部分也有来源标记。[42][66]</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="现成的对照比再加版本号更有用">现成的对照比再加版本号更有用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E7%8E%B0%E6%88%90%E7%9A%84%E5%AF%B9%E7%85%A7%E6%AF%94%E5%86%8D%E5%8A%A0%E7%89%88%E6%9C%AC%E5%8F%B7%E6%9B%B4%E6%9C%89%E7%94%A8" class="hash-link" aria-label="现成的对照比再加版本号更有用的直接链接" title="现成的对照比再加版本号更有用的直接链接" translate="no">​</a></h3>
+<p>MicroDuck已经提供Jev、随机、人工三种模式，还能在同一局面下故意隐藏传感器字段，比较动作和结果。它记录送出的状态、概率、执行动作、送达和碰撞，以及请求耗时。[41][66][68]</p>
+<p>这样的实验可以回答具体问题：缺少左侧障碍信息后，模型是否更容易碰撞？它在同一观察下能否稳定完成拾取和投递？这些问题比单看一局总分更容易解释。</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="自托管的是应用">自托管的是应用<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E8%87%AA%E6%89%98%E7%AE%A1%E7%9A%84%E6%98%AF%E5%BA%94%E7%94%A8" class="hash-link" aria-label="自托管的是应用的直接链接" title="自托管的是应用的直接链接" translate="no">​</a></h3>
+<p>原项目使用Node.js 22+、pnpm 10.34.5和Next.js。按仓库说明安装后，用<code>pnpm dev</code>启动，默认端口3042；实时Jev调用需要服务器环境中的<code>TYPESAFE_API_KEY</code>。[3]</p>
+<p>这条路线适合快速体验结构化决策，不需要先部署GPU，但也不意味着Jev权重已经自托管。网页、游戏环境在自己的机器，推理仍走服务商API。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="另外七个项目各适合研究什么">另外七个项目，各适合研究什么<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E5%8F%A6%E5%A4%96%E4%B8%83%E4%B8%AA%E9%A1%B9%E7%9B%AE%E5%90%84%E9%80%82%E5%90%88%E7%A0%94%E7%A9%B6%E4%BB%80%E4%B9%88" class="hash-link" aria-label="另外七个项目，各适合研究什么的直接链接" title="另外七个项目，各适合研究什么的直接链接" translate="no">​</a></h2>
+<table><thead><tr><th>项目</th><th style="text-align:right">调研时stars</th><th>值得看的部分与限制</th></tr></thead><tbody><tr><td><a href="https://github.com/fhshaik/typesafe-mario" target="_blank" rel="noopener noreferrer" class="">TypeSafe Mario</a></td><td style="text-align:right">368</td><td>Jev根据模拟器状态选择NES控制宏；输入含代码计算的起跳时限等强特征，需合法ROM，复用前确认许可证。[4][5]</td></tr><tr><td><a href="https://github.com/whichxjy/jev-playground" target="_blank" rel="noopener noreferrer" class="">whichxjy/jev-playground</a></td><td style="text-align:right">0</td><td>Connect Four、驾驶和跳跃实验；Live与Replay分开，原型成熟度和许可仍待确认。[12][13]</td></tr><tr><td><a href="https://github.com/ArturSkowronski/kNES" target="_blank" rel="noopener noreferrer" class="">kNES</a></td><td style="text-align:right">34</td><td>完整NES模拟器、MCP与Agent层，支持本地Qwen3.5-4B/SemIf；目标筛选和游戏profile是重要代码层。[18][19]</td></tr><tr><td><a href="https://github.com/RomanSlack/jev-drone" target="_blank" rel="noopener noreferrer" class="">Jev Drone</a></td><td style="text-align:right">150</td><td>MuJoCo中的视觉感知、导航判断与飞控分层；作者明确把困难隧道路线列为部分成果。[10][11]</td></tr><tr><td><a href="https://github.com/milanboers/jev-plays-pokemon" target="_blank" rel="noopener noreferrer" class="">Jev plays Pokémon</a></td><td style="text-align:right">5</td><td>模型选择探索、交谈和出口等高层目标；A*/BFS和卡住恢复由代码执行。[20][21]</td></tr><tr><td><a href="https://github.com/jkudish/jev-browser" target="_blank" rel="noopener noreferrer" class="">Jev Browser</a></td><td style="text-align:right">249</td><td>已有CLI、MCP和库接口，模型从真实网页元素选操作；自由文本输入可能另用LLM。[8][9]</td></tr><tr><td><a href="https://github.com/superagents-lab/jev-search" target="_blank" rel="noopener noreferrer" class="">Jev Search</a></td><td style="text-align:right">431</td><td>模型负责意图与相关性，Search1API负责检索；现成业务应用，需要分清服务与计费依赖。[14][15]</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="实践前把三个问题写进验收">实践前，把三个问题写进验收<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#%E5%AE%9E%E8%B7%B5%E5%89%8D%E6%8A%8A%E4%B8%89%E4%B8%AA%E9%97%AE%E9%A2%98%E5%86%99%E8%BF%9B%E9%AA%8C%E6%94%B6" class="hash-link" aria-label="实践前，把三个问题写进验收的直接链接" title="实践前，把三个问题写进验收的直接链接" translate="no">​</a></h2>
+<p><strong>第一，模型看到的是否只是观察。</strong> 若代码已经计算出最优动作并标成<code>Best</code>，测到的是模型对既有答案的分类，不是独立规划能力。环境规则、感知特征和策略提示都可以存在，但需要公开它们的作用。</p>
+<p><strong>第二，动作是谁最终决定的。</strong> 原选、执行动作、规则干预和候选数量都应记录。只有一次执行层改动，也不代表其余步骤全由模型自主决定：输入预处理可能已经排除了大部分选择。</p>
+<p><strong>第三，速度测的是哪一段。</strong> 模型前向时间、请求往返、游戏等待时间和仿真时间不同。硬件、网络、冷启动、是否降低仿真速度，都应随P50/P95一起说明。运行记录可以帮助复盘，但不能替代新的在线调用。</p>
+<p>按这三个问题读源码，下一步会比较清楚：想部署公开小模型并研究画面决策，先原样跑PlayJev；想继续用Laya比较动作判断，先看Arena的Kombat；想直接体验Jev API进入游戏循环，就看MicroDuck。先使用项目已有的运行路径，再依据实际缺口决定是否需要改造。</p>
+<p><em>资料与代码核对时间：2026-09-24。图片由本文从公开仓库和页面采集，界面及素材权利归各项目作者；流程图为根据源码绘制的原创整理。本文没有复现候选项目的模型性能，文中的硬件需求与速度数字均按原作者说明归属。</em></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="sources">Sources<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/jev-small-model-game-projects#sources" class="hash-link" aria-label="Sources的直接链接" title="Sources的直接链接" translate="no">​</a></h2>
+<p>[2] <a href="https://github.com/TypeSafeAI/typesafe-playground" target="_blank" rel="noopener noreferrer" class="">https://github.com/TypeSafeAI/typesafe-playground</a> — TypeSafeAI/typesafe-playground
+[3] <a href="https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/README.md</a> — TypeSafeAI/typesafe-playground
+[4] <a href="https://github.com/fhshaik/typesafe-mario" target="_blank" rel="noopener noreferrer" class="">https://github.com/fhshaik/typesafe-mario</a> — fhshaik/typesafe-mario
+[5] <a href="https://github.com/fhshaik/typesafe-mario/blob/ca22449ed187118d19326d1f54b01b6636578aa4/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/fhshaik/typesafe-mario/blob/ca22449ed187118d19326d1f54b01b6636578aa4/README.md</a> — fhshaik/typesafe-mario
+[6] <a href="https://github.com/PromptEngineer48/laya-vs-jev-arena" target="_blank" rel="noopener noreferrer" class="">https://github.com/PromptEngineer48/laya-vs-jev-arena</a> — PromptEngineer48/laya-vs-jev-arena
+[7] <a href="https://github.com/PromptEngineer48/laya-vs-jev-arena/blob/b02d19a6659a04142c94efd187caac5e6950fec0/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/PromptEngineer48/laya-vs-jev-arena/blob/b02d19a6659a04142c94efd187caac5e6950fec0/README.md</a> — PromptEngineer48/laya-vs-jev-arena
+[8] <a href="https://github.com/jkudish/jev-browser" target="_blank" rel="noopener noreferrer" class="">https://github.com/jkudish/jev-browser</a> — jkudish/jev-browser
+[9] <a href="https://github.com/jkudish/jev-browser/blob/f2b13a05890c321519d8d76c564e84e26c7e601a/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/jkudish/jev-browser/blob/f2b13a05890c321519d8d76c564e84e26c7e601a/README.md</a> — jkudish/jev-browser
+[10] <a href="https://github.com/RomanSlack/jev-drone" target="_blank" rel="noopener noreferrer" class="">https://github.com/RomanSlack/jev-drone</a> — RomanSlack/jev-drone
+[11] <a href="https://github.com/RomanSlack/jev-drone/blob/c0efd03d0d33c5f0c0508e9a826ee3d5be342e0b/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/RomanSlack/jev-drone/blob/c0efd03d0d33c5f0c0508e9a826ee3d5be342e0b/README.md</a> — RomanSlack/jev-drone
+[12] <a href="https://github.com/whichxjy/jev-playground" target="_blank" rel="noopener noreferrer" class="">https://github.com/whichxjy/jev-playground</a> — whichxjy/jev-playground
+[13] <a href="https://github.com/whichxjy/jev-playground/blob/bff6ef8ec70b202ac3da1e957d9e65673e8f3b11/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/whichxjy/jev-playground/blob/bff6ef8ec70b202ac3da1e957d9e65673e8f3b11/README.md</a> — whichxjy/jev-playground
+[14] <a href="https://github.com/superagents-lab/jev-search" target="_blank" rel="noopener noreferrer" class="">https://github.com/superagents-lab/jev-search</a> — superagents-lab/jev-search
+[15] <a href="https://github.com/superagents-lab/jev-search/blob/67027d0185a9b22eb2a178f0eb15250d12ddabe6/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/superagents-lab/jev-search/blob/67027d0185a9b22eb2a178f0eb15250d12ddabe6/README.md</a> — superagents-lab/jev-search
+[16] <a href="https://github.com/OmniJev/PlayJev" target="_blank" rel="noopener noreferrer" class="">https://github.com/OmniJev/PlayJev</a> — OmniJev/PlayJev
+[17] <a href="https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/README.md</a> — OmniJev/PlayJev
+[18] <a href="https://github.com/ArturSkowronski/kNES" target="_blank" rel="noopener noreferrer" class="">https://github.com/ArturSkowronski/kNES</a> — ArturSkowronski/kNES
+[19] <a href="https://github.com/ArturSkowronski/kNES/blob/94868d90fed0f28cd4af9701090aa89267d18280/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/ArturSkowronski/kNES/blob/94868d90fed0f28cd4af9701090aa89267d18280/README.md</a> — ArturSkowronski/kNES
+[20] <a href="https://github.com/milanboers/jev-plays-pokemon" target="_blank" rel="noopener noreferrer" class="">https://github.com/milanboers/jev-plays-pokemon</a> — milanboers/jev-plays-pokemon
+[21] <a href="https://github.com/milanboers/jev-plays-pokemon/blob/0b20f13e48f7e6f71283fc83ddd88c359d71aa32/README.md" target="_blank" rel="noopener noreferrer" class="">https://github.com/milanboers/jev-plays-pokemon/blob/0b20f13e48f7e6f71283fc83ddd88c359d71aa32/README.md</a> — milanboers/jev-plays-pokemon
+[22] <a href="https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/playjev/model.py" target="_blank" rel="noopener noreferrer" class="">https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/playjev/model.py</a> — OmniJev/PlayJev playjev/model.py
+[23] <a href="https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/playjev/play.py" target="_blank" rel="noopener noreferrer" class="">https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/playjev/play.py</a> — OmniJev/PlayJev playjev/play.py
+[24] <a href="https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/playjev/serve.py" target="_blank" rel="noopener noreferrer" class="">https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/playjev/serve.py</a> — OmniJev/PlayJev playjev/serve.py
+[29] <a href="https://github.com/PromptEngineer48/laya-vs-jev-arena/blob/b02d19a6659a04142c94efd187caac5e6950fec0/server.py" target="_blank" rel="noopener noreferrer" class="">https://github.com/PromptEngineer48/laya-vs-jev-arena/blob/b02d19a6659a04142c94efd187caac5e6950fec0/server.py</a> — PromptEngineer48/laya-vs-jev-arena server.py
+[31] <a href="https://github.com/PromptEngineer48/laya-vs-jev-arena/blob/b02d19a6659a04142c94efd187caac5e6950fec0/fight/fight.js" target="_blank" rel="noopener noreferrer" class="">https://github.com/PromptEngineer48/laya-vs-jev-arena/blob/b02d19a6659a04142c94efd187caac5e6950fec0/fight/fight.js</a> — PromptEngineer48/laya-vs-jev-arena fight/fight.js
+[32] <a href="https://github.com/PromptEngineer48/laya-vs-jev-arena/blob/b02d19a6659a04142c94efd187caac5e6950fec0/fight/index.html" target="_blank" rel="noopener noreferrer" class="">https://github.com/PromptEngineer48/laya-vs-jev-arena/blob/b02d19a6659a04142c94efd187caac5e6950fec0/fight/index.html</a> — PromptEngineer48/laya-vs-jev-arena fight/index.html
+[41] <a href="https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/components/MicroDuckLab.tsx" target="_blank" rel="noopener noreferrer" class="">https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/components/MicroDuckLab.tsx</a> — TypeSafeAI/typesafe-playground components/MicroDuckLab.tsx
+[42] <a href="https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/lib/microduckWorld.ts" target="_blank" rel="noopener noreferrer" class="">https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/lib/microduckWorld.ts</a> — TypeSafeAI/typesafe-playground lib/microduckWorld.ts
+[63] <a href="https://huggingface.co/OmniJev/PlayJev-0.8B" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/OmniJev/PlayJev-0.8B</a>
+[64] <a href="https://huggingface.co/spaces/OmniJev/PlayJev" target="_blank" rel="noopener noreferrer" class="">https://huggingface.co/spaces/OmniJev/PlayJev</a>
+[66] <a href="https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/lib/driveDuckWithJev.ts" target="_blank" rel="noopener noreferrer" class="">https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/lib/driveDuckWithJev.ts</a>
+[67] <a href="https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/demo/demo.js" target="_blank" rel="noopener noreferrer" class="">https://github.com/OmniJev/PlayJev/blob/616db06b2c27fd8ba56cfa882558c5688281ac61/demo/demo.js</a>
+[68] <a href="https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/types/microduck.ts" target="_blank" rel="noopener noreferrer" class="">https://github.com/TypeSafeAI/typesafe-playground/blob/e5fc697f4a7b995b045000c0e3f915df5a7df198/types/microduck.ts</a></p>]]></content>
+        <author>
+            <name>RexWang</name>
+        </author>
+        <category label="ai" term="ai"/>
+        <category label="jev" term="jev"/>
+        <category label="laya" term="laya"/>
+        <category label="game-ai" term="game-ai"/>
+        <category label="open-source" term="open-source"/>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Python 数据分析与挖掘实践：Notebook 课程导读、环境 Setup 与使用方式]]></title>
         <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/python-data-mining-notebook-course-guide</id>
@@ -2624,228 +2759,5 @@
         <category label="asr" term="asr"/>
         <category label="speech-to-text" term="speech-to-text"/>
         <category label="tutorial" term="tutorial"/>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[自建发信服务怎么部署：从 Postfix 到托管 SMTP 的方案选择]]></title>
-        <id>https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options</id>
-        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options"/>
-        <updated>2026-08-09T00:00:00.000Z</updated>
-        <summary type="html"><![CDATA[解释自建发信服务到底包含哪些组件、邮件从应用到收件箱的过程、Postfix/全家桶/托管 SMTP/混合网关等常见方案，以及部署和验收清单。]]></summary>
-        <content type="html"><![CDATA[<p>前一篇 <a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/smtp-email-delivery-basics-and-provider-configuration" target="_blank" rel="noopener noreferrer" class="">SMTP 入门</a> 讲的是“SMTP 是什么、邮件怎样发出去、常见平台怎么配置”。这一篇往下一层：如果我们要给自己的服务部署一个 <strong>mail service</strong>，甚至自建一个能发邮件的服务器，到底要部署哪些东西？</p>
-<p>结论先说：<strong>自建发信服务不是把 Postfix 跑起来就结束了，而是要同时交付协议链路、域名身份、IP 信誉和运维闭环。</strong></p>
-<p>对大多数产品团队来说，最稳妥的起点不是“完全自建直连全网收件服务器”，而是先做一个自己可控的发信网关：应用统一提交邮件到内部 SMTP/API，由这个网关负责模板、限流、日志、队列、退信处理，再转交给 SES、SendGrid、Mailgun、Postmark、Resend 或企业邮箱这类上游发信服务。只有当你能控制 25 端口、PTR/rDNS、IP 信誉、退信投诉和 7x24 运维时，才值得进一步做 direct-send 的自建 MTA。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="先拆清楚你要自建的是哪一层">先拆清楚：你要自建的是哪一层？<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E5%85%88%E6%8B%86%E6%B8%85%E6%A5%9A%E4%BD%A0%E8%A6%81%E8%87%AA%E5%BB%BA%E7%9A%84%E6%98%AF%E5%93%AA%E4%B8%80%E5%B1%82" class="hash-link" aria-label="先拆清楚：你要自建的是哪一层？的直接链接" title="先拆清楚：你要自建的是哪一层？的直接链接" translate="no">​</a></h2>
-<p>“自建邮件服务器”容易混在一起说，但实际至少有三种目标：</p>
-<table><thead><tr><th>目标</th><th>你真正要交付的东西</th><th style="text-align:right">是否需要收信</th><th>典型场景</th></tr></thead><tbody><tr><td><strong>只发系统邮件</strong></td><td>应用发信入口、队列、日志、模板、上游 SMTP/API 凭据</td><td style="text-align:right">否</td><td>注册验证、通知、告警、账单</td></tr><tr><td><strong>自建出站 MTA</strong></td><td>Postfix/Exim/OpenSMTPD 等直接投递到收件方 MX</td><td style="text-align:right">可选</td><td>需要控制投递链路、减少第三方依赖</td></tr><tr><td><strong>完整邮箱系统</strong></td><td>SMTP submission、MX、IMAP/POP3、Webmail、账号、反垃圾、备份</td><td style="text-align:right">是</td><td>团队邮箱、社区域名邮箱、个人邮箱托管</td></tr></tbody></table>
-<p>这三个目标的难度差很多。只发系统邮件时，最重要的是“应用怎么可靠地把邮件交出去”；完整邮箱系统还要负责“别人怎么给你发、用户怎么收、垃圾邮件怎么挡、数据怎么备份”。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一封邮件从应用到收件箱的过程">一封邮件从应用到收件箱的过程<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E4%B8%80%E5%B0%81%E9%82%AE%E4%BB%B6%E4%BB%8E%E5%BA%94%E7%94%A8%E5%88%B0%E6%94%B6%E4%BB%B6%E7%AE%B1%E7%9A%84%E8%BF%87%E7%A8%8B" class="hash-link" aria-label="一封邮件从应用到收件箱的过程的直接链接" title="一封邮件从应用到收件箱的过程的直接链接" translate="no">​</a></h2>
-<p>可以把发信路径理解成六段：</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">业务系统</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 发信入口（SMTP submission 或 HTTP API）</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 发信队列 / MSA / MTA</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; DNS 查询收件域名 MX</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 连接对方 MX（通常是 SMTP port 25）</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 对方反垃圾、身份认证、收件规则</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  -&gt; 收件箱 / 垃圾箱 / 退信 / 延迟重试</span><br></div></code></pre></div></div>
-<p>这里有两个常被混淆的 SMTP 角色：</p>
-<ol>
-<li class=""><strong>Message submission</strong>：应用或邮件客户端把邮件“提交”给自己的发信服务器。RFC 6409 明确把 message submission 和 message relay 分开，并说明 submission 通常使用 587 端口。[2]</li>
-<li class=""><strong>Message relay / transfer</strong>：MTA 之间把邮件从一个域投递到另一个域。RFC 6409 同时说明 relay 仍然使用 SMTP 的 25 端口。[2]</li>
-</ol>
-<p>所以，常见端口可以这样记：</p>
-<table><thead><tr><th style="text-align:right">端口</th><th>常见用途</th><th>部署含义</th></tr></thead><tbody><tr><td style="text-align:right">25</td><td>MTA 到 MTA 的服务器间投递</td><td>direct-send 必须能从服务器出站访问；收信服务器也通常要入站开放</td></tr><tr><td style="text-align:right">587</td><td>邮件客户端/应用提交邮件，通常 STARTTLS + 认证</td><td>推荐给业务系统或用户客户端使用</td></tr><tr><td style="text-align:right">465</td><td>implicit TLS 的 SMTP submission，也常叫 submissions</td><td>RFC 8314 将 implicit TLS submission 放回标准化轨道，并记录 <code>submissions</code> 端口 465。[3]</td></tr></tbody></table>
-<p>如果你只是给应用发验证码，业务系统不应该直接连全世界的 MX。更好的方式是连自己的 submission/gateway，认证后入队，由后端统一决定是直投还是走上游 relay。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="发信服务的最低可用架构">发信服务的最低可用架构<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E5%8F%91%E4%BF%A1%E6%9C%8D%E5%8A%A1%E7%9A%84%E6%9C%80%E4%BD%8E%E5%8F%AF%E7%94%A8%E6%9E%B6%E6%9E%84" class="hash-link" aria-label="发信服务的最低可用架构的直接链接" title="发信服务的最低可用架构的直接链接" translate="no">​</a></h2>
-<p>一个最低可用的发信服务，至少要有下面几块：</p>
-<table><thead><tr><th>层</th><th>组件</th><th>最低要求</th></tr></thead><tbody><tr><td>应用入口</td><td>SMTP submission 或 HTTP API</td><td>认证、TLS、请求日志、合理超时</td></tr><tr><td>队列</td><td>MTA 队列或任务队列</td><td>可重试、可观察、失败不丢信</td></tr><tr><td>投递</td><td>Postfix/Exim/OpenSMTPD/maddy 或上游 SMTP/API</td><td>不能变成 open relay；能区分本地域和外部域</td></tr><tr><td>身份</td><td>SPF、DKIM、DMARC、PTR/rDNS、HELO/EHLO hostname</td><td>From 域名与认证域名要对齐</td></tr><tr><td>信誉</td><td>发送频率、退信率、投诉率、内容质量</td><td>有限流、退订、suppression list 和监控</td></tr><tr><td>运维</td><td>日志、队列查看、告警、备份、密钥轮换</td><td>能解释“这封邮件为什么没到”</td></tr></tbody></table>
-<p>Postfix 的官方文档把 <code>myhostname</code>、<code>mydomain</code>、<code>myorigin</code> 等作为基础配置核心：它们决定服务器的 FQDN、默认域名以及出站邮件显示的域名。[7] 这些不是装饰项。收件方会把你的 HELO/EHLO、PTR、From 域、SPF、DKIM、DMARC 和内容一起看。</p>
-<p>最危险的反例是 open relay：任何外部机器都能借你的服务器发邮件。Postfix 2.10 以后推荐把“谁有权 relay”放在 <code>smtpd_relay_restrictions</code>，默认策略包含 <code>permit_mynetworks</code>、<code>permit_sasl_authenticated</code> 和对未授权目的地的拒绝/延迟拒绝。[8] 换句话说，<strong>只有可信网段或通过 SASL 认证的客户端可以借你转发外部邮件</strong>。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="常见方案怎么选">常见方案怎么选<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E5%B8%B8%E8%A7%81%E6%96%B9%E6%A1%88%E6%80%8E%E4%B9%88%E9%80%89" class="hash-link" aria-label="常见方案怎么选的直接链接" title="常见方案怎么选的直接链接" translate="no">​</a></h2>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-a完全托管-smtpapi-服务">方案 A：完全托管 SMTP/API 服务<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E6%96%B9%E6%A1%88-a%E5%AE%8C%E5%85%A8%E6%89%98%E7%AE%A1-smtpapi-%E6%9C%8D%E5%8A%A1" class="hash-link" aria-label="方案 A：完全托管 SMTP/API 服务的直接链接" title="方案 A：完全托管 SMTP/API 服务的直接链接" translate="no">​</a></h3>
-<p>代表：Amazon SES、SendGrid、Mailgun、Postmark、Resend、企业邮箱 SMTP、云厂商 DirectMail。</p>
-<p>这是最适合产品早期的方案。你不自建 MTA，而是把发信身份、DKIM、退信、投诉、配额、信誉爬坡交给服务商。SES 的 deliverability 文档把退信、投诉、suppression list、认证、发送配额、内容过滤、信誉和通知作为发信可达率的核心概念。[14]</p>
-<p>优点：</p>
-<ul>
-<li class="">起步快，通常不需要自己维护 25 端口、IP 信誉和收件方兼容性。</li>
-<li class="">有 bounce/complaint webhook、统计、模板、配额和 suppression list。</li>
-<li class="">适合验证码、交易邮件、系统通知、营销邮件的早期阶段。</li>
-</ul>
-<p>缺点：</p>
-<ul>
-<li class="">依赖第三方账号和规则；风控、审核、额度可能影响发信。</li>
-<li class="">上游服务的 API/SMTP 形状会进入你的业务系统，后续迁移有成本。</li>
-<li class="">需要注意数据合规和邮件内容合规。</li>
-</ul>
-<p>适合：<strong>绝大多数业务系统的第一版发信能力</strong>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-b自建发信网关--上游-relay">方案 B：自建发信网关 + 上游 relay<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E6%96%B9%E6%A1%88-b%E8%87%AA%E5%BB%BA%E5%8F%91%E4%BF%A1%E7%BD%91%E5%85%B3--%E4%B8%8A%E6%B8%B8-relay" class="hash-link" aria-label="方案 B：自建发信网关 + 上游 relay的直接链接" title="方案 B：自建发信网关 + 上游 relay的直接链接" translate="no">​</a></h3>
-<p>这是我最推荐的工程化折中：你部署一个内部 mail gateway，业务系统只认它；gateway 再把邮件交给 SES、Mailgun、企业邮箱或备用上游。</p>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">业务系统 -&gt; 内部 SMTP/API Gateway -&gt; 队列/模板/限流/日志 -&gt; 上游 SMTP/API -&gt; 收件方</span><br></div></code></pre></div></div>
-<p>优点：</p>
-<ul>
-<li class="">业务系统不直接散落一堆 SMTP 密码和供应商 SDK。</li>
-<li class="">可以统一模板、审计、限流、重试、去重、退信处理和 provider failover。</li>
-<li class="">将来要从 SES 换到 Postmark，或从企业邮箱换到自建直投，业务侧改动小。</li>
-</ul>
-<p>缺点：</p>
-<ul>
-<li class="">你仍然需要维护一个小服务和队列。</li>
-<li class="">如果 gateway 只做同步转发，没有持久队列，故障时仍然会丢邮件。</li>
-</ul>
-<p>适合：<strong>ChatArch 这类多服务、多机器人、多社区入口共享一套通知能力的场景</strong>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-c自建-direct-send-出站-mta">方案 C：自建 direct-send 出站 MTA<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E6%96%B9%E6%A1%88-c%E8%87%AA%E5%BB%BA-direct-send-%E5%87%BA%E7%AB%99-mta" class="hash-link" aria-label="方案 C：自建 direct-send 出站 MTA的直接链接" title="方案 C：自建 direct-send 出站 MTA的直接链接" translate="no">​</a></h3>
-<p>代表：Postfix、Exim、OpenSMTPD、maddy 的出站能力。</p>
-<p>这种方案会由你的服务器直接查收件域 MX，然后连对方 25 端口投递。它看起来“最独立”，但实际门槛最高。AWS EC2 默认就会阻止到公网 IPv4/IPv6 的 25 端口出站流量，需要申请解除限制。[15] 很多云厂商、住宅网络和企业网络也会限制 25 端口，原因很简单：垃圾邮件滥用风险太高。</p>
-<p>要做 direct-send，至少先确认：</p>
-<ul>
-<li class="">你的服务器能稳定出站访问 25 端口。</li>
-<li class="">服务器有静态公网 IP，且可配置 PTR/rDNS。</li>
-<li class="">PTR 指向的主机名有正向 A/AAAA 记录回到同一个 IP。</li>
-<li class="">HELO/EHLO hostname、From 域名、DKIM d= 域、SPF include/ip、DMARC alignment 能解释清楚。</li>
-<li class="">有退信和投诉处理；不能对 hard bounce 地址反复发送。</li>
-<li class="">有队列监控、速率控制、灰名单/临时失败重试策略。</li>
-</ul>
-<p>Gmail 的 sender guidelines 明确要求或建议 SPF/DKIM、DMARC、有效的正向/反向 DNS、TLS、低 spam rate；对于每天发给 Gmail 超过 5,000 封的发送方，还要求 SPF、DKIM、DMARC、From 对齐、一键退订等更严格条件。[16]</p>
-<p>适合：<strong>对投递链路控制有强需求、能长期维护邮件基础设施、并愿意承担信誉冷启动的团队</strong>。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-d完整自托管邮箱套件">方案 D：完整自托管邮箱套件<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E6%96%B9%E6%A1%88-d%E5%AE%8C%E6%95%B4%E8%87%AA%E6%89%98%E7%AE%A1%E9%82%AE%E7%AE%B1%E5%A5%97%E4%BB%B6" class="hash-link" aria-label="方案 D：完整自托管邮箱套件的直接链接" title="方案 D：完整自托管邮箱套件的直接链接" translate="no">​</a></h3>
-<p>代表：Mail-in-a-Box、mailcow、Mailu、Docker Mailserver、Modoboa、iRedMail。</p>
-<p>这类方案不是只解决“发系统邮件”，而是把邮箱系统完整打包：Postfix、Dovecot、Webmail、反垃圾、TLS、DKIM、DMARC、账号管理、备份、管理后台等。</p>
-<ul>
-<li class=""><strong>Docker Mailserver / DMS</strong>：适合已经熟悉 Docker Compose、想要“文件配置、少 Web UI、可版本化”的人。DMS 自称是 production-ready、fullstack 但 simple 的容器化邮件服务器，包含 SMTP、IMAP、LDAP、反垃圾、反病毒等；README 列出的组件包括 Postfix、Dovecot、Rspamd、ClamAV、OpenDKIM/OpenDMARC、Fail2ban 和证书支持。[17] 它更像一套干净的邮件基础设施组件包，不像 mailcow 那样以管理后台和群件体验为中心。</li>
-<li class=""><strong>mailcow</strong>：适合想要完整 Web 管理体验的人。它通常包含 Postfix、Dovecot、SOGo、Rspamd、ACME、管理后台等，适合“我要运营一个团队邮箱系统”，而不只是“让应用能发邮件”。</li>
-<li class=""><strong>Mailu</strong>：适合想要容器化完整邮箱栈、并接受按组件理解配置的人。Mailu 是一组 Docker images，目标是易安装、易维护、功能完整的邮件服务器；它列出的能力包括 IMAP、SMTP、Submission、Webmail/Admin、TLS、DANE、MTA-STS、outgoing DKIM、DMARC/SPF、反垃圾等。[19]</li>
-<li class=""><strong>Mail-in-a-Box</strong>：适合“一台新机器专门做邮箱”的路径。它更像“把整台机器变成一台邮箱盒子”。它的 setup guide 明确不建议在家用网络运行，因为住宅网络常见 25 端口阻断、黑名单、动态 IP 和不可配置 reverse DNS；同时它要求安装在全新的专用机器上，并会自管理配置。[13]</li>
-</ul>
-<p>如果你脑子里第一个想到的是“Docker mail service”，大概率说的就是 Docker Mailserver 这一类。它可以作为自托管邮箱的最小具体方案，但前提是你真的要收信/管邮箱账号；如果只是产品验证码，DMS 反而会把 MX、IMAP、反垃圾、备份等问题也带进来。</p>
-<p>优点：</p>
-<ul>
-<li class="">收信、发信、Webmail、账号、反垃圾、证书等开箱集成。</li>
-<li class="">对个人域名邮箱、小组织邮箱、社区邮箱比较友好。</li>
-<li class="">文档会覆盖 DNS、证书、账号、Webmail 等完整路径。</li>
-</ul>
-<p>缺点：</p>
-<ul>
-<li class="">不是“轻量发验证码”的方案；运维面比单纯发信大很多。</li>
-<li class="">容器编排、升级、备份、磁盘、日志、反垃圾策略都要长期维护。</li>
-<li class="">一旦作为正式邮箱使用，数据可靠性和迁移成本会变高。</li>
-</ul>
-<p>适合：<strong>真的要拥有邮箱账户和收信能力，而不是只给业务系统发通知</strong>。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="docker-mailserver一条更具体的落地路线">Docker Mailserver：一条更具体的落地路线<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#docker-mailserver%E4%B8%80%E6%9D%A1%E6%9B%B4%E5%85%B7%E4%BD%93%E7%9A%84%E8%90%BD%E5%9C%B0%E8%B7%AF%E7%BA%BF" class="hash-link" aria-label="Docker Mailserver：一条更具体的落地路线的直接链接" title="Docker Mailserver：一条更具体的落地路线的直接链接" translate="no">​</a></h4>
-<p>Butterfly 旧文里写过一版 DMS 搭建教程，核心路径可以抽象成下面这 8 步。这里保留流程形状，域名、IP、密码和 DKIM key 都用占位符。</p>
-<ol>
-<li class=""><strong>准备主机名和目录</strong>：确定 <code>mail.example.com</code>，并把 DMS 配置、邮件数据、状态、日志放到可备份目录，例如 <code>./docker-data/dms/{config,mail-data,mail-state,mail-logs}</code>。</li>
-<li class=""><strong>下载官方 compose 和 env 模板</strong>：从 Docker Mailserver 官方仓库拿 <code>compose.yaml</code> 和 <code>mailserver.env</code>，不要从博客复制过期镜像 tag；上线前固定镜像版本。</li>
-<li class=""><strong>设置容器主机名</strong>：<code>hostname: mail.example.com</code>。这一步不是随便取名，它要和 A/PTR、证书、HELO/EHLO 解释得通。</li>
-<li class=""><strong>先配 DNS，再启动生产流量</strong>：</li>
-</ol>
-<div class="language-dns codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-dns codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">example.com.       MX 10 mail.example.com.</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">mail.example.com.  A     203.0.113.10</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">203.0.113.10       PTR   mail.example.com.</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">example.com.       TXT   "v=spf1 mx -all"</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">_dmarc.example.com. TXT  "v=DMARC1; p=none; rua=mailto:dmarc-report@example.com"</span><br></div></code></pre></div></div>
-<ol start="5">
-<li class=""><strong>配置 TLS 证书</strong>：可以让 DMS 使用 Let’s Encrypt 证书，例如 <code>SSL_TYPE=letsencrypt</code>，再把宿主机证书目录只读挂入容器。生产环境要保证证书域名就是 <code>mail.example.com</code>。</li>
-<li class=""><strong>启动服务并生成 DKIM</strong>：</li>
-</ol>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">docker compose up -d</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -it mailserver setup config dkim</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker compose restart mailserver</span><br></div></code></pre></div></div>
-<p>然后把生成的 <code>mail._domainkey.example.com</code> TXT 记录写入 DNS。不要把私钥或完整真实 DKIM 公钥贴进文章、Issue 或聊天。</p>
-<ol start="7">
-<li class=""><strong>添加邮箱用户</strong>：</li>
-</ol>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -ti mailserver setup email add user@example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">docker exec -ti mailserver setup email update user@example.com</span><br></div></code></pre></div></div>
-<p>这一步意味着你已经在运营 mailbox，不只是发信 relay；后续要考虑密码策略、离职/禁用、备份恢复和 IMAP 客户端支持。</p>
-<ol start="8">
-<li class=""><strong>开放并验证端口</strong>：</li>
-</ol>
-<table><thead><tr><th style="text-align:right">端口</th><th>作用</th><th>DMS 里通常意味着什么</th></tr></thead><tbody><tr><td style="text-align:right">25</td><td>SMTP server-to-server</td><td>收外部邮件、direct-send 投递；常被云厂商限制</td></tr><tr><td style="text-align:right">465</td><td>implicit TLS submission</td><td>给客户端/应用安全提交邮件</td></tr><tr><td style="text-align:right">587</td><td>STARTTLS submission</td><td>推荐的客户端/应用提交入口</td></tr><tr><td style="text-align:right">143</td><td>IMAP + STARTTLS</td><td>明文连接后升级 TLS，很多场景可不公开</td></tr><tr><td style="text-align:right">993</td><td>IMAPS</td><td>客户端安全收信入口</td></tr></tbody></table>
-<p>最小验收不是“我给自己发了一封能收到”，而是同时检查：</p>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">dig +short MX example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">dig +short A mail.example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">dig +short -x 203.0.113.10</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">openssl s_client -connect mail.example.com:465 -servername mail.example.com &lt;/dev/null</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">openssl s_client -starttls smtp -connect mail.example.com:587 -servername mail.example.com &lt;/dev/null</span><br></div></code></pre></div></div>
-<p>再发一封到 Gmail/Outlook，查看原始邮件头里的 <code>Authentication-Results</code>，确认 SPF、DKIM、DMARC 至少在测试路径上 pass。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="dms-之外什么时候换方案">DMS 之外什么时候换方案<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#dms-%E4%B9%8B%E5%A4%96%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E6%8D%A2%E6%96%B9%E6%A1%88" class="hash-link" aria-label="DMS 之外什么时候换方案的直接链接" title="DMS 之外什么时候换方案的直接链接" translate="no">​</a></h4>
-<table><thead><tr><th>如果你真正想要</th><th>更合适的方案</th><th>原因</th></tr></thead><tbody><tr><td>只给业务系统发验证码/通知</td><td>托管 SMTP/API 或自建 gateway + 上游 relay</td><td>不需要接管 MX/IMAP/账号/反垃圾</td></tr><tr><td>Docker Compose 自托管完整邮箱，偏配置文件</td><td>Docker Mailserver</td><td>简洁、可版本化、少数据库依赖</td></tr><tr><td>完整后台、Webmail、管理体验</td><td>mailcow</td><td>更像成品邮箱系统</td></tr><tr><td>容器化完整邮箱栈，可按组件理解</td><td>Mailu</td><td>模块化 Docker images，功能覆盖完整</td></tr><tr><td>专用新机器一键托管个人/小组织邮箱</td><td>Mail-in-a-Box</td><td>opinionated，自动接管整机配置</td></tr><tr><td>学底层或做最小 direct-send</td><td>Postfix + Dovecot/Rspamd/OpenDKIM 或 maddy</td><td>更可控，但维护成本最高</td></tr></tbody></table>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案-e一体化轻量服务器--内部测试-mail-sink">方案 E：一体化轻量服务器 / 内部测试 mail sink<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E6%96%B9%E6%A1%88-e%E4%B8%80%E4%BD%93%E5%8C%96%E8%BD%BB%E9%87%8F%E6%9C%8D%E5%8A%A1%E5%99%A8--%E5%86%85%E9%83%A8%E6%B5%8B%E8%AF%95-mail-sink" class="hash-link" aria-label="方案 E：一体化轻量服务器 / 内部测试 mail sink的直接链接" title="方案 E：一体化轻量服务器 / 内部测试 mail sink的直接链接" translate="no">​</a></h3>
-<p>maddy 是另一个有意思的方向：它把 SMTP MTA、MX、IMAP、DKIM/SPF/DMARC/DANE/MTA-STS 等功能整合到一个 daemon，目标是用统一配置替代 Postfix、Dovecot、OpenDKIM、OpenSPF、OpenDMARC 等多组件组合。[12] 但它也在首页提醒 IMAP storage 仍是 beta，若需要稳定、功能丰富的 IMAP，可能仍应选择 Dovecot。[12]</p>
-<p>另外，开发环境里经常需要的不是“发到真实互联网”，而是 mail sink：Mailpit、MailHog、smtp4dev 这类工具可以接收测试邮件、展示 HTML、检查 headers，但不会真正投递。它们适合 CI、预发和本地调试，不应该被误认为生产发信服务。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="dns-和身份认证为什么它决定到达率">DNS 和身份认证：为什么它决定到达率<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#dns-%E5%92%8C%E8%BA%AB%E4%BB%BD%E8%AE%A4%E8%AF%81%E4%B8%BA%E4%BB%80%E4%B9%88%E5%AE%83%E5%86%B3%E5%AE%9A%E5%88%B0%E8%BE%BE%E7%8E%87" class="hash-link" aria-label="DNS 和身份认证：为什么它决定到达率的直接链接" title="DNS 和身份认证：为什么它决定到达率的直接链接" translate="no">​</a></h2>
-<p>发信服务器的技术栈可以换，但下面这些 DNS/身份项绕不开：</p>
-<table><thead><tr><th>项</th><th>作用</th><th>常见错误</th></tr></thead><tbody><tr><td>MX</td><td>告诉别人你的域名收信服务器是谁</td><td>只发信不收信时不一定要接管 MX；完整邮箱必须配置</td></tr><tr><td>A/AAAA</td><td>服务器主机名解析到 IP</td><td>主机名和 PTR 对不上</td></tr><tr><td>PTR/rDNS</td><td>IP 反查到主机名</td><td>云厂商不支持或没申请，导致信誉差</td></tr><tr><td>SPF</td><td>声明哪些服务器/服务商可以代表域名发信</td><td>忘记 include 上游；记录超过 DNS lookup 限制</td></tr><tr><td>DKIM</td><td>用域名私钥给邮件签名，收件方用 DNS 公钥验证</td><td>key 太短、selector 错、签名域与 From 不对齐</td></tr><tr><td>DMARC</td><td>告诉收件方 SPF/DKIM 失败时怎么处理，并要求 alignment</td><td>一上来 <code>p=reject</code>，但还没盘点所有合法发信源</td></tr><tr><td>TLS</td><td>传输过程加密</td><td>submission 端口没强制 TLS；证书和 hostname 不匹配</td></tr><tr><td>List-Unsubscribe</td><td>批量/订阅邮件退订</td><td>营销邮件没有清晰退订，投诉率升高</td></tr></tbody></table>
-<p>Google 的 guidelines 直接把 SPF/DKIM、DMARC、正反向 DNS、TLS、From alignment 和低 spam rate 放在发件方要求中。[16] 这说明“邮件能不能进 inbox”不是单点配置，而是身份、网络、内容和行为共同决定。</p>
-<p>一个稳妥的上线顺序是：</p>
-<ol>
-<li class="">先给域名加 SPF，把现有所有合法发信源列进去。</li>
-<li class="">为新发信服务生成 DKIM selector，先只让少量邮件使用它。</li>
-<li class="">添加 <code>v=DMARC1; p=none; rua=mailto:dmarc-report@example.com</code> 观察报告。</li>
-<li class="">确认所有合法来源都能 SPF 或 DKIM pass，并且与 From 域名 alignment。</li>
-<li class="">再逐步收紧到 <code>quarantine</code> 或 <code>reject</code>。</li>
-</ol>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一条可执行的部署路径">一条可执行的部署路径<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E4%B8%80%E6%9D%A1%E5%8F%AF%E6%89%A7%E8%A1%8C%E7%9A%84%E9%83%A8%E7%BD%B2%E8%B7%AF%E5%BE%84" class="hash-link" aria-label="一条可执行的部署路径的直接链接" title="一条可执行的部署路径的直接链接" translate="no">​</a></h2>
-<p>下面按“自建发信网关，必要时可升级到 direct-send”的思路走。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-明确边界">1. 明确边界<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#1-%E6%98%8E%E7%A1%AE%E8%BE%B9%E7%95%8C" class="hash-link" aria-label="1. 明确边界的直接链接" title="1. 明确边界的直接链接" translate="no">​</a></h3>
-<p>先写下四个决策：</p>
-<ul>
-<li class="">是只发系统邮件，还是要收信？</li>
-<li class="">预计每天发送多少封？是否包含营销/订阅？</li>
-<li class="">是否必须 direct-send，还是可以走上游 SMTP/API？</li>
-<li class="">失败邮件要进入哪里：日志、队列、人工工单，还是自动 suppression list？</li>
-</ul>
-<p>如果答案是“只发验证码和通知”，不要一开始就上完整 mailcow/Mailu。先做发信网关 + 上游 relay。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-选主机和域名">2. 选主机和域名<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#2-%E9%80%89%E4%B8%BB%E6%9C%BA%E5%92%8C%E5%9F%9F%E5%90%8D" class="hash-link" aria-label="2. 选主机和域名的直接链接" title="2. 选主机和域名的直接链接" translate="no">​</a></h3>
-<p>主机最好满足：</p>
-<ul>
-<li class="">静态公网 IP。</li>
-<li class="">可配置 PTR/rDNS。</li>
-<li class="">可开放/申请开放 25 出站；如果只走上游 relay，至少要能访问 587/465/HTTPS。</li>
-<li class="">不在住宅宽带、动态 IP、廉价高滥用段上。</li>
-<li class="">有监控、备份、日志保留和系统更新机制。</li>
-</ul>
-<p>域名建议单独用子域，例如：</p>
-<ul>
-<li class=""><code>mail.example.com</code>：服务器主机名。</li>
-<li class=""><code>bounce.example.com</code>：退信域。</li>
-<li class=""><code>notifications.example.com</code>：系统通知 From 域。</li>
-</ul>
-<p>这样可以把主站域名、营销域名、事务邮件域名隔离，减少一个通道出问题时影响全部邮件。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-部署-submissiongateway">3. 部署 submission/gateway<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#3-%E9%83%A8%E7%BD%B2-submissiongateway" class="hash-link" aria-label="3. 部署 submission/gateway的直接链接" title="3. 部署 submission/gateway的直接链接" translate="no">​</a></h3>
-<p>如果用 Postfix 做 gateway，核心原则是：</p>
-<div class="language-ini codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-ini codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain"># /etc/postfix/main.cf 示例，只表达形状，不可直接复制上线</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">myhostname = mail.example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">mydomain = example.com</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">myorigin = $mydomain</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">inet_interfaces = all</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"># 只允许本机、内网或认证用户提交外部 relay</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">mynetworks = 127.0.0.0/8 [::1]/128 10.0.0.0/24</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"># 如果走上游 SMTP relay</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">relayhost = [email-smtp.region.amazonaws.com]:587</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtp_tls_security_level = encrypt</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtp_sasl_auth_enable = yes</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtp_sasl_password_maps = lmdb:/etc/postfix/sasl_passwd</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">smtp_sasl_security_options = noanonymous</span><br></div></code></pre></div></div>
-<p>上线前要特别检查两件事：</p>
-<ol>
-<li class="">未认证外部客户端不能向任意外部域 relay。</li>
-<li class="">业务系统连接 submission 时必须走 TLS 和认证，不能把 SMTP 密码写进前端或公开仓库。</li>
-</ol>
-<p>如果你更偏应用层，也可以自写一个 HTTP mail gateway：业务系统 POST 到 gateway，gateway 写队列，再调用 SES/SendGrid API。这比让每个业务服务各自接 SMTP 更容易做审计、幂等、限流和多 provider 切换。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-配-dns-和密钥">4. 配 DNS 和密钥<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#4-%E9%85%8D-dns-%E5%92%8C%E5%AF%86%E9%92%A5" class="hash-link" aria-label="4. 配 DNS 和密钥的直接链接" title="4. 配 DNS 和密钥的直接链接" translate="no">​</a></h3>
-<p>至少要配置：</p>
-<div class="language-dns codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-dns codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">mail.example.com.        A      203.0.113.10</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">10.113.0.203.in-addr.arpa. PTR  mail.example.com.</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">example.com.             TXT    "v=spf1 include:amazonses.com -all"</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">selector1._domainkey.example.com. TXT "v=DKIM1; k=rsa; p=..."</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">_dmarc.example.com.      TXT    "v=DMARC1; p=none; rua=mailto:dmarc-report@example.com"</span><br></div></code></pre></div></div>
-<p>如果 direct-send，不要忽略 PTR：Gmail guidelines 明确要求发送 IP 有对应 PTR，且 PTR hostname 的正向 A/AAAA 要回到同一个发送 IP。[16]</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-做-warm-up-和限流">5. 做 warm-up 和限流<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#5-%E5%81%9A-warm-up-%E5%92%8C%E9%99%90%E6%B5%81" class="hash-link" aria-label="5. 做 warm-up 和限流的直接链接" title="5. 做 warm-up 和限流的直接链接" translate="no">​</a></h3>
-<p>新 IP、新域名、新 DKIM selector 都需要信誉爬坡。不要第一天就把所有通知、营销、批量任务都切过来。</p>
-<p>建议：</p>
-<ul>
-<li class="">先发内部测试和低风险事务邮件。</li>
-<li class="">按域名限速，例如 Gmail、Outlook、企业域分别限制。</li>
-<li class="">hard bounce 立即进入 suppression list，不要反复尝试。[14]</li>
-<li class="">投诉地址和 abuse/postmaster 邮箱要有人看。</li>
-<li class="">营销/订阅邮件要有退订，且尊重退订。</li>
-</ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-验收不是收到了我自己的测试邮件">6. 验收不是“收到了我自己的测试邮件”<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#6-%E9%AA%8C%E6%94%B6%E4%B8%8D%E6%98%AF%E6%94%B6%E5%88%B0%E4%BA%86%E6%88%91%E8%87%AA%E5%B7%B1%E7%9A%84%E6%B5%8B%E8%AF%95%E9%82%AE%E4%BB%B6" class="hash-link" aria-label="6. 验收不是“收到了我自己的测试邮件”的直接链接" title="6. 验收不是“收到了我自己的测试邮件”的直接链接" translate="no">​</a></h3>
-<p>真正的验收清单应该是：</p>
-<table><thead><tr><th>检查</th><th>怎么看</th></tr></thead><tbody><tr><td>SMTP submission</td><td>认证、TLS、错误密码拒绝、外部未认证 relay 被拒绝</td></tr><tr><td>队列</td><td>模拟上游故障后邮件入队，恢复后能重试</td></tr><tr><td>DNS</td><td>SPF/DKIM/DMARC/PTR/正向解析全部一致</td></tr><tr><td>Headers</td><td>收件箱里 <code>Authentication-Results</code> 显示 SPF/DKIM/DMARC pass</td></tr><tr><td>退信</td><td>不存在邮箱触发 hard bounce，系统能记录并停止后续发送</td></tr><tr><td>投诉</td><td>abuse/postmaster/feedback loop 或 provider webhook 有入口</td></tr><tr><td>限流</td><td>单域名、单用户、单模板、全局频率都有限制</td></tr><tr><td>观测</td><td>能按 message-id 查到提交、入队、投递、退信全过程</td></tr><tr><td>安全</td><td>不是 open relay；凭据可轮换；日志不泄露 token/验证码全文</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="方案对比表">方案对比表<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94%E8%A1%A8" class="hash-link" aria-label="方案对比表的直接链接" title="方案对比表的直接链接" translate="no">​</a></h2>
-<table><thead><tr><th>方案</th><th style="text-align:right">自控程度</th><th style="text-align:right">到达率起步</th><th style="text-align:right">运维成本</th><th>最适合</th></tr></thead><tbody><tr><td>托管 SMTP/API</td><td style="text-align:right">低到中</td><td style="text-align:right">高</td><td style="text-align:right">低</td><td>产品早期、交易邮件、告警</td></tr><tr><td>自建 gateway + 上游 relay</td><td style="text-align:right">中</td><td style="text-align:right">高</td><td style="text-align:right">中</td><td>多服务共享发信能力、需要审计/模板/限流</td></tr><tr><td>自建 direct-send MTA</td><td style="text-align:right">高</td><td style="text-align:right">低到中，需要爬坡</td><td style="text-align:right">高</td><td>明确要控制投递链路且有运维能力</td></tr><tr><td>完整邮箱套件</td><td style="text-align:right">高</td><td style="text-align:right">中，取决于 IP/DNS/策略</td><td style="text-align:right">高</td><td>自托管团队邮箱、社区邮箱</td></tr><tr><td>mail sink / 测试 SMTP</td><td style="text-align:right">仅内部</td><td style="text-align:right">不投递</td><td style="text-align:right">低</td><td>本地、CI、预发测试</td></tr></tbody></table>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="我的建议">我的建议<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#%E6%88%91%E7%9A%84%E5%BB%BA%E8%AE%AE" class="hash-link" aria-label="我的建议的直接链接" title="我的建议的直接链接" translate="no">​</a></h2>
-<p>如果目标是给 ChatArch 这类服务发邮件，我会按三阶段做：</p>
-<ol>
-<li class=""><strong>第一阶段：托管 SMTP/API 直连</strong>。先把 SPF/DKIM/DMARC 和 bounce webhook 打通，确保产品能发验证码、通知、告警。</li>
-<li class=""><strong>第二阶段：自建 mail gateway</strong>。所有服务只连 gateway；gateway 统一模板、限流、队列、日志、退信和 provider 路由。</li>
-<li class=""><strong>第三阶段：选择性 direct-send 或完整邮箱</strong>。只有当确实需要摆脱上游、拥有固定 IP/PTR、能维护 reputation 和反垃圾体系时，再引入 Postfix direct-send 或 mailcow/Mailu/Docker Mailserver 这类完整套件。</li>
-</ol>
-<p>换句话说，“自建 mail service”的正确起点通常不是“我要拥有一台全功能邮箱服务器”，而是“我要拥有一条可观测、可替换、不会丢信、不会变成 open relay 的发信链路”。</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="sources">Sources<a href="https://arch.gh.wzhecnu.cn/ChatBlog/blog/mail-service-deployment-options#sources" class="hash-link" aria-label="Sources的直接链接" title="Sources的直接链接" translate="no">​</a></h2>
-<p>[2] <a href="https://www.rfc-editor.org/rfc/rfc6409.html" target="_blank" rel="noopener noreferrer" class="">https://www.rfc-editor.org/rfc/rfc6409.html</a> — RFC 6409: Message Submission for Mail
-[3] <a href="https://www.rfc-editor.org/rfc/rfc8314.html" target="_blank" rel="noopener noreferrer" class="">https://www.rfc-editor.org/rfc/rfc8314.html</a> — RFC 8314: Cleartext Considered Obsolete
-[7] <a href="https://www.postfix.org/BASIC_CONFIGURATION_README.html" target="_blank" rel="noopener noreferrer" class="">https://www.postfix.org/BASIC_CONFIGURATION_README.html</a> — Postfix Basic Configuration
-[8] <a href="https://www.postfix.org/postconf.5.html" target="_blank" rel="noopener noreferrer" class="">https://www.postfix.org/postconf.5.html</a> — Postfix smtpd_relay_restrictions
-[12] <a href="https://maddy.email/" target="_blank" rel="noopener noreferrer" class="">https://maddy.email</a> — maddy documentation
-[13] <a href="https://mailinabox.email/guide.html" target="_blank" rel="noopener noreferrer" class="">https://mailinabox.email/guide.html</a> — Mail-in-a-Box guide
-[14] <a href="https://docs.aws.amazon.com/ses/latest/dg/send-email-concepts-deliverability.html" target="_blank" rel="noopener noreferrer" class="">https://docs.aws.amazon.com/ses/latest/dg/send-email-concepts-deliverability.html</a> — Amazon SES deliverability concepts
-[15] <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html" target="_blank" rel="noopener noreferrer" class="">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html</a> — AWS EC2 port 25 throttling
-[16] <a href="https://support.google.com/a/answer/81126" target="_blank" rel="noopener noreferrer" class="">https://support.google.com/a/answer/81126</a> — Google email sender guidelines
-[17] <a href="https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/README.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/master/README.md</a> — Docker Mailserver README
-[19] <a href="https://raw.githubusercontent.com/Mailu/Mailu/master/README.md" target="_blank" rel="noopener noreferrer" class="">https://raw.githubusercontent.com/Mailu/Mailu/master/README.md</a> — Mailu README</p>]]></content>
-        <category label="email" term="email"/>
-        <category label="smtp" term="smtp"/>
-        <category label="mail-server" term="mail-server"/>
-        <category label="devops" term="devops"/>
-        <category label="chatarch" term="chatarch"/>
     </entry>
 </feed>
