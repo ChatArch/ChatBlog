@@ -4,6 +4,9 @@ date: 2026-08-13
 slug: chatglance-page-development-pattern
 tags: [chatglance, dashboard, glance, operations]
 description: 介绍 ChatGlance 如何把 Glance 的页面配置、数据快照、渲染脚本和 live 验证组织成可测试、可回滚、可持续扩展的 Dashboard 页面开发模式。
+unlisted: true
+ai_slop: true
+ai_slop_reason: "有部署边界知识，但以内部规范和应当清单为主，缺少具体故障、改动前后或验证产物。"
 ---
 
 如果要给 ChatGlance 增加一个新标签页，最重要的问题不是“要不要重写一个前端”，而是：**这个页面的数据从哪里来、怎么变成 Glance 能消费的配置、怎么验证不会把坏配置或敏感信息发布到 live 站点。**

@@ -4,6 +4,9 @@ date: 2026-08-14
 slug: deepseek-harness-dsh-profile-plugin-cordis
 tags: [deepseek, agent, runtime, plugin, cordis]
 description: 一次 DeepSeek Harness 实践记录：Node 22 运行时、dsh web、headless smoke、Web UI 修小仓库、workspace API 403、Cordis patch 插件验证。
+unlisted: true
+ai_slop: true
+ai_slop_reason: "围绕验收术语复述任务，关键插件和测试仓库缺少完整代码，不能支撑上手复用。"
 ---
 
 DeepSeek Harness 发布后，我花了一轮把它跑起来。版本组合是 Node `v22.19.0` 和 `@deepseek-ai/dsh@0.1.0-rc.6`。我跑了四段：启动 `dsh web`，用 headless 做最小 smoke；让 Web UI 修一个带测试的小仓库；处理一次 workspace API 403；再写一个最小 Cordis 插件，用 `--patch` 插进 headless profile。
