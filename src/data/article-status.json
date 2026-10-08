@@ -1,5 +1,13 @@
 [
   {
+    "file": "blog/2026-09-24-jev-small-model-game-projects/index.md",
+    "title": "Jev 与小模型玩游戏：三个现成项目的源码、部署与边界",
+    "slug": "jev-small-model-game-projects",
+    "date": "2026-09-24",
+    "status": "keep",
+    "reason": "通过三个现成项目解释模型观测、动作执行与部署条件，区分实时推理、回放和规则接管。"
+  },
+  {
     "file": "blog/2026-09-16-python-data-mining-notebook-course-guide.mdx",
     "title": "Python 数据分析与挖掘实践：Notebook 课程导读、环境 Setup 与使用方式",
     "slug": "python-data-mining-notebook-course-guide",
