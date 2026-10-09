@@ -45,7 +45,7 @@ def prepare(source_root: Path, export: dict) -> dict[Path, str]:
         raise ValueError("Unknown article in editor export")
     writes: dict[Path, str] = {}
     for slug, change in changes.items():
-        if not isinstance(change, dict) or set(change) != {"status", "tags"}:
+        if not isinstance(change, dict) or set(change) != {"status", "tags", "content_sha256"}:
             raise ValueError("Invalid editor export row")
         status, tags = change["status"], change["tags"]
         if status not in {"keep", "candidate", "slop"} or not isinstance(tags, list) or len(tags) > 12 or any(
@@ -56,8 +56,16 @@ def prepare(source_root: Path, export: dict) -> dict[Path, str]:
         filepath = (source_root / row["file"]).resolve()
         if not filepath.is_relative_to((source_root / "blog").resolve()) or not filepath.is_file():
             raise ValueError("Invalid article path")
-        reason = row["reason"] if status == "slop" else ("待人工精选。" if status == "candidate" else "已人工精选。")
-        content = filepath.read_text(encoding="utf-8")
+        if status == "slop":
+            reason = row["reason"] if row["status"] == "slop" else "人工归档，未提供公开原因。"
+        else:
+            reason = "待人工精选。" if status == "candidate" else "已人工精选。"
+        source_bytes = filepath.read_bytes()
+        if (not isinstance(change["content_sha256"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", change["content_sha256"])
+                or hashlib.sha256(source_bytes).hexdigest() != change["content_sha256"]):
+            raise ValueError("Article differs from the reviewed version; review again")
+        content = source_bytes.decode("utf-8")
         new_content = _frontmatter(content, status, reason, tags)
         if new_content != content:
             writes[filepath] = new_content

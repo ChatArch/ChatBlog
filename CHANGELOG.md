@@ -7,6 +7,7 @@
 - Added the ChatBlog positioning article and a prominent homepage entry, plus a separate pending-curation inbox distinct from the negative AI Slop archive.
 - Added a ChatLogin-backed editorial service with private SQLite state, per-article feedback, tags and selection, a protected private-content route, and a reviewed export/apply workflow. Public Pages remains static until an editorial sync PR is merged.
 - Added editor security and publish-sync tests to CI; the editor link appears only after a concrete HTTPS backend origin is configured.
+- Bound editorial judgments and exports to the exact reviewed Markdown hash. Rewritten articles and unversioned legacy decisions require review again; stale source/export combinations fail closed. Public archival reasons never reuse a selected post's positive retention explanation.
 
 - Added a separate AI Slop archive with per-article reasons, original-URL warnings, and noindex metadata.
 - Reviewed all 61 posts: 18 remain in the main blog; 43 are unlisted without changing their bodies or assets.

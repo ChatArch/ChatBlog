@@ -5,7 +5,8 @@ The public Docusaurus site stays on GitHub Pages. This service supplies a separa
 ## Scope and status
 
 - Public `GET /api/articles` includes slugs, titles, dates, published status and edited selection/tags, but never private notes, password material or private body.
-- Editor UI: `GET /editor` redirects anonymous readers to the ChatLogin login page; only admin role may view/save. `PUT /api/editor/articles/{slug}` requires a valid same-origin session and CSRF header. Writes are revision-checked in private SQLite.
+- Editor UI: `GET /editor` redirects anonymous readers to the ChatLogin login page; only admin role may view/save. `PUT /api/editor/articles/{slug}` requires a valid same-origin session, CSRF header, current revision and the exact Markdown `content_sha256` shown by the editor. Writes are revision-checked in private SQLite and bind the judgment to that content version.
+- Article bytes include frontmatter and body. If a post changes, an older judgment no longer applies: the editor shows it as needing review, displays the current source tags, and excludes the stale judgment from exports. Schema migration retains legacy rows and private notes, but unversioned judgments cannot approve any article until reviewed again.
 - One-click Save updates editorial state, not the GitHub Pages build. Export a reviewed snapshot and apply it in a feature branch, then build and publish through PR. This separates publication validation from editorial choice.
 - `GET /private/{slug}` serves only owner-mode `0600` Markdown beneath the service-owned `0700` private-content directory, after login. Private files never live in `blog/`, `static/`, build output or Preview.
 - The current site has two different non-featured states: `candidate` is waiting for human selection; `slop` is the historical negative archive. Do not treat them as synonyms.
@@ -33,7 +34,7 @@ When the real editor origin is live, set the GitHub Actions repository variable 
 ## Publish an editorial decision
 
 1. On the editor origin, log in manually and click Save for each article. Status and feedback are preserved across process restarts. The page shows whether the saved selection differs from the published static snapshot.
-2. Download `/api/editor/export` while authenticated. The export excludes private notes and includes the SHA-256 of the source manifest used by the service. Store this export only in the task's private project space; review it before making public changes.
+2. Download `/api/editor/export` while authenticated. The export excludes private notes and includes the frozen source-manifest SHA-256 plus the reviewed Markdown SHA-256 for each change. Running services refuse to save/export if those source files changed beneath the loaded snapshot; reload the service against the intended immutable checkout first. Store this export only in the task's private project space; review it before making public changes.
 3. In a **fresh PR branch** from the matching ChatBlog main, inspect the dry run, then apply:
 
 ```bash
@@ -43,7 +44,9 @@ npm run build
 git diff --check
 ```
 
-4. Review the `blog/` frontmatter, public `src/data/article-status.json`, and resulting Preview before merging. The script does not push, merge, deploy, or expose notes. It fails if the manifest changed after export. When a content file uses unsupported multiline tags, edit it deliberately rather than guessing a transform. Re-export after the service has been updated to the new manifest revision.
+4. Review the `blog/` frontmatter, public `src/data/article-status.json`, and resulting Preview before merging. The script does not push, merge, deploy, or expose notes. It fails if the manifest or any affected article bytes changed after review, including changes to source tags. Exports without per-article hashes are rejected. When a content file uses unsupported multiline tags, edit it deliberately rather than guessing a transform. After any source update, including published frontmatter edits, reload the service and explicitly review changed versions before re-exporting.
+
+When moving a previously selected/candidate article into negative archival, no positive retention reason or private feedback is repurposed as a public criticism. Without an explicit public reason, the sync records that no public reason was provided; existing negative-archive reasons may be preserved.
 
 ## Limits
 

@@ -30,7 +30,8 @@ async function load() {
       const card = element('article', '', {class: 'card'});
       const heading = element('h2', article.title);
       const slug = element('code', article.slug);
-      const source = element('p', `已发布：${article.published_status} · 当前选择：${article.status}`);
+      const source = element('p', `已发布：${article.published_status} · 当前选择：${article.status}` +
+        (article.needs_review ? ' · 正文版本已变，旧判断未套用，请重新审核。' : ''));
       const select = document.createElement('select');
       for (const [value, label] of [['keep', '正式'], ['candidate', '待精选'], ['slop', '负面归档']]) {
         const option = element('option', label, {value});
@@ -49,7 +50,7 @@ async function load() {
           const uniqueTags = tags.value.split(',').map(t => t.trim()).filter(Boolean);
           const result = await request('/api/editor/articles/' + encodeURIComponent(article.slug), {
             method: 'PUT', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': state.csrf},
-            body: JSON.stringify({status: select.value, tags: uniqueTags, note: note.value, revision: article.revision}),
+            body: JSON.stringify({status: select.value, tags: uniqueTags, note: note.value, revision: article.revision, content_sha256: article.content_sha256}),
           });
           article.revision = result.revision;
           article.status = result.status;

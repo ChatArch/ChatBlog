@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -38,7 +39,8 @@ def test_editor_auth_session_and_persistence(tmp_path):
     csrf = login(c)
     assert c.get('/editor').status_code == 200
     assert c.get('/api/editor/articles').json()['articles'][0]['tags'] == ['existing']
-    payload = {'status': 'keep', 'tags': ['science'], 'note': 'Useful diagram', 'revision': 0}
+    digest = c.get('/api/editor/articles').json()['articles'][0]['content_sha256']
+    payload = {'status': 'keep', 'tags': ['science'], 'note': 'Useful diagram', 'revision': 0, 'content_sha256': digest}
     path = '/api/editor/articles/sample'
     assert c.put(path, json=payload).status_code == 403
     assert c.put(path, json=payload, headers={'Origin': 'https://evil.example.test', 'X-CSRF-Token': csrf}).status_code == 403
@@ -53,7 +55,7 @@ def test_editor_auth_session_and_persistence(tmp_path):
     assert c.get('/api/editor/articles').json()['articles'][0]['note'] == 'Useful diagram'
     exported = c.get('/api/editor/export')
     assert exported.status_code == 200
-    assert exported.json()['changes']['sample'] == {'status': 'keep', 'tags': ['science']}
+    assert exported.json()['changes']['sample'] == {'status': 'keep', 'tags': ['science'], 'content_sha256': digest}
     assert 'Useful diagram' not in exported.text
     other = create_app(origin='https://edit.example.test', site_url='https://blog.example.test/Blog/',
                        state_dir=tmp_path / 'state', manifest_path=tmp_path / 'manifest.json', backend=app.state.auth.backend)
@@ -64,21 +66,23 @@ def test_editor_auth_session_and_persistence(tmp_path):
 
 def test_roles_shapes_hosts_and_unknown_slug(tmp_path):
     c, _ = client(tmp_path, role=Role.USER)
+    digest = hashlib.sha256((tmp_path / 'blog/example.mdx').read_bytes()).hexdigest()
     csrf = login(c)
     assert c.get('/api/editor/articles').status_code == 403
-    assert c.put('/api/editor/articles/sample', json={'status': 'keep', 'tags': [], 'note': '', 'revision': 0},
+    assert c.put('/api/editor/articles/sample', json={'status': 'keep', 'tags': [], 'note': '', 'revision': 0, 'content_sha256': digest},
                  headers={'Origin': 'https://edit.example.test', 'X-CSRF-Token': csrf}).status_code == 403
     assert c.get('/api/articles', headers={'Host': 'evil.example.test'}).status_code == 400
     (tmp_path / 'admin').mkdir()
     a, _ = client(tmp_path / 'admin')
     csrf = login(a)
     headers = {'Origin': 'https://edit.example.test', 'X-CSRF-Token': csrf}
-    assert a.put('/api/editor/articles/missing', json={'status': 'keep', 'tags': [], 'note': '', 'revision': 0}, headers=headers).status_code == 404
+    assert a.put('/api/editor/articles/missing', json={'status': 'keep', 'tags': [], 'note': '', 'revision': 0, 'content_sha256': digest}, headers=headers).status_code == 404
     for bad in [
         {'status': 'custom', 'tags': [], 'note': '', 'revision': 0},
         {'status': 'keep', 'tags': ['a', 'a'], 'note': '', 'revision': 0},
         {'status': 'keep', 'tags': [], 'note': '', 'revision': 0, 'admin': True},
     ]:
+        bad['content_sha256'] = digest
         assert a.put('/api/editor/articles/sample', json=bad, headers=headers).status_code == 422
     assert a.get('/api/articles').json()['articles'][0]['status'] == 'slop'
     oversized = {'status': 'keep', 'tags': [], 'note': 'x' * 18000, 'revision': 0}

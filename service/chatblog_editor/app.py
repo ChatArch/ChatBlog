@@ -32,6 +32,7 @@ class Edit(BaseModel):
     tags: list[str] = Field(max_length=12)
     note: str = Field(max_length=4000)
     revision: int = Field(ge=0)
+    content_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
 def _private_account(path: Path) -> PasswordBackend:
@@ -65,7 +66,9 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
     state_dir = Path(state_dir or os.environ.get("CHATBLOG_STATE_DIR") or
                      Path(os.environ.get("CHATARCH_HOME") or Path.home() / ".chatarch") / "chatblog-editor")
     manifest_path = Path(manifest_path or Path(__file__).resolve().parents[2] / "src/data/article-status.json")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_bytes = manifest_path.read_bytes()
+    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    manifest = json.loads(manifest_bytes)
     if not isinstance(manifest, list) or any(not isinstance(row, dict) for row in manifest):
         raise ValueError("Invalid article inventory")
     articles = {row["slug"]: row for row in manifest}
@@ -75,11 +78,11 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
     for row in manifest:
         path = (source_root / row["file"]).resolve()
         if not path.is_file() or not path.is_relative_to((source_root / "blog").resolve()):
-            if manifest_path.name == "article-status.json":
-                raise ValueError("Published article inventory is incomplete")
-            row["_published_tags"] = []
-            continue
-        frontmatter = path.read_text(encoding="utf-8").split("---", 2)[1]
+            raise ValueError("Published article inventory is incomplete")
+        source_bytes = path.read_bytes()
+        row["_source_path"] = path
+        row["_content_sha256"] = hashlib.sha256(source_bytes).hexdigest()
+        frontmatter = source_bytes.decode("utf-8").split("---", 2)[1]
         fields = yaml.safe_load(frontmatter)
         tags = fields.get("tags", []) if isinstance(fields, dict) else []
         if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
@@ -96,6 +99,31 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
     app = FastAPI(title="ChatBlog editor", docs_url=None, redoc_url=None, openapi_url=None)
     app.include_router(auth.router)
     app.state.auth = auth
+
+    def ensure_snapshot(slugs):
+        try:
+            if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != manifest_sha256:
+                raise ValueError("Manifest changed")
+            for slug in slugs:
+                row = articles[slug]
+                if hashlib.sha256(row["_source_path"].read_bytes()).hexdigest() != row["_content_sha256"]:
+                    raise ValueError("Article changed")
+        except (OSError, ValueError):
+            raise HTTPException(status_code=409, detail="Source changed; reload the service and review again") from None
+
+    def judgment(slug, row, overrides):
+        result = {
+            "status": row["status"], "tags": row["_published_tags"], "note": "", "revision": 0,
+            "content_sha256": row["_content_sha256"], "needs_review": False,
+        }
+        stored = overrides.get(slug)
+        if stored is not None:
+            result["revision"] = stored["revision"]
+            if stored.get("content_sha256") != row["_content_sha256"]:
+                result.update(status="candidate", needs_review=True)
+            else:
+                result.update({key: stored[key] for key in ("status", "tags", "note")})
+        return result
 
     @app.middleware("http")
     async def limit_editor_writes(request: Request, call_next):
@@ -116,11 +144,11 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
     def public_articles(request: Request):
         auth._check_host(request)
         overrides = store.read()
+        states = {slug: judgment(slug, row, overrides) for slug, row in articles.items()}
         response = JSONResponse({"articles": [
             {"slug": slug, "title": row["title"], "date": row["date"],
              "published_status": row["status"],
-             "status": overrides.get(slug, {}).get("status", row["status"]),
-             "tags": overrides.get(slug, {}).get("tags", row["_published_tags"])}
+             "status": states[slug]["status"], "tags": states[slug]["tags"]}
             for slug, row in articles.items()
         ]})
         response.headers["Cache-Control"] = "no-store"
@@ -141,24 +169,29 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
         overrides = store.read()
         return JSONResponse({"articles": [
             {"slug": slug, "title": row["title"], "published_status": row["status"],
-             **({"status": row["status"], "tags": row["_published_tags"], "note": "", "revision": 0}
-                | overrides.get(slug, {}))}
+             **judgment(slug, row, overrides)}
             for slug, row in articles.items()
         ]}, headers={"Cache-Control": "no-store"})
 
     @app.get("/api/editor/export", dependencies=[Depends(editor_only)])
     def export():
+        ensure_snapshot(articles)
         overrides = store.read()
         return JSONResponse({
-            "base_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
-            "changes": {slug: {"status": row["status"], "tags": row["tags"]}
-                        for slug, row in overrides.items() if slug in articles},
+            "base_sha256": manifest_sha256,
+            "changes": {slug: {"status": row["status"], "tags": row["tags"],
+                               "content_sha256": row["content_sha256"]}
+                        for slug, row in overrides.items()
+                        if slug in articles and row["content_sha256"] == articles[slug]["_content_sha256"]},
         }, headers={"Cache-Control": "no-store", "Content-Disposition": "attachment; filename=chatblog-curation.json"})
 
     @app.put("/api/editor/articles/{slug:path}", dependencies=[Depends(editor_write)])
     def edit_article(slug: str, edit: Edit):
         if slug not in articles:
             raise HTTPException(status_code=404, detail="Unknown article")
+        ensure_snapshot((slug,))
+        if edit.content_sha256 != articles[slug]["_content_sha256"]:
+            raise HTTPException(status_code=409, detail="Article version changed; review again")
         if edit.status not in {"keep", "candidate", "slop"}:
             raise HTTPException(status_code=422, detail="Invalid status")
         if any(not isinstance(tag, str) or not tag.strip() or len(tag) > 40 for tag in edit.tags):
@@ -167,7 +200,7 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
             raise HTTPException(status_code=422, detail="Duplicate tag")
         try:
             result = store.update(slug, status=edit.status, tags=edit.tags,
-                                  note=edit.note, revision=edit.revision)
+                                  note=edit.note, revision=edit.revision, content_sha256=edit.content_sha256)
         except ValueError:
             raise HTTPException(status_code=409, detail="Article changed; reload before editing") from None
         return JSONResponse({"slug": slug, **result, "published_status": articles[slug]["status"]},
