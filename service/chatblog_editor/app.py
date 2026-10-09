@@ -75,12 +75,16 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
     if len(articles) != len(manifest):
         raise ValueError("Duplicate article slugs")
     source_root = manifest_path.resolve().parents[2] if manifest_path.name == "article-status.json" else manifest_path.parent
+    blog_root = (source_root / "blog").resolve()
     for row in manifest:
-        path = (source_root / row["file"]).resolve()
-        if not path.is_file() or not path.is_relative_to((source_root / "blog").resolve()):
+        source_path = source_root / row["file"]
+        path = source_path.resolve(strict=True)
+        if not path.is_file() or not path.is_relative_to(blog_root):
             raise ValueError("Published article inventory is incomplete")
         source_bytes = path.read_bytes()
-        row["_source_path"] = path
+        # Re-resolve the logical inventory path at checkpoints, not only its cached target.
+        row["_source_path"] = source_path
+        row["_resolved_source_path"] = path
         row["_content_sha256"] = hashlib.sha256(source_bytes).hexdigest()
         frontmatter = source_bytes.decode("utf-8").split("---", 2)[1]
         fields = yaml.safe_load(frontmatter)
@@ -106,9 +110,12 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
                 raise ValueError("Manifest changed")
             for slug in slugs:
                 row = articles[slug]
-                if hashlib.sha256(row["_source_path"].read_bytes()).hexdigest() != row["_content_sha256"]:
+                current_path = row["_source_path"].resolve(strict=True)
+                if current_path != row["_resolved_source_path"] or not current_path.is_relative_to(blog_root):
+                    raise ValueError("Article path changed")
+                if hashlib.sha256(current_path.read_bytes()).hexdigest() != row["_content_sha256"]:
                     raise ValueError("Article changed")
-        except (OSError, ValueError):
+        except (OSError, ValueError, RuntimeError):
             raise HTTPException(status_code=409, detail="Source changed; reload the service and review again") from None
 
     def judgment(slug, row, overrides):

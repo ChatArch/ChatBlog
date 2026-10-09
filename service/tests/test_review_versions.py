@@ -101,6 +101,34 @@ def test_stale_browser_hash_cannot_approve_new_article_version(catalog):
     assert current.get('/api/editor/export').json()['changes'] == {}
 
 
+@pytest.mark.parametrize('target_kind', ['inside', 'outside', 'same-bytes', 'missing'])
+def test_running_service_rejects_retargeted_source_link(catalog, target_kind):
+    root, post, _, _ = catalog
+    reviewed = post.with_name('reviewed.mdx')
+    post.rename(reviewed)
+    post.symlink_to(reviewed.name)
+    c, headers = start(catalog)
+    payload = decision(c)
+    target = root / 'outside.mdx' if target_kind == 'outside' else post.with_name('other.mdx')
+    if target_kind != 'missing':
+        content = reviewed.read_text() if target_kind == 'same-bytes' else reviewed.read_text().replace('Original body.', 'Unreviewed replacement.')
+        target.write_text(content)
+    post.unlink()
+    post.symlink_to(target)
+    assert c.put('/api/editor/articles/sample', json=payload, headers=headers).status_code == 409
+    assert c.get('/api/editor/export').status_code == 409
+
+
+def test_unchanged_source_link_remains_valid(catalog):
+    _, post, _, _ = catalog
+    reviewed = post.with_name('reviewed.mdx')
+    post.rename(reviewed)
+    post.symlink_to(reviewed.name)
+    c, headers = start(catalog)
+    assert c.put('/api/editor/articles/sample', json=decision(c), headers=headers).status_code == 200
+    assert c.get('/api/editor/export').status_code == 200
+
+
 def test_unversioned_database_migrates_without_approving_any_article(catalog):
     root, _, _, _ = catalog
     state = root / 'state'
