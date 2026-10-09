@@ -2,11 +2,50 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog</id>
     <title>ChatBlog Blog</title>
-    <updated>2026-09-24T00:00:00.000Z</updated>
+    <updated>2026-10-08T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog"/>
     <subtitle>ChatBlog Blog</subtitle>
     <icon>https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/favicon.svg</icon>
+    <entry>
+        <title type="html"><![CDATA[ChatBlog：让每篇文章有自己的判断]]></title>
+        <id>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog</id>
+        <link href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog"/>
+        <updated>2026-10-08T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[我们为什么做 ChatBlog，为什么曾停下来，以及为什么生成文章和精选文章需要分开。]]></summary>
+        <content type="html"><![CDATA[<p>我们做 ChatBlog，是因为经常需要临时弄懂一个东西。</p>
+<p>可能是一个新概念，也可能是一项工具、一篇论文，或者一个需要尽快拿出方案的问题。调研结束后，资料散在链接、聊天和笔记里，下一次再遇到，往往还得重新翻找。ChatBlog 想把这些过程留下来：把零散信息整理成可以看懂的内容，帮助我们消化，也方便以后找到、继续使用。</p>
+<p>AI 让这件事有机会做得更快。查找、整理、解释和制作页面的成本降低了，一次临时探索也能留下一个可阅读的结果。但文章生成得快，不代表知识已经被理解。我们真正需要的是有人看完以后，能比之前更清楚一点。</p>
+<p>临时弄懂一个问题，也是值得留下来的工作。它不必每次都长成一篇正式长文：一个能解释概念的小页面、一份把选项讲清楚的方案，都可以成为这里的内容。重要的是那次探索有没有留下有用的理解，而不是是否凑齐了一篇博客的固定格式。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么停下来">为什么停下来<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%81%9C%E4%B8%8B%E6%9D%A5" class="hash-link" aria-label="为什么停下来的直接链接" title="为什么停下来的直接链接" translate="no">​</a></h2>
+<p>后来出现的问题，是几篇文章开始越来越像。</p>
+<p>前一篇的组织方式影响后一篇，某一次效果还不错的结构逐渐成了默认写法。题目不同，内容的展开顺序和页面的样子却越来越接近。模型把 pattern 执行得很完整，文章也因此变得死板。原本希望帮助理解的工具，反而让不同问题被挤进同一种表达里。</p>
+<p>这让我们一度停下了博客。</p>
+<p>现在重新看，停止没有解决问题。我们需要弄清楚：哪些约束确实能帮助文章，哪些约束只是让生成结果整齐，甚至在消耗文章本来可以拥有的判断。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="每篇文章先理解自己的问题">每篇文章先理解自己的问题<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#%E6%AF%8F%E7%AF%87%E6%96%87%E7%AB%A0%E5%85%88%E7%90%86%E8%A7%A3%E8%87%AA%E5%B7%B1%E7%9A%84%E9%97%AE%E9%A2%98" class="hash-link" aria-label="每篇文章先理解自己的问题的直接链接" title="每篇文章先理解自己的问题的直接链接" translate="no">​</a></h2>
+<p>这篇置顶文章可以解释 ChatBlog 的目的，却不应该替之后的每篇文章规定写法。</p>
+<p>临时调研和解释一个概念，并不需要相同的展开方式。一个问题的难处可能在几个选项之间的取舍，也可能在某个过程、某种关系，或者一个容易产生误解的细节。文章应该先找到这个难处，再决定怎样解释。</p>
+<p>纯文本有时很难让人抓住要点。但解决办法也不是给每篇文章都加同样的图、表、卡片和动画。图表应该帮助人看见文字不容易说清的关系；交互应该让人能够尝试、比较或检查。没有这样的作用，多一种形式也可能只是多一次打断。</p>
+<p>我们希望各篇文章都有自己的思考和理解。内容之间可以有联系，写法不必互相模仿。一个简单问题可以简短回答，一个需要展开的问题也应该有足够的空间。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="生成和精选是两件事">生成和精选是两件事<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#%E7%94%9F%E6%88%90%E5%92%8C%E7%B2%BE%E9%80%89%E6%98%AF%E4%B8%A4%E4%BB%B6%E4%BA%8B" class="hash-link" aria-label="生成和精选是两件事的直接链接" title="生成和精选是两件事的直接链接" translate="no">​</a></h2>
+<p>AI 可以产生很多文章，我们不必让每一次生成都直接变成首页的推荐。</p>
+<p>网站已经把一部分退出主区的历史文章放进 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/ai-slop">AI Slop</a>，保留原文和旧链接。这是负面归档，不应成为新文章的范文。新生成但尚未被判断的文章，需要另一个状态：<a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/inbox">待精选</a>。待精选不是低质量判定，它只是还没有进入正式阅读区。</p>
+<p>文章经过 PR 和合版，意味着它已经过发布检查；是否进入正式列表，则是另一项判断。我们希望首页主要展示至少经过初步精选的文章。一次探索可以先留下结果，不用立刻承担“已经值得推荐”的含义。看到有价值的内容后，再由人把它提升到正式区域。原链接不必因此改变。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="taste-来自具体判断">Taste 来自具体判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#taste-%E6%9D%A5%E8%87%AA%E5%85%B7%E4%BD%93%E5%88%A4%E6%96%AD" class="hash-link" aria-label="Taste 来自具体判断的直接链接" title="Taste 来自具体判断的直接链接" translate="no">​</a></h2>
+<p>我们希望在网页里给每篇文章留下反馈、打标签，并选择哪些内容值得留在正式区域。反馈应该说清楚：哪里帮助了理解，哪里遗漏了问题，哪里让人读不下去。</p>
+<p>这里也有一个需要警惕的地方：人的反馈可能被模型变成另一套模板。</p>
+<p>喜欢某篇文章中的一张图，不等于之后每篇文章都需要这张图的结构；喜欢一种解释方式，也不代表它适用于另一个主题。反馈要与那篇文章、那次任务联系起来。可以学习判断的理由，但不能把一次成功不加区分地复制下去。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="静态阅读登录编辑">静态阅读，登录编辑<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#%E9%9D%99%E6%80%81%E9%98%85%E8%AF%BB%E7%99%BB%E5%BD%95%E7%BC%96%E8%BE%91" class="hash-link" aria-label="静态阅读，登录编辑的直接链接" title="静态阅读，登录编辑的直接链接" translate="no">​</a></h2>
+<p>公开阅读可以继续保持轻量。网站的公开页面由 GitHub Pages 提供；登录、反馈和精选状态交给单独的后端。Pages 本身<a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site" target="_blank" rel="noopener noreferrer" class="">不运行服务端程序</a>，因此编辑按钮和公开站点是两种不同的能力。</p>
+<p>网站开源，意味着实现和公开文章可以被查看、复用，并不意味着任何人都拥有编辑权。静态页面也不能靠前端隐藏来保护正文。以后若有只能登录后阅读的内容，正文应从公开源码和 Pages 产物中排除，由服务端验证身份后交付。</p>
+<p>这篇文章不是写作模板。它只是说明我们要做的事，和我们曾经走偏的地方。ChatBlog 重新开始，应该先解决已经碰到的问题；下一篇文章仍然要自己找到合适的写法。</p>]]></content>
+        <author>
+            <name>ChatArch</name>
+        </author>
+        <category label="ChatBlog" term="ChatBlog"/>
+        <category label="AI" term="AI"/>
+        <category label="写作" term="写作"/>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Jev 与小模型玩游戏：三个现成项目的源码、部署与边界]]></title>
         <id>https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/jev-small-model-game-projects</id>
