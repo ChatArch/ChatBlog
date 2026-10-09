@@ -19,12 +19,11 @@ def _frontmatter(source: str, status: str, reason: str, tags: list[str]) -> str:
     if not match:
         raise ValueError("Article has no YAML frontmatter")
     lines = match.group(1).splitlines()
-    lines = [line for line in lines if not re.match(r"^(unlisted|ai_slop|ai_slop_reason):", line)]
+    if any(line.strip() == "tags:" for line in lines):
+        raise ValueError("Multiline tags require manual editing")
+    lines = [line for line in lines if not re.match(r"^(unlisted|ai_slop|ai_slop_reason|tags):", line)]
+    # The export is the selected tag set; an empty set intentionally clears old tags.
     if tags:
-        # Existing tag lines are inline in ChatBlog. Refuse unsupported mappings/lists.
-        if any(line.startswith("tags:") and line.strip() == "tags:" for line in lines):
-            raise ValueError("Multiline tags require manual editing")
-        lines = [line for line in lines if not line.startswith("tags:")]
         lines.append("tags: " + json.dumps(tags, ensure_ascii=False))
     if status != "keep":
         lines.append("unlisted: true")

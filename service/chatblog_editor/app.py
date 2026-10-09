@@ -9,6 +9,7 @@ import os
 import stat
 import hashlib
 import re
+import yaml
 from html import escape
 from pathlib import Path
 from urllib.parse import quote, urlsplit
@@ -70,6 +71,20 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
     articles = {row["slug"]: row for row in manifest}
     if len(articles) != len(manifest):
         raise ValueError("Duplicate article slugs")
+    source_root = manifest_path.resolve().parents[2] if manifest_path.name == "article-status.json" else manifest_path.parent
+    for row in manifest:
+        path = (source_root / row["file"]).resolve()
+        if not path.is_file() or not path.is_relative_to((source_root / "blog").resolve()):
+            if manifest_path.name == "article-status.json":
+                raise ValueError("Published article inventory is incomplete")
+            row["_published_tags"] = []
+            continue
+        frontmatter = path.read_text(encoding="utf-8").split("---", 2)[1]
+        fields = yaml.safe_load(frontmatter)
+        tags = fields.get("tags", []) if isinstance(fields, dict) else []
+        if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
+            raise ValueError("Invalid published tags")
+        row["_published_tags"] = tags
     if backend is None:
         backend = _private_account(state_dir / "editor.json")
     store = EditorialStore(state_dir / "editorial.sqlite3")
@@ -105,7 +120,7 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
             {"slug": slug, "title": row["title"], "date": row["date"],
              "published_status": row["status"],
              "status": overrides.get(slug, {}).get("status", row["status"]),
-             "tags": overrides.get(slug, {}).get("tags", [])}
+             "tags": overrides.get(slug, {}).get("tags", row["_published_tags"])}
             for slug, row in articles.items()
         ]})
         response.headers["Cache-Control"] = "no-store"
@@ -126,7 +141,7 @@ def create_app(*, origin: str | None = None, site_url: str | None = None,
         overrides = store.read()
         return JSONResponse({"articles": [
             {"slug": slug, "title": row["title"], "published_status": row["status"],
-             **({"status": row["status"], "tags": [], "note": "", "revision": 0}
+             **({"status": row["status"], "tags": row["_published_tags"], "note": "", "revision": 0}
                 | overrides.get(slug, {}))}
             for slug, row in articles.items()
         ]}, headers={"Cache-Control": "no-store"})

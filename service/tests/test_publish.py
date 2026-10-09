@@ -39,6 +39,15 @@ def test_candidate_is_unlisted_but_not_negative(tmp_path):
     assert 'Original body.' in writes[article]
 
 
+def test_clear_tags_is_a_real_edit(tmp_path):
+    article, manifest = fixture(tmp_path)
+    export = {'base_sha256': hashlib.sha256(manifest.read_bytes()).hexdigest(),
+              'changes': {'example': {'status': 'slop', 'tags': []}}}
+    writes = prepare(tmp_path, export)
+    assert 'tags:' not in writes[article]
+    assert 'ai_slop: true' in writes[article]
+
+
 def test_stale_or_tampered_export_fails_closed(tmp_path):
     fixture(tmp_path)
     for bad in [

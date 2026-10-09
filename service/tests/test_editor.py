@@ -12,6 +12,8 @@ def client(tmp_path: Path, *, role=Role.ADMIN):
         {'slug': 'sample', 'file': 'blog/example.mdx', 'title': 'Example', 'date': '2026-10-08',
          'status': 'slop', 'reason': 'Review needed'},
     ]))
+    (tmp_path / 'blog').mkdir()
+    (tmp_path / 'blog/example.mdx').write_text('---\ntitle: Example\ntags: [existing]\n---\nBody')
     backend = PasswordBackend({'editor': (Principal('editor', 'Editor', role), hash_password('synthetic-test-password'))})
     app = create_app(origin='https://edit.example.test', site_url='https://blog.example.test/Blog/',
                      state_dir=tmp_path / 'state', manifest_path=manifest, backend=backend)
@@ -32,9 +34,10 @@ def test_editor_auth_session_and_persistence(tmp_path):
     assert redirect.headers['location'].startswith('/auth/?next=')
     assert c.get('/api/editor/articles').status_code == 401
     public = c.get('/api/articles').json()['articles'][0]
-    assert public['status'] == 'slop' and 'note' not in public
+    assert public['status'] == 'slop' and public['tags'] == ['existing'] and 'note' not in public
     csrf = login(c)
     assert c.get('/editor').status_code == 200
+    assert c.get('/api/editor/articles').json()['articles'][0]['tags'] == ['existing']
     payload = {'status': 'keep', 'tags': ['science'], 'note': 'Useful diagram', 'revision': 0}
     path = '/api/editor/articles/sample'
     assert c.put(path, json=payload).status_code == 403
