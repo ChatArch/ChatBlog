@@ -26,6 +26,19 @@
   line-height: 1.7;
 }
 
+.positioning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.7rem 1.4rem;
+  padding: 1.15rem 1.5rem;
+  max-width: 760px;
+  border-left: 4px solid #0f766e;
+  background: rgba(255, 255, 255, 0.82);
+}
+.positioning span {color: #0f766e; font-size: .82rem; font-weight: 700; letter-spacing: .08em}
+.positioning a {font-family: Georgia, serif; font-size: clamp(1.1rem, 3vw, 1.45rem); color: #102a43}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

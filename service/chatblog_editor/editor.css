@@ -1,0 +1,20 @@
+:root {color-scheme: light; --ink:#192e2b; --muted:#50605c; --paper:#f7f3e9; --accent:#a0472b; --line:#d8d4c7}
+* {box-sizing:border-box}
+body {margin:0; background:radial-gradient(circle at 82% 0%,#e8dbc2,transparent 45%),var(--paper);color:var(--ink);font-family:'Avenir Next','Trebuchet MS',sans-serif;line-height:1.6}
+main {max-width:960px;margin:0 auto;padding:clamp(20px,5vw,68px)}
+header {border-bottom:2px solid var(--ink);padding-bottom:24px;margin-bottom:36px}
+header>p:first-child {font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1 {font-family:Georgia,serif;font-size:clamp(2.2rem,6vw,4rem);line-height:1.15;margin:.2em 0}
+header>p {max-width:66ch;color:var(--muted)}
+.card {background:#fffef9;border:1px solid var(--line);padding:24px;margin-bottom:14px;display:grid;gap:12px;box-shadow:4px 4px 0 #e8e2d4}
+h2 {font-family:Georgia,serif;font-size:1.35rem;margin:0}
+code {font-size:.8rem;overflow-wrap:anywhere;color:var(--muted)}
+.card p {margin:0;color:var(--muted)}
+input,textarea,select {font:inherit;width:100%;border:1px solid #a9b0a6;background:#fff;padding:.65em;color:var(--ink)}
+textarea {min-height:82px;resize:vertical}
+button {font:inherit;border:0;background:var(--ink);color:#fff;padding:.65em 1.2em;cursor:pointer;width:fit-content}
+button:hover,button:focus-visible {background:var(--accent)}
+button:disabled {opacity:.5;cursor:wait}
+#message {min-height:2em;color:var(--accent)}
+a {color:var(--accent);margin-left:20px}
+@media(max-width:600px) {.card {padding:16px}header a {display:inline-block;margin:15px 0 0 0}}

@@ -1,5 +1,13 @@
 [
   {
+    "file": "blog/2026-10-08-about-chatblog.mdx",
+    "title": "ChatBlog：让每篇文章有自己的判断",
+    "slug": "about-chatblog",
+    "date": "2026-10-08",
+    "status": "keep",
+    "reason": "介绍博客目的、文章独立判断以及生成与精选的边界。"
+  },
+  {
     "file": "blog/2026-09-24-jev-small-model-game-projects/index.md",
     "title": "Jev 与小模型玩游戏：三个现成项目的源码、部署与边界",
     "slug": "jev-small-model-game-projects",

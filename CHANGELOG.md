@@ -4,6 +4,10 @@
 
 ### Added
 
+- Added the ChatBlog positioning article and a prominent homepage entry, plus a separate pending-curation inbox distinct from the negative AI Slop archive.
+- Added a ChatLogin-backed editorial service with private SQLite state, per-article feedback, tags and selection, a protected private-content route, and a reviewed export/apply workflow. Public Pages remains static until an editorial sync PR is merged.
+- Added editor security and publish-sync tests to CI; the editor link appears only after a concrete HTTPS backend origin is configured.
+
 - Added a separate AI Slop archive with per-article reasons, original-URL warnings, and noindex metadata.
 - Reviewed all 61 posts: 18 remain in the main blog; 43 are unlisted without changing their bodies or assets.
 - Added classification/frontmatter consistency tests to every site build.
