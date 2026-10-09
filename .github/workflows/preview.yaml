@@ -29,6 +29,7 @@ jobs:
         env:
           CHATBLOG_SITE_URL: https://arch.gh.wzhecnu.cn
           CHATBLOG_BASE_URL: /ChatBlog/dev/
+          CHATBLOG_EDITOR_ORIGIN: ${{ vars.CHATBLOG_EDITOR_ORIGIN }}
       - name: Deploy preview to gh-pages/dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
