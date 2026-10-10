@@ -27,6 +27,17 @@
   color: var(--ifm-color-emphasis-700);
 }
 
+.settingsTable :global(table) {
+  display: table;
+  width: 100%;
+}
+
+.settingsTable :global(th:first-child),
+.settingsTable :global(td:first-child) {
+  min-width: 90px;
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   .figure {
     margin: 1.4rem 0;
