@@ -2,6 +2,9 @@
 
 const siteUrl = process.env.CHATBLOG_SITE_URL || 'https://arch.gh.wzhecnu.cn';
 const baseUrl = process.env.CHATBLOG_BASE_URL || '/ChatBlog/';
+const editorOrigin = process.env.CHATBLOG_EDITOR_ORIGIN || '';
+const {editorLoginUrl} = require('./scripts/editor-entry.cjs');
+editorLoginUrl(editorOrigin); // Fail the build for an unsafe configured handoff.
 
 const config = {
   title: 'ChatBlog',
@@ -9,6 +12,7 @@ const config = {
   favicon: 'img/favicon.svg',
   url: siteUrl,
   baseUrl,
+  customFields: {editorOrigin},
   organizationName: 'ChatArch',
   projectName: 'ChatBlog',
   trailingSlash: false,
@@ -68,7 +72,9 @@ const config = {
           {to: '/slides', label: 'Slides', position: 'left'},
           {to: '/blog/archive', label: '时间轴', position: 'left'},
           {to: '/blog/tags', label: '标签', position: 'left'},
+          {to: '/inbox', label: '待精选', position: 'right'},
           {to: '/ai-slop', label: 'AI Slop', position: 'right'},
+          {to: '/login', label: '登录', position: 'right'},
           {href: 'https://github.com/ChatArch/ChatBlog', label: 'GitHub', position: 'right'},
         ],
       },

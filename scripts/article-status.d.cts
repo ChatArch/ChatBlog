@@ -3,11 +3,12 @@ export type ArticleStatus = {
   title: string;
   slug: string;
   date: string;
-  status: 'keep' | 'slop';
+  status: 'keep' | 'candidate' | 'slop';
   reason: string;
 };
 export function articleUrl(slug: string): string;
 export function validateArticleStatus(manifest: unknown, expectedFiles?: string[]): ArticleStatus[];
 export function getSlopArticles(manifest: unknown): ArticleStatus[];
+export function getCandidateArticles(manifest: unknown): ArticleStatus[];
 export function isSlopPath(pathname: string, manifest: unknown): boolean;
 export function filterSidebarItems<T extends {permalink: string}>(items: readonly T[], manifest: unknown): T[];

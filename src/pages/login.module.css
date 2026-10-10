@@ -1,0 +1,34 @@
+.page {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 3rem 1rem 5rem;
+}
+
+.lead {
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.8;
+  max-width: 64ch;
+}
+
+.panel {
+  margin: 1.8rem 0;
+  padding: 1.5rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-inline-start: 4px solid var(--ifm-color-primary);
+  border-radius: 12px;
+  background: var(--ifm-card-background-color);
+}
+
+.missing {
+  border-inline-start-color: var(--ifm-color-warning-dark);
+}
+
+.panel p {
+  line-height: 1.8;
+}
+
+.note {
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.95rem;
+  line-height: 1.8;
+}

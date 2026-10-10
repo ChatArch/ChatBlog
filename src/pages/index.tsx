@@ -3,6 +3,7 @@ import Heading from '@theme/Heading';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import styles from './index.module.css';
+import EditorLink from '../components/EditorLink';
 
 const entries = [
   {
@@ -38,15 +39,20 @@ function HomepageHeader() {
         <p className={styles.eyebrow}>ChatArch Notes</p>
         <Heading as="h1" className={styles.title}>ChatBlog</Heading>
         <p className={styles.subtitle}>
-          ChatArch 的技术文章与实践笔记。主区保留有使用价值的内容，其余历史文章单独归档。
+          快速整理、理解和展示有用的知识。首页只推荐经过初步精选的文章。
         </p>
+        <aside className={styles.positioning}>
+          <span>从这里开始 · 置顶</span>
+          <Link to="/blog/about-chatblog">为什么做 ChatBlog，以及我们为什么重新开始 →</Link>
+        </aside>
         <div className={styles.actions}>
           <Link className="button button--primary button--lg" to="/blog">
             阅读博客
           </Link>
-          <Link className="button button--secondary button--lg" to="https://github.com/ChatArch/ChatBlog">
-            GitHub
+          <Link className="button button--secondary button--lg" to="/inbox">
+            待精选
           </Link>
+          <EditorLink />
         </div>
       </div>
     </header>

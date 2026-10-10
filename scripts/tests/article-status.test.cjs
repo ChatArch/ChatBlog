@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const {test} = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
-const {articleUrl, validateArticleStatus, getSlopArticles, isSlopPath, filterSidebarItems} = require('../article-status.cjs');
+const {articleUrl, validateArticleStatus, getSlopArticles, getCandidateArticles, isSlopPath, filterSidebarItems} = require('../article-status.cjs');
 
 const entry = (overrides = {}) => ({
   file: 'blog/2026-08-01-example.mdx', title: '示例文章', slug: 'example',
@@ -31,6 +31,13 @@ test('an empty or all-keep manifest has no quarantine entries', () => {
   assert.deepEqual(getSlopArticles([]), []);
   assert.deepEqual(getSlopArticles([entry({status: 'keep'})]), []);
 });
+test('candidate is an unlisted pending review, never a negative archive', () => {
+  const candidate = entry({status: 'candidate', reason: '待人工精选。'});
+  assert.doesNotThrow(() => validateArticleStatus([candidate]));
+  assert.deepEqual(getCandidateArticles([candidate]).map(({slug}) => slug), ['example']);
+  assert.deepEqual(getSlopArticles([candidate]), []);
+});
+
 test('the manifest requires an array of complete records', () => {
   assert.throws(() => validateArticleStatus({}), /array/);
   for (const field of ['file', 'title', 'slug', 'date', 'status', 'reason']) {
@@ -80,6 +87,13 @@ test('sidebar excludes the current archived article as well as other archived en
   assert.equal(JSON.stringify(items), before);
 });
 
+test('sidebar excludes candidates as well as archived entries', () => {
+  const manifest = [entry({status: 'candidate'}), entry({file: 'blog/slop.mdx', slug: 'slop'})];
+  const items = ['/ChatBlog/dev/blog/example', '/ChatBlog/blog/slop', '/ChatBlog/blog/keep']
+    .map((permalink) => ({permalink}));
+  assert.deepEqual(filterSidebarItems(items, manifest), [items[2]]);
+});
+
 const root = path.resolve(__dirname, '../..');
 const manifestPath = path.join(root, 'src/data/article-status.json');
 test('real manifest covers every blog source and matches quarantine frontmatter', () => {
@@ -103,6 +117,9 @@ test('real manifest covers every blog source and matches quarantine frontmatter'
       assert.equal(scalar('unlisted'), 'true', record.file);
       assert.equal(scalar('ai_slop'), 'true', record.file);
       assert.equal(scalar('ai_slop_reason'), record.reason, record.file);
+    } else if (record.status === 'candidate') {
+      assert.equal(scalar('unlisted'), 'true', record.file);
+      assert.notEqual(scalar('ai_slop'), 'true', record.file);
     } else {
       assert.notEqual(scalar('unlisted'), 'true', record.file);
       assert.notEqual(scalar('ai_slop'), 'true', record.file);

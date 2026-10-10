@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="1000" viewBox="0 0 760 1000">
+<title>ChatBlog：发布检查和人工精选是不同的判断</title>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="none" stroke="#677b71" stroke-width="1.5"/></marker></defs>
+<style>text {font-family:"PingFang SC","Microsoft YaHei",sans-serif}</style>
+<rect width="760" height="1000" fill="#faf7ef"/>
+<text x="44" y="43" font-size="22" font-weight="400" fill="#597266" text-anchor="start">CHATBLOG / 内容怎样进入阅读区</text>
+<text x="44" y="98" font-size="40" font-weight="650" fill="#243d36" text-anchor="start">发布与精选，是不同的判断</text>
+<text x="44" y="133" font-size="26" font-weight="400" fill="#52685f" text-anchor="start">先留下探索，再决定是否推荐。</text>
+<rect x="44" y="164" width="672" height="164" rx="19" fill="#fffef9" stroke="#243d36" stroke-width="2"/>
+<path d="M63,184 L63,307" stroke="#65849a" stroke-width="5" stroke-linecap="round"/>
+<g transform="translate(89 195)" stroke="#65849a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M10,15 L-1,18 L4,102 L68,97 L64,18"/><rect x="12" y="0" width="67" height="94" rx="3" fill="#fffdf9"/>
+<path d="M25,20 H65 M25,34 H62 M25,48 H55 M25,62 H65 M25,76 H47"/>
+</g>
+<text x="197" y="211" font-size="34" font-weight="650" fill="#243d36">写出这次探索的结果</text>
+<text x="197" y="255" font-size="28" fill="#243d36">围绕具体问题组织内容</text>
+<text x="197" y="293" font-size="28" fill="#243d36">图片、案例或交互按需要选择</text>
+<path d="M380,332 L380,399" stroke="#677b71" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="136" y="345" width="490" height="40" rx="20" fill="#faf7ef"/>
+<text x="380" y="373" font-size="28" font-weight="650" fill="#355c70" text-anchor="middle">发布检查：来源、链接与构建</text>
+<rect x="44" y="408" width="672" height="164" rx="19" fill="#fff0d5" stroke="#243d36" stroke-width="2"/>
+<path d="M63,428 L63,551" stroke="#9b6638" stroke-width="5" stroke-linecap="round"/>
+<g transform="translate(89 439)" stroke="#9b6638" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<rect x="18" y="0" width="53" height="76" rx="3" fill="#fffdf9"/><path d="M29,20 H59 M29,34 H55"/>
+<path d="M0,63 L11,94 L83,94 L94,63 L64,63 L58,76 L36,76 L29,63 Z" fill="#ffe6bc"/>
+</g>
+<text x="197" y="455" font-size="34" font-weight="650" fill="#243d36">待精选：先留下探索</text>
+<text x="197" y="499" font-size="28" fill="#243d36">已经发布，尚未进入推荐区</text>
+<text x="197" y="537" font-size="28" fill="#243d36">待精选不等于低质量判定</text>
+<path d="M380,576 L380,675" stroke="#677b71" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="126" y="590" width="510" height="72" rx="15" fill="#faf7ef"/>
+<text x="380" y="616" font-size="28" font-weight="650" fill="#8f5233" text-anchor="middle">人工判断：是否真的帮助理解？</text>
+<text x="380" y="651" font-size="24" font-weight="400" fill="#52685f" text-anchor="middle">反馈与标签留在这篇文章的上下文里</text>
+<rect x="44" y="684" width="672" height="164" rx="19" fill="#e6f0e4" stroke="#243d36" stroke-width="2"/>
+<path d="M63,704 L63,827" stroke="#497451" stroke-width="5" stroke-linecap="round"/>
+<g transform="translate(89 715)" stroke="#497451" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<rect x="12" y="0" width="67" height="94" rx="3" fill="#fffdf9"/><path d="M49,0 V36 L61,28 L73,36 V0" fill="#d0e6d1"/>
+<path d="M25,49 H65 M25,63 H65 M25,77 H49"/><path d="M-2,43 L7,51 L23,32" stroke-width="5"/>
+</g>
+<text x="197" y="731" font-size="34" font-weight="650" fill="#243d36">正式区：值得推荐的知识</text>
+<text x="197" y="775" font-size="28" fill="#243d36">精选选择先保存到后端</text>
+<text x="197" y="813" font-size="28" fill="#243d36">源同步 PR 发布后更新公开列表</text>
+<path d="M44,884 H716" stroke="#c2c8bc" stroke-width="1.5"/>
+<text x="44" y="920" font-size="25" font-weight="400" fill="#243d36" text-anchor="start">AI Slop 另列：已经明确退出主区的负面归档。</text>
+<text x="44" y="962" font-size="23" font-weight="400" fill="#52685f" text-anchor="start">图示为编辑意图；登录编辑后端仍待部署。</text>
+</svg>

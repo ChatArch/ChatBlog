@@ -21,6 +21,7 @@ export default function AiSlopArchive(): ReactNode {
             原文和旧链接保留，仅供追溯，不代表推荐或认可。
           </p>
           <p><strong>这是负面归档，不得用作新文章的写作素材、范文或结构模板。</strong></p>
+          <p>新生成但尚未精选的文章不在此处；请到 <Link to="/inbox">待精选</Link> 查看。</p>
           <Link to="/blog">返回正常博客 →</Link>
         </header>
         <section aria-labelledby="ai-slop-list">

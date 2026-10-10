@@ -29,7 +29,7 @@ function validateArticleStatus(manifest, expectedFiles) {
       throw new Error(`Invalid file: ${record.file}`);
     }
     articleUrl(record.slug);
-    if (!['keep', 'slop'].includes(record.status)) throw new Error(`Invalid status: ${record.status}`);
+    if (!['keep', 'candidate', 'slop'].includes(record.status)) throw new Error(`Invalid status: ${record.status}`);
     const date = new Date(`${record.date}T00:00:00Z`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(record.date) || Number.isNaN(date.getTime()) ||
         date.toISOString().slice(0, 10) !== record.date) {
@@ -53,6 +53,12 @@ function getSlopArticles(manifest) {
     .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
 }
 
+function getCandidateArticles(manifest) {
+  return validateArticleStatus(manifest)
+    .filter(({status}) => status === 'candidate')
+    .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
+}
+
 function isSlopPath(pathname, manifest) {
   if (typeof pathname !== 'string') return false;
   let path;
@@ -65,7 +71,16 @@ function isSlopPath(pathname, manifest) {
 }
 
 function filterSidebarItems(items, manifest) {
-  return items.filter(({permalink}) => !isSlopPath(permalink, manifest));
+  const hidden = [...getSlopArticles(manifest), ...getCandidateArticles(manifest)];
+  return items.filter(({permalink}) => !hidden.some(({slug}) => {
+    let path;
+    try {
+      path = decodeURIComponent(permalink.split(/[?#]/, 1)[0]).replace(/\/$/, '').replace(/\.html$/, '');
+    } catch {
+      return false;
+    }
+    return path.endsWith(articleUrl(slug));
+  }));
 }
 
-module.exports = {articleUrl, validateArticleStatus, getSlopArticles, isSlopPath, filterSidebarItems};
+module.exports = {articleUrl, validateArticleStatus, getSlopArticles, getCandidateArticles, isSlopPath, filterSidebarItems};

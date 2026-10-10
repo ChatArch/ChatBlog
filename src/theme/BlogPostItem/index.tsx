@@ -3,6 +3,7 @@ import Head from '@docusaurus/Head';
 import Link from '@docusaurus/Link';
 import {useBlogPost} from '@docusaurus/plugin-content-blog/client';
 import BlogPostItem from '@theme-original/BlogPostItem';
+import EditorLink from '../../components/EditorLink';
 import type {Props} from '@theme/BlogPostItem';
 
 export default function BlogPostItemWrapper(props: Props): ReactNode {
@@ -10,6 +11,7 @@ export default function BlogPostItemWrapper(props: Props): ReactNode {
   const frontMatter = metadata.frontMatter as {
     ai_slop?: boolean;
     ai_slop_reason?: string;
+    slug?: string;
   };
   const quarantined = isBlogPostPage && frontMatter.ai_slop === true;
 
@@ -27,6 +29,7 @@ export default function BlogPostItemWrapper(props: Props): ReactNode {
         </>
       )}
       <BlogPostItem {...props} />
+      {isBlogPostPage && frontMatter.slug && <p className='margin-top--sm'><EditorLink slug={frontMatter.slug} /></p>}
     </>
   );
 }
