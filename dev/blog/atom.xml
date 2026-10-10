@@ -16,6 +16,7 @@
         <content type="html"><![CDATA[<p>我们做 ChatBlog，是因为经常需要临时弄懂一个东西。</p>
 <p>可能是一个新概念，也可能是一项工具、一篇论文，或者一个需要尽快拿出方案的问题。调研结束后，资料散在链接、聊天和笔记里，下一次再遇到，往往还得重新翻找。ChatBlog 想把这些过程留下来：把零散信息整理成可以看懂的内容，帮助我们消化，也方便以后找到、继续使用。</p>
 <p>AI 让这件事有机会做得更快。查找、整理、解释和制作页面的成本降低了，一次临时探索也能留下一个可阅读的结果。但文章生成得快，不代表知识已经被理解。我们真正需要的是有人看完以后，能比之前更清楚一点。</p>
+<figure class="figure_UWny"><a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/chatblog-positioning/preview-home-ba5a41de18d7.webp" target="_blank" rel="noopener noreferrer" aria-label="查看博客首页预览原图"><img src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/chatblog-positioning/preview-home-ba5a41de18d7.webp" alt="ChatBlog 改造预览：首页的定位文章置顶入口、正式博客与待精选入口" width="1120" height="760"></a><figcaption class="caption_g9o5">这张图来自改造中的真实 PR 预览：定位入口常驻，正式阅读和待精选分开。它不是编辑后端已经上线的证明。点击图片可查看原图。</figcaption></figure>
 <p>临时弄懂一个问题，也是值得留下来的工作。它不必每次都长成一篇正式长文：一个能解释概念的小页面、一份把选项讲清楚的方案，都可以成为这里的内容。重要的是那次探索有没有留下有用的理解，而不是是否凑齐了一篇博客的固定格式。</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么停下来">为什么停下来<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%81%9C%E4%B8%8B%E6%9D%A5" class="hash-link" aria-label="为什么停下来的直接链接" title="为什么停下来的直接链接" translate="no">​</a></h2>
 <p>后来出现的问题，是几篇文章开始越来越像。</p>
@@ -25,12 +26,14 @@
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="每篇文章先理解自己的问题">每篇文章先理解自己的问题<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#%E6%AF%8F%E7%AF%87%E6%96%87%E7%AB%A0%E5%85%88%E7%90%86%E8%A7%A3%E8%87%AA%E5%B7%B1%E7%9A%84%E9%97%AE%E9%A2%98" class="hash-link" aria-label="每篇文章先理解自己的问题的直接链接" title="每篇文章先理解自己的问题的直接链接" translate="no">​</a></h2>
 <p>这篇置顶文章可以解释 ChatBlog 的目的，却不应该替之后的每篇文章规定写法。</p>
 <p>临时调研和解释一个概念，并不需要相同的展开方式。一个问题的难处可能在几个选项之间的取舍，也可能在某个过程、某种关系，或者一个容易产生误解的细节。文章应该先找到这个难处，再决定怎样解释。</p>
-<p>纯文本有时很难让人抓住要点。但解决办法也不是给每篇文章都加同样的图、表、卡片和动画。图表应该帮助人看见文字不容易说清的关系；交互应该让人能够尝试、比较或检查。没有这样的作用，多一种形式也可能只是多一次打断。</p>
+<p>如果一张图能让人更快看懂关系，就尽量不要让它埋在长段落里。过程可以画出来，概念可以配一个具体案例，软件可以给真实截图；需要尝试和比较的内容，也可以做成交互。文字、图片和演示一起完成解释。</p>
+<p>选择这些形式时，要看这次的问题在哪里。某一篇适合流程图，另一篇可能更适合一组前后对照。我们希望有更多合适的表达，而不是每篇都重复同一套图、表、卡片和动画。</p>
 <p>我们希望各篇文章都有自己的思考和理解。内容之间可以有联系，写法不必互相模仿。一个简单问题可以简短回答，一个需要展开的问题也应该有足够的空间。</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="生成和精选是两件事">生成和精选是两件事<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#%E7%94%9F%E6%88%90%E5%92%8C%E7%B2%BE%E9%80%89%E6%98%AF%E4%B8%A4%E4%BB%B6%E4%BA%8B" class="hash-link" aria-label="生成和精选是两件事的直接链接" title="生成和精选是两件事的直接链接" translate="no">​</a></h2>
 <p>AI 可以产生很多文章，我们不必让每一次生成都直接变成首页的推荐。</p>
 <p>网站已经把一部分退出主区的历史文章放进 <a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/ai-slop">AI Slop</a>，保留原文和旧链接。这是负面归档，不应成为新文章的范文。新生成但尚未被判断的文章，需要另一个状态：<a class="" href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/inbox">待精选</a>。待精选不是低质量判定，它只是还没有进入正式阅读区。</p>
 <p>文章经过 PR 和合版，意味着它已经过发布检查；是否进入正式列表，则是另一项判断。我们希望首页主要展示至少经过初步精选的文章。一次探索可以先留下结果，不用立刻承担“已经值得推荐”的含义。看到有价值的内容后，再由人把它提升到正式区域。原链接不必因此改变。</p>
+<figure class="figure_UWny diagram_zFrj"><a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/chatblog-positioning/editorial-decisions-aa440891bca8.svg" target="_blank" rel="noopener noreferrer" aria-label="放大查看发布与精选的两道判断"><img src="https://arch.gh.wzhecnu.cn/ChatBlog/dev/img/chatblog-positioning/editorial-decisions-c4b38e1ec75e.webp" alt="生成探索结果后，先通过发布检查进入待精选，再经过人工判断与源同步发布进入正式区；负面归档单独保留" width="760" height="1000" loading="lazy"></a><figcaption class="caption_g9o5">两道判断关心的事不同：发布检查关心内容能否交付，精选关心它是否值得推荐。图示是正在推进的编辑流程；保存选择并不立即改变静态博客，公开列表仍需源同步 PR 发布。点击图可放大。</figcaption></figure>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="taste-来自具体判断">Taste 来自具体判断<a href="https://arch.gh.wzhecnu.cn/ChatBlog/dev/blog/about-chatblog#taste-%E6%9D%A5%E8%87%AA%E5%85%B7%E4%BD%93%E5%88%A4%E6%96%AD" class="hash-link" aria-label="Taste 来自具体判断的直接链接" title="Taste 来自具体判断的直接链接" translate="no">​</a></h2>
 <p>我们希望在网页里给每篇文章留下反馈、打标签，并选择哪些内容值得留在正式区域。反馈应该说清楚：哪里帮助了理解，哪里遗漏了问题，哪里让人读不下去。</p>
 <p>这里也有一个需要警惕的地方：人的反馈可能被模型变成另一套模板。</p>
