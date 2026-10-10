@@ -30,7 +30,7 @@ PYTHONPATH=service ~/.chatarch/chatblog-editor/venv/bin/python -m uvicorn chatbl
 
 For local loopback smoke only, `http://127.0.0.1:<port>` is accepted for the editor origin; HTTPS is mandatory elsewhere. The source checkout must match the deployed version; a code update does not automatically migrate private editorial state.
 
-When the real editor origin is live, set the GitHub Actions repository variable `CHATBLOG_EDITOR_ORIGIN` to that exact origin. `publish.yml` and `preview.yaml` pass it to Docusaurus at build time. Without the variable, Pages/Preview shows no inactive Edit link. Do not guess the host or put an API key in frontend config. Authentication runs on the editor's own origin; the public page links to it instead of sending cookies across origins.
+The public navbar always exposes `/login`. Without `CHATBLOG_EDITOR_ORIGIN`, that page honestly states that account login is not configured and collects no password. When the real editor origin is live, set the GitHub Actions repository variable `CHATBLOG_EDITOR_ORIGIN` to that exact origin; `publish.yml` and `preview.yaml` pass it to Docusaurus at build time. The status page then hands off to the backend's fixed `/auth/?next=/editor` login route. Configuration is not a liveness or authorization check. Do not guess the host or put an API key in frontend config. Authentication runs on the editor's own origin; Pages does not receive credentials or cookies.
 
 ## Publish an editorial decision
 

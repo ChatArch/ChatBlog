@@ -40,7 +40,7 @@ https://arch.gh.wzhecnu.cn/ChatBlog/
 - PR：`Preview Docs` 会用 `/ChatBlog/dev/` 作为 `baseUrl` 构建，并发布到 `gh-pages` 分支的 `dev/` 目录。
 - 合并到 `main` / `master`：`Deploy Docs` 会用 `/ChatBlog/` 作为 `baseUrl` 构建，并发布到 `gh-pages` 分支根目录。
 - GitHub Pages source 应保持为 `gh-pages` 分支 `/` 路径。
-- 编辑服务如何设置管理员、登录、源清单导出与人工同步 PR 见 [`service/README.md`](service/README.md)。未配置 `CHATBLOG_EDITOR_ORIGIN` 时不显示失效的编辑入口。只有选定并验证实际 HTTPS 后端后，才在构建时设置它。
+- 导航里的“登录”入口始终可见，进入 `/login` 查看接入状态。未配置 `CHATBLOG_EDITOR_ORIGIN` 时说明账号登录尚未接通，不显示假密码表单；配置真实入口后转到独立编辑服务的 ChatLogin 页面。只有选定并验证实际 HTTPS 后端后，才在构建时设置它。管理员配置、源清单导出与人工同步 PR 见 [`service/README.md`](service/README.md)。
 - 规范 URL 使用大写仓库名路径 `/ChatBlog/`；小写 `/chatblog/` 需要由组织主页仓库提供跳转别名。
 
 ## 如何写内容
