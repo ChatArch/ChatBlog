@@ -1,5 +1,13 @@
 [
   {
+    "file": "blog/2026-10-15-linux-computer-use-boundaries/index.md",
+    "title": "Linux 上的 Computer Use：日常 Chrome 与桌面鼠标实测",
+    "slug": "linux-computer-use-boundaries",
+    "date": "2026-10-15",
+    "status": "candidate",
+    "reason": "基于真实Chrome与桌面鼠标实践、原始工具轨迹和脱敏截图整理的能力边界报告，待人工精选。"
+  },
+  {
     "file": "blog/2026-10-08-about-chatblog.mdx",
     "title": "ChatBlog：让每篇文章有自己的判断",
     "slug": "about-chatblog",
