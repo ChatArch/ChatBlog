@@ -510,5 +510,13 @@
     "date": "2026-06-29",
     "status": "slop",
     "reason": "站点能力展示和写作模板，不提供独立问题的知识或论证。"
+  },
+  {
+    "file": "blog/2026-11-16-opensandbox-usage-guide.mdx",
+    "title": "OpenSandbox 入门指南：从 Docker 配置到 Python 执行、文件处理与代码解释器",
+    "slug": "opensandbox-usage-guide",
+    "date": "2026-11-16",
+    "status": "candidate",
+    "reason": "独立入门教程，含完整代码与下载示例；发布后待人工精选。"
   }
 ]
