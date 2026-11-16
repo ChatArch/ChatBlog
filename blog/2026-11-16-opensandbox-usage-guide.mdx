@@ -1,0 +1,715 @@
+---
+title: OpenSandbox 入门指南：从 Docker 配置到 Python 执行、文件处理与代码解释器
+date: 2026-11-16
+slug: opensandbox-usage-guide
+authors:
+  - name: ChatArch
+tags: [OpenSandbox, Python, Docker, Sandbox]
+description: 先理解 Server、SDK、镜像与执行环境，再完成命令和文件操作、CSV 处理、代码测试、临时网页及有状态代码解释器，最后看资源、网络和安全配置。
+unlisted: true
+ai_slop: false
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+假设你要运行一段 Python：它需要几个文件、可能安装依赖，最后生成一份结果。直接在自己的电脑上执行当然可以，但当代码来自另一个人、一个 Agent，或者只是一次性实验时，更合适的做法可能是给它一个临时环境，做完再回收。
+
+OpenSandbox 将这件事做成了可调用的接口。这篇教程先回答“代码究竟在哪里运行”，再按同一条 Docker + Python 路线逐步操作，不要求提前部署一套 Agent 平台。
+
+<!-- truncate -->
+
+**示例代码**：<a href={useBaseUrl('/downloads/opensandbox-guide/opensandbox-tutorial-examples.zip')} download>下载完整示例包</a>。包内含基础脚本、CSV、测试、临时网页、代码解释器案例、依赖文件与运行说明；不包含密钥或任何部署数据。
+
+> 本文以 OpenSandbox Server、Python SDK 和 Code Interpreter **1.2.1** 为接口基线，资料核对日期为 **2026 年 11 月 16 日**。主路线是同机 Docker 与 Python 同步 SDK；示例依据官方文档和发行包静态校对，运行结果以实际环境为准。
+
+## 1. 它到底是什么
+
+把OpenSandbox理解成「用API申请、操作、回收临时工作环境的平台」。例如：你想让一段程序处理CSV，又不想让它直接改宿主机文件，就申请一个Sandbox，把CSV和程序放进去，执行，取回结果，最后销毁。
+
+它不是大模型，也不替你决定工作目标；它提供执行环境和操作接口。容器是其中一种底层实现，不等于OpenSandbox本身。
+
+```text
+你的Python脚本 / Agent / CLI
+  ├─ 生命周期请求 → OpenSandbox Server → Docker（本教程）
+  │                                     └─ Sandbox：镜像内的程序 + execd
+  └─ 命令 / 文件 / 服务访问 → 解析出的Sandbox端点
+```
+
+- Docker：实际创建和约束容器。
+- Server：鉴权、创建、查询、续期、删除环境。
+- SDK：让你的程序用Python方法调用上述接口。
+- 镜像：决定环境里有没有Python、Git、浏览器、编译器等软件。
+- execd：沙箱内承接命令、文件和指标等操作的执行组件。
+
+Server、SDK和工作负载不要求永远同机；为了先看懂，本教程先把它们放在同一台机器。代码解释器、浏览器、Agent是后续选择，不是跑通第一个Sandbox的前提。
+
+架构说明参见[官方 Architecture](https://open-sandbox.ai/architecture)；本教程使用的版本可在[Python SDK 1.2.1](https://pypi.org/project/opensandbox/1.2.1/)与[Server 1.2.1](https://pypi.org/project/opensandbox-server/1.2.1/)的发行页面核对。
+
+## 2. 先分清三种安装
+
+| 位置 | 要装什么 | 作用 |
+|---|---|---|
+| 管理环境的机器 | Docker + opensandbox-server | 供应Sandbox |
+| 发请求的Python环境 | opensandbox | 控制Sandbox |
+| Sandbox里面 | 所选镜像的程序和依赖 | 真正处理任务 |
+
+在宿主机pip install pandas，不会自动使Sandbox拥有pandas。反过来，在Sandbox里pip install包，也不会自动安装到调用SDK的宿主机。
+
+你可以直接用python:3.12-slim做文本/JSON/CSV和unittest练习，不需要先构建自己的镜像。
+
+## 3. 环境准备
+
+### 3.1 选择学习环境
+
+官方安装要求包括Python3.10+；Docker路线需要Docker Engine20.10+。Linux可直接使用Docker；macOS通常通过Docker Desktop提供Linux容器环境；Windows按WSL2内的Linux路线理解。本文Shell命令按Bash/Zsh写，不是原生PowerShell语法。 [安装要求与平台说明](https://open-sandbox.ai/getting-started/installation)。
+
+先检查：
+
+```bash
+python3 --version
+docker version
+docker info
+```
+
+`docker version`需要同时有Client和Server信息。只有Client、连接不到daemon，还不能创建环境。
+
+已有Docker的机器不要为了教程卸载或重装Docker。全新Ubuntu可按Docker官方apt仓库安装流程；不要把发行版docker.io与docker-ce混装。Docker权限不够时也不要把docker.sock改成全员可写。
+
+### 3.2 创建教程Python环境
+
+以下路径是示例，可换成你自己的项目目录。安装只针对这套教程venv：
+
+```bash
+mkdir -p "$HOME/opensandbox-tutorial"
+cd "$HOME/opensandbox-tutorial"
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install 'opensandbox-server==1.2.1' 'opensandbox==1.2.1'
+```
+
+如果`python3`低于3.10，先选择已安装的较新解释器创建venv。Ubuntu缺venv组件时，安装与所选解释器匹配的venv包。
+
+安装包不等于启动服务。下一步才启动Server。
+
+### 3.3 生成独立配置
+
+```bash
+mkdir -p "$HOME/.opensandbox/tutorial"
+opensandbox-server init-config "$HOME/.opensandbox/tutorial/sandbox.toml" --example docker
+```
+
+这里必须带`--example docker`。不带它生成的是带占位符的完整骨架，不能把那个骨架当作开箱即用配置。
+
+若文件已存在，先阅读、复用或备份，不要顺手`--force`覆盖。
+
+编辑生成的文件，修改已有对应段落中的以下项目；不要再追加同名表：
+
+```toml
+[server]
+host = "127.0.0.1"
+port = 8080
+max_sandbox_timeout_seconds = 3600
+
+[runtime]
+type = "docker"
+execd_image = "opensandbox/execd:v1.1.0"
+
+[docker]
+network_mode = "bridge"
+publish_host = "127.0.0.1"
+port_range_min = 40000
+port_range_max = 40100
+pids_limit = 128
+no_new_privileges = true
+
+[store]
+type = "sqlite"
+path = "/替换成你的绝对路径/.opensandbox/tutorial/opensandbox.db"
+```
+
+保留生成文件里其余默认保护项。最后一个数据库路径要替换为你自己的完整路径，不能照抄中文占位符；可用`python -c 'from pathlib import Path; print(Path.home()/".opensandbox/tutorial/opensandbox.db")'`取得应填写的路径。如果同机已有OpenSandbox，使用不同端口、数据库和端口范围，不要复用运行中实例。
+
+这些字段分别控制：
+- `server.host/port`：管理API监听位置。
+- `runtime.type`：底层供应环境的方式。
+- `runtime.execd_image`：执行组件镜像，不是任务Python镜像。
+- `docker.publish_host`：桥接模式数据端口发布在哪个宿主地址。
+- `pids_limit`：进程/线程数量的额外护栏。
+- `store.path`：服务端记录，不是你的任务输出目录。
+
+Server1.2.1不意味着execd镜像也叫v1.2.1；上面的execd:v1.1.0来自该发行包自带Docker配置。 参见[服务端发行包](https://pypi.org/project/opensandbox-server/1.2.1/)和[配置文档](https://open-sandbox.ai/getting-started/configuration)。
+
+### 3.4 配置API key，而不是无鉴权裸奔
+
+创建一个仅本用户可读的Key文件，不把Key写进代码仓库：
+
+```bash
+python - <<'PY'
+from pathlib import Path
+import os
+import secrets
+
+p = Path.home() / '.opensandbox/tutorial/api-key'
+p.parent.mkdir(parents=True, exist_ok=True)
+fd = os.open(p, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+with os.fdopen(fd, 'w') as f:
+    f.write(secrets.token_urlsafe(32))
+print('Key文件已建立；没有输出Key。')
+PY
+```
+
+已存在时这段代码会拒绝覆盖，这是防止无意换Key。两个名称需要分清：
+
+| 使用方 | 环境变量 |
+|---|---|
+| Server | OPENSANDBOX_SERVER_API_KEY |
+| Python SDK | OPEN_SANDBOX_API_KEY |
+
+终端A中加载同一个值：
+
+```bash
+export OPEN_SANDBOX_API_KEY="$(python -c 'from pathlib import Path; print((Path.home()/".opensandbox/tutorial/api-key").read_text().strip())')"
+export OPENSANDBOX_SERVER_API_KEY="$OPEN_SANDBOX_API_KEY"
+```
+
+不要为排错打开`set -x`后再加载秘密，也不要把Key贴到聊天里。Server环境变量可以覆盖配置中的server.api_key；SDK会读取自己的环境变量。
+
+### 3.5 拉镜像、启动Server
+
+```bash
+docker pull opensandbox/execd:v1.1.0
+docker pull python:3.12-slim
+opensandbox-server --config "$HOME/.opensandbox/tutorial/sandbox.toml"
+```
+
+保持终端A运行。再开终端B：
+
+```bash
+cd "$HOME/opensandbox-tutorial"
+source .venv/bin/activate
+export OPEN_SANDBOX_API_KEY="$(python -c 'from pathlib import Path; print((Path.home()/".opensandbox/tutorial/api-key").read_text().strip())')"
+export NO_PROXY="127.0.0.1,localhost${NO_PROXY:+,$NO_PROXY}"
+export no_proxy="$NO_PROXY"
+curl --fail http://127.0.0.1:8080/health
+```
+
+预期拿到HTTP200。管理API的鉴权检查可以另做：
+
+```bash
+curl --fail -H "OPEN-SANDBOX-API-KEY: $OPEN_SANDBOX_API_KEY" http://127.0.0.1:8080/v1/sandboxes
+```
+
+health200只是Server存活，不证明镜像能拉取、容器能创建、execd可访问。第一个完整例子会继续验证这些层。
+
+## 4. 第一个完整例子：创建、执行、文件读写、导出、销毁
+
+保存为`osb_tutorial.py`。本教程选择同步SDK，先不引入async/await：
+
+```python
+from datetime import timedelta
+from pathlib import Path
+import os
+
+from opensandbox import SandboxSync
+from opensandbox.config import ConnectionConfigSync
+from opensandbox.models import WriteEntry
+from opensandbox.models.execd import RunCommandOpts
+
+
+def connection():
+    return ConnectionConfigSync(
+        domain='127.0.0.1:8080',
+        protocol='http',
+        api_key=os.environ['OPEN_SANDBOX_API_KEY'],
+    )
+
+
+def new_sandbox(image='python:3.12-slim', memory='512Mi'):
+    return SandboxSync.create(
+        image,
+        entrypoint=['tail', '-f', '/dev/null'],
+        timeout=timedelta(minutes=10),
+        ready_timeout=timedelta(seconds=60),
+        resource={'cpu': '1', 'memory': memory},
+        connection_config=connection(),
+    )
+
+
+def run_ok(sb, command, cwd='/workspace', seconds=60):
+    result = sb.commands.run(
+        command,
+        opts=RunCommandOpts(
+            working_directory=cwd,
+            timeout=timedelta(seconds=seconds),
+        ),
+    )
+    if result.text:
+        print(result.text)
+    stderr = '\n'.join(x.text for x in result.logs.stderr)
+    if stderr:
+        print(stderr)
+    if result.error is not None or result.exit_code != 0:
+        raise RuntimeError(
+            f'命令未成功：exit={result.exit_code}, '
+            f'error={result.error}, stderr={stderr}'
+        )
+    return result
+
+
+def main():
+    sb = new_sandbox()
+    print('Sandbox ID:', sb.id)
+    try:
+        run_ok(sb, 'mkdir -p /workspace', cwd='/')
+        sb.files.write_files([
+            WriteEntry(
+                path='/workspace/hello.py',
+                data="print('hello from sandbox')\n",
+                mode=644,
+            )
+        ])
+        run_ok(sb, 'python hello.py')
+        source = sb.files.read_file('/workspace/hello.py')
+        Path('hello.exported.py').write_text(source, encoding='utf-8')
+        print('脚本已导出到本机 hello.exported.py')
+    finally:
+        sb.destroy()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+运行：
+
+```bash
+python osb_tutorial.py
+```
+
+预期现象：出现一个Sandbox ID；输出`hello from sandbox`；调用SDK的机器上出现`hello.exported.py`；最后远程环境被销毁。
+
+你应看懂以下几点：
+1. 创建需要一个镜像，镜像决定有哪些工具。
+2. `tail -f /dev/null`是此通用Python镜像例子的保活进程，不是在执行任务，也不是所有专用镜像都应该这样启动。
+3. `/workspace/hello.py`属于Sandbox；`hello.exported.py`属于调用SDK的机器。路径一样不代表跨机器自动同步。
+4. `run_ok`检查错误与退出码，不用“有stdout”冒充成功。
+5. 本例API key留在SDK侧，没有通过env参数交给任务程序。
+6. stderr并不自动等于失败；例如unittest常把正常测试报告写到stderr，所以同时展示输出，并以error/exit_code判断。
+
+### 最容易漏掉的清理语义
+- `close()`：关本地SDK资源，不等于删除远程环境。
+- `kill()`：终止远程Sandbox。
+- `destroy()`：终止远程环境，并关闭本地SDK资源。
+- 1.2.1的原生`with SandboxSync.create(...)`退出调用的是close，不是destroy。
+
+所以临时环境用显式`try/finally: destroy()`。若销毁失败，应报告和核对，不能因为本地脚本退出就声称环境不存在。生产调用还应分别保留任务异常和清理异常，避免清理错误覆盖原任务问题。 [Python SDK](https://open-sandbox.ai/sdks/python)。
+
+## 5. 常用操作：命令、文件、连接与时限
+
+### 5.1 普通命令与shell session
+
+普通run不应被当作同一个持续交互shell：上一条命令中的cd/export，不应假设下一条会自动继承。文件则可以在同一个未销毁Sandbox中保留。稳定做法是明确working_directory、使用绝对路径，或显式使用shell session：
+
+```python
+sid = sb.commands.create_session(working_directory='/workspace')
+try:
+    sb.commands.run_in_session(
+        sid, "export NOTE=hello; cd /workspace",
+        timeout=timedelta(seconds=30),
+    )
+    result = sb.commands.run_in_session(
+        sid, 'printf "%s\n" "$NOTE"',
+        timeout=timedelta(seconds=30),
+    )
+    print(result.text)
+finally:
+    sb.commands.delete_session(sid)
+```
+
+这是持久shell状态，不是把整个操作系统/进程树做了快照。新手先用明确cwd的普通run即可。
+
+### 5.2 文件操作
+
+```python
+sb.files.write_file('/workspace/note.txt', '学习笔记', mode=644)
+text = sb.files.read_file('/workspace/note.txt')
+
+# 二进制：用bytes，不要把图片当UTF-8文本读
+sb.files.write_file('/workspace/blob.bin', b'\x00\x01', mode=600)
+blob = sb.files.read_bytes('/workspace/blob.bin')
+Path('blob.downloaded.bin').write_bytes(blob)
+```
+
+很多小文件可以write_files批量写。大文件则看官方流式文件接口，不要让控制程序一次把超大结果全读入内存。
+
+### 5.3 时限并不是一个值
+
+| 项目 | 控制什么 |
+|---|---|
+| Sandbox.create(timeout=...) | 整个环境的有效期 |
+| RunCommandOpts(timeout=...) | 这条命令运行多久 |
+| ConnectionConfigSync(request_timeout=...) | 管理API请求等待时间 |
+| ready_timeout | 创建后的就绪检查等待时间 |
+
+`RunCommandOpts.timeout`不填时，不能认为Server自动给命令加了有限执行预算。写自动化任务时要显式设置。
+
+### 5.4 连接已有环境与续期
+
+```python
+same = SandboxSync.connect(saved_id, connection_config=connection())
+try:
+    same.renew(timedelta(minutes=20))
+    print(same.files.read_file('/workspace/note.txt'))
+finally:
+    same.close()  # 此处有意保留远程环境，最后由它的所有者destroy
+```
+
+saved_id必须来自一个仍存在的环境。connect不是复制、重建或恢复已销毁容器。续期也不是持久化数据；在1.2.1里，server.max_sandbox_timeout_seconds限制创建时长，不限制renew；业务若需要总生存期上限，还要另加策略，不能把这个配置当续期硬上限。 [过期与续期配置](https://open-sandbox.ai/getting-started/configuration)。
+
+## 6. 案例一：把CSV放进去，取回统计JSON
+
+宿主机创建orders.csv：
+
+```csv
+category,amount
+books,12.5
+books,7.5
+food,10
+```
+
+保存`case_csv.py`，和osb_tutorial.py放一起：
+
+```python
+from pathlib import Path
+from osb_tutorial import new_sandbox, run_ok
+from opensandbox.models import WriteEntry
+
+CSV_WORKER = '''import csv, json
+from decimal import Decimal
+from pathlib import Path
+rows = list(csv.DictReader(Path('input.csv').open(encoding='utf-8')))
+totals = {}
+for row in rows:
+    category = row['category']
+    totals[category] = totals.get(category, Decimal('0')) + Decimal(row['amount'])
+result = {'rows': len(rows), 'totals': {k: str(v) for k, v in totals.items()}}
+Path('summary.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+'''
+
+sb = new_sandbox()
+try:
+    run_ok(sb, 'mkdir -p /workspace', cwd='/')
+    sb.files.write_files([
+        WriteEntry(path='/workspace/input.csv', data=Path('orders.csv').read_text(encoding='utf-8'), mode=644),
+        WriteEntry(path='/workspace/summarize.py', data=CSV_WORKER, mode=644),
+    ])
+    run_ok(sb, 'python summarize.py')
+    result = sb.files.read_file('/workspace/summary.json')
+    Path('summary.json').write_text(result, encoding='utf-8')
+    print('统计结果已取回本机 summary.json')
+finally:
+    sb.destroy()
+```
+
+这对应真实的数据处理流水线：宿主输入→Sandbox计算→宿主保存。要换成Excel/PDF/图像处理，主流程一样，只是镜像和处理程序不同。不要在销毁之后才想起导出文件。
+
+## 7. 案例二：验证一份Python代码，而不是相信生成者自述
+
+保存`case_tests.py`：
+
+```python
+from osb_tutorial import new_sandbox, run_ok
+from opensandbox.models import WriteEntry
+
+NORMALIZER = '''def normalize(text):
+    return text.strip().lower()
+'''
+TESTS = '''import unittest
+from normalize import normalize
+
+class Tests(unittest.TestCase):
+    def test_trim_and_case(self):
+        self.assertEqual(normalize('  Hello  '), 'hello')
+
+    def test_empty(self):
+        self.assertEqual(normalize(''), '')
+'''
+
+sb = new_sandbox()
+try:
+    run_ok(sb, 'mkdir -p /workspace', cwd='/')
+    sb.files.write_files([
+        WriteEntry(path='/workspace/normalize.py', data=NORMALIZER, mode=644),
+        WriteEntry(path='/workspace/test_normalize.py', data=TESTS, mode=644),
+    ])
+    run_ok(sb, 'python -m unittest -v')
+finally:
+    sb.destroy()
+```
+
+如果之后接LLM，把模型产出的文件放到相同接口里即可。OpenSandbox负责执行和隔离环境，不负责证明测试覆盖了业务要求。
+
+本例代码是可信学习样例。运行陌生代码前，还要约束网络、挂载、资源和秘密，不能把“在容器里”当作全部安全工作已经完成。
+
+## 8. 案例三：在Sandbox启动一个可访问的HTTP服务
+
+保存`case_web.py`：
+
+```python
+from datetime import timedelta
+import time
+import httpx
+from opensandbox.models.execd import RunCommandOpts
+from osb_tutorial import new_sandbox, run_ok
+
+sb = new_sandbox()
+try:
+    run_ok(sb, 'mkdir -p /workspace/site', cwd='/')
+    sb.files.write_file('/workspace/site/index.html', '<h1>Hello OpenSandbox</h1>', mode=644)
+    job = sb.commands.run(
+        'python -m http.server 8000 --bind 0.0.0.0',
+        opts=RunCommandOpts(
+            background=True,
+            working_directory='/workspace/site',
+            timeout=timedelta(minutes=5),
+        ),
+    )
+    if job.error:
+        raise RuntimeError(str(job.error))
+
+    ep = sb.get_endpoint(8000)
+    url = ep.endpoint if '://' in ep.endpoint else 'http://' + ep.endpoint
+    with httpx.Client(trust_env=False, follow_redirects=False, timeout=2) as client:
+        for _ in range(30):
+            try:
+                response = client.get(url, headers=ep.headers)
+                response.raise_for_status()
+                break
+            except (httpx.ConnectError, httpx.ConnectTimeout):
+                time.sleep(0.2)
+        else:
+            raise RuntimeError('HTTP服务没有就绪')
+
+    print('Sandbox内端口8000对应的访问地址：', url)
+    print('后台命令ID：', job.id)
+    print('本例只在Docker/Server所在机器上提供本地访问。')
+    input('浏览完成后按回车，销毁这个临时环境：')
+finally:
+    sb.destroy()
+```
+
+注意两个端口：8000属于容器内服务；get_endpoint返回的是外部访问端点，不一定也是8000。服务应在容器内绑定0.0.0.0，宿主发布面仍可限定127.0.0.1，这两层不要混淆。
+
+本例Server/SDK/浏览器同机时可按返回URL访问。若Docker在远程服务器，浏览器里的127.0.0.1指你自己的电脑，不是远端服务器。学习时可先SSH在服务器执行脚本；要从本机浏览器访问，再为具体返回端口做受控转发，或者使用正式Ingress入口。只反代管理端口8080，不保证数据面可达。
+
+端点可能要求ep.headers中的路由/鉴权头，不能丢弃；也不能把Server全局API key硬塞给任意用户应用。后台命令返回ID只表示已受理/启动，不表示服务已ready，所以例子另做HTTP读取。
+
+按回车会销毁环境；不按回车，后台命令和Sandbox也各有时限。本例不是永久网站部署方案。
+
+## 9. 案例四：需要Notebook式变量记忆时，用Code Interpreter
+
+普通shell命令、持久shell session、语言解释器context是三件事。如果你要先执行`message='hello'`，再执行`print(message)`，应理解语言运行时context。
+
+安装独立扩展：
+
+```bash
+python -m pip install 'opensandbox-code-interpreter==1.2.1'
+docker pull opensandbox/code-interpreter:v1.1.0
+```
+
+保存`case_interpreter.py`：
+
+```python
+from datetime import timedelta
+from opensandbox import SandboxSync
+from code_interpreter import CodeInterpreterSync
+from osb_tutorial import connection
+
+# 专用镜像按它的启动约定使用，不把通用例子的tail入口硬套上来
+sb = SandboxSync.create(
+    'opensandbox/code-interpreter:v1.1.0',
+    timeout=timedelta(minutes=10),
+    resource={'cpu': '1', 'memory': '2Gi'},
+    connection_config=connection(),
+)
+interpreter = None
+try:
+    interpreter = CodeInterpreterSync.create(sb)
+    context = interpreter.codes.create_context(language='python')
+    first = interpreter.codes.run("message = 'hello from a kernel'", context=context)
+    if first.error:
+        raise RuntimeError(str(first.error))
+    second = interpreter.codes.run('print(message)', context=context)
+    if second.error:
+        raise RuntimeError(str(second.error))
+    print(second.text)
+    interpreter.codes.delete_context(context.id)
+finally:
+    try:
+        if interpreter is not None:
+            interpreter.close()
+    finally:
+        sb.destroy()
+```
+
+关键认知：只安装Python端扩展不够，Sandbox镜像还要提供匹配的Jupyter/kernel运行时。不能拿普通python:slim镜像调用CodeInterpreter后，靠增加timeout假装它会长出服务。不同context也不应假设共享同一份变量。 [Code Interpreter 1.2.1](https://pypi.org/project/opensandbox-code-interpreter/1.2.1/)。
+
+## 10. 常规进阶：镜像、并发、长任务和存储
+
+### 10.1 固化依赖，不要每个任务都重新pip安装
+
+当你重复使用pandas等依赖，把它们放进版本化镜像。例如Dockerfile：
+
+```dockerfile
+FROM python:3.12-slim
+RUN python -m pip install --no-cache-dir pandas==2.2.3
+WORKDIR /workspace
+CMD ["tail", "-f", "/dev/null"]
+```
+
+```bash
+docker build -t tutorial-python-data:1 .
+```
+
+随后以这个镜像创建Sandbox。这个Dockerfile是本教程的环境设计示例，不是已运行结果。正式环境还应锁依赖/镜像摘要、检查架构兼容和漏洞，并确保执行节点能取得镜像。
+
+### 10.2 有限并发，而不是无限create
+
+把每个独立任务分到独立Sandbox；可在Python用线程池/信号量限定并发，并保证每个任务finally销毁。CPU/RAM是实际机器资源，不因为接口支持create就无限供应。一个任务里使用多个容器内进程，和多个Sandbox并发，也不是一个层次。
+
+需要异步吞吐时用async版Sandbox/ConnectionConfig；不要将同步SandboxSync与await调用混写。Python多线程共享同一环境写相同文件仍会产生业务竞态，隔离工具不会自动帮应用加锁。
+
+### 10.3 后台命令要有状态、日志和停止控制
+
+```python
+status = sb.commands.get_command_status(job.id)
+logs = sb.commands.get_background_command_logs(job.id)
+# 真正需要中断本次命令时才调用：
+# sb.commands.interrupt(job.id)
+```
+
+这些调用作用于你持有的明确执行ID。不要为了清理一个任务，在宿主机广泛匹配进程并kill。长任务要同时设计环境TTL、命令timeout、续期和结果保存；不要只把本地HTTP等待时间调大。
+
+### 10.4 数据如何留下来
+
+- 最容易理解：结束前由SDK取回结果，保存到调用方。
+- 需要跨容器数据：使用经过允许的卷/外部对象存储，区分只读输入和可写输出。
+- Host挂载路径属于Docker daemon所在机器，不是远程SDK调用机。
+- 在Server的storage.allowed_host_paths配置允许的专用目录。1.2.1实际校验代码中，空列表拒绝Host绑定挂载；包内示例有旧注释与此不一致，不能只凭示例注释判断权限。确需共享目录时，明确列出允许路径，并验证越界路径会被拒绝。
+- 不挂载宿主机根目录、用户凭据目录或Docker socket给不可信任务。
+
+pause/resume、镜像快照和完整进程内存恢复的支持随runtime变化。connect/renew都不能替代持久存储，也不等于任意程序的热迁移。
+
+## 11. 生产前必须重新理解的网络与安全
+
+### 11.1 管理面可达，不等于执行面可达
+
+Server负责生命周期，命令/文件通常走解析出的数据端点。管理API转发成功后，文件/命令却连接超时，往往应检查数据端点、Docker发布地址、Ingress、DNS与客户端所在机器，而不是先重装SDK。
+
+1.2.1的use_server_proxy虽然仍提供兼容路径，但已在连接配置标为弃用/维护状态。不要把“全部流量永远经Server代理”当新生产架构默认；优先按官方Ingress/网络设计选择。
+
+### 11.2 只设置一条network_policy，不等于绝对断网
+
+SDK声明示例：
+
+```python
+from opensandbox.models.sandboxes import NetworkPolicy, NetworkRule
+policy = NetworkPolicy(
+    default_action='deny',
+    egress=[
+        NetworkRule(action='allow', target='pypi.org'),
+        NetworkRule(action='allow', target='files.pythonhosted.org'),
+    ],
+)
+# 创建时传入 network_policy=policy
+```
+
+后端还要配套egress镜像/模式。官方区分：dns模式主要限制域名解析，直接IP连接仍可能通过；dns+nft增加包级约束。需要强约束时按该模式和运行时能力配置并实际验证，不能以DNS失败冒充已防住所有出网。 [官方网络安全指南](https://open-sandbox.ai/guides/network-security)。
+
+没有在创建请求里携带策略，不应假设sidecar自动保护了所有工作负载。企业还要限制内网网段/云元数据地址/跨租户访问，审核管理员固定规则与每任务规则的关系。
+
+### 11.3 凭据不能只靠“放进环境变量”就安全
+
+环境变量对沙箱内程序可读。不要向运行未知代码的环境注入长期云密钥、GitHub/PyPI高权限凭据或生产数据库密码。
+
+有这类需求时，可进一步研究官方Credential Vault/Proxy：由配套egress在受控出站请求上注入凭据，而不是让工作负载直接获得真实秘密。但它有网络模式、sidecar和权限前提，不是新手例子里加一个参数就自动具备。 [官方 Credential Vault](https://open-sandbox.ai/guides/credential-vault)。
+
+### 11.4 Docker不是所有风险的答案
+
+Docker daemon本身很有权限。OpenSandbox管理API的操作者事实上可以请求创建环境；生产需要可信调用者、参数/镜像/挂载限制、资源和网络策略、审计及适合风险等级的runtime。敌对多租户还要另外评估Kata/VM等隔离，不能因为“Sandbox”这个名字就省略威胁模型。 [Docker 安全说明](https://docs.docker.com/engine/security/)。
+
+本教程选择127.0.0.1监听和端口发布是学习方案，不建议把API裸露到0.0.0.0再依赖“URL没人知道”。
+
+## 12. 什么时候才需要Kubernetes、池或其他组件
+
+| 需求 | 更合适的下一步 |
+|---|---|
+| 单机学习/少量独立任务 | 本文Docker路线 |
+| 经常重复依赖安装 | 固定自定义镜像 |
+| 变量连续计算 | Code Interpreter context |
+| 多步骤终端环境 | shell session或同Sandbox的明确工作目录 |
+| 首次启动时延/高频申请 | 了解官方pool，另做生命周期与隔离评估 |
+| 浏览器自动化/截图 | 含浏览器及系统依赖的镜像→运行Playwright等脚本→通过bytes接口导出截图；普通python:slim不自动提供浏览器 |
+| 多节点容量/调度 | Kubernetes及匹配的workload provider |
+| 更强隔离/微VM | 官方支持的安全runtime或FastSandbox路线 |
+| 面向用户的登录、任务队列、项目管理 | 应用层产品，不是仅启动Server就全部有了 |
+
+Kubernetes路线不只是把runtime.type从docker改成kubernetes：还涉及controller/CRD、镜像仓库、存储、Ingress、网络隔离和运维。先跑懂单机闭环，再根据明确需求选择。
+
+## 13. 常见故障：按层排，不靠盲目加timeout
+
+| 现象 | 先看哪里 |
+|---|---|
+| docker version只有Client | daemon、用户权限、Docker context |
+| Server要求确认无鉴权启动 | Key未设置；配置正确Key，不靠关闭保护继续 |
+| 管理API401/403 | Server/SDK两个变量名、Key是否一致、反代是否保留头 |
+| config存在却启动失败 | 是否漏了--example生成了占位骨架；是否重复TOML段；数据库路径和权限 |
+| health200但create失败 | Docker连接、镜像拉取、CPU架构、资源和磁盘 |
+| 创建后迅速Exited | 镜像默认命令结束；普通镜像的保活入口是否合理 |
+| 创建健康但commands/files超时 | 数据端点是否从当前客户端可达；发布地址/Ingress/代理 |
+| 第二条命令找不到venv或变量 | 普通run与持久session混淆；用绝对路径/明确cwd |
+| exit code非0但有stdout | stdout不是成功标志，检查error/stderr/exit_code |
+| read_file读图片失败 | 应使用bytes接口而非UTF-8解码 |
+| CodeInterpreter一直不ready | 镜像是否真有kernel gateway；是不是改坏了专用入口 |
+| 内网URL被代理返回407 | 核对本地NO_PROXY与实际访问路径，不是看到407就另建代理 |
+| 代码开始慢 | 镜像冷拉取/依赖首次安装与代码执行耗时分开 |
+| 网络策略看似失效 | 是否真的注入egress、模式是dns还是dns+nft、是否验证IP层 |
+| 关闭脚本后容器仍在 | 是否只close/with退出而没有destroy |
+
+创建请求超时不等于没有创建。先按明确ID/metadata和Server记录核对，再决定是否重建；不要用metadata标签自动宣称业务幂等已经实现。Server重启、客户端重连和任务结果恢复也要分别检查。
+
+## 14. 最短学习顺序与自检
+
+建议按以下顺序学，而不是一次部署所有组件：
+1. 看懂组件和三个安装位置。
+2. 跑通第一个完整例子，确认本机输出与Sandbox路径的区别。
+3. 做CSV例子，真正取回文件。
+4. 做代码+unittest例子，理解退出码与验证边界。
+5. 做HTTP服务例子，理解容器端口、访问端点和数据面。
+6. 确实需要变量记忆时再用Code Interpreter。
+7. 最后学习网络隔离、凭据、池和Kubernetes。
+
+完成后应能回答：镜像在哪拉？命令在哪执行？文件最后在哪保存？环境什么时候过期？close会不会删除容器？谁持有管理Key？访问端点从哪台机器能到达？网络策略究竟防的是域名还是包？
+
+能回答这些，比记住几十个API方法名更重要。
+
+## 官方来源与核对范围
+
+本文对照官方 1.2.1 发行包核对了同步 SDK、命令与文件模型、配置字段以及生命周期实现。官方在线文档可能比该版本更新；不能将新文档中的能力倒推为所有历史版本都支持。
+
+- https://pypi.org/project/opensandbox/1.2.1/
+- https://pypi.org/project/opensandbox-server/1.2.1/
+- https://pypi.org/project/opensandbox-code-interpreter/1.2.1/
+- https://open-sandbox.ai/getting-started/
+- https://open-sandbox.ai/getting-started/installation
+- https://open-sandbox.ai/getting-started/configuration
+- https://open-sandbox.ai/sdks/python
+- https://open-sandbox.ai/architecture
+- https://open-sandbox.ai/guides/network-security
+- https://open-sandbox.ai/guides/credential-vault
+- https://docs.docker.com/engine/install/ubuntu/
+- https://docs.docker.com/engine/storage/bind-mounts/
+- https://docs.docker.com/engine/security/
+
+本文提供的是基于官方接口整理的操作教程，未将静态检查描述成容器运行测试，也不提供未经测量的性能或安全保证。示例程序与嵌入脚本已做语法检查；首次执行仍应逐步检查健康状态、命令结果、文件导出和环境回收。
